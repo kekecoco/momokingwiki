@@ -23,23 +23,26 @@
  *
  * @ingroup Language
  */
-class GlobalDependency extends CacheDependency {
-	private $name;
-	private $value;
+class GlobalDependency extends CacheDependency
+{
+    private $name;
+    private $value;
 
-	public function __construct( $name ) {
-		$this->name = $name;
-		$this->value = $GLOBALS[$name];
-	}
+    public function __construct($name)
+    {
+        $this->name = $name;
+        $this->value = $GLOBALS[$name];
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function isExpired() {
-		if ( !isset( $GLOBALS[$this->name] ) ) {
-			return true;
-		}
+    /**
+     * @return bool
+     */
+    public function isExpired()
+    {
+        if (!isset($GLOBALS[$this->name])) {
+            return true;
+        }
 
-		return $GLOBALS[$this->name] != $this->value;
-	}
+        return $GLOBALS[$this->name] != $this->value;
+    }
 }

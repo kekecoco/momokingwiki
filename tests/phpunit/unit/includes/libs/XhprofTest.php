@@ -21,64 +21,68 @@
 /**
  * @covers Xhprof
  */
-class XhprofTest extends PHPUnit\Framework\TestCase {
+class XhprofTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	/**
-	 * @dataProvider provideCallAny
-	 */
-	public function testCallAny( array $functions, array $args, $expectedResult ) {
-		$xhprof = new ReflectionClass( Xhprof::class );
-		$callAny = $xhprof->getMethod( 'callAny' );
-		$callAny->setAccessible( true );
+    /**
+     * @dataProvider provideCallAny
+     */
+    public function testCallAny(array $functions, array $args, $expectedResult)
+    {
+        $xhprof = new ReflectionClass(Xhprof::class);
+        $callAny = $xhprof->getMethod('callAny');
+        $callAny->setAccessible(true);
 
-		$this->assertEquals( $expectedResult,
-			$callAny->invoke( null, $functions, $args ) );
-	}
+        $this->assertEquals($expectedResult,
+            $callAny->invoke(null, $functions, $args));
+    }
 
-	/**
-	 * Data provider for callAny(), which calls the first function found.
-	 */
-	public function provideCallAny() {
-		return [
-			[
-				[ 'wfTestCallAny_func1', 'wfTestCallAny_func2', 'wfTestCallAny_func3' ],
-				[ 3, 4 ],
-				12
-			],
-			[
-				[ 'wfTestCallAny_nosuchfunc1', 'wfTestCallAny_func2', 'wfTestCallAny_func3' ],
-				[ 3, 4 ],
-				7
-			],
-			[
-				[ 'wfTestCallAny_nosuchfunc1', 'wfTestCallAny_nosuchfunc2', 'wfTestCallAny_func3' ],
-				[ 3, 4 ],
-				-1
-			]
+    /**
+     * Data provider for callAny(), which calls the first function found.
+     */
+    public function provideCallAny()
+    {
+        return [
+            [
+                ['wfTestCallAny_func1', 'wfTestCallAny_func2', 'wfTestCallAny_func3'],
+                [3, 4],
+                12
+            ],
+            [
+                ['wfTestCallAny_nosuchfunc1', 'wfTestCallAny_func2', 'wfTestCallAny_func3'],
+                [3, 4],
+                7
+            ],
+            [
+                ['wfTestCallAny_nosuchfunc1', 'wfTestCallAny_nosuchfunc2', 'wfTestCallAny_func3'],
+                [3, 4],
+                -1
+            ]
 
-		];
-	}
+        ];
+    }
 
-	/**
-	 * callAny() throws an exception when all functions are unavailable.
-	 *
-	 * @covers Xhprof::callAny
-	 */
-	public function testCallAnyNoneAvailable() {
-		$xhprof = new ReflectionClass( Xhprof::class );
-		$callAny = $xhprof->getMethod( 'callAny' );
-		$callAny->setAccessible( true );
+    /**
+     * callAny() throws an exception when all functions are unavailable.
+     *
+     * @covers Xhprof::callAny
+     */
+    public function testCallAnyNoneAvailable()
+    {
+        $xhprof = new ReflectionClass(Xhprof::class);
+        $callAny = $xhprof->getMethod('callAny');
+        $callAny->setAccessible(true);
 
-		$this->expectException( Exception::class );
-		$this->expectExceptionMessage( "Neither xhprof nor tideways are installed" );
-		$callAny->invoke( $xhprof, [
-			'wfTestCallAny_nosuchfunc1',
-			'wfTestCallAny_nosuchfunc2',
-			'wfTestCallAny_nosuchfunc3'
-		] );
-	}
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("Neither xhprof nor tideways are installed");
+        $callAny->invoke($xhprof, [
+            'wfTestCallAny_nosuchfunc1',
+            'wfTestCallAny_nosuchfunc2',
+            'wfTestCallAny_nosuchfunc3'
+        ]);
+    }
 }
 
 /**
@@ -87,8 +91,9 @@ class XhprofTest extends PHPUnit\Framework\TestCase {
  * @param int $b
  * @return int
  */
-function wfTestCallAny_func1( $a, $b ) {
-	return $a * $b;
+function wfTestCallAny_func1($a, $b)
+{
+    return $a * $b;
 }
 
 /**
@@ -97,8 +102,9 @@ function wfTestCallAny_func1( $a, $b ) {
  * @param int $b
  * @return int
  */
-function wfTestCallAny_func2( $a, $b ) {
-	return $a + $b;
+function wfTestCallAny_func2($a, $b)
+{
+    return $a + $b;
 }
 
 /**
@@ -107,6 +113,7 @@ function wfTestCallAny_func2( $a, $b ) {
  * @param int $b
  * @return int
  */
-function wfTestCallAny_func3( $a, $b ) {
-	return $a - $b;
+function wfTestCallAny_func3($a, $b)
+{
+    return $a - $b;
 }

@@ -34,78 +34,85 @@ use MediaWiki\MediaWikiServices;
  * @ingroup JobQueue
  * @since 1.25
  */
-final class EnqueueJob extends Job implements GenericParameterJob {
-	/**
-	 * Callers should use the factory methods instead
-	 *
-	 * @param array $params Job parameters
-	 */
-	public function __construct( array $params ) {
-		parent::__construct( 'enqueue', $params );
-	}
+final class EnqueueJob extends Job implements GenericParameterJob
+{
+    /**
+     * Callers should use the factory methods instead
+     *
+     * @param array $params Job parameters
+     */
+    public function __construct(array $params)
+    {
+        parent::__construct('enqueue', $params);
+    }
 
-	/**
-	 * @param JobSpecification|JobSpecification[] $jobs
-	 * @return EnqueueJob
-	 */
-	public static function newFromLocalJobs( $jobs ) {
-		$jobs = is_array( $jobs ) ? $jobs : [ $jobs ];
+    /**
+     * @param JobSpecification|JobSpecification[] $jobs
+     * @return EnqueueJob
+     */
+    public static function newFromLocalJobs($jobs)
+    {
+        $jobs = is_array($jobs) ? $jobs : [$jobs];
 
-		return self::newFromJobsByDomain( [
-			WikiMap::getCurrentWikiDbDomain()->getId() => $jobs
-		] );
-	}
+        return self::newFromJobsByDomain([
+            WikiMap::getCurrentWikiDbDomain()->getId() => $jobs
+        ]);
+    }
 
-	/**
-	 * @param array $jobsByDomain Map of (wiki => JobSpecification list)
-	 * @return EnqueueJob
-	 */
-	public static function newFromJobsByDomain( array $jobsByDomain ) {
-		$deduplicate = true;
+    /**
+     * @param array $jobsByDomain Map of (wiki => JobSpecification list)
+     * @return EnqueueJob
+     */
+    public static function newFromJobsByDomain(array $jobsByDomain)
+    {
+        $deduplicate = true;
 
-		$jobMapsByDomain = [];
-		foreach ( $jobsByDomain as $domain => $jobs ) {
-			$jobMapsByDomain[$domain] = [];
-			foreach ( $jobs as $job ) {
-				if ( $job instanceof JobSpecification ) {
-					$jobMapsByDomain[$domain][] = $job->toSerializableArray();
-				} else {
-					throw new InvalidArgumentException( "Jobs must be of type JobSpecification." );
-				}
-				$deduplicate = $deduplicate && $job->ignoreDuplicates();
-			}
-		}
+        $jobMapsByDomain = [];
+        foreach ($jobsByDomain as $domain => $jobs) {
+            $jobMapsByDomain[$domain] = [];
+            foreach ($jobs as $job) {
+                if ($job instanceof JobSpecification) {
+                    $jobMapsByDomain[$domain][] = $job->toSerializableArray();
+                } else {
+                    throw new InvalidArgumentException("Jobs must be of type JobSpecification.");
+                }
+                $deduplicate = $deduplicate && $job->ignoreDuplicates();
+            }
+        }
 
-		$eJob = new self( [ 'jobsByDomain' => $jobMapsByDomain ] );
-		// If *all* jobs to be pushed are to be de-duplicated (a common case), then
-		// de-duplicate this whole job itself to avoid build up in high traffic cases
-		$eJob->removeDuplicates = $deduplicate;
+        $eJob = new self(['jobsByDomain' => $jobMapsByDomain]);
+        // If *all* jobs to be pushed are to be de-duplicated (a common case), then
+        // de-duplicate this whole job itself to avoid build up in high traffic cases
+        $eJob->removeDuplicates = $deduplicate;
 
-		return $eJob;
-	}
+        return $eJob;
+    }
 
-	/**
-	 * @param array $jobsByWiki
-	 * @return EnqueueJob
-	 * @deprecated Since 1.33; use newFromJobsByDomain(). Hard deprecated since 1.39.
-	 */
-	public static function newFromJobsByWiki( array $jobsByWiki ) {
-		wfDeprecated( __METHOD__, '1.33' );
-		return self::newFromJobsByDomain( $jobsByWiki );
-	}
+    /**
+     * @param array $jobsByWiki
+     * @return EnqueueJob
+     * @deprecated Since 1.33; use newFromJobsByDomain(). Hard deprecated since 1.39.
+     */
+    public static function newFromJobsByWiki(array $jobsByWiki)
+    {
+        wfDeprecated(__METHOD__, '1.33');
 
-	public function run() {
-		$jobsByDomain = $this->params['jobsByDomain'] ?? $this->params['jobsByWiki']; // b/c
+        return self::newFromJobsByDomain($jobsByWiki);
+    }
 
-		$jobQueueGroupFactory = MediaWikiServices::getInstance()->getJobQueueGroupFactory();
-		foreach ( $jobsByDomain as $domain => $jobMaps ) {
-			$jobSpecs = [];
-			foreach ( $jobMaps as $jobMap ) {
-				$jobSpecs[] = JobSpecification::newFromArray( $jobMap );
-			}
-			$jobQueueGroupFactory->makeJobQueueGroup( $domain )->push( $jobSpecs );
-		}
+    public function run()
+    {
+        $jobsByDomain = $this->params['jobsByDomain'] ?? $this->params['jobsByWiki']; // b/c
 
-		return true;
-	}
+        $jobQueueGroupFactory = MediaWikiServices::getInstance()->getJobQueueGroupFactory();
+        foreach ($jobsByDomain as $domain => $jobMaps) {
+            $jobSpecs = [];
+            foreach ($jobMaps as $jobMap) {
+                $jobSpecs[] = JobSpecification::newFromArray($jobMap);
+            }
+            $jobQueueGroupFactory->makeJobQueueGroup($domain)->push($jobSpecs);
+        }
+
+        return true;
+    }
 }

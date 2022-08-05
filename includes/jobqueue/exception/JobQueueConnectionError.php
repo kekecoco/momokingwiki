@@ -26,5 +26,6 @@
  * @ingroup JobQueue
  * @since 1.22
  */
-class JobQueueConnectionError extends JobQueueError {
+class JobQueueConnectionError extends JobQueueError
+{
 }

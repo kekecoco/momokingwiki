@@ -11,24 +11,25 @@ use OutputPage;
  * @stable to implement
  * @ingroup Hooks
  */
-interface MakeGlobalVariablesScriptHook {
-	/**
-	 * Export user- or page-specific `mw.config` variables to JavaScript.
-	 *
-	 * When using this hook, be as selective as possible about when the data is set.
-	 * Reduce the cost by setting values only for specific titles, namespaces, or user-rights.
-	 *
-	 * Data exported here is transmitted with the highest possible bandwidth priority (ahead of
-	 * page content even). Any data that is not dependant on the current request, should go
-	 * through MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook instead.
-	 *
-	 * This hook is called from OutputPage::getJSVars.
-	 *
-	 * @since 1.35
-	 *
-	 * @param array &$vars Variable (or multiple variables)
-	 * @param OutputPage $out OutputPage which called the hook, can be used to get the real title
-	 * @return void This hook must not abort, it must return no value
-	 */
-	public function onMakeGlobalVariablesScript( &$vars, $out ): void;
+interface MakeGlobalVariablesScriptHook
+{
+    /**
+     * Export user- or page-specific `mw.config` variables to JavaScript.
+     *
+     * When using this hook, be as selective as possible about when the data is set.
+     * Reduce the cost by setting values only for specific titles, namespaces, or user-rights.
+     *
+     * Data exported here is transmitted with the highest possible bandwidth priority (ahead of
+     * page content even). Any data that is not dependant on the current request, should go
+     * through MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook instead.
+     *
+     * This hook is called from OutputPage::getJSVars.
+     *
+     * @param array &$vars Variable (or multiple variables)
+     * @param OutputPage $out OutputPage which called the hook, can be used to get the real title
+     * @return void This hook must not abort, it must return no value
+     * @since 1.35
+     *
+     */
+    public function onMakeGlobalVariablesScript(&$vars, $out): void;
 }

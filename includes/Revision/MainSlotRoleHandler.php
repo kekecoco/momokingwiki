@@ -41,121 +41,126 @@ use TitleFactory;
  *
  * @since 1.33
  */
-class MainSlotRoleHandler extends SlotRoleHandler {
+class MainSlotRoleHandler extends SlotRoleHandler
+{
 
-	/**
-	 * @var string[] A mapping of namespaces to content models.
-	 * @see $wgNamespaceContentModels
-	 */
-	private $namespaceContentModels;
+    /**
+     * @var string[] A mapping of namespaces to content models.
+     * @see $wgNamespaceContentModels
+     */
+    private $namespaceContentModels;
 
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
+    /** @var IContentHandlerFactory */
+    private $contentHandlerFactory;
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/** @var TitleFactory */
-	private $titleFactory;
+    /** @var TitleFactory */
+    private $titleFactory;
 
-	/**
-	 * @param string[] $namespaceContentModels A mapping of namespaces to content models,
-	 *        typically from $wgNamespaceContentModels.
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param HookContainer $hookContainer
-	 * @param TitleFactory $titleFactory
-	 */
-	public function __construct(
-		array $namespaceContentModels,
-		IContentHandlerFactory $contentHandlerFactory,
-		HookContainer $hookContainer,
-		TitleFactory $titleFactory
-	) {
-		parent::__construct( 'main', CONTENT_MODEL_WIKITEXT );
-		$this->namespaceContentModels = $namespaceContentModels;
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->hookRunner = new HookRunner( $hookContainer );
-		$this->titleFactory = $titleFactory;
-	}
+    /**
+     * @param string[] $namespaceContentModels A mapping of namespaces to content models,
+     *        typically from $wgNamespaceContentModels.
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param HookContainer $hookContainer
+     * @param TitleFactory $titleFactory
+     */
+    public function __construct(
+        array $namespaceContentModels,
+        IContentHandlerFactory $contentHandlerFactory,
+        HookContainer $hookContainer,
+        TitleFactory $titleFactory
+    )
+    {
+        parent::__construct('main', CONTENT_MODEL_WIKITEXT);
+        $this->namespaceContentModels = $namespaceContentModels;
+        $this->contentHandlerFactory = $contentHandlerFactory;
+        $this->hookRunner = new HookRunner($hookContainer);
+        $this->titleFactory = $titleFactory;
+    }
 
-	public function supportsArticleCount() {
-		return true;
-	}
+    public function supportsArticleCount()
+    {
+        return true;
+    }
 
-	/**
-	 * @param string $model
-	 * @param PageIdentity $page
-	 *
-	 * @return bool
-	 * @throws MWUnknownContentModelException
-	 */
-	public function isAllowedModel( $model, PageIdentity $page ) {
-		$title = $this->titleFactory->castFromPageIdentity( $page );
-		$handler = $this->contentHandlerFactory->getContentHandler( $model );
+    /**
+     * @param string $model
+     * @param PageIdentity $page
+     *
+     * @return bool
+     * @throws MWUnknownContentModelException
+     */
+    public function isAllowedModel($model, PageIdentity $page)
+    {
+        $title = $this->titleFactory->castFromPageIdentity($page);
+        $handler = $this->contentHandlerFactory->getContentHandler($model);
 
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
-		return $handler->canBeUsedOn( $title );
-	}
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
+        return $handler->canBeUsedOn($title);
+    }
 
-	/**
-	 * @param LinkTarget|PageIdentity $page
-	 *
-	 * @return string
-	 */
-	public function getDefaultModel( $page ) {
-		// NOTE: this method must not rely on $title->getContentModel() directly or indirectly,
-		//       because it is used to initialize the mContentModel member.
+    /**
+     * @param LinkTarget|PageIdentity $page
+     *
+     * @return string
+     */
+    public function getDefaultModel($page)
+    {
+        // NOTE: this method must not rely on $title->getContentModel() directly or indirectly,
+        //       because it is used to initialize the mContentModel member.
 
-		$ext = '';
-		$ns = $page->getNamespace();
-		$model = $this->namespaceContentModels[$ns] ?? null;
+        $ext = '';
+        $ns = $page->getNamespace();
+        $model = $this->namespaceContentModels[$ns] ?? null;
 
-		// Hook can determine default model
-		if ( $page instanceof PageIdentity ) {
-			$title = $this->titleFactory->castFromPageIdentity( $page );
-		} else {
-			$title = $this->titleFactory->castFromLinkTarget( $page );
-		}
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom notnull/Type mismatch on pass-by-ref args
-		if ( !$this->hookRunner->onContentHandlerDefaultModelFor( $title, $model ) && $model !== null ) {
-			return $model;
-		}
+        // Hook can determine default model
+        if ($page instanceof PageIdentity) {
+            $title = $this->titleFactory->castFromPageIdentity($page);
+        } else {
+            $title = $this->titleFactory->castFromLinkTarget($page);
+        }
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom notnull/Type mismatch on pass-by-ref args
+        if (!$this->hookRunner->onContentHandlerDefaultModelFor($title, $model) && $model !== null) {
+            return $model;
+        }
 
-		// Could this page contain code based on the title?
-		$isCodePage = $ns === NS_MEDIAWIKI && preg_match( '!\.(css|js|json)$!u', $title->getText(), $m );
-		if ( $isCodePage ) {
-			$ext = $m[1];
-		}
+        // Could this page contain code based on the title?
+        $isCodePage = $ns === NS_MEDIAWIKI && preg_match('!\.(css|js|json)$!u', $title->getText(), $m);
+        if ($isCodePage) {
+            $ext = $m[1];
+        }
 
-		// Is this a user subpage containing code?
-		$isCodeSubpage = $ns === NS_USER
-			&& !$isCodePage
-			&& preg_match( "/\\/.*\\.(js|css|json)$/", $title->getText(), $m );
+        // Is this a user subpage containing code?
+        $isCodeSubpage = $ns === NS_USER
+            && !$isCodePage
+            && preg_match("/\\/.*\\.(js|css|json)$/", $title->getText(), $m);
 
-		if ( $isCodeSubpage ) {
-			$ext = $m[1];
-		}
+        if ($isCodeSubpage) {
+            $ext = $m[1];
+        }
 
-		// Is this wikitext, according to $wgNamespaceContentModels or the DefaultModelFor hook?
-		$isWikitext = $model === null || $model == CONTENT_MODEL_WIKITEXT;
-		$isWikitext = $isWikitext && !$isCodePage && !$isCodeSubpage;
+        // Is this wikitext, according to $wgNamespaceContentModels or the DefaultModelFor hook?
+        $isWikitext = $model === null || $model == CONTENT_MODEL_WIKITEXT;
+        $isWikitext = $isWikitext && !$isCodePage && !$isCodeSubpage;
 
-		if ( !$isWikitext ) {
-			switch ( $ext ) {
-				case 'js':
-					return CONTENT_MODEL_JAVASCRIPT;
-				case 'css':
-					return CONTENT_MODEL_CSS;
-				case 'json':
-					return CONTENT_MODEL_JSON;
-				default:
-					return $model ?? CONTENT_MODEL_TEXT;
-			}
-		}
+        if (!$isWikitext) {
+            switch ($ext) {
+                case 'js':
+                    return CONTENT_MODEL_JAVASCRIPT;
+                case 'css':
+                    return CONTENT_MODEL_CSS;
+                case 'json':
+                    return CONTENT_MODEL_JSON;
+                default:
+                    return $model ?? CONTENT_MODEL_TEXT;
+            }
+        }
 
-		// We established that it must be wikitext
+        // We established that it must be wikitext
 
-		return CONTENT_MODEL_WIKITEXT;
-	}
+        return CONTENT_MODEL_WIKITEXT;
+    }
 
 }

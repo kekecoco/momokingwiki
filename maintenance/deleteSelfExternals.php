@@ -31,53 +31,56 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class DeleteSelfExternals extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Delete self-references to $wgServer from externallinks' );
-		$this->setBatchSize( 1000 );
-	}
+class DeleteSelfExternals extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Delete self-references to $wgServer from externallinks');
+        $this->setBatchSize(1000);
+    }
 
-	public function execute() {
-		// Extract the host and scheme from $wgServer
-		$server = $this->getConfig()->get( MainConfigNames::Server );
-		$bits = wfParseUrl( $server );
-		if ( !$bits ) {
-			$this->fatalError( 'Could not parse $wgServer' );
-		}
+    public function execute()
+    {
+        // Extract the host and scheme from $wgServer
+        $server = $this->getConfig()->get(MainConfigNames::Server);
+        $bits = wfParseUrl($server);
+        if (!$bits) {
+            $this->fatalError('Could not parse $wgServer');
+        }
 
-		$this->output( "Deleting self externals from $server\n" );
-		$db = $this->getDB( DB_PRIMARY );
+        $this->output("Deleting self externals from $server\n");
+        $db = $this->getDB(DB_PRIMARY);
 
-		// If it's protocol-relative, we need to do both http and https.
-		// Otherwise, just do the specified scheme.
-		$host = $bits['host'];
-		if ( isset( $bits['port'] ) ) {
-			$host .= ':' . $bits['port'];
-		}
-		if ( $bits['scheme'] != '' ) {
-			$conds = [ LinkFilter::getQueryConditions( $host, [ 'protocol' => $bits['scheme'] . '://' ] ) ];
-		} else {
-			$conds = [
-				LinkFilter::getQueryConditions( $host, [ 'protocol' => 'http://' ] ),
-				LinkFilter::getQueryConditions( $host, [ 'protocol' => 'https://' ] ),
-			];
-		}
+        // If it's protocol-relative, we need to do both http and https.
+        // Otherwise, just do the specified scheme.
+        $host = $bits['host'];
+        if (isset($bits['port'])) {
+            $host .= ':' . $bits['port'];
+        }
+        if ($bits['scheme'] != '') {
+            $conds = [LinkFilter::getQueryConditions($host, ['protocol' => $bits['scheme'] . '://'])];
+        } else {
+            $conds = [
+                LinkFilter::getQueryConditions($host, ['protocol' => 'http://']),
+                LinkFilter::getQueryConditions($host, ['protocol' => 'https://']),
+            ];
+        }
 
-		foreach ( $conds as $cond ) {
-			if ( !$cond ) {
-				continue;
-			}
-			$cond = $db->makeList( $cond, LIST_AND );
-			do {
-				$this->commitTransaction( $db, __METHOD__ );
-				$q = $db->limitResult( "DELETE /* deleteSelfExternals */ FROM externallinks WHERE $cond",
-					$this->mBatchSize );
-				$this->output( "Deleting a batch\n" );
-				$db->query( $q, __METHOD__ );
-			} while ( $db->affectedRows() );
-		}
-	}
+        foreach ($conds as $cond) {
+            if (!$cond) {
+                continue;
+            }
+            $cond = $db->makeList($cond, LIST_AND);
+            do {
+                $this->commitTransaction($db, __METHOD__);
+                $q = $db->limitResult("DELETE /* deleteSelfExternals */ FROM externallinks WHERE $cond",
+                    $this->mBatchSize);
+                $this->output("Deleting a batch\n");
+                $db->query($q, __METHOD__);
+            } while ($db->affectedRows());
+        }
+    }
 }
 
 $maintClass = DeleteSelfExternals::class;

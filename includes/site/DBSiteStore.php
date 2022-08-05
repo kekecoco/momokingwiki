@@ -30,255 +30,264 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  * @author Daniel Kinzler
  */
-class DBSiteStore implements SiteStore {
+class DBSiteStore implements SiteStore
+{
 
-	/**
-	 * @var SiteList|null
-	 */
-	protected $sites = null;
+    /**
+     * @var SiteList|null
+     */
+    protected $sites = null;
 
-	/**
-	 * @var ILoadBalancer
-	 */
-	private $dbLoadBalancer;
+    /**
+     * @var ILoadBalancer
+     */
+    private $dbLoadBalancer;
 
-	/**
-	 * @since 1.27
-	 *
-	 * @todo inject some kind of connection manager that is aware of the target wiki,
-	 * instead of injecting a LoadBalancer.
-	 *
-	 * @param ILoadBalancer $dbLoadBalancer
-	 */
-	public function __construct( ILoadBalancer $dbLoadBalancer ) {
-		$this->dbLoadBalancer = $dbLoadBalancer;
-	}
+    /**
+     * @param ILoadBalancer $dbLoadBalancer
+     * @todo inject some kind of connection manager that is aware of the target wiki,
+     * instead of injecting a LoadBalancer.
+     *
+     * @since 1.27
+     *
+     */
+    public function __construct(ILoadBalancer $dbLoadBalancer)
+    {
+        $this->dbLoadBalancer = $dbLoadBalancer;
+    }
 
-	/**
-	 * @see SiteStore::getSites
-	 *
-	 * @since 1.25
-	 *
-	 * @return SiteList
-	 */
-	public function getSites() {
-		$this->loadSites();
+    /**
+     * @return SiteList
+     * @since 1.25
+     *
+     * @see SiteStore::getSites
+     *
+     */
+    public function getSites()
+    {
+        $this->loadSites();
 
-		return $this->sites;
-	}
+        return $this->sites;
+    }
 
-	/**
-	 * Fetches the site from the database and loads them into the sites field.
-	 *
-	 * @since 1.25
-	 */
-	protected function loadSites() {
-		$this->sites = new SiteList();
+    /**
+     * Fetches the site from the database and loads them into the sites field.
+     *
+     * @since 1.25
+     */
+    protected function loadSites()
+    {
+        $this->sites = new SiteList();
 
-		$dbr = $this->dbLoadBalancer->getConnectionRef( DB_REPLICA );
+        $dbr = $this->dbLoadBalancer->getConnectionRef(DB_REPLICA);
 
-		$res = $dbr->select(
-			'sites',
-			[
-				'site_id',
-				'site_global_key',
-				'site_type',
-				'site_group',
-				'site_source',
-				'site_language',
-				'site_protocol',
-				'site_domain',
-				'site_data',
-				'site_forward',
-				'site_config',
-			],
-			'',
-			__METHOD__,
-			[ 'ORDER BY' => 'site_global_key' ]
-		);
+        $res = $dbr->select(
+            'sites',
+            [
+                'site_id',
+                'site_global_key',
+                'site_type',
+                'site_group',
+                'site_source',
+                'site_language',
+                'site_protocol',
+                'site_domain',
+                'site_data',
+                'site_forward',
+                'site_config',
+            ],
+            '',
+            __METHOD__,
+            ['ORDER BY' => 'site_global_key']
+        );
 
-		foreach ( $res as $row ) {
-			$site = Site::newForType( $row->site_type );
-			$site->setGlobalId( $row->site_global_key );
-			$site->setInternalId( (int)$row->site_id );
-			$site->setForward( (bool)$row->site_forward );
-			$site->setGroup( $row->site_group );
-			$site->setLanguageCode( $row->site_language === ''
-				? null
-				: $row->site_language
-			);
-			$site->setSource( $row->site_source );
-			$site->setExtraData( unserialize( $row->site_data ) );
-			$site->setExtraConfig( unserialize( $row->site_config ) );
-			$this->sites[] = $site;
-		}
+        foreach ($res as $row) {
+            $site = Site::newForType($row->site_type);
+            $site->setGlobalId($row->site_global_key);
+            $site->setInternalId((int)$row->site_id);
+            $site->setForward((bool)$row->site_forward);
+            $site->setGroup($row->site_group);
+            $site->setLanguageCode($row->site_language === ''
+                ? null
+                : $row->site_language
+            );
+            $site->setSource($row->site_source);
+            $site->setExtraData(unserialize($row->site_data));
+            $site->setExtraConfig(unserialize($row->site_config));
+            $this->sites[] = $site;
+        }
 
-		// Batch load the local site identifiers.
-		$ids = $dbr->select(
-			'site_identifiers',
-			[
-				'si_site',
-				'si_type',
-				'si_key',
-			],
-			[],
-			__METHOD__
-		);
+        // Batch load the local site identifiers.
+        $ids = $dbr->select(
+            'site_identifiers',
+            [
+                'si_site',
+                'si_type',
+                'si_key',
+            ],
+            [],
+            __METHOD__
+        );
 
-		foreach ( $ids as $id ) {
-			if ( $this->sites->hasInternalId( $id->si_site ) ) {
-				$site = $this->sites->getSiteByInternalId( $id->si_site );
-				$site->addLocalId( $id->si_type, $id->si_key );
-				$this->sites->setSite( $site );
-			}
-		}
-	}
+        foreach ($ids as $id) {
+            if ($this->sites->hasInternalId($id->si_site)) {
+                $site = $this->sites->getSiteByInternalId($id->si_site);
+                $site->addLocalId($id->si_type, $id->si_key);
+                $this->sites->setSite($site);
+            }
+        }
+    }
 
-	/**
-	 * @see SiteStore::getSite
-	 *
-	 * @since 1.25
-	 *
-	 * @param string $globalId
-	 *
-	 * @return Site|null
-	 */
-	public function getSite( $globalId ) {
-		if ( $this->sites === null ) {
-			$this->sites = $this->getSites();
-		}
+    /**
+     * @param string $globalId
+     *
+     * @return Site|null
+     * @see SiteStore::getSite
+     *
+     * @since 1.25
+     *
+     */
+    public function getSite($globalId)
+    {
+        if ($this->sites === null) {
+            $this->sites = $this->getSites();
+        }
 
-		return $this->sites->hasSite( $globalId ) ? $this->sites->getSite( $globalId ) : null;
-	}
+        return $this->sites->hasSite($globalId) ? $this->sites->getSite($globalId) : null;
+    }
 
-	/**
-	 * @see SiteStore::saveSite
-	 *
-	 * @since 1.25
-	 *
-	 * @param Site $site
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSite( Site $site ) {
-		return $this->saveSites( [ $site ] );
-	}
+    /**
+     * @param Site $site
+     *
+     * @return bool Success indicator
+     * @see SiteStore::saveSite
+     *
+     * @since 1.25
+     *
+     */
+    public function saveSite(Site $site)
+    {
+        return $this->saveSites([$site]);
+    }
 
-	/**
-	 * @see SiteStore::saveSites
-	 *
-	 * @since 1.25
-	 *
-	 * @param Site[] $sites
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSites( array $sites ) {
-		if ( empty( $sites ) ) {
-			return true;
-		}
+    /**
+     * @param Site[] $sites
+     *
+     * @return bool Success indicator
+     * @see SiteStore::saveSites
+     *
+     * @since 1.25
+     *
+     */
+    public function saveSites(array $sites)
+    {
+        if (empty($sites)) {
+            return true;
+        }
 
-		$dbw = $this->dbLoadBalancer->getConnectionRef( DB_PRIMARY );
+        $dbw = $this->dbLoadBalancer->getConnectionRef(DB_PRIMARY);
 
-		$dbw->startAtomic( __METHOD__ );
+        $dbw->startAtomic(__METHOD__);
 
-		$success = true;
+        $success = true;
 
-		$internalIds = [];
-		$localIds = [];
+        $internalIds = [];
+        $localIds = [];
 
-		foreach ( $sites as $site ) {
-			if ( $site->getInternalId() !== null ) {
-				$internalIds[] = $site->getInternalId();
-			}
+        foreach ($sites as $site) {
+            if ($site->getInternalId() !== null) {
+                $internalIds[] = $site->getInternalId();
+            }
 
-			$fields = [
-				// Site data
-				'site_global_key' => $site->getGlobalId(), // TODO: check not null
-				'site_type' => $site->getType(),
-				'site_group' => $site->getGroup(),
-				'site_source' => $site->getSource(),
-				'site_language' => $site->getLanguageCode() ?? '',
-				'site_protocol' => $site->getProtocol(),
-				'site_domain' => strrev( $site->getDomain() ?? '' ) . '.',
-				'site_data' => serialize( $site->getExtraData() ),
+            $fields = [
+                // Site data
+                'site_global_key' => $site->getGlobalId(), // TODO: check not null
+                'site_type'       => $site->getType(),
+                'site_group'      => $site->getGroup(),
+                'site_source'     => $site->getSource(),
+                'site_language'   => $site->getLanguageCode() ?? '',
+                'site_protocol'   => $site->getProtocol(),
+                'site_domain'     => strrev($site->getDomain() ?? '') . '.',
+                'site_data'       => serialize($site->getExtraData()),
 
-				// Site config
-				'site_forward' => $site->shouldForward() ? 1 : 0,
-				'site_config' => serialize( $site->getExtraConfig() ),
-			];
+                // Site config
+                'site_forward'    => $site->shouldForward() ? 1 : 0,
+                'site_config'     => serialize($site->getExtraConfig()),
+            ];
 
-			$rowId = $site->getInternalId();
-			if ( $rowId !== null ) {
-				$success = $dbw->update(
-					'sites', $fields, [ 'site_id' => $rowId ], __METHOD__
-				) && $success;
-			} else {
-				$success = $dbw->insert( 'sites', $fields, __METHOD__ ) && $success;
-				$rowId = $dbw->insertId();
-			}
+            $rowId = $site->getInternalId();
+            if ($rowId !== null) {
+                $success = $dbw->update(
+                        'sites', $fields, ['site_id' => $rowId], __METHOD__
+                    ) && $success;
+            } else {
+                $success = $dbw->insert('sites', $fields, __METHOD__) && $success;
+                $rowId = $dbw->insertId();
+            }
 
-			foreach ( $site->getLocalIds() as $idType => $ids ) {
-				foreach ( $ids as $id ) {
-					$localIds[] = [ $rowId, $idType, $id ];
-				}
-			}
-		}
+            foreach ($site->getLocalIds() as $idType => $ids) {
+                foreach ($ids as $id) {
+                    $localIds[] = [$rowId, $idType, $id];
+                }
+            }
+        }
 
-		if ( $internalIds !== [] ) {
-			$dbw->delete(
-				'site_identifiers',
-				[ 'si_site' => $internalIds ],
-				__METHOD__
-			);
-		}
+        if ($internalIds !== []) {
+            $dbw->delete(
+                'site_identifiers',
+                ['si_site' => $internalIds],
+                __METHOD__
+            );
+        }
 
-		foreach ( $localIds as $localId ) {
-			$dbw->insert(
-				'site_identifiers',
-				[
-					'si_site' => $localId[0],
-					'si_type' => $localId[1],
-					'si_key' => $localId[2],
-				],
-				__METHOD__
-			);
-		}
+        foreach ($localIds as $localId) {
+            $dbw->insert(
+                'site_identifiers',
+                [
+                    'si_site' => $localId[0],
+                    'si_type' => $localId[1],
+                    'si_key'  => $localId[2],
+                ],
+                __METHOD__
+            );
+        }
 
-		$dbw->endAtomic( __METHOD__ );
+        $dbw->endAtomic(__METHOD__);
 
-		$this->reset();
+        $this->reset();
 
-		return $success;
-	}
+        return $success;
+    }
 
-	/**
-	 * Resets the SiteList
-	 *
-	 * @since 1.25
-	 */
-	public function reset() {
-		$this->sites = null;
-	}
+    /**
+     * Resets the SiteList
+     *
+     * @since 1.25
+     */
+    public function reset()
+    {
+        $this->sites = null;
+    }
 
-	/**
-	 * Clears the list of sites stored in the database.
-	 *
-	 * @see SiteStore::clear()
-	 *
-	 * @return bool Success
-	 */
-	public function clear() {
-		$dbw = $this->dbLoadBalancer->getConnectionRef( DB_PRIMARY );
+    /**
+     * Clears the list of sites stored in the database.
+     *
+     * @return bool Success
+     * @see SiteStore::clear()
+     *
+     */
+    public function clear()
+    {
+        $dbw = $this->dbLoadBalancer->getConnectionRef(DB_PRIMARY);
 
-		$dbw->startAtomic( __METHOD__ );
-		$ok = $dbw->delete( 'sites', '*', __METHOD__ );
-		$ok = $dbw->delete( 'site_identifiers', '*', __METHOD__ ) && $ok;
-		$dbw->endAtomic( __METHOD__ );
+        $dbw->startAtomic(__METHOD__);
+        $ok = $dbw->delete('sites', '*', __METHOD__);
+        $ok = $dbw->delete('site_identifiers', '*', __METHOD__) && $ok;
+        $dbw->endAtomic(__METHOD__);
 
-		$this->reset();
+        $this->reset();
 
-		return $ok;
-	}
+        return $ok;
+    }
 
 }

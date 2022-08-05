@@ -24,122 +24,136 @@ use Wikimedia\IPUtils;
 /**
  * A class to check request restrictions expressed as a JSON object
  */
-class MWRestrictions {
+class MWRestrictions
+{
 
-	private $ipAddresses = [ '0.0.0.0/0', '::/0' ];
+    private $ipAddresses = ['0.0.0.0/0', '::/0'];
 
-	/**
-	 * @param array|null $restrictions
-	 * @throws InvalidArgumentException
-	 */
-	protected function __construct( array $restrictions = null ) {
-		if ( $restrictions !== null ) {
-			$this->loadFromArray( $restrictions );
-		}
-	}
+    /**
+     * @param array|null $restrictions
+     * @throws InvalidArgumentException
+     */
+    protected function __construct(array $restrictions = null)
+    {
+        if ($restrictions !== null) {
+            $this->loadFromArray($restrictions);
+        }
+    }
 
-	/**
-	 * @return MWRestrictions
-	 */
-	public static function newDefault() {
-		return new self();
-	}
+    /**
+     * @return MWRestrictions
+     */
+    public static function newDefault()
+    {
+        return new self();
+    }
 
-	/**
-	 * @param array $restrictions
-	 * @return MWRestrictions
-	 * @throws InvalidArgumentException
-	 */
-	public static function newFromArray( array $restrictions ) {
-		return new self( $restrictions );
-	}
+    /**
+     * @param array $restrictions
+     * @return MWRestrictions
+     * @throws InvalidArgumentException
+     */
+    public static function newFromArray(array $restrictions)
+    {
+        return new self($restrictions);
+    }
 
-	/**
-	 * @param string $json JSON representation of the restrictions
-	 * @return MWRestrictions
-	 * @throws InvalidArgumentException
-	 */
-	public static function newFromJson( $json ) {
-		$restrictions = FormatJson::decode( $json, true );
-		if ( !is_array( $restrictions ) ) {
-			throw new InvalidArgumentException( 'Invalid restrictions JSON' );
-		}
-		return new self( $restrictions );
-	}
+    /**
+     * @param string $json JSON representation of the restrictions
+     * @return MWRestrictions
+     * @throws InvalidArgumentException
+     */
+    public static function newFromJson($json)
+    {
+        $restrictions = FormatJson::decode($json, true);
+        if (!is_array($restrictions)) {
+            throw new InvalidArgumentException('Invalid restrictions JSON');
+        }
 
-	private function loadFromArray( array $restrictions ) {
-		static $validKeys = [ 'IPAddresses' ];
-		static $neededKeys = [ 'IPAddresses' ];
+        return new self($restrictions);
+    }
 
-		$keys = array_keys( $restrictions );
-		$invalidKeys = array_diff( $keys, $validKeys );
-		if ( $invalidKeys ) {
-			throw new InvalidArgumentException(
-				'Array contains invalid keys: ' . implode( ', ', $invalidKeys )
-			);
-		}
-		$missingKeys = array_diff( $neededKeys, $keys );
-		if ( $missingKeys ) {
-			throw new InvalidArgumentException(
-				'Array is missing required keys: ' . implode( ', ', $missingKeys )
-			);
-		}
+    private function loadFromArray(array $restrictions)
+    {
+        static $validKeys = ['IPAddresses'];
+        static $neededKeys = ['IPAddresses'];
 
-		if ( !is_array( $restrictions['IPAddresses'] ) ) {
-			throw new InvalidArgumentException( 'IPAddresses is not an array' );
-		}
-		foreach ( $restrictions['IPAddresses'] as $ip ) {
-			if ( !IPUtils::isIPAddress( $ip ) ) {
-				throw new InvalidArgumentException( "Invalid IP address: $ip" );
-			}
-		}
-		$this->ipAddresses = $restrictions['IPAddresses'];
-	}
+        $keys = array_keys($restrictions);
+        $invalidKeys = array_diff($keys, $validKeys);
+        if ($invalidKeys) {
+            throw new InvalidArgumentException(
+                'Array contains invalid keys: ' . implode(', ', $invalidKeys)
+            );
+        }
+        $missingKeys = array_diff($neededKeys, $keys);
+        if ($missingKeys) {
+            throw new InvalidArgumentException(
+                'Array is missing required keys: ' . implode(', ', $missingKeys)
+            );
+        }
 
-	/**
-	 * Return the restrictions as an array
-	 * @return array
-	 */
-	public function toArray() {
-		return [
-			'IPAddresses' => $this->ipAddresses,
-		];
-	}
+        if (!is_array($restrictions['IPAddresses'])) {
+            throw new InvalidArgumentException('IPAddresses is not an array');
+        }
+        foreach ($restrictions['IPAddresses'] as $ip) {
+            if (!IPUtils::isIPAddress($ip)) {
+                throw new InvalidArgumentException("Invalid IP address: $ip");
+            }
+        }
+        $this->ipAddresses = $restrictions['IPAddresses'];
+    }
 
-	/**
-	 * Return the restrictions as a JSON string
-	 * @param bool|string $pretty Pretty-print the JSON output, see FormatJson::encode
-	 * @return string
-	 */
-	public function toJson( $pretty = false ) {
-		return FormatJson::encode( $this->toArray(), $pretty, FormatJson::ALL_OK );
-	}
+    /**
+     * Return the restrictions as an array
+     * @return array
+     */
+    public function toArray()
+    {
+        return [
+            'IPAddresses' => $this->ipAddresses,
+        ];
+    }
 
-	public function __toString() {
-		return $this->toJson();
-	}
+    /**
+     * Return the restrictions as a JSON string
+     * @param bool|string $pretty Pretty-print the JSON output, see FormatJson::encode
+     * @return string
+     */
+    public function toJson($pretty = false)
+    {
+        return FormatJson::encode($this->toArray(), $pretty, FormatJson::ALL_OK);
+    }
 
-	/**
-	 * Test against the passed WebRequest
-	 * @param WebRequest $request
-	 * @return Status
-	 */
-	public function check( WebRequest $request ) {
-		$ok = [
-			'ip' => $this->checkIP( $request->getIP() ),
-		];
-		$status = Status::newGood();
-		$status->setResult( $ok === array_filter( $ok ), $ok );
-		return $status;
-	}
+    public function __toString()
+    {
+        return $this->toJson();
+    }
 
-	/**
-	 * Test if an IP address is allowed by the restrictions
-	 * @param string $ip
-	 * @return bool
-	 */
-	public function checkIP( $ip ) {
-		$set = new IPSet( $this->ipAddresses );
-		return $set->match( $ip );
-	}
+    /**
+     * Test against the passed WebRequest
+     * @param WebRequest $request
+     * @return Status
+     */
+    public function check(WebRequest $request)
+    {
+        $ok = [
+            'ip' => $this->checkIP($request->getIP()),
+        ];
+        $status = Status::newGood();
+        $status->setResult($ok === array_filter($ok), $ok);
+
+        return $status;
+    }
+
+    /**
+     * Test if an IP address is allowed by the restrictions
+     * @param string $ip
+     * @return bool
+     */
+    public function checkIP($ip)
+    {
+        $set = new IPSet($this->ipAddresses);
+
+        return $set->match($ip);
+    }
 }

@@ -23,56 +23,60 @@ use Wikimedia\AtEase\AtEase;
  *
  * @since 1.32
  */
-class Deflate {
+class Deflate
+{
 
-	/**
-	 * Whether the content is deflated
-	 *
-	 * @param string $data
-	 *
-	 * @return bool
-	 */
-	public static function isDeflated( $data ) {
-		return substr( $data, 0, 11 ) === 'rawdeflate,';
-	}
+    /**
+     * Whether the content is deflated
+     *
+     * @param string $data
+     *
+     * @return bool
+     */
+    public static function isDeflated($data)
+    {
+        return substr($data, 0, 11) === 'rawdeflate,';
+    }
 
-	/**
-	 * For content that has been compressed with deflate in the client,
-	 * try to uncompress it with inflate.
-	 *
-	 * If data is not prefixed with 'rawdeflate,' it will be returned unmodified.
-	 *
-	 * Data can be compressed in the client using the 'mediawiki.deflate' module:
-	 *
-	 * @code
-	 *    mw.loader.using( 'mediawiki.deflate' ).then( function () {
-	 *        var deflated = mw.deflate( myContent );
-	 *    } );
-	 * @endcode
-	 *
-	 * @param string $data Deflated data
-	 * @return StatusValue Inflated data will be set as the value
-	 * @throws InvalidArgumentException If the data wasn't deflated
-	 */
-	public static function inflate( $data ) {
-		if ( !self::isDeflated( $data ) ) {
-			throw new InvalidArgumentException( 'Data does not begin with deflated prefix' );
-		}
-		$deflated = base64_decode( substr( $data, 11 ), true );
-		if ( $deflated === false ) {
-			return StatusValue::newFatal( 'deflate-invaliddeflate' );
-		}
-		AtEase::suppressWarnings();
-		$inflated = gzinflate( $deflated );
-		AtEase::restoreWarnings();
-		if ( $inflated === false ) {
-			return StatusValue::newFatal( 'deflate-invaliddeflate' );
-		}
-		return StatusValue::newGood( $inflated );
-	}
+    /**
+     * For content that has been compressed with deflate in the client,
+     * try to uncompress it with inflate.
+     *
+     * If data is not prefixed with 'rawdeflate,' it will be returned unmodified.
+     *
+     * Data can be compressed in the client using the 'mediawiki.deflate' module:
+     *
+     * @code
+     *    mw.loader.using( 'mediawiki.deflate' ).then( function () {
+     *        var deflated = mw.deflate( myContent );
+     *    } );
+     * @endcode
+     *
+     * @param string $data Deflated data
+     * @return StatusValue Inflated data will be set as the value
+     * @throws InvalidArgumentException If the data wasn't deflated
+     */
+    public static function inflate($data)
+    {
+        if (!self::isDeflated($data)) {
+            throw new InvalidArgumentException('Data does not begin with deflated prefix');
+        }
+        $deflated = base64_decode(substr($data, 11), true);
+        if ($deflated === false) {
+            return StatusValue::newFatal('deflate-invaliddeflate');
+        }
+        AtEase::suppressWarnings();
+        $inflated = gzinflate($deflated);
+        AtEase::restoreWarnings();
+        if ($inflated === false) {
+            return StatusValue::newFatal('deflate-invaliddeflate');
+        }
+
+        return StatusValue::newGood($inflated);
+    }
 }
 
 /**
  * @deprecated since 1.35
  */
-class_alias( Deflate::class, 'EasyDeflate' );
+class_alias(Deflate::class, 'EasyDeflate');

@@ -26,36 +26,38 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Languages
  */
-class LanguageSl extends Language {
-	# Convert from the nominative form of a noun to some other case
-	# Invoked with {{GRAMMAR:case|word}}
+class LanguageSl extends Language
+{
+    # Convert from the nominative form of a noun to some other case
+    # Invoked with {{GRAMMAR:case|word}}
 
-	/**
-	 * Cases: rodilnik, dajalnik, tožilnik, mestnik, orodnik
-	 *
-	 * @param string $word
-	 * @param string $case
-	 *
-	 * @return string
-	 */
-	public function convertGrammar( $word, $case ) {
-		$grammarForms =
-			MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::GrammarForms );
-		if ( isset( $grammarForms['sl'][$case][$word] ) ) {
-			return $grammarForms['sl'][$case][$word];
-		}
+    /**
+     * Cases: rodilnik, dajalnik, tožilnik, mestnik, orodnik
+     *
+     * @param string $word
+     * @param string $case
+     *
+     * @return string
+     */
+    public function convertGrammar($word, $case)
+    {
+        $grammarForms =
+            MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::GrammarForms);
+        if (isset($grammarForms['sl'][$case][$word])) {
+            return $grammarForms['sl'][$case][$word];
+        }
 
-		switch ( $case ) {
-			case 'mestnik': # locative
-				$word = 'o ' . $word;
-				break;
-			case 'orodnik': # instrumental
-				$word = 'z ' . $word;
-				break;
-		}
+        switch ($case) {
+            case 'mestnik': # locative
+                $word = 'o ' . $word;
+                break;
+            case 'orodnik': # instrumental
+                $word = 'z ' . $word;
+                break;
+        }
 
-		# this will return the original value for 'imenovalnik' (nominativ) and
-		# all undefined case values.
-		return $word;
-	}
+        # this will return the original value for 'imenovalnik' (nominativ) and
+        # all undefined case values.
+        return $word;
+    }
 }

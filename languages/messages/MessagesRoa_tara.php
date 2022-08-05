@@ -16,11 +16,11 @@ $fallback = 'it';
 
 /** @phpcs-require-sorted-array */
 $specialPageAliases = [
-	'Allmessages'               => [ 'TutteLeMessagge' ],
-	'Preferences'               => [ 'Preferenze' ],
-	'Recentchanges'             => [ 'UrtemeCangiaminde' ],
-	'Statistics'                => [ 'Statisteche' ],
-	'Upload'                    => [ 'Carecaminde' ],
-	'Version'                   => [ 'Versione' ],
-	'Watchlist'                 => [ 'PàggeneCondrollete' ],
+    'Allmessages'   => ['TutteLeMessagge'],
+    'Preferences'   => ['Preferenze'],
+    'Recentchanges' => ['UrtemeCangiaminde'],
+    'Statistics'    => ['Statisteche'],
+    'Upload'        => ['Carecaminde'],
+    'Version'       => ['Versione'],
+    'Watchlist'     => ['PàggeneCondrollete'],
 ];

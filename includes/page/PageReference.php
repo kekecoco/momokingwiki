@@ -46,58 +46,59 @@ use MediaWiki\DAO\WikiAwareEntity;
  *
  * @since 1.37
  */
-interface PageReference extends WikiAwareEntity {
+interface PageReference extends WikiAwareEntity
+{
 
-	/**
-	 * Get the ID of the wiki this page belongs to.
-	 *
-	 * @return string|false The wiki's logical name,
-	 *         or self::LOCAL to indicate the local wiki.
-	 */
-	public function getWikiId();
+    /**
+     * Get the ID of the wiki this page belongs to.
+     *
+     * @return string|false The wiki's logical name,
+     *         or self::LOCAL to indicate the local wiki.
+     */
+    public function getWikiId();
 
-	/**
-	 * Returns the page's namespace number.
-	 *
-	 * The value returned by this method should represent a valid namespace,
-	 * but this cannot be guaranteed in all cases.
-	 *
-	 * @return int
-	 */
-	public function getNamespace(): int;
+    /**
+     * Returns the page's namespace number.
+     *
+     * The value returned by this method should represent a valid namespace,
+     * but this cannot be guaranteed in all cases.
+     *
+     * @return int
+     */
+    public function getNamespace(): int;
 
-	/**
-	 * Get the page title in DB key form.
-	 *
-	 * @note This may return a string starting with a hash, if the PageReference represents
-	 *       the target of a block or unblock operation. This is due to the way the block target
-	 *       is represented in the logging table. This is intended to change in the future.
-	 *
-	 * @note This may return an empty string, if this PageReference is a Title that represents
-	 *       a relative section link. This is intended to change in the future.
-	 *
-	 * @return string
-	 */
-	public function getDBkey(): string;
+    /**
+     * Get the page title in DB key form.
+     *
+     * @note This may return a string starting with a hash, if the PageReference represents
+     *       the target of a block or unblock operation. This is due to the way the block target
+     *       is represented in the logging table. This is intended to change in the future.
+     *
+     * @note This may return an empty string, if this PageReference is a Title that represents
+     *       a relative section link. This is intended to change in the future.
+     *
+     * @return string
+     */
+    public function getDBkey(): string;
 
-	/**
-	 * Checks whether the given PageReference refers to the same page as this PageReference.
-	 *
-	 * Two PageReference instances are considered to refer to the same page if
-	 * they belong to the same wiki, and have the same namespace and DB key.
-	 *
-	 * @param PageReference $other
-	 *
-	 * @return bool
-	 */
-	public function isSamePageAs( PageReference $other ): bool;
+    /**
+     * Checks whether the given PageReference refers to the same page as this PageReference.
+     *
+     * Two PageReference instances are considered to refer to the same page if
+     * they belong to the same wiki, and have the same namespace and DB key.
+     *
+     * @param PageReference $other
+     *
+     * @return bool
+     */
+    public function isSamePageAs(PageReference $other): bool;
 
-	/**
-	 * Returns an informative human readable unique representation of the page identity,
-	 * for use as a cache key and for logging and debugging.
-	 *
-	 * @return string
-	 */
-	public function __toString(): string;
+    /**
+     * Returns an informative human readable unique representation of the page identity,
+     * for use as a cache key and for logging and debugging.
+     *
+     * @return string
+     */
+    public function __toString(): string;
 
 }

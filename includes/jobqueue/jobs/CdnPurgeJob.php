@@ -27,16 +27,19 @@
  * @ingroup JobQueue
  * @since 1.27
  */
-class CdnPurgeJob extends Job implements GenericParameterJob {
-	public function __construct( array $params ) {
-		parent::__construct( 'cdnPurge', $params );
-		$this->removeDuplicates = false; // delay semantics are critical
-	}
+class CdnPurgeJob extends Job implements GenericParameterJob
+{
+    public function __construct(array $params)
+    {
+        parent::__construct('cdnPurge', $params);
+        $this->removeDuplicates = false; // delay semantics are critical
+    }
 
-	public function run() {
-		// Use purge() directly to avoid infinite recursion
-		CdnCacheUpdate::purge( $this->params['urls'] );
+    public function run()
+    {
+        // Use purge() directly to avoid infinite recursion
+        CdnCacheUpdate::purge($this->params['urls']);
 
-		return true;
-	}
+        return true;
+    }
 }

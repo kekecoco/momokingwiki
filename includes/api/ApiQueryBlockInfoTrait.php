@@ -25,86 +25,88 @@ use Wikimedia\Rdbms\IDatabase;
 /**
  * @ingroup API
  */
-trait ApiQueryBlockInfoTrait {
-	use ApiBlockInfoTrait;
+trait ApiQueryBlockInfoTrait
+{
+    use ApiBlockInfoTrait;
 
-	/**
-	 * Filters hidden users (where the user doesn't have the right to view them)
-	 * Also adds relevant block information
-	 *
-	 * @param bool $showBlockInfo
-	 * @return void
-	 */
-	private function addBlockInfoToQuery( $showBlockInfo ) {
-		$db = $this->getDB();
+    /**
+     * Filters hidden users (where the user doesn't have the right to view them)
+     * Also adds relevant block information
+     *
+     * @param bool $showBlockInfo
+     * @return void
+     */
+    private function addBlockInfoToQuery($showBlockInfo)
+    {
+        $db = $this->getDB();
 
-		if ( $showBlockInfo ) {
-			$queryInfo = DatabaseBlock::getQueryInfo();
-		} else {
-			$queryInfo = [
-				'tables' => [ 'ipblocks' ],
-				'fields' => [ 'ipb_deleted' ],
-				'joins' => [],
-			];
-		}
+        if ($showBlockInfo) {
+            $queryInfo = DatabaseBlock::getQueryInfo();
+        } else {
+            $queryInfo = [
+                'tables' => ['ipblocks'],
+                'fields' => ['ipb_deleted'],
+                'joins'  => [],
+            ];
+        }
 
-		$this->addTables( [ 'blk' => $queryInfo['tables'] ] );
-		$this->addFields( $queryInfo['fields'] );
-		$this->addJoinConds( $queryInfo['joins'] );
-		$this->addJoinConds( [
-			'blk' => [ 'LEFT JOIN', [
-				'ipb_user=user_id',
-				'ipb_expiry > ' . $db->addQuotes( $db->timestamp() ),
-			] ],
-		] );
+        $this->addTables(['blk' => $queryInfo['tables']]);
+        $this->addFields($queryInfo['fields']);
+        $this->addJoinConds($queryInfo['joins']);
+        $this->addJoinConds([
+            'blk' => ['LEFT JOIN', [
+                'ipb_user=user_id',
+                'ipb_expiry > ' . $db->addQuotes($db->timestamp()),
+            ]],
+        ]);
 
-		// Don't show hidden names
-		if ( !$this->getAuthority()->isAllowed( 'hideuser' ) ) {
-			$this->addWhere( 'ipb_deleted = 0 OR ipb_deleted IS NULL' );
-		}
-	}
+        // Don't show hidden names
+        if (!$this->getAuthority()->isAllowed('hideuser')) {
+            $this->addWhere('ipb_deleted = 0 OR ipb_deleted IS NULL');
+        }
+    }
 
-	/***************************************************************************/
-	// region   Methods required from ApiQueryBase
-	/** @name   Methods required from ApiQueryBase */
+    /***************************************************************************/
+    // region   Methods required from ApiQueryBase
+    /** @name   Methods required from ApiQueryBase */
 
-	/**
-	 * @see ApiBase::getDB
-	 * @return IDatabase
-	 */
-	abstract protected function getDB();
+    /**
+     * @return IDatabase
+     * @see ApiBase::getDB
+     */
+    abstract protected function getDB();
 
-	/**
-	 * @see IContextSource::getAuthority
-	 * @return Authority
-	 */
-	abstract public function getAuthority();
+    /**
+     * @return Authority
+     * @see IContextSource::getAuthority
+     */
+    abstract public function getAuthority();
 
-	/**
-	 * @see ApiQueryBase::addTables
-	 * @param string|array $tables
-	 * @param string|null $alias
-	 */
-	abstract protected function addTables( $tables, $alias = null );
+    /**
+     * @param string|array $tables
+     * @param string|null $alias
+     * @see ApiQueryBase::addTables
+     */
+    abstract protected function addTables($tables, $alias = null);
 
-	/**
-	 * @see ApiQueryBase::addFields
-	 * @param array|string $fields
-	 */
-	abstract protected function addFields( $fields );
+    /**
+     * @param array|string $fields
+     * @see ApiQueryBase::addFields
+     */
+    abstract protected function addFields($fields);
 
-	/**
-	 * @see ApiQueryBase::addWhere
-	 * @param string|array $conds
-	 */
-	abstract protected function addWhere( $conds );
+    /**
+     * @param string|array $conds
+     * @see ApiQueryBase::addWhere
+     */
+    abstract protected function addWhere($conds);
 
-	/**
-	 * @see ApiQueryBase::addJoinConds
-	 * @param array $conds
-	 */
-	abstract protected function addJoinConds( $conds );
+    /**
+     * @param array $conds
+     * @see ApiQueryBase::addJoinConds
+     */
+    abstract protected function addJoinConds($conds);
 
-	// endregion -- end of methods required from ApiQueryBase
+    // endregion -- end of methods required from ApiQueryBase
 
 }

@@ -30,32 +30,35 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class RenameRestrictions extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Rename a restriction level' );
-		$this->addArg( 'oldlevel', 'Old name of restriction level', true );
-		$this->addArg( 'newlevel', 'New name of restriction level', true );
-	}
+class RenameRestrictions extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Rename a restriction level');
+        $this->addArg('oldlevel', 'Old name of restriction level', true);
+        $this->addArg('newlevel', 'New name of restriction level', true);
+    }
 
-	public function execute() {
-		$oldLevel = $this->getArg( 0 );
-		$newLevel = $this->getArg( 1 );
+    public function execute()
+    {
+        $oldLevel = $this->getArg(0);
+        $newLevel = $this->getArg(1);
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->update(
-			'page_restrictions',
-			[ 'pr_level' => $newLevel ],
-			[ 'pr_level' => $oldLevel ],
-			__METHOD__
-		);
-		$dbw->update(
-			'protected_titles',
-			[ 'pt_create_perm' => $newLevel ],
-			[ 'pt_create_perm' => $oldLevel ],
-			__METHOD__
-		);
-	}
+        $dbw = wfGetDB(DB_PRIMARY);
+        $dbw->update(
+            'page_restrictions',
+            ['pr_level' => $newLevel],
+            ['pr_level' => $oldLevel],
+            __METHOD__
+        );
+        $dbw->update(
+            'protected_titles',
+            ['pt_create_perm' => $newLevel],
+            ['pt_create_perm' => $oldLevel],
+            __METHOD__
+        );
+    }
 
 }
 

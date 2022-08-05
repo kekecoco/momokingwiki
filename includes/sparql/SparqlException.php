@@ -27,5 +27,6 @@ use Exception;
  * Exception for SPARQLClient
  * @newable
  */
-class SparqlException extends Exception {
+class SparqlException extends Exception
+{
 }

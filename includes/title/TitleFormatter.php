@@ -20,6 +20,7 @@
  * @file
  * @author Daniel Kinzler
  */
+
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Page\PageReference;
 
@@ -32,72 +33,73 @@ use MediaWiki\Page\PageReference;
  * @see https://www.mediawiki.org/wiki/Requests_for_comment/TitleValue
  * @since 1.23
  */
-interface TitleFormatter {
-	/**
-	 * Returns the title formatted for display.
-	 * Per default, this includes the namespace but not the fragment.
-	 *
-	 * @note Normalization is applied if $title is not in TitleValue::TITLE_FORM.
-	 *
-	 * @param int|bool $namespace The namespace ID (or false, if the namespace should be ignored)
-	 * @param string $text The page title
-	 * @param string $fragment The fragment name (may be empty).
-	 * @param string $interwiki The interwiki prefix (may be empty).
-	 *
-	 * @return string
-	 */
-	public function formatTitle( $namespace, $text, $fragment = '', $interwiki = '' );
+interface TitleFormatter
+{
+    /**
+     * Returns the title formatted for display.
+     * Per default, this includes the namespace but not the fragment.
+     *
+     * @note Normalization is applied if $title is not in TitleValue::TITLE_FORM.
+     *
+     * @param int|bool $namespace The namespace ID (or false, if the namespace should be ignored)
+     * @param string $text The page title
+     * @param string $fragment The fragment name (may be empty).
+     * @param string $interwiki The interwiki prefix (may be empty).
+     *
+     * @return string
+     */
+    public function formatTitle($namespace, $text, $fragment = '', $interwiki = '');
 
-	/**
-	 * Returns the title text formatted for display, without namespace or fragment.
-	 *
-	 * @param LinkTarget|PageReference $title The title to format
-	 *
-	 * @return string
-	 */
-	public function getText( $title );
+    /**
+     * Returns the title text formatted for display, without namespace or fragment.
+     *
+     * @param LinkTarget|PageReference $title The title to format
+     *
+     * @return string
+     */
+    public function getText($title);
 
-	/**
-	 * Returns the title formatted for display, including the namespace name.
-	 *
-	 * @param LinkTarget|PageReference $title The title to format
-	 *
-	 * @return string
-	 */
-	public function getPrefixedText( $title );
+    /**
+     * Returns the title formatted for display, including the namespace name.
+     *
+     * @param LinkTarget|PageReference $title The title to format
+     *
+     * @return string
+     */
+    public function getPrefixedText($title);
 
-	/**
-	 * Return the title in prefixed database key form, with interwiki
-	 * and namespace.
-	 *
-	 * @since 1.27
-	 *
-	 * @param LinkTarget|PageReference $target
-	 *
-	 * @return string
-	 */
-	public function getPrefixedDBkey( $target );
+    /**
+     * Return the title in prefixed database key form, with interwiki
+     * and namespace.
+     *
+     * @param LinkTarget|PageReference $target
+     *
+     * @return string
+     * @since 1.27
+     *
+     */
+    public function getPrefixedDBkey($target);
 
-	/**
-	 * Returns the title formatted for display, with namespace and fragment.
-	 *
-	 * @param LinkTarget|PageReference $title The title to format
-	 *
-	 * @return string
-	 */
-	public function getFullText( $title );
+    /**
+     * Returns the title formatted for display, with namespace and fragment.
+     *
+     * @param LinkTarget|PageReference $title The title to format
+     *
+     * @return string
+     */
+    public function getFullText($title);
 
-	/**
-	 * Returns the name of the namespace for the given title.
-	 *
-	 * @note This must take into account gender sensitive namespace names.
-	 * @todo Move this to a separate interface
-	 *
-	 * @param int $namespace
-	 * @param string $text
-	 *
-	 * @throws InvalidArgumentException
-	 * @return string
-	 */
-	public function getNamespaceName( $namespace, $text );
+    /**
+     * Returns the name of the namespace for the given title.
+     *
+     * @note This must take into account gender sensitive namespace names.
+     * @param int $namespace
+     * @param string $text
+     *
+     * @return string
+     * @throws InvalidArgumentException
+     * @todo Move this to a separate interface
+     *
+     */
+    public function getNamespaceName($namespace, $text);
 }

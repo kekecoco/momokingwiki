@@ -26,63 +26,68 @@ use Wikimedia\Rdbms\LBFactorySimple;
  * @covers \Wikimedia\Rdbms\LBFactorySimple
  * @covers \Wikimedia\Rdbms\LBFactoryMulti
  */
-class MWLBFactoryTest extends MediaWikiUnitTestCase {
-	/**
-	 * @covers MWLBFactory::getLBFactoryClass
-	 * @dataProvider getLBFactoryClassProvider
-	 */
-	public function testGetLBFactoryClass( $config, $expected ) {
-		$this->assertEquals(
-			$expected,
-			MWLBFactory::getLBFactoryClass( $config )
-		);
-	}
+class MWLBFactoryTest extends MediaWikiUnitTestCase
+{
+    /**
+     * @covers       MWLBFactory::getLBFactoryClass
+     * @dataProvider getLBFactoryClassProvider
+     */
+    public function testGetLBFactoryClass($config, $expected)
+    {
+        $this->assertEquals(
+            $expected,
+            MWLBFactory::getLBFactoryClass($config)
+        );
+    }
 
-	public function getLBFactoryClassProvider() {
-		yield 'undercore alias default' => [
-			[ 'class' => 'LBFactory_Simple' ],
-			Wikimedia\Rdbms\LBFactorySimple::class,
-		];
-		yield 'short alias multi' => [
-			[ 'class' => 'LBFactoryMulti' ],
-			Wikimedia\Rdbms\LBFactoryMulti::class,
-		];
-	}
+    public function getLBFactoryClassProvider()
+    {
+        yield 'undercore alias default' => [
+            ['class' => 'LBFactory_Simple'],
+            Wikimedia\Rdbms\LBFactorySimple::class,
+        ];
+        yield 'short alias multi' => [
+            ['class' => 'LBFactoryMulti'],
+            Wikimedia\Rdbms\LBFactoryMulti::class,
+        ];
+    }
 
-	/**
-	 * @covers MWLBFactory::setDomainAliases()
-	 * @dataProvider setDomainAliasesProvider
-	 */
-	public function testDomainAliases( $dbname, $prefix, $expectedDomain ) {
-		$servers = [ [
-			'type'        => 'sqlite',
-			'dbname'      => 'defaultdb',
-			'tablePrefix' => 'defaultprefix_',
-			'dbDirectory' => '~/sqldatadir/',
-			'load'        => 0,
-		] ];
-		$lbFactory = new LBFactorySimple( [
-			'servers' => $servers,
-			'localDomain' => new DatabaseDomain( $dbname, null, $prefix )
-		] );
-		MWLBFactory::setDomainAliases( $lbFactory );
+    /**
+     * @covers       MWLBFactory::setDomainAliases()
+     * @dataProvider setDomainAliasesProvider
+     */
+    public function testDomainAliases($dbname, $prefix, $expectedDomain)
+    {
+        $servers = [[
+            'type'        => 'sqlite',
+            'dbname'      => 'defaultdb',
+            'tablePrefix' => 'defaultprefix_',
+            'dbDirectory' => '~/sqldatadir/',
+            'load'        => 0,
+        ]];
+        $lbFactory = new LBFactorySimple([
+            'servers'     => $servers,
+            'localDomain' => new DatabaseDomain($dbname, null, $prefix)
+        ]);
+        MWLBFactory::setDomainAliases($lbFactory);
 
-		$rawDomain = rtrim( "$dbname-$prefix", '-' );
-		$this->assertEquals(
-			$expectedDomain,
-			$lbFactory->resolveDomainID( $rawDomain ),
-			'Domain aliases set'
-		);
-	}
+        $rawDomain = rtrim("$dbname-$prefix", '-');
+        $this->assertEquals(
+            $expectedDomain,
+            $lbFactory->resolveDomainID($rawDomain),
+            'Domain aliases set'
+        );
+    }
 
-	public function setDomainAliasesProvider() {
-		return [
-			[ 'enwiki', '', 'enwiki' ],
-			[ 'wikipedia', 'fr_', 'wikipedia-fr_' ],
-			[ 'wikipedia', 'zh', 'wikipedia-zh' ],
-			[ 'wiki-pedia', '', 'wiki?hpedia' ],
-			[ 'wiki-pedia', 'es_', 'wiki?hpedia-es_' ],
-			[ 'wiki-pedia', 'ru', 'wiki?hpedia-ru' ]
-		];
-	}
+    public function setDomainAliasesProvider()
+    {
+        return [
+            ['enwiki', '', 'enwiki'],
+            ['wikipedia', 'fr_', 'wikipedia-fr_'],
+            ['wikipedia', 'zh', 'wikipedia-zh'],
+            ['wiki-pedia', '', 'wiki?hpedia'],
+            ['wiki-pedia', 'es_', 'wiki?hpedia-es_'],
+            ['wiki-pedia', 'ru', 'wiki?hpedia-ru']
+        ];
+    }
 }

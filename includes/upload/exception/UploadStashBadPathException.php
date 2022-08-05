@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashBadPathException extends UploadStashException {
+class UploadStashBadPathException extends UploadStashException
+{
 }

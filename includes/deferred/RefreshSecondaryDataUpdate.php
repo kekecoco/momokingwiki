@@ -35,110 +35,114 @@ use Wikimedia\Rdbms\ILBFactory;
  * @since 1.34
  */
 class RefreshSecondaryDataUpdate extends DataUpdate
-	implements TransactionRoundAwareUpdate, EnqueueableDataUpdate
+    implements TransactionRoundAwareUpdate, EnqueueableDataUpdate
 {
-	/** @var ILBFactory */
-	private $lbFactory;
-	/** @var WikiPage */
-	private $page;
-	/** @var DerivedPageDataUpdater */
-	private $updater;
-	/** @var bool */
-	private $recursive;
+    /** @var ILBFactory */
+    private $lbFactory;
+    /** @var WikiPage */
+    private $page;
+    /** @var DerivedPageDataUpdater */
+    private $updater;
+    /** @var bool */
+    private $recursive;
 
-	/** @var RevisionRecord|null */
-	private $revisionRecord;
-	/** @var UserIdentity|null */
-	private $user;
+    /** @var RevisionRecord|null */
+    private $revisionRecord;
+    /** @var UserIdentity|null */
+    private $user;
 
-	/**
-	 * @param ILBFactory $lbFactory
-	 * @param UserIdentity $user
-	 * @param WikiPage $page Page we are updating
-	 * @param RevisionRecord $revisionRecord
-	 * @param DerivedPageDataUpdater $updater
-	 * @param array $options Options map; supports "recursive"
-	 */
-	public function __construct(
-		ILBFactory $lbFactory,
-		UserIdentity $user,
-		WikiPage $page,
-		RevisionRecord $revisionRecord,
-		DerivedPageDataUpdater $updater,
-		array $options
-	) {
-		parent::__construct();
+    /**
+     * @param ILBFactory $lbFactory
+     * @param UserIdentity $user
+     * @param WikiPage $page Page we are updating
+     * @param RevisionRecord $revisionRecord
+     * @param DerivedPageDataUpdater $updater
+     * @param array $options Options map; supports "recursive"
+     */
+    public function __construct(
+        ILBFactory $lbFactory,
+        UserIdentity $user,
+        WikiPage $page,
+        RevisionRecord $revisionRecord,
+        DerivedPageDataUpdater $updater,
+        array $options
+    )
+    {
+        parent::__construct();
 
-		$this->lbFactory = $lbFactory;
-		$this->user = $user;
-		$this->page = $page;
-		$this->revisionRecord = $revisionRecord;
-		$this->updater = $updater;
-		$this->recursive = !empty( $options['recursive'] );
-	}
+        $this->lbFactory = $lbFactory;
+        $this->user = $user;
+        $this->page = $page;
+        $this->revisionRecord = $revisionRecord;
+        $this->updater = $updater;
+        $this->recursive = !empty($options['recursive']);
+    }
 
-	public function getTransactionRoundRequirement() {
-		return self::TRX_ROUND_ABSENT;
-	}
+    public function getTransactionRoundRequirement()
+    {
+        return self::TRX_ROUND_ABSENT;
+    }
 
-	public function doUpdate() {
-		$updates = $this->updater->getSecondaryDataUpdates( $this->recursive );
-		foreach ( $updates as $update ) {
-			if ( $update instanceof LinksUpdate ) {
-				$update->setRevisionRecord( $this->revisionRecord );
-				$update->setTriggeringUser( $this->user );
-			}
-			if ( $update instanceof DataUpdate ) {
-				$update->setCause( $this->causeAction, $this->causeAgent );
-			}
-		}
+    public function doUpdate()
+    {
+        $updates = $this->updater->getSecondaryDataUpdates($this->recursive);
+        foreach ($updates as $update) {
+            if ($update instanceof LinksUpdate) {
+                $update->setRevisionRecord($this->revisionRecord);
+                $update->setTriggeringUser($this->user);
+            }
+            if ($update instanceof DataUpdate) {
+                $update->setCause($this->causeAction, $this->causeAgent);
+            }
+        }
 
-		// T221577, T248003: flush any transaction; each update needs outer transaction scope
-		// and the code above may have implicitly started one.
-		$this->lbFactory->commitPrimaryChanges( __METHOD__ );
+        // T221577, T248003: flush any transaction; each update needs outer transaction scope
+        // and the code above may have implicitly started one.
+        $this->lbFactory->commitPrimaryChanges(__METHOD__);
 
-		$e = null;
-		foreach ( $updates as $update ) {
-			try {
-				DeferredUpdates::attemptUpdate( $update, $this->lbFactory );
-			} catch ( Exception $e ) {
-				// Try as many updates as possible on the first pass
-				MWExceptionHandler::rollbackPrimaryChangesAndLog( $e );
-			}
-		}
+        $e = null;
+        foreach ($updates as $update) {
+            try {
+                DeferredUpdates::attemptUpdate($update, $this->lbFactory);
+            } catch (Exception $e) {
+                // Try as many updates as possible on the first pass
+                MWExceptionHandler::rollbackPrimaryChangesAndLog($e);
+            }
+        }
 
-		if ( $e instanceof Exception ) {
-			throw $e; // trigger RefreshLinksJob enqueue via getAsJobSpecification()
-		}
-	}
+        if ($e instanceof Exception) {
+            throw $e; // trigger RefreshLinksJob enqueue via getAsJobSpecification()
+        }
+    }
 
-	public function getAsJobSpecification() {
-		return [
-			'domain' => $this->lbFactory->getLocalDomainID(),
-			'job' => new JobSpecification(
-				'refreshLinksPrioritized',
-				[
-					'namespace' => $this->page->getTitle()->getNamespace(),
-					'title' => $this->page->getTitle()->getDBkey(),
-					// Reuse the parser cache if it was saved
-					'rootJobTimestamp' => $this->revisionRecord
-						? $this->revisionRecord->getTimestamp()
-						: null,
-					'useRecursiveLinksUpdate' => $this->recursive,
-					'triggeringUser' => $this->user
-						? [
-							'userId' => $this->user->getId(),
-							'userName' => $this->user->getName()
-						]
-						: null,
-					'triggeringRevisionId' => $this->revisionRecord
-						? $this->revisionRecord->getId()
-						: null,
-					'causeAction' => $this->getCauseAction(),
-					'causeAgent' => $this->getCauseAgent()
-				],
-				[ 'removeDuplicates' => true ]
-			)
-		];
-	}
+    public function getAsJobSpecification()
+    {
+        return [
+            'domain' => $this->lbFactory->getLocalDomainID(),
+            'job'    => new JobSpecification(
+                'refreshLinksPrioritized',
+                [
+                    'namespace'               => $this->page->getTitle()->getNamespace(),
+                    'title'                   => $this->page->getTitle()->getDBkey(),
+                    // Reuse the parser cache if it was saved
+                    'rootJobTimestamp'        => $this->revisionRecord
+                        ? $this->revisionRecord->getTimestamp()
+                        : null,
+                    'useRecursiveLinksUpdate' => $this->recursive,
+                    'triggeringUser'          => $this->user
+                        ? [
+                            'userId'   => $this->user->getId(),
+                            'userName' => $this->user->getName()
+                        ]
+                        : null,
+                    'triggeringRevisionId'    => $this->revisionRecord
+                        ? $this->revisionRecord->getId()
+                        : null,
+                    'causeAction'             => $this->getCauseAction(),
+                    'causeAgent'              => $this->getCauseAgent()
+                ],
+                ['removeDuplicates' => true]
+            )
+        ];
+    }
 }

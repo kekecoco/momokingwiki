@@ -36,280 +36,302 @@ use User;
 /**
  * @covers \MediaWiki\Permissions\UserAuthority
  */
-class UserAuthorityTest extends MediaWikiUnitTestCase {
+class UserAuthorityTest extends MediaWikiUnitTestCase
+{
 
-	/** @var string[] Some dummy message parameters to test error message formatting. */
-	private const FAKE_BLOCK_MESSAGE_PARAMS = [
-		'[[User:Blocker|Blocker]]',
-		'Block reason that can contain {{templates}}',
-		'192.168.0.1',
-		'Blocker',
-	];
+    /** @var string[] Some dummy message parameters to test error message formatting. */
+    private const FAKE_BLOCK_MESSAGE_PARAMS = [
+        '[[User:Blocker|Blocker]]',
+        'Block reason that can contain {{templates}}',
+        '192.168.0.1',
+        'Blocker',
+    ];
 
-	/**
-	 * @param string[] $permissions
-	 * @return PermissionManager
-	 */
-	private function newPermissionsManager( array $permissions ): PermissionManager {
-		/** @var PermissionManager|MockObject $permissionManager */
-		$permissionManager = $this->createMock(
-			PermissionManager::class,
-			[ 'userHasRight', 'userCan', 'getPermissionErrors', 'isBlockedFrom' ]
-		);
+    /**
+     * @param string[] $permissions
+     * @return PermissionManager
+     */
+    private function newPermissionsManager(array $permissions): PermissionManager
+    {
+        /** @var PermissionManager|MockObject $permissionManager */
+        $permissionManager = $this->createMock(
+            PermissionManager::class,
+            ['userHasRight', 'userCan', 'getPermissionErrors', 'isBlockedFrom']
+        );
 
-		$permissionManager->method( 'userHasRight' )->willReturnCallback(
-			static function ( $user, $permission ) use ( $permissions ) {
-				return in_array( $permission, $permissions );
-			}
-		);
+        $permissionManager->method('userHasRight')->willReturnCallback(
+            static function ($user, $permission) use ($permissions) {
+                return in_array($permission, $permissions);
+            }
+        );
 
-		$permissionManager->method( 'userCan' )->willReturnCallback(
-			static function ( $permission, $user ) use ( $permissionManager ) {
-				return $permissionManager->userHasRight( $user, $permission );
-			}
-		);
+        $permissionManager->method('userCan')->willReturnCallback(
+            static function ($permission, $user) use ($permissionManager) {
+                return $permissionManager->userHasRight($user, $permission);
+            }
+        );
 
-		$permissionManager->method( 'getPermissionErrors' )->willReturnCallback(
-			static function ( $permission, $user, $target ) use ( $permissionManager ) {
-				$errors = [];
-				if ( !$permissionManager->userCan( $permission, $user, $target ) ) {
-					$errors[] = [ 'permissionserrors' ];
-				}
+        $permissionManager->method('getPermissionErrors')->willReturnCallback(
+            static function ($permission, $user, $target) use ($permissionManager) {
+                $errors = [];
+                if (!$permissionManager->userCan($permission, $user, $target)) {
+                    $errors[] = ['permissionserrors'];
+                }
 
-				if ( $user->getBlock() && $permission !== 'read' ) {
-					$errors[] = array_merge(
-						[ 'blockedtext-partial' ],
-						self::FAKE_BLOCK_MESSAGE_PARAMS
-					);
-				}
+                if ($user->getBlock() && $permission !== 'read') {
+                    $errors[] = array_merge(
+                        ['blockedtext-partial'],
+                        self::FAKE_BLOCK_MESSAGE_PARAMS
+                    );
+                }
 
-				return $errors;
-			}
-		);
+                return $errors;
+            }
+        );
 
-		$permissionManager->method( 'isBlockedFrom' )->willReturnCallback(
-			static function ( User $user, $page ) {
-				return $page->getDBkey() === 'Forbidden';
-			}
-		);
+        $permissionManager->method('isBlockedFrom')->willReturnCallback(
+            static function (User $user, $page) {
+                return $page->getDBkey() === 'Forbidden';
+            }
+        );
 
-		return $permissionManager;
-	}
+        return $permissionManager;
+    }
 
-	private function newUser(): User {
-		/** @var User|MockObject $actor */
-		$actor = $this->createNoOpMock( User::class, [ 'getBlock' ] );
-		$actor->method( 'getBlock' )->willReturn( null );
-		return $actor;
-	}
+    private function newUser(): User
+    {
+        /** @var User|MockObject $actor */
+        $actor = $this->createNoOpMock(User::class, ['getBlock']);
+        $actor->method('getBlock')->willReturn(null);
 
-	private function newAuthority( array $permissions, User $actor = null ): Authority {
-		/** @var PermissionManager|MockObject $permissionManager */
-		$permissionManager = $this->newPermissionsManager( $permissions );
-		return new UserAuthority(
-			$actor ?? $this->newUser(),
-			$permissionManager
-		);
-	}
+        return $actor;
+    }
 
-	public function testGetUser() {
-		$user = $this->newUser();
-		$authority = $this->newAuthority( [], $user );
+    private function newAuthority(array $permissions, User $actor = null): Authority
+    {
+        /** @var PermissionManager|MockObject $permissionManager */
+        $permissionManager = $this->newPermissionsManager($permissions);
 
-		$this->assertSame( $user, $authority->getUser() );
-	}
+        return new UserAuthority(
+            $actor ?? $this->newUser(),
+            $permissionManager
+        );
+    }
 
-	public function testGetUserBlockNotBlocked() {
-		$authority = $this->newAuthority( [] );
-		$this->assertNull( $authority->getBlock() );
-	}
+    public function testGetUser()
+    {
+        $user = $this->newUser();
+        $authority = $this->newAuthority([], $user);
 
-	/**
-	 * @param Block|null $block
-	 *
-	 * @return MockObject|User
-	 */
-	private function getBlockedUser( $block = null ) {
-		$block = $block ?: $this->createNoOpMock( Block::class );
+        $this->assertSame($user, $authority->getUser());
+    }
 
-		$user = $this->createNoOpMock( User::class, [ 'getBlock' ] );
-		$user->method( 'getBlock' )
-			->willReturn( $block );
+    public function testGetUserBlockNotBlocked()
+    {
+        $authority = $this->newAuthority([]);
+        $this->assertNull($authority->getBlock());
+    }
 
-		return $user;
-	}
+    /**
+     * @param Block|null $block
+     *
+     * @return MockObject|User
+     */
+    private function getBlockedUser($block = null)
+    {
+        $block = $block ?: $this->createNoOpMock(Block::class);
 
-	public function testGetUserBlockWasBlocked() {
-		$block = $this->createNoOpMock( Block::class );
-		$user = $this->getBlockedUser( $block );
+        $user = $this->createNoOpMock(User::class, ['getBlock']);
+        $user->method('getBlock')
+            ->willReturn($block);
 
-		$authority = $this->newAuthority( [], $user );
-		$this->assertSame( $block, $authority->getBlock() );
-	}
+        return $user;
+    }
 
-	public function testBlockedUserCanRead() {
-		$block = $this->createNoOpMock( Block::class );
-		$user = $this->getBlockedUser( $block );
+    public function testGetUserBlockWasBlocked()
+    {
+        $block = $this->createNoOpMock(Block::class);
+        $user = $this->getBlockedUser($block);
 
-		$authority = $this->newAuthority( [ 'read', 'edit' ], $user );
+        $authority = $this->newAuthority([], $user);
+        $this->assertSame($block, $authority->getBlock());
+    }
 
-		$status = PermissionStatus::newEmpty();
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$this->assertTrue( $authority->authorizeRead( 'read', $target, $status ) );
-		$this->assertStatusOK( $status );
-	}
+    public function testBlockedUserCanRead()
+    {
+        $block = $this->createNoOpMock(Block::class);
+        $user = $this->getBlockedUser($block);
 
-	public function testBlockedUserCanNotWrite() {
-		$block = $this->createNoOpMock( Block::class );
-		$user = $this->getBlockedUser( $block );
+        $authority = $this->newAuthority(['read', 'edit'], $user);
 
-		$authority = $this->newAuthority( [ 'read', 'edit' ], $user );
+        $status = PermissionStatus::newEmpty();
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $this->assertTrue($authority->authorizeRead('read', $target, $status));
+        $this->assertStatusOK($status);
+    }
 
-		$status = PermissionStatus::newEmpty();
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$this->assertFalse( $authority->authorizeRead( 'edit', $target, $status ) );
-		$this->assertStatusNotOK( $status );
-		$this->assertSame( $block, $status->getBlock() );
-	}
+    public function testBlockedUserCanNotWrite()
+    {
+        $block = $this->createNoOpMock(Block::class);
+        $user = $this->getBlockedUser($block);
 
-	public function testPermissions() {
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $authority = $this->newAuthority(['read', 'edit'], $user);
 
-		$this->assertTrue( $authority->isAllowed( 'foo' ) );
-		$this->assertTrue( $authority->isAllowed( 'bar' ) );
-		$this->assertFalse( $authority->isAllowed( 'quux' ) );
+        $status = PermissionStatus::newEmpty();
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $this->assertFalse($authority->authorizeRead('edit', $target, $status));
+        $this->assertStatusNotOK($status);
+        $this->assertSame($block, $status->getBlock());
+    }
 
-		$this->assertTrue( $authority->isAllowedAll( 'foo', 'bar' ) );
-		$this->assertTrue( $authority->isAllowedAny( 'bar', 'quux' ) );
+    public function testPermissions()
+    {
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$this->assertFalse( $authority->isAllowedAll( 'foo', 'quux' ) );
-		$this->assertFalse( $authority->isAllowedAny( 'xyzzy', 'quux' ) );
-	}
+        $this->assertTrue($authority->isAllowed('foo'));
+        $this->assertTrue($authority->isAllowed('bar'));
+        $this->assertFalse($authority->isAllowed('quux'));
 
-	public function testProbablyCan() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $this->assertTrue($authority->isAllowedAll('foo', 'bar'));
+        $this->assertTrue($authority->isAllowedAny('bar', 'quux'));
 
-		$this->assertTrue( $authority->probablyCan( 'foo', $target ) );
-		$this->assertTrue( $authority->probablyCan( 'bar', $target ) );
-		$this->assertFalse( $authority->probablyCan( 'quux', $target ) );
+        $this->assertFalse($authority->isAllowedAll('foo', 'quux'));
+        $this->assertFalse($authority->isAllowedAny('xyzzy', 'quux'));
+    }
 
-		$status = new PermissionStatus();
-		$authority->probablyCan( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+    public function testProbablyCan()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$authority->probablyCan( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $this->assertTrue($authority->probablyCan('foo', $target));
+        $this->assertTrue($authority->probablyCan('bar', $target));
+        $this->assertFalse($authority->probablyCan('quux', $target));
 
-	public function testDefinitlyCan() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $status = new PermissionStatus();
+        $authority->probablyCan('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$this->assertTrue( $authority->definitelyCan( 'foo', $target ) );
-		$this->assertTrue( $authority->definitelyCan( 'bar', $target ) );
-		$this->assertFalse( $authority->definitelyCan( 'quux', $target ) );
+        $authority->probablyCan('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-		$status = new PermissionStatus();
-		$authority->definitelyCan( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+    public function testDefinitlyCan()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$authority->definitelyCan( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $this->assertTrue($authority->definitelyCan('foo', $target));
+        $this->assertTrue($authority->definitelyCan('bar', $target));
+        $this->assertFalse($authority->definitelyCan('quux', $target));
 
-	public function testAuthorizeRead() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $status = new PermissionStatus();
+        $authority->definitelyCan('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$this->assertTrue( $authority->authorizeRead( 'foo', $target ) );
-		$this->assertTrue( $authority->authorizeRead( 'bar', $target ) );
-		$this->assertFalse( $authority->authorizeRead( 'quux', $target ) );
+        $authority->definitelyCan('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-		$status = new PermissionStatus();
-		$authority->authorizeRead( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+    public function testAuthorizeRead()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$authority->authorizeRead( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $this->assertTrue($authority->authorizeRead('foo', $target));
+        $this->assertTrue($authority->authorizeRead('bar', $target));
+        $this->assertFalse($authority->authorizeRead('quux', $target));
 
-	public function testAuthorizeWrite() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $status = new PermissionStatus();
+        $authority->authorizeRead('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$this->assertTrue( $authority->authorizeWrite( 'foo', $target ) );
-		$this->assertTrue( $authority->authorizeWrite( 'bar', $target ) );
-		$this->assertFalse( $authority->authorizeWrite( 'quux', $target ) );
+        $authority->authorizeRead('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-		$status = new PermissionStatus();
-		$authority->authorizeWrite( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+    public function testAuthorizeWrite()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$authority->authorizeWrite( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $this->assertTrue($authority->authorizeWrite('foo', $target));
+        $this->assertTrue($authority->authorizeWrite('bar', $target));
+        $this->assertFalse($authority->authorizeWrite('quux', $target));
 
-	public function testIsAllowedAnyThrowsOnEmptySet() {
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+        $status = new PermissionStatus();
+        $authority->authorizeWrite('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$this->expectException( InvalidArgumentException::class );
-		$authority->isAllowedAny();
-	}
+        $authority->authorizeWrite('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-	public function testIsAllowedAllThrowsOnEmptySet() {
-		$authority = $this->newAuthority( [ 'foo', 'bar' ] );
+    public function testIsAllowedAnyThrowsOnEmptySet()
+    {
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$this->expectException( InvalidArgumentException::class );
-		$authority->isAllowedAll();
-	}
+        $this->expectException(InvalidArgumentException::class);
+        $authority->isAllowedAny();
+    }
 
-	public function testGetBlock_none() {
-		$actor = $this->newUser();
+    public function testIsAllowedAllThrowsOnEmptySet()
+    {
+        $authority = $this->newAuthority(['foo', 'bar']);
 
-		$authority = $this->newAuthority( [ 'foo', 'bar' ], $actor );
+        $this->expectException(InvalidArgumentException::class);
+        $authority->isAllowedAll();
+    }
 
-		$this->assertNull( $authority->getBlock() );
-	}
+    public function testGetBlock_none()
+    {
+        $actor = $this->newUser();
 
-	public function testGetBlock_blocked() {
-		$block = $this->createNoOpMock( Block::class );
-		$actor = $this->getBlockedUser( $block );
+        $authority = $this->newAuthority(['foo', 'bar'], $actor);
 
-		$authority = $this->newAuthority( [ 'foo', 'bar' ], $actor );
+        $this->assertNull($authority->getBlock());
+    }
 
-		$this->assertSame( $block, $authority->getBlock() );
-	}
+    public function testGetBlock_blocked()
+    {
+        $block = $this->createNoOpMock(Block::class);
+        $actor = $this->getBlockedUser($block);
 
-	/**
-	 * Regression test for T306494: check that when creating a PermissionStatus,
-	 * the message contains all parameters and when converted to a Status, the parameters
-	 * are not wikitext escaped.
-	 */
-	public function testInternalCanWithPermissionStatusMessageFormatting() {
-		$block = $this->createNoOpMock( Block::class );
-		$user = $this->getBlockedUser( $block );
+        $authority = $this->newAuthority(['foo', 'bar'], $actor);
 
-		$authority = $this->newAuthority( [ 'read', 'edit' ], $user );
+        $this->assertSame($block, $authority->getBlock());
+    }
 
-		$permissionStatus = PermissionStatus::newEmpty();
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
+    /**
+     * Regression test for T306494: check that when creating a PermissionStatus,
+     * the message contains all parameters and when converted to a Status, the parameters
+     * are not wikitext escaped.
+     */
+    public function testInternalCanWithPermissionStatusMessageFormatting()
+    {
+        $block = $this->createNoOpMock(Block::class);
+        $user = $this->getBlockedUser($block);
 
-		$authority->authorizeWrite(
-			'edit',
-			$target,
-			$permissionStatus
-		);
+        $authority = $this->newAuthority(['read', 'edit'], $user);
 
-		$this->assertTrue( $permissionStatus->hasMessage( 'blockedtext-partial' ) );
+        $permissionStatus = PermissionStatus::newEmpty();
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
 
-		$status = Status::wrap( $permissionStatus );
+        $authority->authorizeWrite(
+            'edit',
+            $target,
+            $permissionStatus
+        );
 
-		$message = $status->getMessage();
-		$this->assertEquals( 'blockedtext-partial', $message->getKey() );
-		$this->assertArrayEquals(
-			self::FAKE_BLOCK_MESSAGE_PARAMS,
-			$message->getParams()
-		);
-	}
+        $this->assertTrue($permissionStatus->hasMessage('blockedtext-partial'));
+
+        $status = Status::wrap($permissionStatus);
+
+        $message = $status->getMessage();
+        $this->assertEquals('blockedtext-partial', $message->getKey());
+        $this->assertArrayEquals(
+            self::FAKE_BLOCK_MESSAGE_PARAMS,
+            $message->getParams()
+        );
+    }
 }

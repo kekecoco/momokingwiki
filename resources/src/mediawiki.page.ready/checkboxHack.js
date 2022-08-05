@@ -124,14 +124,14 @@
  * @return {void}
  * @ignore
  */
-function updateAriaExpanded( checkbox, button ) {
-	if ( button ) {
-		mw.log.warn( '[1.38] The button parameter in updateAriaExpanded is deprecated, aria-expanded will be applied to the checkbox going forward. View the updated checkbox hack documentation for more details.' );
-		button.setAttribute( 'aria-expanded', checkbox.checked.toString() );
-		return;
-	}
+function updateAriaExpanded(checkbox, button) {
+    if (button) {
+        mw.log.warn('[1.38] The button parameter in updateAriaExpanded is deprecated, aria-expanded will be applied to the checkbox going forward. View the updated checkbox hack documentation for more details.');
+        button.setAttribute('aria-expanded', checkbox.checked.toString());
+        return;
+    }
 
-	checkbox.setAttribute( 'aria-expanded', checkbox.checked.toString() );
+    checkbox.setAttribute('aria-expanded', checkbox.checked.toString());
 }
 
 /**
@@ -158,22 +158,22 @@ function updateAriaExpanded( checkbox, button ) {
  * @return {void}
  * @ignore
  */
-function setCheckedState( checkbox, checked ) {
-	/** @type {Event} @ignore */
-	checkbox.checked = checked;
-	// Chrome and Firefox sends the builtin Event with .bubbles == true and .composed == true.
-	var e;
-	if ( typeof Event === 'function' ) {
-		e = new Event( 'input', { bubbles: true, composed: true } );
-	} else {
-		// IE 9-11, FF 6-10, Chrome 9-14, Safari 5.1, Opera 11.5, Android 3-4.3
-		e = document.createEvent( 'CustomEvent' );
-		if ( !e ) {
-			return;
-		}
-		e.initCustomEvent( 'input', true /* canBubble */, false, false );
-	}
-	checkbox.dispatchEvent( e );
+function setCheckedState(checkbox, checked) {
+    /** @type {Event} @ignore */
+    checkbox.checked = checked;
+    // Chrome and Firefox sends the builtin Event with .bubbles == true and .composed == true.
+    var e;
+    if (typeof Event === 'function') {
+        e = new Event('input', {bubbles: true, composed: true});
+    } else {
+        // IE 9-11, FF 6-10, Chrome 9-14, Safari 5.1, Opera 11.5, Android 3-4.3
+        e = document.createEvent('CustomEvent');
+        if (!e) {
+            return;
+        }
+        e.initCustomEvent('input', true /* canBubble */, false, false);
+    }
+    checkbox.dispatchEvent(e);
 }
 
 /**
@@ -187,12 +187,12 @@ function setCheckedState( checkbox, checked ) {
  * @return {boolean}
  * @ignore
  */
-function containsEventTarget( checkbox, button, target, event ) {
-	return event.target instanceof Node && (
-		checkbox.contains( event.target ) ||
-		button.contains( event.target ) ||
-		target.contains( event.target )
-	);
+function containsEventTarget(checkbox, button, target, event) {
+    return event.target instanceof Node && (
+        checkbox.contains(event.target) ||
+        button.contains(event.target) ||
+        target.contains(event.target)
+    );
 }
 
 /**
@@ -206,10 +206,10 @@ function containsEventTarget( checkbox, button, target, event ) {
  * @return {void}
  * @ignore
  */
-function dismissIfExternalEventTarget( checkbox, button, target, event ) {
-	if ( checkbox.checked && !containsEventTarget( checkbox, button, target, event ) ) {
-		setCheckedState( checkbox, false );
-	}
+function dismissIfExternalEventTarget(checkbox, button, target, event) {
+    if (checkbox.checked && !containsEventTarget(checkbox, button, target, event)) {
+        setCheckedState(checkbox, false);
+    }
 }
 
 /**
@@ -220,18 +220,18 @@ function dismissIfExternalEventTarget( checkbox, button, target, event ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindUpdateAriaExpandedOnInput( checkbox, button ) {
-	if ( button ) {
-		mw.log.warn( '[1.38] The button parameter in bindUpdateAriaExpandedOnInput is deprecated, aria-expanded will be applied to the checkbox going forward. View the updated checkbox hack documentation for more details.' );
-	}
+function bindUpdateAriaExpandedOnInput(checkbox, button) {
+    if (button) {
+        mw.log.warn('[1.38] The button parameter in bindUpdateAriaExpandedOnInput is deprecated, aria-expanded will be applied to the checkbox going forward. View the updated checkbox hack documentation for more details.');
+    }
 
-	var listener = updateAriaExpanded.bind( undefined, checkbox, button );
-	// Whenever the checkbox state changes, update the `aria-expanded` state.
-	checkbox.addEventListener( 'input', listener );
+    var listener = updateAriaExpanded.bind(undefined, checkbox, button);
+    // Whenever the checkbox state changes, update the `aria-expanded` state.
+    checkbox.addEventListener('input', listener);
 
-	return function () {
-		checkbox.removeEventListener( 'input', listener );
-	};
+    return function () {
+        checkbox.removeEventListener('input', listener);
+    };
 }
 
 /**
@@ -242,18 +242,19 @@ function bindUpdateAriaExpandedOnInput( checkbox, button ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindToggleOnClick( checkbox, button ) {
-	function listener( event ) {
-		// Do not allow the browser to handle the checkbox. Instead, manually toggle it which does
-		// not alter focus.
-		event.preventDefault();
-		setCheckedState( checkbox, !checkbox.checked );
-	}
-	button.addEventListener( 'click', listener, true );
+function bindToggleOnClick(checkbox, button) {
+    function listener(event) {
+        // Do not allow the browser to handle the checkbox. Instead, manually toggle it which does
+        // not alter focus.
+        event.preventDefault();
+        setCheckedState(checkbox, !checkbox.checked);
+    }
 
-	return function () {
-		button.removeEventListener( 'click', listener, true );
-	};
+    button.addEventListener('click', listener, true);
+
+    return function () {
+        button.removeEventListener('click', listener, true);
+    };
 }
 
 /**
@@ -265,46 +266,46 @@ function bindToggleOnClick( checkbox, button ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindToggleOnSpaceEnter( checkbox, button ) {
-	mw.log.warn( '[1.38] bindToggleOnSpaceEnter is deprecated. Use `bindToggleOnEnter` instead.' );
+function bindToggleOnSpaceEnter(checkbox, button) {
+    mw.log.warn('[1.38] bindToggleOnSpaceEnter is deprecated. Use `bindToggleOnEnter` instead.');
 
-	function isEnterOrSpace( /** @type {KeyboardEvent} @ignore */ event ) {
-		return event.key === ' ' || event.key === 'Enter';
-	}
+    function isEnterOrSpace( /** @type {KeyboardEvent} @ignore */ event) {
+        return event.key === ' ' || event.key === 'Enter';
+    }
 
-	function onKeydown( /** @type {KeyboardEvent} @ignore */ event ) {
-		// Only handle SPACE and ENTER.
-		if ( !isEnterOrSpace( event ) ) {
-			return;
-		}
-		// Prevent the browser from scrolling when pressing space. The browser will
-		// try to do this unless the "button" element is a button or a checkbox.
-		// Depending on the actual "button" element, this also possibly prevents a
-		// native click event from being triggered so we programatically trigger a
-		// click event in the keyup handler.
-		event.preventDefault();
-	}
+    function onKeydown( /** @type {KeyboardEvent} @ignore */ event) {
+        // Only handle SPACE and ENTER.
+        if (!isEnterOrSpace(event)) {
+            return;
+        }
+        // Prevent the browser from scrolling when pressing space. The browser will
+        // try to do this unless the "button" element is a button or a checkbox.
+        // Depending on the actual "button" element, this also possibly prevents a
+        // native click event from being triggered so we programatically trigger a
+        // click event in the keyup handler.
+        event.preventDefault();
+    }
 
-	function onKeyup( /** @type {KeyboardEvent} @ignore */ event ) {
-		// Only handle SPACE and ENTER.
-		if ( !isEnterOrSpace( event ) ) {
-			return;
-		}
+    function onKeyup( /** @type {KeyboardEvent} @ignore */ event) {
+        // Only handle SPACE and ENTER.
+        if (!isEnterOrSpace(event)) {
+            return;
+        }
 
-		// A native button element triggers a click event when the space or enter
-		// keys are pressed. Since the passed in "button" may or may not be a
-		// button, programmatically trigger a click event to make it act like a
-		// button.
-		button.click();
-	}
+        // A native button element triggers a click event when the space or enter
+        // keys are pressed. Since the passed in "button" may or may not be a
+        // button, programmatically trigger a click event to make it act like a
+        // button.
+        button.click();
+    }
 
-	button.addEventListener( 'keydown', onKeydown );
-	button.addEventListener( 'keyup', onKeyup );
+    button.addEventListener('keydown', onKeydown);
+    button.addEventListener('keyup', onKeyup);
 
-	return function () {
-		button.removeEventListener( 'keydown', onKeydown );
-		button.removeEventListener( 'keyup', onKeyup );
-	};
+    return function () {
+        button.removeEventListener('keydown', onKeydown);
+        button.removeEventListener('keyup', onKeyup);
+    };
 }
 
 /**
@@ -314,21 +315,21 @@ function bindToggleOnSpaceEnter( checkbox, button ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindToggleOnEnter( checkbox ) {
-	function onKeyup( /** @type {KeyboardEvent} @ignore */ event ) {
-		// Only handle ENTER.
-		if ( event.key !== 'Enter' ) {
-			return;
-		}
+function bindToggleOnEnter(checkbox) {
+    function onKeyup( /** @type {KeyboardEvent} @ignore */ event) {
+        // Only handle ENTER.
+        if (event.key !== 'Enter') {
+            return;
+        }
 
-		setCheckedState( checkbox, !checkbox.checked );
-	}
+        setCheckedState(checkbox, !checkbox.checked);
+    }
 
-	checkbox.addEventListener( 'keyup', onKeyup );
+    checkbox.addEventListener('keyup', onKeyup);
 
-	return function () {
-		checkbox.removeEventListener( 'keyup', onKeyup );
-	};
+    return function () {
+        checkbox.removeEventListener('keyup', onKeyup);
+    };
 }
 
 /**
@@ -342,13 +343,13 @@ function bindToggleOnEnter( checkbox ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindDismissOnClickOutside( window, checkbox, button, target ) {
-	var listener = dismissIfExternalEventTarget.bind( undefined, checkbox, button, target );
-	window.addEventListener( 'click', listener, true );
+function bindDismissOnClickOutside(window, checkbox, button, target) {
+    var listener = dismissIfExternalEventTarget.bind(undefined, checkbox, button, target);
+    window.addEventListener('click', listener, true);
 
-	return function () {
-		window.removeEventListener( 'click', listener, true );
-	};
+    return function () {
+        window.removeEventListener('click', listener, true);
+    };
 }
 
 /**
@@ -362,15 +363,15 @@ function bindDismissOnClickOutside( window, checkbox, button, target ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindDismissOnFocusLoss( window, checkbox, button, target ) {
-	// If focus is given to any element outside the target, dismiss the target. Setting a focusout
-	// listener on the target would be preferable, but this interferes with the click listener.
-	var listener = dismissIfExternalEventTarget.bind( undefined, checkbox, button, target );
-	window.addEventListener( 'focusin', listener, true );
+function bindDismissOnFocusLoss(window, checkbox, button, target) {
+    // If focus is given to any element outside the target, dismiss the target. Setting a focusout
+    // listener on the target would be preferable, but this interferes with the click listener.
+    var listener = dismissIfExternalEventTarget.bind(undefined, checkbox, button, target);
+    window.addEventListener('focusin', listener, true);
 
-	return function () {
-		window.removeEventListener( 'focusin', listener, true );
-	};
+    return function () {
+        window.removeEventListener('focusin', listener, true);
+    };
 }
 
 /**
@@ -384,18 +385,19 @@ function bindDismissOnFocusLoss( window, checkbox, button, target ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bindDismissOnClickLink( checkbox, target ) {
-	function dismissIfClickLinkEvent( event ) {
-		// Handle clicks to links and link children elements
-		if ( event.target.nodeName === 'A' || event.target.parentNode.nodeName === 'A' ) {
-			setCheckedState( checkbox, false );
-		}
-	}
-	target.addEventListener( 'click', dismissIfClickLinkEvent );
+function bindDismissOnClickLink(checkbox, target) {
+    function dismissIfClickLinkEvent(event) {
+        // Handle clicks to links and link children elements
+        if (event.target.nodeName === 'A' || event.target.parentNode.nodeName === 'A') {
+            setCheckedState(checkbox, false);
+        }
+    }
 
-	return function () {
-		target.removeEventListener( 'click', dismissIfClickLinkEvent );
-	};
+    target.addEventListener('click', dismissIfClickLinkEvent);
+
+    return function () {
+        target.removeEventListener('click', dismissIfClickLinkEvent);
+    };
 }
 
 /**
@@ -415,31 +417,31 @@ function bindDismissOnClickLink( checkbox, target ) {
  * @return {function(): void} Cleanup function that removes the added event listeners.
  * @ignore
  */
-function bind( window, checkbox, button, target ) {
-	var cleanups = [
-		bindUpdateAriaExpandedOnInput( checkbox ),
-		bindToggleOnClick( checkbox, button ),
-		bindToggleOnEnter( checkbox ),
-		bindDismissOnClickOutside( window, checkbox, button, target ),
-		bindDismissOnFocusLoss( window, checkbox, button, target ),
-		bindDismissOnClickLink( checkbox, target )
-	];
+function bind(window, checkbox, button, target) {
+    var cleanups = [
+        bindUpdateAriaExpandedOnInput(checkbox),
+        bindToggleOnClick(checkbox, button),
+        bindToggleOnEnter(checkbox),
+        bindDismissOnClickOutside(window, checkbox, button, target),
+        bindDismissOnFocusLoss(window, checkbox, button, target),
+        bindDismissOnClickLink(checkbox, target)
+    ];
 
-	return function () {
-		cleanups.forEach( function ( cleanup ) {
-			cleanup();
-		} );
-	};
+    return function () {
+        cleanups.forEach(function (cleanup) {
+            cleanup();
+        });
+    };
 }
 
 module.exports = {
-	updateAriaExpanded: updateAriaExpanded,
-	bindUpdateAriaExpandedOnInput: bindUpdateAriaExpandedOnInput,
-	bindToggleOnClick: bindToggleOnClick,
-	bindToggleOnSpaceEnter: bindToggleOnSpaceEnter,
-	bindToggleOnEnter: bindToggleOnEnter,
-	bindDismissOnClickOutside: bindDismissOnClickOutside,
-	bindDismissOnFocusLoss: bindDismissOnFocusLoss,
-	bindDismissOnClickLink: bindDismissOnClickLink,
-	bind: bind
+    updateAriaExpanded: updateAriaExpanded,
+    bindUpdateAriaExpandedOnInput: bindUpdateAriaExpandedOnInput,
+    bindToggleOnClick: bindToggleOnClick,
+    bindToggleOnSpaceEnter: bindToggleOnSpaceEnter,
+    bindToggleOnEnter: bindToggleOnEnter,
+    bindDismissOnClickOutside: bindDismissOnClickOutside,
+    bindDismissOnFocusLoss: bindDismissOnFocusLoss,
+    bindDismissOnClickLink: bindDismissOnClickLink,
+    bind: bind
 };

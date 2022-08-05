@@ -25,128 +25,137 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * @ingroup API
  */
-class ApiFileRevert extends ApiBase {
-	/** @var LocalFile */
-	protected $file;
+class ApiFileRevert extends ApiBase
+{
+    /** @var LocalFile */
+    protected $file;
 
-	/** @var string */
-	protected $archiveName;
+    /** @var string */
+    protected $archiveName;
 
-	/** @var array */
-	protected $params;
+    /** @var array */
+    protected $params;
 
-	/** @var RepoGroup */
-	private $repoGroup;
+    /** @var RepoGroup */
+    private $repoGroup;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param RepoGroup $repoGroup
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		RepoGroup $repoGroup
-	) {
-		parent::__construct( $main, $action );
-		$this->repoGroup = $repoGroup;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param RepoGroup $repoGroup
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        RepoGroup $repoGroup
+    )
+    {
+        parent::__construct($main, $action);
+        $this->repoGroup = $repoGroup;
+    }
 
-	public function execute() {
-		$this->useTransactionalTimeLimit();
+    public function execute()
+    {
+        $this->useTransactionalTimeLimit();
 
-		$this->params = $this->extractRequestParams();
-		// Extract the file and archiveName from the request parameters
-		$this->validateParameters();
+        $this->params = $this->extractRequestParams();
+        // Extract the file and archiveName from the request parameters
+        $this->validateParameters();
 
-		// Check whether we're allowed to revert this file
-		$this->checkTitleUserPermissions( $this->file->getTitle(), [ 'edit', 'upload' ] );
+        // Check whether we're allowed to revert this file
+        $this->checkTitleUserPermissions($this->file->getTitle(), ['edit', 'upload']);
 
-		$sourceUrl = $this->file->getArchiveVirtualUrl( $this->archiveName );
-		$status = $this->file->upload(
-			$sourceUrl,
-			$this->params['comment'],
-			$this->params['comment'],
-			0,
-			false,
-			false,
-			$this->getAuthority()
-		);
+        $sourceUrl = $this->file->getArchiveVirtualUrl($this->archiveName);
+        $status = $this->file->upload(
+            $sourceUrl,
+            $this->params['comment'],
+            $this->params['comment'],
+            0,
+            false,
+            false,
+            $this->getAuthority()
+        );
 
-		if ( $status->isGood() ) {
-			$result = [ 'result' => 'Success' ];
-		} else {
-			$result = [
-				'result' => 'Failure',
-				'errors' => $this->getErrorFormatter()->arrayFromStatus( $status ),
-			];
-		}
+        if ($status->isGood()) {
+            $result = ['result' => 'Success'];
+        } else {
+            $result = [
+                'result' => 'Failure',
+                'errors' => $this->getErrorFormatter()->arrayFromStatus($status),
+            ];
+        }
 
-		$this->getResult()->addValue( null, $this->getModuleName(), $result );
-	}
+        $this->getResult()->addValue(null, $this->getModuleName(), $result);
+    }
 
-	/**
-	 * Validate the user parameters and set $this->archiveName and $this->file.
-	 * Throws an error if validation fails
-	 */
-	protected function validateParameters() {
-		// Validate the input title
-		$title = Title::makeTitleSafe( NS_FILE, $this->params['filename'] );
-		if ( $title === null ) {
-			$this->dieWithError(
-				[ 'apierror-invalidtitle', wfEscapeWikiText( $this->params['filename'] ) ]
-			);
-		}
-		$localRepo = $this->repoGroup->getLocalRepo();
+    /**
+     * Validate the user parameters and set $this->archiveName and $this->file.
+     * Throws an error if validation fails
+     */
+    protected function validateParameters()
+    {
+        // Validate the input title
+        $title = Title::makeTitleSafe(NS_FILE, $this->params['filename']);
+        if ($title === null) {
+            $this->dieWithError(
+                ['apierror-invalidtitle', wfEscapeWikiText($this->params['filename'])]
+            );
+        }
+        $localRepo = $this->repoGroup->getLocalRepo();
 
-		// Check if the file really exists
-		$this->file = $localRepo->newFile( $title );
-		if ( !$this->file->exists() ) {
-			$this->dieWithError( 'apierror-missingtitle' );
-		}
+        // Check if the file really exists
+        $this->file = $localRepo->newFile($title);
+        if (!$this->file->exists()) {
+            $this->dieWithError('apierror-missingtitle');
+        }
 
-		// Check if the archivename is valid for this file
-		$this->archiveName = $this->params['archivename'];
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable T240141
-		$oldFile = $localRepo->newFromArchiveName( $title, $this->archiveName );
-		if ( !$oldFile->exists() ) {
-			$this->dieWithError( 'filerevert-badversion' );
-		}
-	}
+        // Check if the archivename is valid for this file
+        $this->archiveName = $this->params['archivename'];
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable T240141
+        $oldFile = $localRepo->newFromArchiveName($title, $this->archiveName);
+        if (!$oldFile->exists()) {
+            $this->dieWithError('filerevert-badversion');
+        }
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'filename' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'comment' => [
-				ParamValidator::PARAM_DEFAULT => '',
-			],
-			'archivename' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-		];
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'filename'    => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
+            'comment'     => [
+                ParamValidator::PARAM_DEFAULT => '',
+            ],
+            'archivename' => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
+        ];
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=filerevert&filename=Wiki.png&comment=Revert&' .
-				'archivename=20110305152740!Wiki.png&token=123ABC'
-				=> 'apihelp-filerevert-example-revert',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=filerevert&filename=Wiki.png&comment=Revert&' .
+            'archivename=20110305152740!Wiki.png&token=123ABC'
+            => 'apihelp-filerevert-example-revert',
+        ];
+    }
 }

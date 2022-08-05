@@ -24,19 +24,22 @@
  *
  * @ingroup Languages
  */
-class LanguageAr extends Language {
+class LanguageAr extends Language
+{
 
-	/**
-	 * Replace Arabic presentation forms with their standard equivalents (T11413).
-	 *
-	 * Optimization: This is language-specific to reduce negative performance impact.
-	 *
-	 * @param string $s
-	 * @return string
-	 */
-	public function normalize( $s ) {
-		$s = parent::normalize( $s );
-		$s = $this->transformUsingPairFile( MediaWiki\Languages\Data\NormalizeAr::class, $s );
-		return $s;
-	}
+    /**
+     * Replace Arabic presentation forms with their standard equivalents (T11413).
+     *
+     * Optimization: This is language-specific to reduce negative performance impact.
+     *
+     * @param string $s
+     * @return string
+     */
+    public function normalize($s)
+    {
+        $s = parent::normalize($s);
+        $s = $this->transformUsingPairFile(MediaWiki\Languages\Data\NormalizeAr::class, $s);
+
+        return $s;
+    }
 }

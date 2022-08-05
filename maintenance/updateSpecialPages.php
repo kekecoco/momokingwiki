@@ -32,154 +32,160 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class UpdateSpecialPages extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( 'list', 'List special page names' );
-		$this->addOption( 'only', 'Only update "page"; case sensitive, ' .
-			'check correct case by calling this script with --list. ' .
-			'Ex: --only=BrokenRedirects', false, true );
-		$this->addOption( 'override', 'Also update pages that have updates disabled' );
-	}
+class UpdateSpecialPages extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption('list', 'List special page names');
+        $this->addOption('only', 'Only update "page"; case sensitive, ' .
+            'check correct case by calling this script with --list. ' .
+            'Ex: --only=BrokenRedirects', false, true);
+        $this->addOption('override', 'Also update pages that have updates disabled');
+    }
 
-	public function execute() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$config = $this->getConfig();
-		$specialPageFactory = MediaWikiServices::getInstance()->getSpecialPageFactory();
+    public function execute()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $config = $this->getConfig();
+        $specialPageFactory = MediaWikiServices::getInstance()->getSpecialPageFactory();
 
-		$this->doSpecialPageCacheUpdates( $dbw );
+        $this->doSpecialPageCacheUpdates($dbw);
 
-		$queryCacheLimit = (int)$config->get( MainConfigNames::QueryCacheLimit );
-		$disabledQueryPages = QueryPage::getDisabledQueryPages( $config );
-		foreach ( QueryPage::getPages() as $page ) {
-			list( , $special ) = $page;
-			$limit = $page[2] ?? $queryCacheLimit;
+        $queryCacheLimit = (int)$config->get(MainConfigNames::QueryCacheLimit);
+        $disabledQueryPages = QueryPage::getDisabledQueryPages($config);
+        foreach (QueryPage::getPages() as $page) {
+            [, $special] = $page;
+            $limit = $page[2] ?? $queryCacheLimit;
 
-			# --list : just show the name of pages
-			if ( $this->hasOption( 'list' ) ) {
-				$this->output( "$special [QueryPage]\n" );
-				continue;
-			}
+            # --list : just show the name of pages
+            if ($this->hasOption('list')) {
+                $this->output("$special [QueryPage]\n");
+                continue;
+            }
 
-			if ( !$this->hasOption( 'override' )
-				&& isset( $disabledQueryPages[$special] )
-			) {
-				$this->output( sprintf( "%-30s [QueryPage] disabled\n", $special ) );
-				continue;
-			}
+            if (!$this->hasOption('override')
+                && isset($disabledQueryPages[$special])
+            ) {
+                $this->output(sprintf("%-30s [QueryPage] disabled\n", $special));
+                continue;
+            }
 
-			$specialObj = $specialPageFactory->getPage( $special );
-			if ( !$specialObj ) {
-				$this->output( "No such special page: $special\n" );
-				return;
-			}
-			if ( $specialObj instanceof QueryPage ) {
-				$queryPage = $specialObj;
-			} else {
-				$class = get_class( $specialObj );
-				$this->fatalError( "$class is not an instance of QueryPage.\n" );
-			}
+            $specialObj = $specialPageFactory->getPage($special);
+            if (!$specialObj) {
+                $this->output("No such special page: $special\n");
 
-			if ( !$this->hasOption( 'only' ) || $this->getOption( 'only' ) === $queryPage->getName() ) {
-				$this->output( sprintf( '%-30s [QueryPage] ', $special ) );
-				if ( $queryPage->isExpensive() ) {
-					$t1 = microtime( true );
-					# Do the query
-					$num = $queryPage->recache( $limit );
-					$t2 = microtime( true );
-					if ( $num === false ) {
-						$this->output( "FAILED: database error\n" );
-					} else {
-						$this->output( "got $num rows in " );
+                return;
+            }
+            if ($specialObj instanceof QueryPage) {
+                $queryPage = $specialObj;
+            } else {
+                $class = get_class($specialObj);
+                $this->fatalError("$class is not an instance of QueryPage.\n");
+            }
 
-						$elapsed = $t2 - $t1;
-						$hours = intval( $elapsed / 3600 );
-						$minutes = intval( $elapsed % 3600 / 60 );
-						$seconds = $elapsed - $hours * 3600 - $minutes * 60;
-						if ( $hours ) {
-							$this->output( $hours . 'h ' );
-						}
-						if ( $minutes ) {
-							$this->output( $minutes . 'm ' );
-						}
-						$this->output( sprintf( "%.2fs\n", $seconds ) );
-					}
-					# Reopen any connections that have closed
-					$this->reopenAndWaitForReplicas();
-				} else {
-					// Check if this page was expensive before and now cheap
-					$cached = $queryPage->getCachedTimestamp();
-					if ( $cached ) {
-						$queryPage->deleteAllCachedData();
-						$this->reopenAndWaitForReplicas();
-						$this->output( "cheap, but deleted cached data\n" );
-					} else {
-						$this->output( "cheap, skipped\n" );
-					}
-				}
-				if ( $this->hasOption( 'only' ) ) {
-					break;
-				}
-			}
-		}
-	}
+            if (!$this->hasOption('only') || $this->getOption('only') === $queryPage->getName()) {
+                $this->output(sprintf('%-30s [QueryPage] ', $special));
+                if ($queryPage->isExpensive()) {
+                    $t1 = microtime(true);
+                    # Do the query
+                    $num = $queryPage->recache($limit);
+                    $t2 = microtime(true);
+                    if ($num === false) {
+                        $this->output("FAILED: database error\n");
+                    } else {
+                        $this->output("got $num rows in ");
 
-	/**
-	 * Re-open any closed db connection, and wait for replicas
-	 *
-	 * Queries that take a really long time, might cause the
-	 * mysql connection to "go away"
-	 */
-	private function reopenAndWaitForReplicas() {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$lb = $lbFactory->getMainLB();
-		if ( !$lb->pingAll() ) {
-			$this->output( "\n" );
-			do {
-				$this->error( "Connection failed, reconnecting in 10 seconds..." );
-				sleep( 10 );
-			} while ( !$lb->pingAll() );
-			$this->output( "Reconnected\n\n" );
-		}
-		// Wait for the replica DB to catch up
-		$lbFactory->waitForReplication();
-	}
+                        $elapsed = $t2 - $t1;
+                        $hours = intval($elapsed / 3600);
+                        $minutes = intval($elapsed % 3600 / 60);
+                        $seconds = $elapsed - $hours * 3600 - $minutes * 60;
+                        if ($hours) {
+                            $this->output($hours . 'h ');
+                        }
+                        if ($minutes) {
+                            $this->output($minutes . 'm ');
+                        }
+                        $this->output(sprintf("%.2fs\n", $seconds));
+                    }
+                    # Reopen any connections that have closed
+                    $this->reopenAndWaitForReplicas();
+                } else {
+                    // Check if this page was expensive before and now cheap
+                    $cached = $queryPage->getCachedTimestamp();
+                    if ($cached) {
+                        $queryPage->deleteAllCachedData();
+                        $this->reopenAndWaitForReplicas();
+                        $this->output("cheap, but deleted cached data\n");
+                    } else {
+                        $this->output("cheap, skipped\n");
+                    }
+                }
+                if ($this->hasOption('only')) {
+                    break;
+                }
+            }
+        }
+    }
 
-	public function doSpecialPageCacheUpdates( $dbw ) {
-		foreach ( $this->getConfig()->get( MainConfigNames::SpecialPageCacheUpdates ) as $special => $call ) {
-			# --list : just show the name of pages
-			if ( $this->hasOption( 'list' ) ) {
-				$this->output( "$special [callback]\n" );
-				continue;
-			}
+    /**
+     * Re-open any closed db connection, and wait for replicas
+     *
+     * Queries that take a really long time, might cause the
+     * mysql connection to "go away"
+     */
+    private function reopenAndWaitForReplicas()
+    {
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $lb = $lbFactory->getMainLB();
+        if (!$lb->pingAll()) {
+            $this->output("\n");
+            do {
+                $this->error("Connection failed, reconnecting in 10 seconds...");
+                sleep(10);
+            } while (!$lb->pingAll());
+            $this->output("Reconnected\n\n");
+        }
+        // Wait for the replica DB to catch up
+        $lbFactory->waitForReplication();
+    }
 
-			if ( !$this->hasOption( 'only' ) || $this->getOption( 'only' ) === $special ) {
-				if ( !is_callable( $call ) ) {
-					$this->error( "Uncallable function $call!" );
-					continue;
-				}
-				$this->output( sprintf( '%-30s [callback] ', $special ) );
-				$t1 = microtime( true );
-				$call( $dbw );
-				$t2 = microtime( true );
+    public function doSpecialPageCacheUpdates($dbw)
+    {
+        foreach ($this->getConfig()->get(MainConfigNames::SpecialPageCacheUpdates) as $special => $call) {
+            # --list : just show the name of pages
+            if ($this->hasOption('list')) {
+                $this->output("$special [callback]\n");
+                continue;
+            }
 
-				$this->output( "completed in " );
-				$elapsed = $t2 - $t1;
-				$hours = intval( $elapsed / 3600 );
-				$minutes = intval( $elapsed % 3600 / 60 );
-				$seconds = $elapsed - $hours * 3600 - $minutes * 60;
-				if ( $hours ) {
-					$this->output( $hours . 'h ' );
-				}
-				if ( $minutes ) {
-					$this->output( $minutes . 'm ' );
-				}
-				$this->output( sprintf( "%.2fs\n", $seconds ) );
-				# Wait for the replica DB to catch up
-				$this->reopenAndWaitForReplicas();
-			}
-		}
-	}
+            if (!$this->hasOption('only') || $this->getOption('only') === $special) {
+                if (!is_callable($call)) {
+                    $this->error("Uncallable function $call!");
+                    continue;
+                }
+                $this->output(sprintf('%-30s [callback] ', $special));
+                $t1 = microtime(true);
+                $call($dbw);
+                $t2 = microtime(true);
+
+                $this->output("completed in ");
+                $elapsed = $t2 - $t1;
+                $hours = intval($elapsed / 3600);
+                $minutes = intval($elapsed % 3600 / 60);
+                $seconds = $elapsed - $hours * 3600 - $minutes * 60;
+                if ($hours) {
+                    $this->output($hours . 'h ');
+                }
+                if ($minutes) {
+                    $this->output($minutes . 'm ');
+                }
+                $this->output(sprintf("%.2fs\n", $seconds));
+                # Wait for the replica DB to catch up
+                $this->reopenAndWaitForReplicas();
+            }
+        }
+    }
 }
 
 $maintClass = UpdateSpecialPages::class;

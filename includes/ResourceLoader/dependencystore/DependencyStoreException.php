@@ -8,6 +8,7 @@ use RuntimeException;
  * @stable to type
  * @since 1.35
  */
-class DependencyStoreException extends RuntimeException {
+class DependencyStoreException extends RuntimeException
+{
 
 }

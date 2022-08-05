@@ -26,156 +26,176 @@ use MediaWiki\MediaWikiServices;
 /**
  * Abstract base class for revision items
  */
-abstract class RevisionItemBase {
-	/** @var RevisionListBase The parent */
-	protected $list;
+abstract class RevisionItemBase
+{
+    /** @var RevisionListBase The parent */
+    protected $list;
 
-	/** @var stdClass The database result row */
-	protected $row;
+    /** @var stdClass The database result row */
+    protected $row;
 
-	/**
-	 * @param RevisionListBase $list
-	 * @param stdClass $row DB result row
-	 */
-	public function __construct( RevisionListBase $list, $row ) {
-		$this->list = $list;
-		$this->row = $row;
-	}
+    /**
+     * @param RevisionListBase $list
+     * @param stdClass $row DB result row
+     */
+    public function __construct(RevisionListBase $list, $row)
+    {
+        $this->list = $list;
+        $this->row = $row;
+    }
 
-	/**
-	 * Get the DB field name associated with the ID list.
-	 * Override this function.
-	 * @return string|null
-	 */
-	public function getIdField() {
-		return null;
-	}
+    /**
+     * Get the DB field name associated with the ID list.
+     * Override this function.
+     * @return string|null
+     */
+    public function getIdField()
+    {
+        return null;
+    }
 
-	/**
-	 * Get the DB field name storing timestamps.
-	 * Override this function.
-	 * @return string|false
-	 */
-	public function getTimestampField() {
-		return false;
-	}
+    /**
+     * Get the DB field name storing timestamps.
+     * Override this function.
+     * @return string|false
+     */
+    public function getTimestampField()
+    {
+        return false;
+    }
 
-	/**
-	 * Get the DB field name storing user ids.
-	 * Override this function.
-	 * @return string|false
-	 */
-	public function getAuthorIdField() {
-		return false;
-	}
+    /**
+     * Get the DB field name storing user ids.
+     * Override this function.
+     * @return string|false
+     */
+    public function getAuthorIdField()
+    {
+        return false;
+    }
 
-	/**
-	 * Get the DB field name storing user names.
-	 * Override this function.
-	 * @return string|false
-	 */
-	public function getAuthorNameField() {
-		return false;
-	}
+    /**
+     * Get the DB field name storing user names.
+     * Override this function.
+     * @return string|false
+     */
+    public function getAuthorNameField()
+    {
+        return false;
+    }
 
-	/**
-	 * Get the DB field name storing actor ids.
-	 * Override this function.
-	 * @since 1.31
-	 * @return string|false
-	 */
-	public function getAuthorActorField() {
-		return false;
-	}
+    /**
+     * Get the DB field name storing actor ids.
+     * Override this function.
+     * @return string|false
+     * @since 1.31
+     */
+    public function getAuthorActorField()
+    {
+        return false;
+    }
 
-	/**
-	 * Get the ID, as it would appear in the ids URL parameter
-	 * @return int|string
-	 */
-	public function getId() {
-		$field = $this->getIdField();
-		return intval( $this->row->$field );
-	}
+    /**
+     * Get the ID, as it would appear in the ids URL parameter
+     * @return int|string
+     */
+    public function getId()
+    {
+        $field = $this->getIdField();
 
-	/**
-	 * Get the date, formatted in user's language
-	 * @return string
-	 */
-	public function formatDate() {
-		return $this->list->getLanguage()->userDate( $this->getTimestamp(),
-			$this->list->getUser() );
-	}
+        return intval($this->row->$field);
+    }
 
-	/**
-	 * Get the time, formatted in user's language
-	 * @return string
-	 */
-	public function formatTime() {
-		return $this->list->getLanguage()->userTime( $this->getTimestamp(),
-			$this->list->getUser() );
-	}
+    /**
+     * Get the date, formatted in user's language
+     * @return string
+     */
+    public function formatDate()
+    {
+        return $this->list->getLanguage()->userDate($this->getTimestamp(),
+            $this->list->getUser());
+    }
 
-	/**
-	 * Get the timestamp in MW 14-char form
-	 * @return string|false
-	 */
-	public function getTimestamp() {
-		$field = $this->getTimestampField();
-		return wfTimestamp( TS_MW, $this->row->$field );
-	}
+    /**
+     * Get the time, formatted in user's language
+     * @return string
+     */
+    public function formatTime()
+    {
+        return $this->list->getLanguage()->userTime($this->getTimestamp(),
+            $this->list->getUser());
+    }
 
-	/**
-	 * Get the author user ID
-	 * @return int
-	 */
-	public function getAuthorId() {
-		$field = $this->getAuthorIdField();
-		return intval( $this->row->$field );
-	}
+    /**
+     * Get the timestamp in MW 14-char form
+     * @return string|false
+     */
+    public function getTimestamp()
+    {
+        $field = $this->getTimestampField();
 
-	/**
-	 * Get the author user name
-	 * @return string
-	 */
-	public function getAuthorName() {
-		$field = $this->getAuthorNameField();
-		return strval( $this->row->$field );
-	}
+        return wfTimestamp(TS_MW, $this->row->$field);
+    }
 
-	/**
-	 * Get the author actor ID
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getAuthorActor() {
-		$field = $this->getAuthorActorField();
-		return strval( $this->row->$field );
-	}
+    /**
+     * Get the author user ID
+     * @return int
+     */
+    public function getAuthorId()
+    {
+        $field = $this->getAuthorIdField();
 
-	/**
-	 * Returns true if the current user can view the item
-	 * @return bool
-	 */
-	abstract public function canView();
+        return intval($this->row->$field);
+    }
 
-	/**
-	 * Returns true if the current user can view the item text/file
-	 * @return bool
-	 */
-	abstract public function canViewContent();
+    /**
+     * Get the author user name
+     * @return string
+     */
+    public function getAuthorName()
+    {
+        $field = $this->getAuthorNameField();
 
-	/**
-	 * Get the HTML of the list item. Should be include "<li></li>" tags.
-	 * This is used to show the list in HTML form, by the special page.
-	 * @return string HTML
-	 */
-	abstract public function getHTML();
+        return strval($this->row->$field);
+    }
 
-	/**
-	 * Returns an instance of LinkRenderer
-	 * @return LinkRenderer
-	 */
-	protected function getLinkRenderer() {
-		return MediaWikiServices::getInstance()->getLinkRenderer();
-	}
+    /**
+     * Get the author actor ID
+     * @return string
+     * @since 1.31
+     */
+    public function getAuthorActor()
+    {
+        $field = $this->getAuthorActorField();
+
+        return strval($this->row->$field);
+    }
+
+    /**
+     * Returns true if the current user can view the item
+     * @return bool
+     */
+    abstract public function canView();
+
+    /**
+     * Returns true if the current user can view the item text/file
+     * @return bool
+     */
+    abstract public function canViewContent();
+
+    /**
+     * Get the HTML of the list item. Should be include "<li></li>" tags.
+     * This is used to show the list in HTML form, by the special page.
+     * @return string HTML
+     */
+    abstract public function getHTML();
+
+    /**
+     * Returns an instance of LinkRenderer
+     * @return LinkRenderer
+     */
+    protected function getLinkRenderer()
+    {
+        return MediaWikiServices::getInstance()->getLinkRenderer();
+    }
 }

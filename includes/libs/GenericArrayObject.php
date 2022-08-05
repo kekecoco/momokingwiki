@@ -32,224 +32,239 @@
  * @license GPL-2.0-or-later
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-abstract class GenericArrayObject extends ArrayObject {
-	/**
-	 * Returns the name of an interface/class that the element should implement/extend.
-	 *
-	 * @since 1.20
-	 *
-	 * @return string
-	 */
-	abstract public function getObjectType();
+abstract class GenericArrayObject extends ArrayObject
+{
+    /**
+     * Returns the name of an interface/class that the element should implement/extend.
+     *
+     * @return string
+     * @since 1.20
+     *
+     */
+    abstract public function getObjectType();
 
-	/**
-	 * @see SiteList::getNewOffset()
-	 * @since 1.20
-	 * @var int
-	 */
-	protected $indexOffset = 0;
+    /**
+     * @see SiteList::getNewOffset()
+     * @since 1.20
+     * @var int
+     */
+    protected $indexOffset = 0;
 
-	/**
-	 * Finds a new offset for when appending an element.
-	 * The base class does this, so it would be better to integrate,
-	 * but there does not appear to be any way to do this...
-	 *
-	 * @since 1.20
-	 *
-	 * @return int
-	 */
-	protected function getNewOffset() {
-		while ( $this->offsetExists( $this->indexOffset ) ) {
-			$this->indexOffset++;
-		}
+    /**
+     * Finds a new offset for when appending an element.
+     * The base class does this, so it would be better to integrate,
+     * but there does not appear to be any way to do this...
+     *
+     * @return int
+     * @since 1.20
+     *
+     */
+    protected function getNewOffset()
+    {
+        while ($this->offsetExists($this->indexOffset)) {
+            $this->indexOffset++;
+        }
 
-		return $this->indexOffset;
-	}
+        return $this->indexOffset;
+    }
 
-	/**
-	 * @see ArrayObject::__construct
-	 *
-	 * @since 1.20
-	 *
-	 * @param null|array $input
-	 * @param int $flags
-	 * @param string $iterator_class
-	 */
-	public function __construct( $input = null, $flags = 0, $iterator_class = 'ArrayIterator' ) {
-		parent::__construct( [], $flags, $iterator_class );
+    /**
+     * @param null|array $input
+     * @param int $flags
+     * @param string $iterator_class
+     * @since 1.20
+     *
+     * @see ArrayObject::__construct
+     *
+     */
+    public function __construct($input = null, $flags = 0, $iterator_class = 'ArrayIterator')
+    {
+        parent::__construct([], $flags, $iterator_class);
 
-		if ( $input !== null ) {
-			foreach ( $input as $offset => $value ) {
-				$this->offsetSet( $offset, $value );
-			}
-		}
-	}
+        if ($input !== null) {
+            foreach ($input as $offset => $value) {
+                $this->offsetSet($offset, $value);
+            }
+        }
+    }
 
-	/**
-	 * @see ArrayObject::append
-	 *
-	 * @since 1.20
-	 *
-	 * @param mixed $value
-	 */
-	public function append( $value ): void {
-		$this->setElement( null, $value );
-	}
+    /**
+     * @param mixed $value
+     * @since 1.20
+     *
+     * @see ArrayObject::append
+     *
+     */
+    public function append($value): void
+    {
+        $this->setElement(null, $value);
+    }
 
-	/**
-	 * @see ArrayObject::offsetSet()
-	 *
-	 * @since 1.20
-	 *
-	 * @param mixed $index
-	 * @param mixed $value
-	 */
-	public function offsetSet( $index, $value ): void {
-		$this->setElement( $index, $value );
-	}
+    /**
+     * @param mixed $index
+     * @param mixed $value
+     * @see ArrayObject::offsetSet()
+     *
+     * @since 1.20
+     *
+     */
+    public function offsetSet($index, $value): void
+    {
+        $this->setElement($index, $value);
+    }
 
-	/**
-	 * Returns if the provided value has the same type as the elements
-	 * that can be added to this ArrayObject.
-	 *
-	 * @since 1.20
-	 *
-	 * @param mixed $value
-	 *
-	 * @return bool
-	 */
-	protected function hasValidType( $value ) {
-		$class = $this->getObjectType();
-		return $value instanceof $class;
-	}
+    /**
+     * Returns if the provided value has the same type as the elements
+     * that can be added to this ArrayObject.
+     *
+     * @param mixed $value
+     *
+     * @return bool
+     * @since 1.20
+     *
+     */
+    protected function hasValidType($value)
+    {
+        $class = $this->getObjectType();
 
-	/**
-	 * Method that actually sets the element and holds
-	 * all common code needed for set operations, including
-	 * type checking and offset resolving.
-	 *
-	 * If you want to do additional indexing or have code that
-	 * otherwise needs to be executed whenever an element is added,
-	 * you can overload @see preSetElement.
-	 *
-	 * @since 1.20
-	 *
-	 * @param mixed $index
-	 * @param mixed $value
-	 *
-	 * @throws InvalidArgumentException
-	 */
-	protected function setElement( $index, $value ) {
-		if ( !$this->hasValidType( $value ) ) {
-			throw new InvalidArgumentException(
-				'Can only add ' . $this->getObjectType() . ' implementing objects to '
-				. static::class . '.'
-			);
-		}
+        return $value instanceof $class;
+    }
 
-		if ( $index === null ) {
-			$index = $this->getNewOffset();
-		}
+    /**
+     * Method that actually sets the element and holds
+     * all common code needed for set operations, including
+     * type checking and offset resolving.
+     *
+     * If you want to do additional indexing or have code that
+     * otherwise needs to be executed whenever an element is added,
+     * you can overload @param mixed $index
+     * @param mixed $value
+     *
+     * @throws InvalidArgumentException
+     * @since 1.20
+     *
+     * @see preSetElement.
+     *
+     */
+    protected function setElement($index, $value)
+    {
+        if (!$this->hasValidType($value)) {
+            throw new InvalidArgumentException(
+                'Can only add ' . $this->getObjectType() . ' implementing objects to '
+                . static::class . '.'
+            );
+        }
 
-		if ( $this->preSetElement( $index, $value ) ) {
-			parent::offsetSet( $index, $value );
-		}
-	}
+        if ($index === null) {
+            $index = $this->getNewOffset();
+        }
 
-	/**
-	 * Gets called before a new element is added to the ArrayObject.
-	 *
-	 * At this point the index is always set (ie not null) and the
-	 * value is always of the type returned by @see getObjectType.
-	 *
-	 * Should return a boolean. When false is returned the element
-	 * does not get added to the ArrayObject.
-	 *
-	 * @since 1.20
-	 *
-	 * @param int|string $index
-	 * @param mixed $value
-	 *
-	 * @return bool
-	 */
-	protected function preSetElement( $index, $value ) {
-		return true;
-	}
+        if ($this->preSetElement($index, $value)) {
+            parent::offsetSet($index, $value);
+        }
+    }
 
-	/**
-	 * @see Serializable::serialize
-	 *
-	 * @since 1.20
-	 *
-	 * @return string
-	 */
-	public function serialize(): string {
-		return serialize( $this->__serialize() );
-	}
+    /**
+     * Gets called before a new element is added to the ArrayObject.
+     *
+     * At this point the index is always set (ie not null) and the
+     * value is always of the type returned by @param int|string $index
+     * @param mixed $value
+     *
+     * @return bool
+     * @since 1.20
+     *
+     * @see getObjectType.
+     *
+     * Should return a boolean. When false is returned the element
+     * does not get added to the ArrayObject.
+     *
+     */
+    protected function preSetElement($index, $value)
+    {
+        return true;
+    }
 
-	/**
-	 * @see Serializable::serialize
-	 *
-	 * @since 1.38
-	 *
-	 * @return array
-	 */
-	public function __serialize(): array {
-		return $this->getSerializationData();
-	}
+    /**
+     * @return string
+     * @since 1.20
+     *
+     * @see Serializable::serialize
+     *
+     */
+    public function serialize(): string
+    {
+        return serialize($this->__serialize());
+    }
 
-	/**
-	 * Returns an array holding all the data that should go into serialization calls.
-	 * This is intended to allow overloading without having to reimplement the
-	 * behavior of this base class.
-	 *
-	 * @since 1.20
-	 *
-	 * @return array
-	 */
-	protected function getSerializationData() {
-		return [
-			'data' => $this->getArrayCopy(),
-			'index' => $this->indexOffset,
-		];
-	}
+    /**
+     * @return array
+     * @since 1.38
+     *
+     * @see Serializable::serialize
+     *
+     */
+    public function __serialize(): array
+    {
+        return $this->getSerializationData();
+    }
 
-	/**
-	 * @see Serializable::unserialize
-	 *
-	 * @since 1.20
-	 *
-	 * @param string $serialization
-	 */
-	public function unserialize( $serialization ): void {
-		$this->__unserialize( unserialize( $serialization ) );
-	}
+    /**
+     * Returns an array holding all the data that should go into serialization calls.
+     * This is intended to allow overloading without having to reimplement the
+     * behavior of this base class.
+     *
+     * @return array
+     * @since 1.20
+     *
+     */
+    protected function getSerializationData()
+    {
+        return [
+            'data'  => $this->getArrayCopy(),
+            'index' => $this->indexOffset,
+        ];
+    }
 
-	/**
-	 * @see Serializable::unserialize
-	 *
-	 * @since 1.38
-	 *
-	 * @param array $serializationData
-	 */
-	public function __unserialize( $serializationData ): void {
-		foreach ( $serializationData['data'] as $offset => $value ) {
-			// Just set the element, bypassing checks and offset resolving,
-			// as these elements have already gone through this.
-			parent::offsetSet( $offset, $value );
-		}
+    /**
+     * @param string $serialization
+     * @since 1.20
+     *
+     * @see Serializable::unserialize
+     *
+     */
+    public function unserialize($serialization): void
+    {
+        $this->__unserialize(unserialize($serialization));
+    }
 
-		$this->indexOffset = $serializationData['index'];
-	}
+    /**
+     * @param array $serializationData
+     * @since 1.38
+     *
+     * @see Serializable::unserialize
+     *
+     */
+    public function __unserialize($serializationData): void
+    {
+        foreach ($serializationData['data'] as $offset => $value) {
+            // Just set the element, bypassing checks and offset resolving,
+            // as these elements have already gone through this.
+            parent::offsetSet($offset, $value);
+        }
 
-	/**
-	 * Returns if the ArrayObject has no elements.
-	 *
-	 * @since 1.20
-	 *
-	 * @return bool
-	 */
-	public function isEmpty() {
-		return $this->count() === 0;
-	}
+        $this->indexOffset = $serializationData['index'];
+    }
+
+    /**
+     * Returns if the ArrayObject has no elements.
+     *
+     * @return bool
+     * @since 1.20
+     *
+     */
+    public function isEmpty()
+    {
+        return $this->count() === 0;
+    }
 }

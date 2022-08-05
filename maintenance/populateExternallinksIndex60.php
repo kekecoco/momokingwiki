@@ -32,60 +32,65 @@ use MediaWiki\MediaWikiServices;
  * @ingroup Maintenance
  * @since 1.32
  */
-class PopulateExternallinksIndex60 extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Populates the el_index_60 field in the externallinks table' );
-		$this->setBatchSize( 200 );
-	}
+class PopulateExternallinksIndex60 extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Populates the el_index_60 field in the externallinks table');
+        $this->setBatchSize(200);
+    }
 
-	protected function getUpdateKey() {
-		return 'populate externallinks.el_index_60';
-	}
+    protected function getUpdateKey()
+    {
+        return 'populate externallinks.el_index_60';
+    }
 
-	protected function updateSkippedMessage() {
-		return 'externallinks.el_index_60 already populated.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'externallinks.el_index_60 already populated.';
+    }
 
-	protected function doDBUpdates() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$this->output( "Populating externallinks.el_index_60...\n" );
+    protected function doDBUpdates()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $this->output("Populating externallinks.el_index_60...\n");
 
-		$count = 0;
-		$start = 0;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$last = $dbw->selectField( 'externallinks', 'MAX(el_id)', '', __METHOD__ );
-		while ( $start <= $last ) {
-			$end = $start + $this->mBatchSize;
-			$this->output( "el_id $start - $end of $last\n" );
-			$res = $dbw->select( 'externallinks', [ 'el_id', 'el_index' ],
-				[
-					"el_id > $start",
-					"el_id <= $end",
-					'el_index_60' => '',
-				],
-				__METHOD__,
-				[ 'ORDER BY' => 'el_id' ]
-			);
-			foreach ( $res as $row ) {
-				$count++;
-				$dbw->update( 'externallinks',
-					[
-						'el_index_60' => substr( $row->el_index, 0, 60 ),
-					],
-					[
-						'el_id' => $row->el_id,
-					], __METHOD__
-				);
-			}
-			$lbFactory->waitForReplication();
-			$start = $end;
-		}
-		$this->output( "Done, $count rows updated.\n" );
+        $count = 0;
+        $start = 0;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $last = $dbw->selectField('externallinks', 'MAX(el_id)', '', __METHOD__);
+        while ($start <= $last) {
+            $end = $start + $this->mBatchSize;
+            $this->output("el_id $start - $end of $last\n");
+            $res = $dbw->select('externallinks', ['el_id', 'el_index'],
+                [
+                    "el_id > $start",
+                    "el_id <= $end",
+                    'el_index_60' => '',
+                ],
+                __METHOD__,
+                ['ORDER BY' => 'el_id']
+            );
+            foreach ($res as $row) {
+                $count++;
+                $dbw->update('externallinks',
+                    [
+                        'el_index_60' => substr($row->el_index, 0, 60),
+                    ],
+                    [
+                        'el_id' => $row->el_id,
+                    ], __METHOD__
+                );
+            }
+            $lbFactory->waitForReplication();
+            $start = $end;
+        }
+        $this->output("Done, $count rows updated.\n");
 
-		return true;
-	}
+        return true;
+    }
 }
 
 $maintClass = PopulateExternallinksIndex60::class;

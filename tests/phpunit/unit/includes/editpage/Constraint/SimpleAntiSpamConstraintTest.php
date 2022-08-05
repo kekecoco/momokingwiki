@@ -31,46 +31,49 @@ use Psr\Log\NullLogger;
  *
  * @covers \MediaWiki\EditPage\Constraint\SimpleAntiSpamConstraint
  */
-class SimpleAntiSpamConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class SimpleAntiSpamConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$logger = new NullLogger();
-		$user = new UserIdentityValue( 5, 'UserNameGoesHere' );
-		$title = $this->createMock( Title::class );
+    public function testPass()
+    {
+        $logger = new NullLogger();
+        $user = new UserIdentityValue(5, 'UserNameGoesHere');
+        $title = $this->createMock(Title::class);
 
-		$constraint = new SimpleAntiSpamConstraint(
-			$logger,
-			'',
-			$user,
-			$title
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        $constraint = new SimpleAntiSpamConstraint(
+            $logger,
+            '',
+            $user,
+            $title
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$logger = new TestLogger( true );
-		$user = new UserIdentityValue( 5, 'UserNameGoesHere' );
-		$title = $this->createMock( Title::class );
-		$title->expects( $this->once() )
-			->method( 'getPrefixedText' )
-			->willReturn( 'TitlePrefixedTextGoesHere' );
+    public function testFailure()
+    {
+        $logger = new TestLogger(true);
+        $user = new UserIdentityValue(5, 'UserNameGoesHere');
+        $title = $this->createMock(Title::class);
+        $title->expects($this->once())
+            ->method('getPrefixedText')
+            ->willReturn('TitlePrefixedTextGoesHere');
 
-		$constraint = new SimpleAntiSpamConstraint(
-			$logger,
-			'SpamContent',
-			$user,
-			$title
-		);
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_SPAM_ERROR );
+        $constraint = new SimpleAntiSpamConstraint(
+            $logger,
+            'SpamContent',
+            $user,
+            $title
+        );
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_SPAM_ERROR);
 
-		$this->assertSame( [
-			[
-				LogLevel::DEBUG,
-				'{name} editing "{title}" submitted bogus field "{input}"'
-			],
-		], $logger->getBuffer() );
-		$logger->clearBuffer();
-	}
+        $this->assertSame([
+            [
+                LogLevel::DEBUG,
+                '{name} editing "{title}" submitted bogus field "{input}"'
+            ],
+        ], $logger->getBuffer());
+        $logger->clearBuffer();
+    }
 
 }

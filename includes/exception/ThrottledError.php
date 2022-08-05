@@ -25,21 +25,24 @@
  * @since 1.18
  * @ingroup Exception
  */
-class ThrottledError extends ErrorPageError {
+class ThrottledError extends ErrorPageError
+{
 
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		parent::__construct(
-			'actionthrottled',
-			'actionthrottledtext'
-		);
-	}
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        parent::__construct(
+            'actionthrottled',
+            'actionthrottledtext'
+        );
+    }
 
-	public function report( $action = ErrorPageError::SEND_OUTPUT ) {
-		global $wgOut;
-		$wgOut->setStatusCode( 429 );
-		parent::report( $action );
-	}
+    public function report($action = ErrorPageError::SEND_OUTPUT)
+    {
+        global $wgOut;
+        $wgOut->setStatusCode(429);
+        parent::report($action);
+    }
 }

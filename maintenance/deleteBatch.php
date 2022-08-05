@@ -37,104 +37,107 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class DeleteBatch extends Maintenance {
+class DeleteBatch extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Deletes a batch of pages' );
-		$this->addOption( 'u', "User to perform deletion", false, true );
-		$this->addOption( 'r', "Reason to delete page", false, true );
-		$this->addOption( 'i', "Interval to sleep between deletions" );
-		$this->addArg( 'listfile', 'File with titles to delete, separated by newlines. ' .
-			'If not given, stdin will be used.', false );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Deletes a batch of pages');
+        $this->addOption('u', "User to perform deletion", false, true);
+        $this->addOption('r', "Reason to delete page", false, true);
+        $this->addOption('i', "Interval to sleep between deletions");
+        $this->addArg('listfile', 'File with titles to delete, separated by newlines. ' .
+            'If not given, stdin will be used.', false);
+    }
 
-	public function execute() {
-		# Change to current working directory
-		$oldCwd = getcwd();
-		chdir( $oldCwd );
+    public function execute()
+    {
+        # Change to current working directory
+        $oldCwd = getcwd();
+        chdir($oldCwd);
 
-		# Options processing
-		$username = $this->getOption( 'u', false );
-		$reason = $this->getOption( 'r', '' );
-		$interval = $this->getOption( 'i', 0 );
+        # Options processing
+        $username = $this->getOption('u', false);
+        $reason = $this->getOption('r', '');
+        $interval = $this->getOption('i', 0);
 
-		if ( $username === false ) {
-			$user = User::newSystemUser( 'Delete page script', [ 'steal' => true ] );
-		} else {
-			$user = User::newFromName( $username );
-		}
-		if ( !$user ) {
-			$this->fatalError( "Invalid username" );
-		}
-		StubGlobalUser::setUser( $user );
+        if ($username === false) {
+            $user = User::newSystemUser('Delete page script', ['steal' => true]);
+        } else {
+            $user = User::newFromName($username);
+        }
+        if (!$user) {
+            $this->fatalError("Invalid username");
+        }
+        StubGlobalUser::setUser($user);
 
-		if ( $this->hasArg( 0 ) ) {
-			$file = fopen( $this->getArg( 0 ), 'r' );
-		} else {
-			$file = $this->getStdin();
-		}
+        if ($this->hasArg(0)) {
+            $file = fopen($this->getArg(0), 'r');
+        } else {
+            $file = $this->getStdin();
+        }
 
-		# Setup
-		if ( !$file ) {
-			$this->fatalError( "Unable to read file, exiting" );
-		}
+        # Setup
+        if (!$file) {
+            $this->fatalError("Unable to read file, exiting");
+        }
 
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$wikiPageFactory = $services->getWikiPageFactory();
-		$repoGroup = $services->getRepoGroup();
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $wikiPageFactory = $services->getWikiPageFactory();
+        $repoGroup = $services->getRepoGroup();
 
-		# Handle each entry
-		for ( $linenum = 1; !feof( $file ); $linenum++ ) {
-			$line = trim( fgets( $file ) );
-			if ( $line == '' ) {
-				continue;
-			}
-			$title = Title::newFromText( $line );
-			if ( $title === null ) {
-				$this->output( "Invalid title '$line' on line $linenum\n" );
-				continue;
-			}
-			if ( !$title->exists() ) {
-				$this->output( "Skipping nonexistent page '$line'\n" );
-				continue;
-			}
+        # Handle each entry
+        for ($linenum = 1; !feof($file); $linenum++) {
+            $line = trim(fgets($file));
+            if ($line == '') {
+                continue;
+            }
+            $title = Title::newFromText($line);
+            if ($title === null) {
+                $this->output("Invalid title '$line' on line $linenum\n");
+                continue;
+            }
+            if (!$title->exists()) {
+                $this->output("Skipping nonexistent page '$line'\n");
+                continue;
+            }
 
-			$this->output( $title->getPrefixedText() );
-			if ( $title->getNamespace() === NS_FILE ) {
-				$img = $repoGroup->findFile(
-					$title, [ 'ignoreRedirect' => true ]
-				);
-				if ( $img && $img->isLocal() && !$img->deleteFile( $reason, $user ) ) {
-					$this->output( " FAILED to delete associated file..." );
-				}
-			}
-			$page = $wikiPageFactory->newFromTitle( $title );
-			$error = '';
-			$status = $page->doDeleteArticleReal(
-				$reason,
-				$user,
-				false,
-				null,
-				$error,
-				null,
-				[],
-				'delete',
-				true
-			);
-			if ( $status->isOK() ) {
-				$this->output( " Deleted!\n" );
-			} else {
-				$this->output( " FAILED to delete article\n" );
-			}
+            $this->output($title->getPrefixedText());
+            if ($title->getNamespace() === NS_FILE) {
+                $img = $repoGroup->findFile(
+                    $title, ['ignoreRedirect' => true]
+                );
+                if ($img && $img->isLocal() && !$img->deleteFile($reason, $user)) {
+                    $this->output(" FAILED to delete associated file...");
+                }
+            }
+            $page = $wikiPageFactory->newFromTitle($title);
+            $error = '';
+            $status = $page->doDeleteArticleReal(
+                $reason,
+                $user,
+                false,
+                null,
+                $error,
+                null,
+                [],
+                'delete',
+                true
+            );
+            if ($status->isOK()) {
+                $this->output(" Deleted!\n");
+            } else {
+                $this->output(" FAILED to delete article\n");
+            }
 
-			if ( $interval ) {
-				sleep( $interval );
-			}
-			$lbFactory->waitForReplication();
-		}
-	}
+            if ($interval) {
+                sleep($interval);
+            }
+            $lbFactory->waitForReplication();
+        }
+    }
 }
 
 $maintClass = DeleteBatch::class;

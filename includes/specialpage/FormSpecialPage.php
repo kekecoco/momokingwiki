@@ -28,246 +28,262 @@
  *
  * @ingroup SpecialPage
  */
-abstract class FormSpecialPage extends SpecialPage {
-	/**
-	 * The sub-page of the special page.
-	 * @var string|null
-	 */
-	protected $par = null;
+abstract class FormSpecialPage extends SpecialPage
+{
+    /**
+     * The sub-page of the special page.
+     * @var string|null
+     */
+    protected $par = null;
 
-	/**
-	 * @var array|null POST data preserved across re-authentication
-	 * @since 1.32
-	 */
-	protected $reauthPostData = null;
+    /**
+     * @var array|null POST data preserved across re-authentication
+     * @since 1.32
+     */
+    protected $reauthPostData = null;
 
-	/**
-	 * Get an HTMLForm descriptor array
-	 * @return array
-	 */
-	abstract protected function getFormFields();
+    /**
+     * Get an HTMLForm descriptor array
+     * @return array
+     */
+    abstract protected function getFormFields();
 
-	/**
-	 * Add pre-HTML to the form
-	 * @return string HTML which will be sent to $form->addPreHtml()
-	 * @since 1.38
-	 */
-	protected function preHtml() {
-		return '';
-	}
+    /**
+     * Add pre-HTML to the form
+     * @return string HTML which will be sent to $form->addPreHtml()
+     * @since 1.38
+     */
+    protected function preHtml()
+    {
+        return '';
+    }
 
-	/**
-	 * Add post-HTML to the form
-	 * @return string HTML which will be sent to $form->addPostHtml()
-	 * @since 1.38
-	 */
-	protected function postHtml() {
-		return '';
-	}
+    /**
+     * Add post-HTML to the form
+     * @return string HTML which will be sent to $form->addPostHtml()
+     * @since 1.38
+     */
+    protected function postHtml()
+    {
+        return '';
+    }
 
-	/**
-	 * Add pre-text to the form
-	 * @return string HTML which will be sent to $form->addPreText()
-	 * @deprecated since 1.38, use preHtml() instead
-	 */
-	protected function preText() {
-		return $this->preHtml();
-	}
+    /**
+     * Add pre-text to the form
+     * @return string HTML which will be sent to $form->addPreText()
+     * @deprecated since 1.38, use preHtml() instead
+     */
+    protected function preText()
+    {
+        return $this->preHtml();
+    }
 
-	/**
-	 * Add post-text to the form
-	 * @return string HTML which will be sent to $form->addPostText()
-	 * @deprecated since 1.38, use postHtml() instead
-	 */
-	protected function postText() {
-		return $this->postHtml();
-	}
+    /**
+     * Add post-text to the form
+     * @return string HTML which will be sent to $form->addPostText()
+     * @deprecated since 1.38, use postHtml() instead
+     */
+    protected function postText()
+    {
+        return $this->postHtml();
+    }
 
-	/**
-	 * Play with the HTMLForm if you need to more substantially
-	 * @param HTMLForm $form
-	 */
-	protected function alterForm( HTMLForm $form ) {
-	}
+    /**
+     * Play with the HTMLForm if you need to more substantially
+     * @param HTMLForm $form
+     */
+    protected function alterForm(HTMLForm $form)
+    {
+    }
 
-	/**
-	 * Get message prefix for HTMLForm
-	 *
-	 * @since 1.21
-	 * @return string
-	 */
-	protected function getMessagePrefix() {
-		return strtolower( $this->getName() );
-	}
+    /**
+     * Get message prefix for HTMLForm
+     *
+     * @return string
+     * @since 1.21
+     */
+    protected function getMessagePrefix()
+    {
+        return strtolower($this->getName());
+    }
 
-	/**
-	 * Get display format for the form. See HTMLForm documentation for available values.
-	 *
-	 * @since 1.25
-	 * @return string
-	 */
-	protected function getDisplayFormat() {
-		return 'table';
-	}
+    /**
+     * Get display format for the form. See HTMLForm documentation for available values.
+     *
+     * @return string
+     * @since 1.25
+     */
+    protected function getDisplayFormat()
+    {
+        return 'table';
+    }
 
-	/**
-	 * Get the HTMLForm to control behavior
-	 * @return HTMLForm|null
-	 */
-	protected function getForm() {
-		$context = $this->getContext();
-		$onSubmit = [ $this, 'onSubmit' ];
+    /**
+     * Get the HTMLForm to control behavior
+     * @return HTMLForm|null
+     */
+    protected function getForm()
+    {
+        $context = $this->getContext();
+        $onSubmit = [$this, 'onSubmit'];
 
-		if ( $this->reauthPostData ) {
-			// Restore POST data
-			$context = new DerivativeContext( $context );
-			$oldRequest = $this->getRequest();
-			$context->setRequest( new DerivativeRequest(
-				$oldRequest, $this->reauthPostData + $oldRequest->getQueryValues(), true
-			) );
+        if ($this->reauthPostData) {
+            // Restore POST data
+            $context = new DerivativeContext($context);
+            $oldRequest = $this->getRequest();
+            $context->setRequest(new DerivativeRequest(
+                $oldRequest, $this->reauthPostData + $oldRequest->getQueryValues(), true
+            ));
 
-			// But don't treat it as a "real" submission just in case of some
-			// crazy kind of CSRF.
-			$onSubmit = static function () {
-				return false;
-			};
-		}
+            // But don't treat it as a "real" submission just in case of some
+            // crazy kind of CSRF.
+            $onSubmit = static function () {
+                return false;
+            };
+        }
 
-		$form = HTMLForm::factory(
-			$this->getDisplayFormat(),
-			$this->getFormFields(),
-			$context,
-			$this->getMessagePrefix()
-		);
-		$form->setSubmitCallback( $onSubmit );
-		if ( $this->getDisplayFormat() !== 'ooui' ) {
-			// No legend and wrapper by default in OOUI forms, but can be set manually
-			// from alterForm()
-			$form->setWrapperLegendMsg( $this->getMessagePrefix() . '-legend' );
-		}
+        $form = HTMLForm::factory(
+            $this->getDisplayFormat(),
+            $this->getFormFields(),
+            $context,
+            $this->getMessagePrefix()
+        );
+        $form->setSubmitCallback($onSubmit);
+        if ($this->getDisplayFormat() !== 'ooui') {
+            // No legend and wrapper by default in OOUI forms, but can be set manually
+            // from alterForm()
+            $form->setWrapperLegendMsg($this->getMessagePrefix() . '-legend');
+        }
 
-		$headerMsg = $this->msg( $this->getMessagePrefix() . '-text' );
-		if ( !$headerMsg->isDisabled() ) {
-			$form->addHeaderText( $headerMsg->parseAsBlock() );
-		}
+        $headerMsg = $this->msg($this->getMessagePrefix() . '-text');
+        if (!$headerMsg->isDisabled()) {
+            $form->addHeaderText($headerMsg->parseAsBlock());
+        }
 
-		// preText / postText are deprecated, but we need to keep calling them until the end of
-		// the deprecation process so a subclass overriding *Text and *Html both work
-		$form->addPreText( $this->preText() );
-		$form->addPostText( $this->postText() );
-		$this->alterForm( $form );
-		if ( $form->getMethod() == 'post' ) {
-			// Retain query parameters (uselang etc) on POST requests
-			$params = array_diff_key(
-				$this->getRequest()->getQueryValues(), [ 'title' => null ] );
-			$form->addHiddenField( 'redirectparams', wfArrayToCgi( $params ) );
-		}
+        // preText / postText are deprecated, but we need to keep calling them until the end of
+        // the deprecation process so a subclass overriding *Text and *Html both work
+        $form->addPreText($this->preText());
+        $form->addPostText($this->postText());
+        $this->alterForm($form);
+        if ($form->getMethod() == 'post') {
+            // Retain query parameters (uselang etc) on POST requests
+            $params = array_diff_key(
+                $this->getRequest()->getQueryValues(), ['title' => null]);
+            $form->addHiddenField('redirectparams', wfArrayToCgi($params));
+        }
 
-		// Give hooks a chance to alter the form, adding extra fields or text etc
-		$this->getHookRunner()->onSpecialPageBeforeFormDisplay( $this->getName(), $form );
+        // Give hooks a chance to alter the form, adding extra fields or text etc
+        $this->getHookRunner()->onSpecialPageBeforeFormDisplay($this->getName(), $form);
 
-		return $form;
-	}
+        return $form;
+    }
 
-	/**
-	 * Process the form on POST submission.
-	 * @phpcs:disable MediaWiki.Commenting.FunctionComment.ExtraParamComment
-	 * @param array $data
-	 * @param HTMLForm|null $form
-	 * @suppress PhanCommentParamWithoutRealParam Many implementations don't have $form
-	 * @return bool|string|array|Status As documented for HTMLForm::trySubmit.
-	 * @phpcs:enable MediaWiki.Commenting.FunctionComment.ExtraParamComment
-	 */
-	abstract public function onSubmit( array $data /* HTMLForm $form = null */ );
+    /**
+     * Process the form on POST submission.
+     * @phpcs:disable MediaWiki.Commenting.FunctionComment.ExtraParamComment
+     * @param array $data
+     * @param HTMLForm|null $form
+     * @suppress PhanCommentParamWithoutRealParam Many implementations don't have $form
+     * @return bool|string|array|Status As documented for HTMLForm::trySubmit.
+     * @phpcs:enable MediaWiki.Commenting.FunctionComment.ExtraParamComment
+     */
+    abstract public function onSubmit(array $data /* HTMLForm $form = null */);
 
-	/**
-	 * Do something exciting on successful processing of the form, most likely to show a
-	 * confirmation message
-	 * @since 1.22 Default is to do nothing
-	 */
-	public function onSuccess() {
-	}
+    /**
+     * Do something exciting on successful processing of the form, most likely to show a
+     * confirmation message
+     * @since 1.22 Default is to do nothing
+     */
+    public function onSuccess()
+    {
+    }
 
-	/**
-	 * Basic SpecialPage workflow: get a form, send it to the user; get some data back,
-	 *
-	 * @param string|null $par Subpage string if one was specified
-	 */
-	public function execute( $par ) {
-		$this->setParameter( $par );
-		$this->setHeaders();
+    /**
+     * Basic SpecialPage workflow: get a form, send it to the user; get some data back,
+     *
+     * @param string|null $par Subpage string if one was specified
+     */
+    public function execute($par)
+    {
+        $this->setParameter($par);
+        $this->setHeaders();
 
-		// This will throw exceptions if there's a problem
-		$this->checkExecutePermissions( $this->getUser() );
+        // This will throw exceptions if there's a problem
+        $this->checkExecutePermissions($this->getUser());
 
-		$securityLevel = $this->getLoginSecurityLevel();
-		if ( $securityLevel !== false && !$this->checkLoginSecurityLevel( $securityLevel ) ) {
-			return;
-		}
+        $securityLevel = $this->getLoginSecurityLevel();
+        if ($securityLevel !== false && !$this->checkLoginSecurityLevel($securityLevel)) {
+            return;
+        }
 
-		$form = $this->getForm();
-		if ( $form->show() ) {
-			$this->onSuccess();
-		}
-	}
+        $form = $this->getForm();
+        if ($form->show()) {
+            $this->onSuccess();
+        }
+    }
 
-	/**
-	 * Maybe do something interesting with the subpage parameter
-	 * @param string|null $par
-	 */
-	protected function setParameter( $par ) {
-		$this->par = $par;
-	}
+    /**
+     * Maybe do something interesting with the subpage parameter
+     * @param string|null $par
+     */
+    protected function setParameter($par)
+    {
+        $this->par = $par;
+    }
 
-	/**
-	 * Called from execute() to check if the given user can perform this action.
-	 * Failures here must throw subclasses of ErrorPageError.
-	 * @param User $user
-	 * @throws UserBlockedError
-	 */
-	protected function checkExecutePermissions( User $user ) {
-		$this->checkPermissions();
+    /**
+     * Called from execute() to check if the given user can perform this action.
+     * Failures here must throw subclasses of ErrorPageError.
+     * @param User $user
+     * @throws UserBlockedError
+     */
+    protected function checkExecutePermissions(User $user)
+    {
+        $this->checkPermissions();
 
-		if ( $this->requiresUnblock() ) {
-			$block = $user->getBlock();
-			if ( $block && $block->isSitewide() ) {
-				throw new UserBlockedError(
-					$block,
-					$user,
-					$this->getLanguage(),
-					$this->getRequest()->getIP()
-				);
-			}
-		}
+        if ($this->requiresUnblock()) {
+            $block = $user->getBlock();
+            if ($block && $block->isSitewide()) {
+                throw new UserBlockedError(
+                    $block,
+                    $user,
+                    $this->getLanguage(),
+                    $this->getRequest()->getIP()
+                );
+            }
+        }
 
-		if ( $this->requiresWrite() ) {
-			$this->checkReadOnly();
-		}
-	}
+        if ($this->requiresWrite()) {
+            $this->checkReadOnly();
+        }
+    }
 
-	/**
-	 * Whether this action requires the wiki not to be locked
-	 * @return bool
-	 */
-	public function requiresWrite() {
-		return true;
-	}
+    /**
+     * Whether this action requires the wiki not to be locked
+     * @return bool
+     */
+    public function requiresWrite()
+    {
+        return true;
+    }
 
-	/**
-	 * Whether this action cannot be executed by a blocked user
-	 * @return bool
-	 */
-	public function requiresUnblock() {
-		return true;
-	}
+    /**
+     * Whether this action cannot be executed by a blocked user
+     * @return bool
+     */
+    public function requiresUnblock()
+    {
+        return true;
+    }
 
-	/**
-	 * Preserve POST data across reauthentication
-	 *
-	 * @since 1.32
-	 * @param array $data
-	 */
-	protected function setReauthPostData( array $data ) {
-		$this->reauthPostData = $data;
-	}
+    /**
+     * Preserve POST data across reauthentication
+     *
+     * @param array $data
+     * @since 1.32
+     */
+    protected function setReauthPostData(array $data)
+    {
+        $this->reauthPostData = $data;
+    }
 }

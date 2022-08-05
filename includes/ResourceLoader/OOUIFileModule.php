@@ -27,93 +27,99 @@ namespace MediaWiki\ResourceLoader;
  * @ingroup ResourceLoader
  * @internal
  */
-class OOUIFileModule extends FileModule {
-	use OOUIModule;
+class OOUIFileModule extends FileModule
+{
+    use OOUIModule;
 
-	/** @var array<string,string|FilePath> */
-	private $themeStyles = [];
+    /** @var array<string,string|FilePath> */
+    private $themeStyles = [];
 
-	public function __construct( array $options = [] ) {
-		if ( isset( $options['themeScripts'] ) ) {
-			$skinScripts = $this->getSkinSpecific( $options['themeScripts'], 'scripts' );
-			$options['skinScripts'] = $this->extendSkinSpecific( $options['skinScripts'] ?? [], $skinScripts );
-		}
-		if ( isset( $options['themeStyles'] ) ) {
-			$this->themeStyles = $this->getSkinSpecific( $options['themeStyles'], 'styles' );
-		}
+    public function __construct(array $options = [])
+    {
+        if (isset($options['themeScripts'])) {
+            $skinScripts = $this->getSkinSpecific($options['themeScripts'], 'scripts');
+            $options['skinScripts'] = $this->extendSkinSpecific($options['skinScripts'] ?? [], $skinScripts);
+        }
+        if (isset($options['themeStyles'])) {
+            $this->themeStyles = $this->getSkinSpecific($options['themeStyles'], 'styles');
+        }
 
-		parent::__construct( $options );
-	}
+        parent::__construct($options);
+    }
 
-	public function setSkinStylesOverride( array $moduleSkinStyles ): void {
-		parent::setSkinStylesOverride( $moduleSkinStyles );
+    public function setSkinStylesOverride(array $moduleSkinStyles): void
+    {
+        parent::setSkinStylesOverride($moduleSkinStyles);
 
-		$this->skinStyles = $this->extendSkinSpecific( $this->skinStyles, $this->themeStyles );
-	}
+        $this->skinStyles = $this->extendSkinSpecific($this->skinStyles, $this->themeStyles);
+    }
 
-	/**
-	 * Helper function to generate values for 'skinStyles' and 'skinScripts'.
-	 *
-	 * @param string $module Module to generate skinStyles/skinScripts for:
-	 *   'core', 'widgets', 'toolbars', 'windows'
-	 * @param string $which 'scripts' or 'styles'
-	 * @return array<string,string|FilePath>
-	 */
-	private function getSkinSpecific( $module, $which ): array {
-		$themes = self::getSkinThemeMap();
+    /**
+     * Helper function to generate values for 'skinStyles' and 'skinScripts'.
+     *
+     * @param string $module Module to generate skinStyles/skinScripts for:
+     *   'core', 'widgets', 'toolbars', 'windows'
+     * @param string $which 'scripts' or 'styles'
+     * @return array<string,string|FilePath>
+     */
+    private function getSkinSpecific($module, $which): array
+    {
+        $themes = self::getSkinThemeMap();
 
-		return array_combine(
-			array_keys( $themes ),
-			array_map( function ( $theme ) use ( $module, $which ) {
-				if ( $which === 'scripts' ) {
-					return $this->getThemeScriptsPath( $theme, $module );
-				} else {
-					return $this->getThemeStylesPath( $theme, $module );
-				}
-			}, array_values( $themes ) )
-		);
-	}
+        return array_combine(
+            array_keys($themes),
+            array_map(function ($theme) use ($module, $which) {
+                if ($which === 'scripts') {
+                    return $this->getThemeScriptsPath($theme, $module);
+                } else {
+                    return $this->getThemeStylesPath($theme, $module);
+                }
+            }, array_values($themes))
+        );
+    }
 
-	/**
-	 * Prepend theme-specific resources on behalf of the skin.
-	 *
-	 * The expected order of styles and scripts in the output is:
-	 *
-	 * 1. Theme-specific resources for a given skin.
-	 *
-	 * 2. Module-defined resources for a specific skin,
-	 *    falling back to module-defined "default" skin resources.
-	 *
-	 * 3. Skin-defined resources for a specific module, which can either
-	 *    append to or replace the "default" (via ResourceModuleSkinStyles in skin.json)
-	 *    Note that skins can only define resources for a module if that
-	 *    module does not already explicitly provide resources for that skin.
-	 *
-	 * @param array $skinSpecific Module-defined 'skinScripts' or 'skinStyles'.
-	 * @param array $themeSpecific
-	 * @return array Modified $skinSpecific
-	 */
-	private function extendSkinSpecific( array $skinSpecific, array $themeSpecific ): array {
-		// If the module or skin already set skinStyles/skinScripts, prepend ours
-		foreach ( $skinSpecific as $skin => $files ) {
-			if ( !is_array( $files ) ) {
-				$files = [ $files ];
-			}
-			if ( isset( $themeSpecific[$skin] ) ) {
-				$skinSpecific[$skin] = array_merge( [ $themeSpecific[$skin] ], $files );
-			} elseif ( isset( $themeSpecific['default'] ) ) {
-				$skinSpecific[$skin] = array_merge( [ $themeSpecific['default'] ], $files );
-			}
-		}
-		// If the module has no skinStyles/skinScripts for a skin, then set ours
-		foreach ( $themeSpecific as $skin => $file ) {
-			if ( !isset( $skinSpecific[$skin] ) ) {
-				$skinSpecific[$skin] = [ $file ];
-			}
-		}
-		return $skinSpecific;
-	}
+    /**
+     * Prepend theme-specific resources on behalf of the skin.
+     *
+     * The expected order of styles and scripts in the output is:
+     *
+     * 1. Theme-specific resources for a given skin.
+     *
+     * 2. Module-defined resources for a specific skin,
+     *    falling back to module-defined "default" skin resources.
+     *
+     * 3. Skin-defined resources for a specific module, which can either
+     *    append to or replace the "default" (via ResourceModuleSkinStyles in skin.json)
+     *    Note that skins can only define resources for a module if that
+     *    module does not already explicitly provide resources for that skin.
+     *
+     * @param array $skinSpecific Module-defined 'skinScripts' or 'skinStyles'.
+     * @param array $themeSpecific
+     * @return array Modified $skinSpecific
+     */
+    private function extendSkinSpecific(array $skinSpecific, array $themeSpecific): array
+    {
+        // If the module or skin already set skinStyles/skinScripts, prepend ours
+        foreach ($skinSpecific as $skin => $files) {
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            if (isset($themeSpecific[$skin])) {
+                $skinSpecific[$skin] = array_merge([$themeSpecific[$skin]], $files);
+            } elseif (isset($themeSpecific['default'])) {
+                $skinSpecific[$skin] = array_merge([$themeSpecific['default']], $files);
+            }
+        }
+        // If the module has no skinStyles/skinScripts for a skin, then set ours
+        foreach ($themeSpecific as $skin => $file) {
+            if (!isset($skinSpecific[$skin])) {
+                $skinSpecific[$skin] = [$file];
+            }
+        }
+
+        return $skinSpecific;
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( OOUIFileModule::class, 'ResourceLoaderOOUIFileModule' );
+class_alias(OOUIFileModule::class, 'ResourceLoaderOOUIFileModule');

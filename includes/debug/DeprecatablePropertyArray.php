@@ -13,83 +13,94 @@ use ArrayAccess;
  * @newable
  * @since 1.35
  */
-class DeprecatablePropertyArray implements ArrayAccess {
+class DeprecatablePropertyArray implements ArrayAccess
+{
 
-	/** @var array */
-	private $container;
+    /** @var array */
+    private $container;
 
-	/** @var array Map of deprecated property names to deprecation versions */
-	private $deprecatedProperties;
+    /** @var array Map of deprecated property names to deprecation versions */
+    private $deprecatedProperties;
 
-	/** @var string */
-	private $name;
+    /** @var string */
+    private $name;
 
-	/** @var string|null */
-	private $component;
+    /** @var string|null */
+    private $component;
 
-	/**
-	 * @param array $initializer Initial value of the array.
-	 * @param array $deprecatedProperties Map of deprecated property names to versions.
-	 * @param string $name Descriptive identifier for the array
-	 * @param string|null $component Component to which array belongs.
-	 *  If not provided, assumed to be MW Core
-	 */
-	public function __construct(
-		array $initializer,
-		array $deprecatedProperties,
-		string $name,
-		string $component = null
-	) {
-		$this->container = $initializer;
-		$this->deprecatedProperties = $deprecatedProperties;
-		$this->name = $name;
-		$this->component = $component;
-	}
+    /**
+     * @param array $initializer Initial value of the array.
+     * @param array $deprecatedProperties Map of deprecated property names to versions.
+     * @param string $name Descriptive identifier for the array
+     * @param string|null $component Component to which array belongs.
+     *  If not provided, assumed to be MW Core
+     */
+    public function __construct(
+        array $initializer,
+        array $deprecatedProperties,
+        string $name,
+        string $component = null
+    )
+    {
+        $this->container = $initializer;
+        $this->deprecatedProperties = $deprecatedProperties;
+        $this->name = $name;
+        $this->component = $component;
+    }
 
-	public function offsetExists( $offset ): bool {
-		$this->checkDeprecatedAccess( $offset, 'exists' );
-		return isset( $this->container[$offset] );
-	}
+    public function offsetExists($offset): bool
+    {
+        $this->checkDeprecatedAccess($offset, 'exists');
 
-	#[\ReturnTypeWillChange]
-	public function offsetGet( $offset ) {
-		if ( $this->checkDeprecatedAccess( $offset, 'get' ) ) {
-			if ( is_callable( $this->container[$offset] ) ) {
-				$this->container[$offset] = call_user_func( $this->container[$offset] );
-			}
-		}
-		return $this->container[$offset] ?? null;
-	}
+        return isset($this->container[$offset]);
+    }
 
-	public function offsetSet( $offset, $value ): void {
-		if ( $offset === null ) {
-			$this->container[] = $value;
-		} else {
-			$this->container[$offset] = $value;
-		}
-	}
+    #[\ReturnTypeWillChange]
+    public function offsetGet($offset)
+    {
+        if ($this->checkDeprecatedAccess($offset, 'get')) {
+            if (is_callable($this->container[$offset])) {
+                $this->container[$offset] = call_user_func($this->container[$offset]);
+            }
+        }
 
-	public function offsetUnset( $offset ): void {
-		$this->checkDeprecatedAccess( $offset, 'unset' );
-		unset( $this->container[$offset] );
-	}
+        return $this->container[$offset] ?? null;
+    }
 
-	/**
-	 * @param string|int $offset
-	 * @param string $fname
-	 * @return bool
-	 */
-	private function checkDeprecatedAccess( $offset, string $fname ): bool {
-		if ( array_key_exists( $offset, $this->deprecatedProperties ) ) {
-			$deprecatedVersion = $this->deprecatedProperties[$offset];
-			wfDeprecated(
-				"{$this->name} {$fname} '{$offset}'",
-				$deprecatedVersion,
-				$this->component ?? false,
-				3
-			);
-			return true;
-		}
-		return false;
-	}
+    public function offsetSet($offset, $value): void
+    {
+        if ($offset === null) {
+            $this->container[] = $value;
+        } else {
+            $this->container[$offset] = $value;
+        }
+    }
+
+    public function offsetUnset($offset): void
+    {
+        $this->checkDeprecatedAccess($offset, 'unset');
+        unset($this->container[$offset]);
+    }
+
+    /**
+     * @param string|int $offset
+     * @param string $fname
+     * @return bool
+     */
+    private function checkDeprecatedAccess($offset, string $fname): bool
+    {
+        if (array_key_exists($offset, $this->deprecatedProperties)) {
+            $deprecatedVersion = $this->deprecatedProperties[$offset];
+            wfDeprecated(
+                "{$this->name} {$fname} '{$offset}'",
+                $deprecatedVersion,
+                $this->component ?? false,
+                3
+            );
+
+            return true;
+        }
+
+        return false;
+    }
 }

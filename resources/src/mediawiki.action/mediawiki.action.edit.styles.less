@@ -8,20 +8,20 @@
 #mw-sitejspreview,
 #mw-usercsspreview,
 #mw-userjspreview {
-	direction: ltr;
-	unicode-bidi: embed;
+  direction: ltr;
+  unicode-bidi: embed;
 }
 
 /* Prevent editing textarea from jumping when toolbar is loaded */
 #toolbar {
-	height: 22px;
+  height: 22px;
 }
 
 /* Stop floats from intruding into edit area in previews */
 #editform,
 #toolbar,
 #wpTextbox1 {
-	clear: both;
+  clear: both;
 }
 
 /*
@@ -30,80 +30,83 @@
  */
 .previewnote,
 #wikiPreview.ontop {
-	margin-bottom: 1em;
+  margin-bottom: 1em;
 }
 
 .mw-editform {
-	/* General layout */
-	#wpTextbox1 {
-		margin: 0;
-		display: block;
-		/* Ensure the textarea is not higher than browser's viewport on small screens */
-		max-height: 100vh;
-		/* But don't let it collapse into nothingness on really tiny screens */
-		min-height: 5em;
-	}
+  /* General layout */
 
-	/* Adjustments to edit form elements */
-	#editpage-copywarn {
-		font-size: 0.9em;
-		line-height: 1.26;
-	}
+  #wpTextbox1 {
+    margin: 0;
+    display: block;
+    /* Ensure the textarea is not higher than browser's viewport on small screens */
+    max-height: 100vh;
+    /* But don't let it collapse into nothingness on really tiny screens */
+    min-height: 5em;
+  }
 
-	#wpSummaryWidget {
-		display: block;
-		margin-bottom: 1em;
-	}
+  /* Adjustments to edit form elements */
 
-	#wpSummaryLabel {
-		margin: 0;
-	}
+  #editpage-copywarn {
+    font-size: 0.9em;
+    line-height: 1.26;
+  }
 
-	#wpSummaryWidget,
-	#wpSummaryLabel .oo-ui-fieldLayout-header {
-		max-width: none;
-	}
+  #wpSummaryWidget {
+    display: block;
+    margin-bottom: 1em;
+  }
 
-	.editCheckboxes .oo-ui-fieldLayout {
-		margin-right: 1em;
-	}
+  #wpSummaryLabel {
+    margin: 0;
+  }
 
-	.editHelp {
-		margin-left: 0.5em;
-		vertical-align: middle;
+  #wpSummaryWidget,
+  #wpSummaryLabel .oo-ui-fieldLayout-header {
+    max-width: none;
+  }
 
-		a {
-			font-weight: bold;
-		}
-	}
+  .editCheckboxes .oo-ui-fieldLayout {
+    margin-right: 1em;
+  }
 
-	.editOptions {
-		border-radius: 0 0 2px 2px;
-	}
+  .editHelp {
+    margin-left: 0.5em;
+    vertical-align: middle;
 
-	// Use buttonElement to include ButtonInputWidget and ButtonWidget
-	.editButtons .oo-ui-buttonElement,
-	.editHelp {
-		margin-top: 0.5em;
-	}
+    a {
+      font-weight: bold;
+    }
+  }
 
-	.cancelLink,
-	.editHelp {
-		display: inline-block;
-		vertical-align: middle;
-	}
+  .editOptions {
+    border-radius: 0 0 2px 2px;
+  }
 
-	/* T188737 */
-	.templatesUsed .mw-redirect {
-		font-style: italic;
-	}
+  // Use buttonElement to include ButtonInputWidget and ButtonWidget
+  .editButtons .oo-ui-buttonElement,
+  .editHelp {
+    margin-top: 0.5em;
+  }
+
+  .cancelLink,
+  .editHelp {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* T188737 */
+
+  .templatesUsed .mw-redirect {
+    font-style: italic;
+  }
 }
 
 .editOptions {
-	background-color: #eaecf0;
-	color: #202122;
-	border: 1px solid #c8ccd1;
-	border-top: 0;
-	padding: 1em 1em 1.5em 1em;
-	margin-bottom: 2em;
+  background-color: #eaecf0;
+  color: #202122;
+  border: 1px solid #c8ccd1;
+  border-top: 0;
+  padding: 1em 1em 1.5em 1em;
+  margin-bottom: 2em;
 }

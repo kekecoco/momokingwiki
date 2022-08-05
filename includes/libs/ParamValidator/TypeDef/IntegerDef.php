@@ -20,40 +20,44 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @since 1.34
  * @unstable
  */
-class IntegerDef extends NumericDef {
+class IntegerDef extends NumericDef
+{
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		if ( is_array( $value ) || !preg_match( '/^[+-]?\d+$/D', $value ) ) {
-			$this->failure( 'badinteger', $name, $value, $settings, $options );
-		}
-		$ret = intval( $value, 10 );
+    public function validate($name, $value, array $settings, array $options)
+    {
+        if (is_array($value) || !preg_match('/^[+-]?\d+$/D', $value)) {
+            $this->failure('badinteger', $name, $value, $settings, $options);
+        }
+        $ret = intval($value, 10);
 
-		// intval() returns min/max on overflow, so check that
-		if ( $ret === PHP_INT_MAX || $ret === PHP_INT_MIN ) {
-			$tmp = ( $ret < 0 ? '-' : '' ) . ltrim( $value, '-0' );
-			if ( $tmp !== (string)$ret ) {
-				$this->failure( 'badinteger', $name, $value, $settings, $options );
-			}
-		}
+        // intval() returns min/max on overflow, so check that
+        if ($ret === PHP_INT_MAX || $ret === PHP_INT_MIN) {
+            $tmp = ($ret < 0 ? '-' : '') . ltrim($value, '-0');
+            if ($tmp !== (string)$ret) {
+                $this->failure('badinteger', $name, $value, $settings, $options);
+            }
+        }
 
-		return $this->checkRange( $ret, $name, $value, $settings, $options );
-	}
+        return $this->checkRange($ret, $name, $value, $settings, $options);
+    }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new( 'paramvalidator-help-type-integer' )
-			->params( empty( $settings[ParamValidator::PARAM_ISMULTI] ) ? 1 : 2 );
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new('paramvalidator-help-type-integer')
+            ->params(empty($settings[ParamValidator::PARAM_ISMULTI]) ? 1 : 2);
 
-		return $info;
-	}
+        return $info;
+    }
 
-	public function stringifyValue( $name, $value, array $settings, array $options ) {
-		if ( !is_array( $value ) ) {
-			return parent::stringifyValue( $name, $value, $settings, $options );
-		}
+    public function stringifyValue($name, $value, array $settings, array $options)
+    {
+        if (!is_array($value)) {
+            return parent::stringifyValue($name, $value, $settings, $options);
+        }
 
-		return ParamValidator::implodeMultiValue( $value );
-	}
+        return ParamValidator::implodeMultiValue($value);
+    }
 
 }

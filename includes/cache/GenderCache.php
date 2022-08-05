@@ -31,172 +31,181 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @since 1.18
  * @ingroup Cache
  */
-class GenderCache {
-	protected $cache = [];
-	protected $default;
-	protected $misses = 0;
-	protected $missLimit = 1000;
+class GenderCache
+{
+    protected $cache = [];
+    protected $default;
+    protected $misses = 0;
+    protected $missLimit = 1000;
 
-	/** @var NamespaceInfo */
-	private $nsInfo;
+    /** @var NamespaceInfo */
+    private $nsInfo;
 
-	/** @var ILoadBalancer|null */
-	private $loadBalancer;
+    /** @var ILoadBalancer|null */
+    private $loadBalancer;
 
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
+    /** @var UserOptionsLookup */
+    private $userOptionsLookup;
 
-	public function __construct(
-		NamespaceInfo $nsInfo = null,
-		ILoadBalancer $loadBalancer = null,
-		UserOptionsLookup $userOptionsLookup = null
-	) {
-		$this->nsInfo = $nsInfo ?? MediaWikiServices::getInstance()->getNamespaceInfo();
-		$this->loadBalancer = $loadBalancer;
-		$this->userOptionsLookup = $userOptionsLookup ?? MediaWikiServices::getInstance()->getUserOptionsLookup();
-	}
+    public function __construct(
+        NamespaceInfo $nsInfo = null,
+        ILoadBalancer $loadBalancer = null,
+        UserOptionsLookup $userOptionsLookup = null
+    )
+    {
+        $this->nsInfo = $nsInfo ?? MediaWikiServices::getInstance()->getNamespaceInfo();
+        $this->loadBalancer = $loadBalancer;
+        $this->userOptionsLookup = $userOptionsLookup ?? MediaWikiServices::getInstance()->getUserOptionsLookup();
+    }
 
-	/**
-	 * Returns the default gender option in this wiki.
-	 * @return string
-	 */
-	protected function getDefault() {
-		if ( $this->default === null ) {
-			$this->default = $this->userOptionsLookup->getDefaultOption( 'gender' );
-		}
+    /**
+     * Returns the default gender option in this wiki.
+     * @return string
+     */
+    protected function getDefault()
+    {
+        if ($this->default === null) {
+            $this->default = $this->userOptionsLookup->getDefaultOption('gender');
+        }
 
-		return $this->default;
-	}
+        return $this->default;
+    }
 
-	/**
-	 * Returns the gender for given username.
-	 * @param string|UserIdentity $username
-	 * @param string $caller The calling method
-	 * @return string
-	 */
-	public function getGenderOf( $username, $caller = '' ) {
-		if ( $username instanceof UserIdentity ) {
-			$username = $username->getName();
-		}
+    /**
+     * Returns the gender for given username.
+     * @param string|UserIdentity $username
+     * @param string $caller The calling method
+     * @return string
+     */
+    public function getGenderOf($username, $caller = '')
+    {
+        if ($username instanceof UserIdentity) {
+            $username = $username->getName();
+        }
 
-		$username = self::normalizeUsername( $username );
-		if ( !isset( $this->cache[$username] ) ) {
-			if ( $this->misses >= $this->missLimit &&
-				RequestContext::getMain()->getUser()->getName() !== $username
-			) {
-				if ( $this->misses === $this->missLimit ) {
-					$this->misses++;
-					wfDebug( __METHOD__ . ": too many misses, returning default onwards" );
-				}
+        $username = self::normalizeUsername($username);
+        if (!isset($this->cache[$username])) {
+            if ($this->misses >= $this->missLimit &&
+                RequestContext::getMain()->getUser()->getName() !== $username
+            ) {
+                if ($this->misses === $this->missLimit) {
+                    $this->misses++;
+                    wfDebug(__METHOD__ . ": too many misses, returning default onwards");
+                }
 
-				return $this->getDefault();
-			} else {
-				$this->misses++;
-				$this->doQuery( $username, $caller );
-			}
-		}
+                return $this->getDefault();
+            } else {
+                $this->misses++;
+                $this->doQuery($username, $caller);
+            }
+        }
 
-		/* Undefined if there is a valid username which for some reason doesn't
-		 * exist in the database.
-		 */
-		return $this->cache[$username] ?? $this->getDefault();
-	}
+        /* Undefined if there is a valid username which for some reason doesn't
+         * exist in the database.
+         */
 
-	/**
-	 * Wrapper for doQuery that processes raw LinkBatch data.
-	 *
-	 * @param array $data
-	 * @param string $caller
-	 */
-	public function doLinkBatch( $data, $caller = '' ) {
-		$users = [];
-		foreach ( $data as $ns => $pagenames ) {
-			if ( !$this->nsInfo->hasGenderDistinction( $ns ) ) {
-				continue;
-			}
-			foreach ( array_keys( $pagenames ) as $username ) {
-				$users[$username] = true;
-			}
-		}
+        return $this->cache[$username] ?? $this->getDefault();
+    }
 
-		$this->doQuery( array_keys( $users ), $caller );
-	}
+    /**
+     * Wrapper for doQuery that processes raw LinkBatch data.
+     *
+     * @param array $data
+     * @param string $caller
+     */
+    public function doLinkBatch($data, $caller = '')
+    {
+        $users = [];
+        foreach ($data as $ns => $pagenames) {
+            if (!$this->nsInfo->hasGenderDistinction($ns)) {
+                continue;
+            }
+            foreach (array_keys($pagenames) as $username) {
+                $users[$username] = true;
+            }
+        }
 
-	/**
-	 * Wrapper for doQuery that processes a title array.
-	 *
-	 * @since 1.20
-	 * @param LinkTarget[] $titles
-	 * @param string $caller The calling method
-	 */
-	public function doTitlesArray( $titles, $caller = '' ) {
-		$users = [];
-		foreach ( $titles as $titleObj ) {
-			if ( !$this->nsInfo->hasGenderDistinction( $titleObj->getNamespace() ) ) {
-				continue;
-			}
-			$users[] = $titleObj->getText();
-		}
+        $this->doQuery(array_keys($users), $caller);
+    }
 
-		$this->doQuery( $users, $caller );
-	}
+    /**
+     * Wrapper for doQuery that processes a title array.
+     *
+     * @param LinkTarget[] $titles
+     * @param string $caller The calling method
+     * @since 1.20
+     */
+    public function doTitlesArray($titles, $caller = '')
+    {
+        $users = [];
+        foreach ($titles as $titleObj) {
+            if (!$this->nsInfo->hasGenderDistinction($titleObj->getNamespace())) {
+                continue;
+            }
+            $users[] = $titleObj->getText();
+        }
 
-	/**
-	 * Preloads genders for given list of users.
-	 * @param string[]|string $users Usernames
-	 * @param string $caller The calling method
-	 */
-	public function doQuery( $users, $caller = '' ) {
-		$default = $this->getDefault();
+        $this->doQuery($users, $caller);
+    }
 
-		$usersToCheck = [];
-		foreach ( (array)$users as $value ) {
-			$name = self::normalizeUsername( $value );
-			// Skip users whose gender setting we already know
-			if ( !isset( $this->cache[$name] ) ) {
-				// For existing users, this value will be overwritten by the correct value
-				$this->cache[$name] = $default;
-				// We no longer verify that only valid names are checked for, T267054
-				$usersToCheck[] = $name;
-			}
-		}
+    /**
+     * Preloads genders for given list of users.
+     * @param string[]|string $users Usernames
+     * @param string $caller The calling method
+     */
+    public function doQuery($users, $caller = '')
+    {
+        $default = $this->getDefault();
 
-		if ( count( $usersToCheck ) === 0 ) {
-			return;
-		}
+        $usersToCheck = [];
+        foreach ((array)$users as $value) {
+            $name = self::normalizeUsername($value);
+            // Skip users whose gender setting we already know
+            if (!isset($this->cache[$name])) {
+                // For existing users, this value will be overwritten by the correct value
+                $this->cache[$name] = $default;
+                // We no longer verify that only valid names are checked for, T267054
+                $usersToCheck[] = $name;
+            }
+        }
 
-		// Only query database, when load balancer is provided by service wiring
-		// This maybe not happen when running as part of the installer
-		if ( $this->loadBalancer === null ) {
-			return;
-		}
+        if (count($usersToCheck) === 0) {
+            return;
+        }
 
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$table = [ 'user', 'user_properties' ];
-		$fields = [ 'user_name', 'up_value' ];
-		$conds = [ 'user_name' => $usersToCheck ];
-		$joins = [ 'user_properties' =>
-			[ 'LEFT JOIN', [ 'user_id = up_user', 'up_property' => 'gender' ] ] ];
+        // Only query database, when load balancer is provided by service wiring
+        // This maybe not happen when running as part of the installer
+        if ($this->loadBalancer === null) {
+            return;
+        }
 
-		$comment = __METHOD__;
-		if ( strval( $caller ) !== '' ) {
-			$comment .= "/$caller";
-		}
-		$res = $dbr->select( $table, $fields, $conds, $comment, [], $joins );
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $table = ['user', 'user_properties'];
+        $fields = ['user_name', 'up_value'];
+        $conds = ['user_name' => $usersToCheck];
+        $joins = ['user_properties' =>
+                      ['LEFT JOIN', ['user_id = up_user', 'up_property' => 'gender']]];
 
-		foreach ( $res as $row ) {
-			$this->cache[$row->user_name] = $row->up_value ?: $default;
-		}
-	}
+        $comment = __METHOD__;
+        if (strval($caller) !== '') {
+            $comment .= "/$caller";
+        }
+        $res = $dbr->select($table, $fields, $conds, $comment, [], $joins);
 
-	private static function normalizeUsername( $username ) {
-		// Strip off subpages
-		$indexSlash = strpos( $username, '/' );
-		if ( $indexSlash !== false ) {
-			$username = substr( $username, 0, $indexSlash );
-		}
+        foreach ($res as $row) {
+            $this->cache[$row->user_name] = $row->up_value ?: $default;
+        }
+    }
 
-		// normalize underscore/spaces
-		return strtr( $username, '_', ' ' );
-	}
+    private static function normalizeUsername($username)
+    {
+        // Strip off subpages
+        $indexSlash = strpos($username, '/');
+        if ($indexSlash !== false) {
+            $username = substr($username, 0, $indexSlash);
+        }
+
+        // normalize underscore/spaces
+        return strtr($username, '_', ' ');
+    }
 }

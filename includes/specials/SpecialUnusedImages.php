@@ -29,70 +29,80 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialUnusedImages extends ImageQueryPage {
+class SpecialUnusedImages extends ImageQueryPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct( ILoadBalancer $loadBalancer ) {
-		parent::__construct( 'Unusedimages' );
-		$this->setDBLoadBalancer( $loadBalancer );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(ILoadBalancer $loadBalancer)
+    {
+        parent::__construct('Unusedimages');
+        $this->setDBLoadBalancer($loadBalancer);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		$retval = [
-			'tables' => [ 'image', 'imagelinks' ],
-			'fields' => [
-				'namespace' => NS_FILE,
-				'title' => 'img_name',
-				'value' => 'img_timestamp',
-			],
-			'conds' => [ 'il_to IS NULL' ],
-			'join_conds' => [ 'imagelinks' => [ 'LEFT JOIN', 'il_to = img_name' ] ]
-		];
+    public function getQueryInfo()
+    {
+        $retval = [
+            'tables'     => ['image', 'imagelinks'],
+            'fields'     => [
+                'namespace' => NS_FILE,
+                'title'     => 'img_name',
+                'value'     => 'img_timestamp',
+            ],
+            'conds'      => ['il_to IS NULL'],
+            'join_conds' => ['imagelinks' => ['LEFT JOIN', 'il_to = img_name']]
+        ];
 
-		if ( $this->getConfig()->get( MainConfigNames::CountCategorizedImagesAsUsed ) ) {
-			// Order is significant
-			$retval['tables'] = [ 'image', 'page', 'categorylinks',
-				'imagelinks' ];
-			$retval['conds']['page_namespace'] = NS_FILE;
-			$retval['conds'][] = 'cl_from IS NULL';
-			$retval['conds'][] = 'img_name = page_title';
-			$retval['join_conds']['categorylinks'] = [
-				'LEFT JOIN', 'cl_from = page_id' ];
-			$retval['join_conds']['imagelinks'] = [
-				'LEFT JOIN', 'il_to = page_title' ];
-		}
+        if ($this->getConfig()->get(MainConfigNames::CountCategorizedImagesAsUsed)) {
+            // Order is significant
+            $retval['tables'] = ['image', 'page', 'categorylinks',
+                'imagelinks'];
+            $retval['conds']['page_namespace'] = NS_FILE;
+            $retval['conds'][] = 'cl_from IS NULL';
+            $retval['conds'][] = 'img_name = page_title';
+            $retval['join_conds']['categorylinks'] = [
+                'LEFT JOIN', 'cl_from = page_id'];
+            $retval['join_conds']['imagelinks'] = [
+                'LEFT JOIN', 'il_to = page_title'];
+        }
 
-		return $retval;
-	}
+        return $retval;
+    }
 
-	public function usesTimestamps() {
-		return true;
-	}
+    public function usesTimestamps()
+    {
+        return true;
+    }
 
-	protected function getPageHeader() {
-		if ( $this->getConfig()->get( MainConfigNames::CountCategorizedImagesAsUsed ) ) {
-			return $this->msg(
-				'unusedimagestext-categorizedimgisused'
-			)->parseAsBlock();
-		}
-		return $this->msg( 'unusedimagestext' )->parseAsBlock();
-	}
+    protected function getPageHeader()
+    {
+        if ($this->getConfig()->get(MainConfigNames::CountCategorizedImagesAsUsed)) {
+            return $this->msg(
+                'unusedimagestext-categorizedimgisused'
+            )->parseAsBlock();
+        }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+        return $this->msg('unusedimagestext')->parseAsBlock();
+    }
+
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

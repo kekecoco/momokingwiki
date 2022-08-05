@@ -30,34 +30,37 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class ClearInterwikiCache extends Maintenance {
+class ClearInterwikiCache extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Clear all interwiki links for all languages from the cache' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Clear all interwiki links for all languages from the cache');
+    }
 
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
-		$cache = ObjectCache::getLocalClusterInstance();
-		$res = $dbr->newSelectQueryBuilder()
-			->select( 'iw_prefix' )
-			->from( 'interwiki' )
-			->caller( __METHOD__ )
-			->fetchResultSet();
-		$prefixes = [];
-		foreach ( $res as $row ) {
-			$prefixes[] = $row->iw_prefix;
-		}
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        $cache = ObjectCache::getLocalClusterInstance();
+        $res = $dbr->newSelectQueryBuilder()
+            ->select('iw_prefix')
+            ->from('interwiki')
+            ->caller(__METHOD__)
+            ->fetchResultSet();
+        $prefixes = [];
+        foreach ($res as $row) {
+            $prefixes[] = $row->iw_prefix;
+        }
 
-		foreach ( $this->getConfig()->get( MainConfigNames::LocalDatabases ) as $wikiId ) {
-			$this->output( "$wikiId..." );
-			foreach ( $prefixes as $prefix ) {
-				$cache->delete( "$wikiId:interwiki:$prefix" );
-			}
-			$this->output( "done\n" );
-		}
-	}
+        foreach ($this->getConfig()->get(MainConfigNames::LocalDatabases) as $wikiId) {
+            $this->output("$wikiId...");
+            foreach ($prefixes as $prefix) {
+                $cache->delete("$wikiId:interwiki:$prefix");
+            }
+            $this->output("done\n");
+        }
+    }
 }
 
 $maintClass = ClearInterwikiCache::class;

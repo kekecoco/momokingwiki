@@ -25,16 +25,17 @@
  * @stable to implement
  * @since 1.22
  */
-interface RCFeedFormatter {
-	/**
-	 * Formats the line to be sent by an engine
-	 *
-	 * @param array $feed The feed, as configured in an associative array.
-	 * @param RecentChange $rc The RecentChange object showing what sort
-	 *                         of event has taken place.
-	 * @param string|null $actionComment
-	 * @return string|null The text to send.  If the formatter returns null,
-	 *  the line will not be sent.
-	 */
-	public function getLine( array $feed, RecentChange $rc, $actionComment );
+interface RCFeedFormatter
+{
+    /**
+     * Formats the line to be sent by an engine
+     *
+     * @param array $feed The feed, as configured in an associative array.
+     * @param RecentChange $rc The RecentChange object showing what sort
+     *                         of event has taken place.
+     * @param string|null $actionComment
+     * @return string|null The text to send.  If the formatter returns null,
+     *  the line will not be sent.
+     */
+    public function getLine(array $feed, RecentChange $rc, $actionComment);
 }

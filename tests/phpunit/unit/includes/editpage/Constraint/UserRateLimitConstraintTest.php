@@ -28,69 +28,72 @@ use MediaWiki\EditPage\Constraint\UserRateLimitConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\UserRateLimitConstraint
  */
-class UserRateLimitConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class UserRateLimitConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		// Cannot assert that 0 parameters are passed, since PHP fills in the default
-		// values before PHPUnit checks; first call uses both defaults, third call
-		// uses the default of 1 for the second parameter
-		$user = $this->getMockBuilder( User::class )
-			->onlyMethods( [ 'pingLimiter' ] )
-			->getMock();
-		$user->expects( $this->exactly( 3 ) )
-			->method( 'pingLimiter' )
-			->withConsecutive(
-				[ 'edit', 1 ],
-				[ 'linkpurge', 0 ],
-				[ 'editcontentmodel', 1 ]
-			)
-			->will(
-				$this->onConsecutiveCalls(
-					false,
-					false,
-					false
-				)
-			);
+    public function testPass()
+    {
+        // Cannot assert that 0 parameters are passed, since PHP fills in the default
+        // values before PHPUnit checks; first call uses both defaults, third call
+        // uses the default of 1 for the second parameter
+        $user = $this->getMockBuilder(User::class)
+            ->onlyMethods(['pingLimiter'])
+            ->getMock();
+        $user->expects($this->exactly(3))
+            ->method('pingLimiter')
+            ->withConsecutive(
+                ['edit', 1],
+                ['linkpurge', 0],
+                ['editcontentmodel', 1]
+            )
+            ->will(
+                $this->onConsecutiveCalls(
+                    false,
+                    false,
+                    false
+                )
+            );
 
-		$title = $this->createMock( Title::class );
-		$title->expects( $this->once() )
-			->method( 'getContentModel' )
-			->willReturn( 'OldContentModel' );
+        $title = $this->createMock(Title::class);
+        $title->expects($this->once())
+            ->method('getContentModel')
+            ->willReturn('OldContentModel');
 
-		$constraint = new UserRateLimitConstraint( $user, $title, 'NewContentModel' );
-		$this->assertConstraintPassed( $constraint );
-	}
+        $constraint = new UserRateLimitConstraint($user, $title, 'NewContentModel');
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		// Cannot assert that 0 parameters are passed, since PHP fills in the default
-		// values before PHPUnit checks; first call uses both defaults, third call
-		// uses the default of 1 for the second parameter
-		$user = $this->getMockBuilder( User::class )
-			->onlyMethods( [ 'pingLimiter' ] )
-			->getMock();
-		$user->expects( $this->exactly( 3 ) )
-			->method( 'pingLimiter' )
-			->withConsecutive(
-				[ 'edit', 1 ],
-				[ 'linkpurge', 0 ],
-				[ 'editcontentmodel', 1 ]
-			)
-			->will(
-				$this->onConsecutiveCalls(
-					false,
-					false,
-					true // Only die on the last check
-				)
-			);
+    public function testFailure()
+    {
+        // Cannot assert that 0 parameters are passed, since PHP fills in the default
+        // values before PHPUnit checks; first call uses both defaults, third call
+        // uses the default of 1 for the second parameter
+        $user = $this->getMockBuilder(User::class)
+            ->onlyMethods(['pingLimiter'])
+            ->getMock();
+        $user->expects($this->exactly(3))
+            ->method('pingLimiter')
+            ->withConsecutive(
+                ['edit', 1],
+                ['linkpurge', 0],
+                ['editcontentmodel', 1]
+            )
+            ->will(
+                $this->onConsecutiveCalls(
+                    false,
+                    false,
+                    true // Only die on the last check
+                )
+            );
 
-		$title = $this->createMock( Title::class );
-		$title->expects( $this->once() )
-			->method( 'getContentModel' )
-			->willReturn( 'OldContentModel' );
+        $title = $this->createMock(Title::class);
+        $title->expects($this->once())
+            ->method('getContentModel')
+            ->willReturn('OldContentModel');
 
-		$constraint = new UserRateLimitConstraint( $user, $title, 'NewContentModel' );
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_RATE_LIMITED );
-	}
+        $constraint = new UserRateLimitConstraint($user, $title, 'NewContentModel');
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_RATE_LIMITED);
+    }
 
 }

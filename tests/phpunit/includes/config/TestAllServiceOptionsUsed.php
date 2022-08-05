@@ -14,35 +14,37 @@
  *
  * Currently we support only one ServiceOptions per test class.
  */
-trait TestAllServiceOptionsUsed {
-	/** @var array [ expected keys (as list), keys accessed so far (as dictionary) ] */
-	private static $serviceOptionsAccessLog = [];
+trait TestAllServiceOptionsUsed
+{
+    /** @var array [ expected keys (as list), keys accessed so far (as dictionary) ] */
+    private static $serviceOptionsAccessLog = [];
 
-	/**
-	 * @param string[] $expectedUnused Options that we know are not yet tested
-	 */
-	public function assertAllServiceOptionsUsed( array $expectedUnused = [] ) {
-		$this->assertNotEmpty( self::$serviceOptionsAccessLog,
-			'You need to pass LoggedServiceOptions to your class instead of ServiceOptions ' .
-			'for TestAllServiceOptionsUsed to work.'
-		);
+    /**
+     * @param string[] $expectedUnused Options that we know are not yet tested
+     */
+    public function assertAllServiceOptionsUsed(array $expectedUnused = [])
+    {
+        $this->assertNotEmpty(self::$serviceOptionsAccessLog,
+            'You need to pass LoggedServiceOptions to your class instead of ServiceOptions ' .
+            'for TestAllServiceOptionsUsed to work.'
+        );
 
-		list( $expected, $actual ) = self::$serviceOptionsAccessLog;
+        [$expected, $actual] = self::$serviceOptionsAccessLog;
 
-		$expected = array_diff( $expected, $expectedUnused );
+        $expected = array_diff($expected, $expectedUnused);
 
-		$this->assertSame(
-			[],
-			array_diff( $expected, array_keys( $actual ) ),
-			"Some ServiceOptions keys were not accessed in tests. If they really aren't used, " .
-			"remove them from the class' option list. If they are used, add tests to cover them, " .
-			"or ignore the problem for now by passing them to assertAllServiceOptionsUsed() in " .
-			"its \$expectedUnused argument."
-		);
+        $this->assertSame(
+            [],
+            array_diff($expected, array_keys($actual)),
+            "Some ServiceOptions keys were not accessed in tests. If they really aren't used, " .
+            "remove them from the class' option list. If they are used, add tests to cover them, " .
+            "or ignore the problem for now by passing them to assertAllServiceOptionsUsed() in " .
+            "its \$expectedUnused argument."
+        );
 
-		if ( $expectedUnused ) {
-			$this->markTestIncomplete( 'Some ServiceOptions keys are not yet accessed by tests: ' .
-				implode( ', ', $expectedUnused ) );
-		}
-	}
+        if ($expectedUnused) {
+            $this->markTestIncomplete('Some ServiceOptions keys are not yet accessed by tests: ' .
+                implode(', ', $expectedUnused));
+        }
+    }
 }

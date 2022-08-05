@@ -29,346 +29,367 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-abstract class ApiFormatBase extends ApiBase {
-	private $mIsHtml, $mFormat;
-	private $mBuffer, $mDisabled = false;
-	private $mIsWrappedHtml = false;
-	private $mHttpStatus = false;
-	protected $mForceDefaultParams = false;
+abstract class ApiFormatBase extends ApiBase
+{
+    private $mIsHtml, $mFormat;
+    private $mBuffer, $mDisabled = false;
+    private $mIsWrappedHtml = false;
+    private $mHttpStatus = false;
+    protected $mForceDefaultParams = false;
 
-	/**
-	 * If $format ends with 'fm', pretty-print the output in HTML.
-	 * @param ApiMain $main
-	 * @param string $format Format name
-	 */
-	public function __construct( ApiMain $main, $format ) {
-		parent::__construct( $main, $format );
+    /**
+     * If $format ends with 'fm', pretty-print the output in HTML.
+     * @param ApiMain $main
+     * @param string $format Format name
+     */
+    public function __construct(ApiMain $main, $format)
+    {
+        parent::__construct($main, $format);
 
-		$this->mIsHtml = ( substr( $format, -2, 2 ) === 'fm' ); // ends with 'fm'
-		if ( $this->mIsHtml ) {
-			$this->mFormat = substr( $format, 0, -2 ); // remove ending 'fm'
-			$this->mIsWrappedHtml = $this->getMain()->getCheck( 'wrappedhtml' );
-		} else {
-			$this->mFormat = $format;
-		}
-		$this->mFormat = strtoupper( $this->mFormat );
-	}
+        $this->mIsHtml = (substr($format, -2, 2) === 'fm'); // ends with 'fm'
+        if ($this->mIsHtml) {
+            $this->mFormat = substr($format, 0, -2); // remove ending 'fm'
+            $this->mIsWrappedHtml = $this->getMain()->getCheck('wrappedhtml');
+        } else {
+            $this->mFormat = $format;
+        }
+        $this->mFormat = strtoupper($this->mFormat);
+    }
 
-	/**
-	 * Overriding class returns the MIME type that should be sent to the client.
-	 *
-	 * When getIsHtml() returns true, the return value here is used for syntax
-	 * highlighting but the client sees text/html.
-	 *
-	 * @return string|null
-	 */
-	abstract public function getMimeType();
+    /**
+     * Overriding class returns the MIME type that should be sent to the client.
+     *
+     * When getIsHtml() returns true, the return value here is used for syntax
+     * highlighting but the client sees text/html.
+     *
+     * @return string|null
+     */
+    abstract public function getMimeType();
 
-	/**
-	 * Return a filename for this module's output.
-	 * @note If $this->getIsWrappedHtml() || $this->getIsHtml(), you'll very
-	 *  likely want to fall back to this class's version.
-	 * @since 1.27
-	 * @return string Generally this should be "api-result.$ext"
-	 */
-	public function getFilename() {
-		if ( $this->getIsWrappedHtml() ) {
-			return 'api-result-wrapped.json';
-		} elseif ( $this->getIsHtml() ) {
-			return 'api-result.html';
-		} else {
-			$mimeAnalyzer = MediaWikiServices::getInstance()->getMimeAnalyzer();
-			$ext = $mimeAnalyzer->getExtensionFromMimeTypeOrNull( $this->getMimeType() )
-				?? strtolower( $this->mFormat );
-			return "api-result.$ext";
-		}
-	}
+    /**
+     * Return a filename for this module's output.
+     * @note If $this->getIsWrappedHtml() || $this->getIsHtml(), you'll very
+     *  likely want to fall back to this class's version.
+     * @return string Generally this should be "api-result.$ext"
+     * @since 1.27
+     */
+    public function getFilename()
+    {
+        if ($this->getIsWrappedHtml()) {
+            return 'api-result-wrapped.json';
+        } elseif ($this->getIsHtml()) {
+            return 'api-result.html';
+        } else {
+            $mimeAnalyzer = MediaWikiServices::getInstance()->getMimeAnalyzer();
+            $ext = $mimeAnalyzer->getExtensionFromMimeTypeOrNull($this->getMimeType())
+                ?? strtolower($this->mFormat);
 
-	/**
-	 * Get the internal format name
-	 * @return string
-	 */
-	public function getFormat() {
-		return $this->mFormat;
-	}
+            return "api-result.$ext";
+        }
+    }
 
-	/**
-	 * Returns true when the HTML pretty-printer should be used.
-	 * The default implementation assumes that formats ending with 'fm'
-	 * should be formatted in HTML.
-	 * @return bool
-	 */
-	public function getIsHtml() {
-		return $this->mIsHtml;
-	}
+    /**
+     * Get the internal format name
+     * @return string
+     */
+    public function getFormat()
+    {
+        return $this->mFormat;
+    }
 
-	/**
-	 * Returns true when the special wrapped mode is enabled.
-	 * @since 1.27
-	 * @return bool
-	 */
-	protected function getIsWrappedHtml() {
-		return $this->mIsWrappedHtml;
-	}
+    /**
+     * Returns true when the HTML pretty-printer should be used.
+     * The default implementation assumes that formats ending with 'fm'
+     * should be formatted in HTML.
+     * @return bool
+     */
+    public function getIsHtml()
+    {
+        return $this->mIsHtml;
+    }
 
-	/**
-	 * Disable the formatter.
-	 *
-	 * This causes calls to initPrinter() and closePrinter() to be ignored.
-	 */
-	public function disable() {
-		$this->mDisabled = true;
-	}
+    /**
+     * Returns true when the special wrapped mode is enabled.
+     * @return bool
+     * @since 1.27
+     */
+    protected function getIsWrappedHtml()
+    {
+        return $this->mIsWrappedHtml;
+    }
 
-	/**
-	 * Whether the printer is disabled
-	 * @return bool
-	 */
-	public function isDisabled() {
-		return $this->mDisabled;
-	}
+    /**
+     * Disable the formatter.
+     *
+     * This causes calls to initPrinter() and closePrinter() to be ignored.
+     */
+    public function disable()
+    {
+        $this->mDisabled = true;
+    }
 
-	/**
-	 * Whether this formatter can handle printing API errors.
-	 *
-	 * If this returns false, then on API errors the default printer will be
-	 * instantiated.
-	 * @since 1.23
-	 * @return bool
-	 */
-	public function canPrintErrors() {
-		return true;
-	}
+    /**
+     * Whether the printer is disabled
+     * @return bool
+     */
+    public function isDisabled()
+    {
+        return $this->mDisabled;
+    }
 
-	/**
-	 * Ignore request parameters, force a default.
-	 *
-	 * Used as a fallback if errors are being thrown.
-	 * @since 1.26
-	 */
-	public function forceDefaultParams() {
-		$this->mForceDefaultParams = true;
-	}
+    /**
+     * Whether this formatter can handle printing API errors.
+     *
+     * If this returns false, then on API errors the default printer will be
+     * instantiated.
+     * @return bool
+     * @since 1.23
+     */
+    public function canPrintErrors()
+    {
+        return true;
+    }
 
-	/**
-	 * Overridden to honor $this->forceDefaultParams(), if applicable
-	 * @inheritDoc
-	 * @since 1.26
-	 */
-	protected function getParameterFromSettings( $paramName, $paramSettings, $parseLimit ) {
-		if ( !$this->mForceDefaultParams ) {
-			return parent::getParameterFromSettings( $paramName, $paramSettings, $parseLimit );
-		}
+    /**
+     * Ignore request parameters, force a default.
+     *
+     * Used as a fallback if errors are being thrown.
+     * @since 1.26
+     */
+    public function forceDefaultParams()
+    {
+        $this->mForceDefaultParams = true;
+    }
 
-		if ( !is_array( $paramSettings ) ) {
-			return $paramSettings;
-		}
+    /**
+     * Overridden to honor $this->forceDefaultParams(), if applicable
+     * @inheritDoc
+     * @since 1.26
+     */
+    protected function getParameterFromSettings($paramName, $paramSettings, $parseLimit)
+    {
+        if (!$this->mForceDefaultParams) {
+            return parent::getParameterFromSettings($paramName, $paramSettings, $parseLimit);
+        }
 
-		return $paramSettings[ParamValidator::PARAM_DEFAULT] ?? null;
-	}
+        if (!is_array($paramSettings)) {
+            return $paramSettings;
+        }
 
-	/**
-	 * Set the HTTP status code to be used for the response
-	 * @since 1.29
-	 * @param int $code
-	 */
-	public function setHttpStatus( $code ) {
-		if ( $this->mDisabled ) {
-			return;
-		}
+        return $paramSettings[ParamValidator::PARAM_DEFAULT] ?? null;
+    }
 
-		if ( $this->getIsHtml() ) {
-			$this->mHttpStatus = $code;
-		} else {
-			$this->getMain()->getRequest()->response()->statusHeader( $code );
-		}
-	}
+    /**
+     * Set the HTTP status code to be used for the response
+     * @param int $code
+     * @since 1.29
+     */
+    public function setHttpStatus($code)
+    {
+        if ($this->mDisabled) {
+            return;
+        }
 
-	/**
-	 * Initialize the printer function and prepare the output headers.
-	 * @param bool $unused Always false since 1.25
-	 */
-	public function initPrinter( $unused = false ) {
-		if ( $this->mDisabled ) {
-			return;
-		}
+        if ($this->getIsHtml()) {
+            $this->mHttpStatus = $code;
+        } else {
+            $this->getMain()->getRequest()->response()->statusHeader($code);
+        }
+    }
 
-		$mime = $this->getIsWrappedHtml()
-			? 'text/mediawiki-api-prettyprint-wrapped'
-			: ( $this->getIsHtml() ? 'text/html' : $this->getMimeType() );
+    /**
+     * Initialize the printer function and prepare the output headers.
+     * @param bool $unused Always false since 1.25
+     */
+    public function initPrinter($unused = false)
+    {
+        if ($this->mDisabled) {
+            return;
+        }
 
-		// Some printers (ex. Feed) do their own header settings,
-		// in which case $mime will be set to null
-		if ( $mime === null ) {
-			return; // skip any initialization
-		}
+        $mime = $this->getIsWrappedHtml()
+            ? 'text/mediawiki-api-prettyprint-wrapped'
+            : ($this->getIsHtml() ? 'text/html' : $this->getMimeType());
 
-		$this->getMain()->getRequest()->response()->header( "Content-Type: $mime; charset=utf-8" );
+        // Some printers (ex. Feed) do their own header settings,
+        // in which case $mime will be set to null
+        if ($mime === null) {
+            return; // skip any initialization
+        }
 
-		// Set X-Frame-Options API results (T41180)
-		$apiFrameOptions = $this->getConfig()->get( MainConfigNames::ApiFrameOptions );
-		if ( $apiFrameOptions ) {
-			$this->getMain()->getRequest()->response()->header( "X-Frame-Options: $apiFrameOptions" );
-		}
+        $this->getMain()->getRequest()->response()->header("Content-Type: $mime; charset=utf-8");
 
-		// Set a Content-Disposition header so something downloading an API
-		// response uses a halfway-sensible filename (T128209).
-		$header = 'Content-Disposition: inline';
-		$filename = $this->getFilename();
-		$compatFilename = mb_convert_encoding( $filename, 'ISO-8859-1' );
-		if ( preg_match( '/^[0-9a-zA-Z!#$%&\'*+\-.^_`|~]+$/', $compatFilename ) ) {
-			$header .= '; filename=' . $compatFilename;
-		} else {
-			$header .= '; filename="'
-				. preg_replace( '/([\0-\x1f"\x5c\x7f])/', '\\\\$1', $compatFilename ) . '"';
-		}
-		if ( $compatFilename !== $filename ) {
-			$value = "UTF-8''" . rawurlencode( $filename );
-			// rawurlencode() encodes more characters than RFC 5987 specifies. Unescape the ones it allows.
-			$value = strtr( $value, [
-				'%21' => '!', '%23' => '#', '%24' => '$', '%26' => '&', '%2B' => '+', '%5E' => '^',
-				'%60' => '`', '%7C' => '|',
-			] );
-			$header .= '; filename*=' . $value;
-		}
-		$this->getMain()->getRequest()->response()->header( $header );
-	}
+        // Set X-Frame-Options API results (T41180)
+        $apiFrameOptions = $this->getConfig()->get(MainConfigNames::ApiFrameOptions);
+        if ($apiFrameOptions) {
+            $this->getMain()->getRequest()->response()->header("X-Frame-Options: $apiFrameOptions");
+        }
 
-	/**
-	 * Finish printing and output buffered data.
-	 */
-	public function closePrinter() {
-		if ( $this->mDisabled ) {
-			return;
-		}
+        // Set a Content-Disposition header so something downloading an API
+        // response uses a halfway-sensible filename (T128209).
+        $header = 'Content-Disposition: inline';
+        $filename = $this->getFilename();
+        $compatFilename = mb_convert_encoding($filename, 'ISO-8859-1');
+        if (preg_match('/^[0-9a-zA-Z!#$%&\'*+\-.^_`|~]+$/', $compatFilename)) {
+            $header .= '; filename=' . $compatFilename;
+        } else {
+            $header .= '; filename="'
+                . preg_replace('/([\0-\x1f"\x5c\x7f])/', '\\\\$1', $compatFilename) . '"';
+        }
+        if ($compatFilename !== $filename) {
+            $value = "UTF-8''" . rawurlencode($filename);
+            // rawurlencode() encodes more characters than RFC 5987 specifies. Unescape the ones it allows.
+            $value = strtr($value, [
+                '%21' => '!', '%23' => '#', '%24' => '$', '%26' => '&', '%2B' => '+', '%5E' => '^',
+                '%60' => '`', '%7C' => '|',
+            ]);
+            $header .= '; filename*=' . $value;
+        }
+        $this->getMain()->getRequest()->response()->header($header);
+    }
 
-		$mime = $this->getMimeType();
-		if ( $this->getIsHtml() && $mime !== null ) {
-			$format = $this->getFormat();
-			$lcformat = strtolower( $format );
-			$result = $this->getBuffer();
+    /**
+     * Finish printing and output buffered data.
+     */
+    public function closePrinter()
+    {
+        if ($this->mDisabled) {
+            return;
+        }
 
-			$context = new DerivativeContext( $this->getMain() );
-			$skinFactory = MediaWikiServices::getInstance()->getSkinFactory();
-			$context->setSkin( $skinFactory->makeSkin( 'apioutput' ) );
-			$context->setTitle( SpecialPage::getTitleFor( 'ApiHelp' ) );
-			$out = new OutputPage( $context );
-			$context->setOutput( $out );
+        $mime = $this->getMimeType();
+        if ($this->getIsHtml() && $mime !== null) {
+            $format = $this->getFormat();
+            $lcformat = strtolower($format);
+            $result = $this->getBuffer();
 
-			$out->setRobotPolicy( 'noindex,nofollow' );
-			$out->addModuleStyles( 'mediawiki.apipretty' );
-			$out->setPageTitle( $context->msg( 'api-format-title' ) );
+            $context = new DerivativeContext($this->getMain());
+            $skinFactory = MediaWikiServices::getInstance()->getSkinFactory();
+            $context->setSkin($skinFactory->makeSkin('apioutput'));
+            $context->setTitle(SpecialPage::getTitleFor('ApiHelp'));
+            $out = new OutputPage($context);
+            $context->setOutput($out);
 
-			if ( !$this->getIsWrappedHtml() ) {
-				// When the format without suffix 'fm' is defined, there is a non-html version
-				if ( $this->getMain()->getModuleManager()->isDefined( $lcformat, 'format' ) ) {
-					if ( !$this->getRequest()->wasPosted() ) {
-						$nonHtmlUrl = strtok( $this->getRequest()->getFullRequestURL(), '?' )
-							. '?' . $this->getRequest()->appendQueryValue( 'format', $lcformat );
-						$msg = $context->msg( 'api-format-prettyprint-header-hyperlinked' )
-							->params( $format, $lcformat, $nonHtmlUrl );
-					} else {
-						$msg = $context->msg( 'api-format-prettyprint-header' )->params( $format, $lcformat );
-					}
-				} else {
-					$msg = $context->msg( 'api-format-prettyprint-header-only-html' )->params( $format );
-				}
+            $out->setRobotPolicy('noindex,nofollow');
+            $out->addModuleStyles('mediawiki.apipretty');
+            $out->setPageTitle($context->msg('api-format-title'));
 
-				$header = $msg->parseAsBlock();
-				$out->addHTML(
-					Html::rawElement( 'div', [ 'class' => 'api-pretty-header' ],
-						ApiHelp::fixHelpLinks( $header )
-					)
-				);
+            if (!$this->getIsWrappedHtml()) {
+                // When the format without suffix 'fm' is defined, there is a non-html version
+                if ($this->getMain()->getModuleManager()->isDefined($lcformat, 'format')) {
+                    if (!$this->getRequest()->wasPosted()) {
+                        $nonHtmlUrl = strtok($this->getRequest()->getFullRequestURL(), '?')
+                            . '?' . $this->getRequest()->appendQueryValue('format', $lcformat);
+                        $msg = $context->msg('api-format-prettyprint-header-hyperlinked')
+                            ->params($format, $lcformat, $nonHtmlUrl);
+                    } else {
+                        $msg = $context->msg('api-format-prettyprint-header')->params($format, $lcformat);
+                    }
+                } else {
+                    $msg = $context->msg('api-format-prettyprint-header-only-html')->params($format);
+                }
 
-				if ( $this->mHttpStatus && $this->mHttpStatus !== 200 ) {
-					$out->addHTML(
-						Html::rawElement( 'div', [ 'class' => [ 'api-pretty-header', 'api-pretty-status' ] ],
-							$this->msg(
-								'api-format-prettyprint-status',
-								$this->mHttpStatus,
-								HttpStatus::getMessage( $this->mHttpStatus )
-							)->parse()
-						)
-					);
-				}
-			}
+                $header = $msg->parseAsBlock();
+                $out->addHTML(
+                    Html::rawElement('div', ['class' => 'api-pretty-header'],
+                        ApiHelp::fixHelpLinks($header)
+                    )
+                );
 
-			if ( $this->getHookRunner()->onApiFormatHighlight( $context, $result, $mime, $format ) ) {
-				$out->addHTML(
-					Html::element( 'pre', [ 'class' => 'api-pretty-content' ], $result )
-				);
-			}
+                if ($this->mHttpStatus && $this->mHttpStatus !== 200) {
+                    $out->addHTML(
+                        Html::rawElement('div', ['class' => ['api-pretty-header', 'api-pretty-status']],
+                            $this->msg(
+                                'api-format-prettyprint-status',
+                                $this->mHttpStatus,
+                                HttpStatus::getMessage($this->mHttpStatus)
+                            )->parse()
+                        )
+                    );
+                }
+            }
 
-			if ( $this->getIsWrappedHtml() ) {
-				// This is a special output mode mainly intended for ApiSandbox use
-				$time = $this->getMain()->getRequest()->getElapsedTime();
-				echo FormatJson::encode(
-					[
-						'status' => (int)( $this->mHttpStatus ?: 200 ),
-						'statustext' => HttpStatus::getMessage( $this->mHttpStatus ?: 200 ),
-						'html' => $out->getHTML(),
-						'modules' => array_values( array_unique( array_merge(
-							$out->getModules(),
-							$out->getModuleStyles()
-						) ) ),
-						'continue' => $this->getResult()->getResultData( 'continue' ),
-						'time' => round( $time * 1000 ),
-					],
-					false, FormatJson::ALL_OK
-				);
-			} else {
-				// API handles its own clickjacking protection.
-				// Note, that $wgBreakFrames will still override $wgApiFrameOptions for format mode.
-				$out->setPreventClickjacking( false );
-				$out->output();
-			}
-		} else {
-			// For non-HTML output, clear all errors that might have been
-			// displayed if display_errors=On
-			ob_clean();
+            if ($this->getHookRunner()->onApiFormatHighlight($context, $result, $mime, $format)) {
+                $out->addHTML(
+                    Html::element('pre', ['class' => 'api-pretty-content'], $result)
+                );
+            }
 
-			echo $this->getBuffer();
-		}
-	}
+            if ($this->getIsWrappedHtml()) {
+                // This is a special output mode mainly intended for ApiSandbox use
+                $time = $this->getMain()->getRequest()->getElapsedTime();
+                echo FormatJson::encode(
+                    [
+                        'status'     => (int)($this->mHttpStatus ?: 200),
+                        'statustext' => HttpStatus::getMessage($this->mHttpStatus ?: 200),
+                        'html'       => $out->getHTML(),
+                        'modules'    => array_values(array_unique(array_merge(
+                            $out->getModules(),
+                            $out->getModuleStyles()
+                        ))),
+                        'continue'   => $this->getResult()->getResultData('continue'),
+                        'time'       => round($time * 1000),
+                    ],
+                    false, FormatJson::ALL_OK
+                );
+            } else {
+                // API handles its own clickjacking protection.
+                // Note, that $wgBreakFrames will still override $wgApiFrameOptions for format mode.
+                $out->setPreventClickjacking(false);
+                $out->output();
+            }
+        } else {
+            // For non-HTML output, clear all errors that might have been
+            // displayed if display_errors=On
+            ob_clean();
 
-	/**
-	 * Append text to the output buffer.
-	 * @param string $text
-	 */
-	public function printText( $text ) {
-		$this->mBuffer .= $text;
-	}
+            echo $this->getBuffer();
+        }
+    }
 
-	/**
-	 * Get the contents of the buffer.
-	 * @return string
-	 */
-	public function getBuffer() {
-		return $this->mBuffer;
-	}
+    /**
+     * Append text to the output buffer.
+     * @param string $text
+     */
+    public function printText($text)
+    {
+        $this->mBuffer .= $text;
+    }
 
-	public function getAllowedParams() {
-		$ret = [];
-		if ( $this->getIsHtml() ) {
-			$ret['wrappedhtml'] = [
-				ParamValidator::PARAM_DEFAULT => false,
-				ApiBase::PARAM_HELP_MSG => 'apihelp-format-param-wrappedhtml',
-			];
-		}
-		return $ret;
-	}
+    /**
+     * Get the contents of the buffer.
+     * @return string
+     */
+    public function getBuffer()
+    {
+        return $this->mBuffer;
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&meta=siteinfo&siprop=namespaces&format=' . $this->getModuleName()
-				=> [ 'apihelp-format-example-generic', $this->getFormat() ]
-		];
-	}
+    public function getAllowedParams()
+    {
+        $ret = [];
+        if ($this->getIsHtml()) {
+            $ret['wrappedhtml'] = [
+                ParamValidator::PARAM_DEFAULT => false,
+                ApiBase::PARAM_HELP_MSG       => 'apihelp-format-param-wrappedhtml',
+            ];
+        }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Data_formats';
-	}
+        return $ret;
+    }
+
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&meta=siteinfo&siprop=namespaces&format=' . $this->getModuleName()
+            => ['apihelp-format-example-generic', $this->getFormat()]
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Data_formats';
+    }
 
 }
 

@@ -28,45 +28,51 @@
  *
  * @since 1.19
  */
-abstract class LogEntryBase implements LogEntry {
+abstract class LogEntryBase implements LogEntry
+{
 
-	public function getFullType() {
-		return $this->getType() . '/' . $this->getSubtype();
-	}
+    public function getFullType()
+    {
+        return $this->getType() . '/' . $this->getSubtype();
+    }
 
-	public function isDeleted( $field ) {
-		return ( $this->getDeleted() & $field ) === $field;
-	}
+    public function isDeleted($field)
+    {
+        return ($this->getDeleted() & $field) === $field;
+    }
 
-	/**
-	 * Whether the parameters for this log are stored in new or
-	 * old format.
-	 *
-	 * @return bool
-	 */
-	public function isLegacy() {
-		return false;
-	}
+    /**
+     * Whether the parameters for this log are stored in new or
+     * old format.
+     *
+     * @return bool
+     */
+    public function isLegacy()
+    {
+        return false;
+    }
 
-	/**
-	 * Create a blob from a parameter array
-	 *
-	 * @since 1.26
-	 * @param array $params
-	 * @return string
-	 */
-	public static function makeParamBlob( $params ) {
-		return serialize( (array)$params );
-	}
+    /**
+     * Create a blob from a parameter array
+     *
+     * @param array $params
+     * @return string
+     * @since 1.26
+     */
+    public static function makeParamBlob($params)
+    {
+        return serialize((array)$params);
+    }
 
-	/**
-	 * Extract a parameter array from a blob
-	 *
-	 * @since 1.26
-	 * @param string $blob
-	 * @return array|false
-	 */
-	public static function extractParams( $blob ) {
-		return unserialize( $blob );
-	}
+    /**
+     * Extract a parameter array from a blob
+     *
+     * @param string $blob
+     * @return array|false
+     * @since 1.26
+     */
+    public static function extractParams($blob)
+    {
+        return unserialize($blob);
+    }
 }

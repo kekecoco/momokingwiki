@@ -39,68 +39,70 @@ use Psr\Log\NullLogger;
  *
  * @covers \MediaWiki\EditPage\Constraint\EditConstraintFactory
  */
-class EditConstraintFactoryTest extends MediaWikiUnitTestCase {
+class EditConstraintFactoryTest extends MediaWikiUnitTestCase
+{
 
-	public function testFactoryMethods() {
-		$options = new ServiceOptions(
-			EditConstraintFactory::CONSTRUCTOR_OPTIONS,
-			[ 'MaxArticleSize' => 10 ]
-		);
-		$loggerFactory = $this->createMock( Spi::class );
-		$loggerFactory->method( 'getLogger' )
-			->willReturn( new NullLogger() );
+    public function testFactoryMethods()
+    {
+        $options = new ServiceOptions(
+            EditConstraintFactory::CONSTRUCTOR_OPTIONS,
+            ['MaxArticleSize' => 10]
+        );
+        $loggerFactory = $this->createMock(Spi::class);
+        $loggerFactory->method('getLogger')
+            ->willReturn(new NullLogger());
 
-		$factory = new EditConstraintFactory(
-			$options,
-			$loggerFactory,
-			$this->createMock( PermissionManager::class ),
-			$this->createMock( HookContainer::class ),
-			$this->createMock( ReadOnlyMode::class ),
-			$this->createMock( SpamChecker::class )
-		);
+        $factory = new EditConstraintFactory(
+            $options,
+            $loggerFactory,
+            $this->createMock(PermissionManager::class),
+            $this->createMock(HookContainer::class),
+            $this->createMock(ReadOnlyMode::class),
+            $this->createMock(SpamChecker::class)
+        );
 
-		$user = $this->createMock( User::class );
-		$title = $this->createMock( Title::class );
-		$context = $this->createMock( IContextSource::class );
-		$newContent = $this->createMock( Content::class );
+        $user = $this->createMock(User::class);
+        $title = $this->createMock(Title::class);
+        $context = $this->createMock(IContextSource::class);
+        $newContent = $this->createMock(Content::class);
 
-		// Actual tests
-		$this->assertInstanceOf(
-			EditFilterMergedContentHookConstraint::class,
-			$factory->newEditFilterMergedContentHookConstraint(
-				$newContent,
-				$context,
-				'EditSummary',
-				true, // $minorEdit
-				$this->createMock( Language::class ),
-				$this->createMock( User::class )
-			)
-		);
-		$this->assertInstanceOf(
-			PageSizeConstraint::class,
-			$factory->newPageSizeConstraint( 123, PageSizeConstraint::BEFORE_MERGE )
-		);
-		$this->assertInstanceOf(
-			ReadOnlyConstraint::class,
-			$factory->newReadOnlyConstraint()
-		);
-		$this->assertInstanceOf(
-			SimpleAntiSpamConstraint::class,
-			$factory->newSimpleAntiSpamConstraint( '', $user, $title )
-		);
-		$this->assertInstanceOf(
-			SpamRegexConstraint::class,
-			$factory->newSpamRegexConstraint(
-				'EditSummary',
-				'SectionHeading',
-				'Text',
-				'RequestIP',
-				$title
-			)
-		);
-		$this->assertInstanceOf(
-			UserBlockConstraint::class,
-			$factory->newUserBlockConstraint( $title, $user )
-		);
-	}
+        // Actual tests
+        $this->assertInstanceOf(
+            EditFilterMergedContentHookConstraint::class,
+            $factory->newEditFilterMergedContentHookConstraint(
+                $newContent,
+                $context,
+                'EditSummary',
+                true, // $minorEdit
+                $this->createMock(Language::class),
+                $this->createMock(User::class)
+            )
+        );
+        $this->assertInstanceOf(
+            PageSizeConstraint::class,
+            $factory->newPageSizeConstraint(123, PageSizeConstraint::BEFORE_MERGE)
+        );
+        $this->assertInstanceOf(
+            ReadOnlyConstraint::class,
+            $factory->newReadOnlyConstraint()
+        );
+        $this->assertInstanceOf(
+            SimpleAntiSpamConstraint::class,
+            $factory->newSimpleAntiSpamConstraint('', $user, $title)
+        );
+        $this->assertInstanceOf(
+            SpamRegexConstraint::class,
+            $factory->newSpamRegexConstraint(
+                'EditSummary',
+                'SectionHeading',
+                'Text',
+                'RequestIP',
+                $title
+            )
+        );
+        $this->assertInstanceOf(
+            UserBlockConstraint::class,
+            $factory->newUserBlockConstraint($title, $user)
+        );
+    }
 }

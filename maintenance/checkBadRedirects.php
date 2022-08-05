@@ -31,39 +31,42 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class CheckBadRedirects extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Check for bad redirects' );
-	}
+class CheckBadRedirects extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Check for bad redirects');
+    }
 
-	public function execute() {
-		$this->output( "Fetching redirects...\n" );
-		$dbr = $this->getDB( DB_REPLICA );
-		$result = $dbr->newSelectQueryBuilder()
-			->select( [ 'page_namespace', 'page_title', 'page_latest' ] )
-			->from( 'page' )
-			->where( [ 'page_is_redirect' => 1 ] )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+    public function execute()
+    {
+        $this->output("Fetching redirects...\n");
+        $dbr = $this->getDB(DB_REPLICA);
+        $result = $dbr->newSelectQueryBuilder()
+            ->select(['page_namespace', 'page_title', 'page_latest'])
+            ->from('page')
+            ->where(['page_is_redirect' => 1])
+            ->caller(__METHOD__)
+            ->fetchResultSet();
 
-		$count = $result->numRows();
-		$this->output( "Found $count redirects.\n" .
-			"Checking for bad redirects:\n\n" );
+        $count = $result->numRows();
+        $this->output("Found $count redirects.\n" .
+            "Checking for bad redirects:\n\n");
 
-		$revLookup = MediaWikiServices::getInstance()->getRevisionLookup();
-		foreach ( $result as $row ) {
-			$title = Title::makeTitle( $row->page_namespace, $row->page_title );
-			$revRecord = $revLookup->getRevisionById( $row->page_latest );
-			if ( $revRecord ) {
-				$target = $revRecord->getContent( SlotRecord::MAIN )->getRedirectTarget();
-				if ( !$target ) {
-					$this->output( $title->getPrefixedText() . "\n" );
-				}
-			}
-		}
-		$this->output( "\nDone.\n" );
-	}
+        $revLookup = MediaWikiServices::getInstance()->getRevisionLookup();
+        foreach ($result as $row) {
+            $title = Title::makeTitle($row->page_namespace, $row->page_title);
+            $revRecord = $revLookup->getRevisionById($row->page_latest);
+            if ($revRecord) {
+                $target = $revRecord->getContent(SlotRecord::MAIN)->getRedirectTarget();
+                if (!$target) {
+                    $this->output($title->getPrefixedText() . "\n");
+                }
+            }
+        }
+        $this->output("\nDone.\n");
+    }
 }
 
 $maintClass = CheckBadRedirects::class;

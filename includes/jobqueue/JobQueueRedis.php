@@ -65,200 +65,212 @@ use Psr\Log\LoggerInterface;
  * @ingroup Redis
  * @since 1.22
  */
-class JobQueueRedis extends JobQueue {
-	/** @var RedisConnectionPool */
-	protected $redisPool;
-	/** @var LoggerInterface */
-	protected $logger;
+class JobQueueRedis extends JobQueue
+{
+    /** @var RedisConnectionPool */
+    protected $redisPool;
+    /** @var LoggerInterface */
+    protected $logger;
 
-	/** @var string Server address */
-	protected $server;
-	/** @var string Compression method to use */
-	protected $compression;
+    /** @var string Server address */
+    protected $server;
+    /** @var string Compression method to use */
+    protected $compression;
 
-	private const MAX_PUSH_SIZE = 25; // avoid tying up the server
+    private const MAX_PUSH_SIZE = 25; // avoid tying up the server
 
-	/**
-	 * @param array $params Possible keys:
-	 *   - redisConfig : An array of parameters to RedisConnectionPool::__construct().
-	 *                   Note that the serializer option is ignored as "none" is always used.
-	 *   - redisServer : A hostname/port combination or the absolute path of a UNIX socket.
-	 *                   If a hostname is specified but no port, the standard port number
-	 *                   6379 will be used. Required.
-	 *   - compression : The type of compression to use; one of (none,gzip).
-	 *   - daemonized  : Set to true if the redisJobRunnerService runs in the background.
-	 *                   This will disable job recycling/undelaying from the MediaWiki side
-	 *                   to avoid redundancy and out-of-sync configuration.
-	 * @throws InvalidArgumentException
-	 */
-	public function __construct( array $params ) {
-		parent::__construct( $params );
-		$params['redisConfig']['serializer'] = 'none'; // make it easy to use Lua
-		$this->server = $params['redisServer'];
-		$this->compression = $params['compression'] ?? 'none';
-		$this->redisPool = RedisConnectionPool::singleton( $params['redisConfig'] );
-		if ( empty( $params['daemonized'] ) ) {
-			throw new InvalidArgumentException(
-				"Non-daemonized mode is no longer supported. Please install the " .
-				"mediawiki/services/jobrunner service and update \$wgJobTypeConf as needed." );
-		}
-		$this->logger = LoggerFactory::getInstance( 'redis' );
-	}
+    /**
+     * @param array $params Possible keys:
+     *   - redisConfig : An array of parameters to RedisConnectionPool::__construct().
+     *                   Note that the serializer option is ignored as "none" is always used.
+     *   - redisServer : A hostname/port combination or the absolute path of a UNIX socket.
+     *                   If a hostname is specified but no port, the standard port number
+     *                   6379 will be used. Required.
+     *   - compression : The type of compression to use; one of (none,gzip).
+     *   - daemonized  : Set to true if the redisJobRunnerService runs in the background.
+     *                   This will disable job recycling/undelaying from the MediaWiki side
+     *                   to avoid redundancy and out-of-sync configuration.
+     * @throws InvalidArgumentException
+     */
+    public function __construct(array $params)
+    {
+        parent::__construct($params);
+        $params['redisConfig']['serializer'] = 'none'; // make it easy to use Lua
+        $this->server = $params['redisServer'];
+        $this->compression = $params['compression'] ?? 'none';
+        $this->redisPool = RedisConnectionPool::singleton($params['redisConfig']);
+        if (empty($params['daemonized'])) {
+            throw new InvalidArgumentException(
+                "Non-daemonized mode is no longer supported. Please install the " .
+                "mediawiki/services/jobrunner service and update \$wgJobTypeConf as needed.");
+        }
+        $this->logger = LoggerFactory::getInstance('redis');
+    }
 
-	protected function supportedOrders() {
-		return [ 'timestamp', 'fifo' ];
-	}
+    protected function supportedOrders()
+    {
+        return ['timestamp', 'fifo'];
+    }
 
-	protected function optimalOrder() {
-		return 'fifo';
-	}
+    protected function optimalOrder()
+    {
+        return 'fifo';
+    }
 
-	protected function supportsDelayedJobs() {
-		return true;
-	}
+    protected function supportsDelayedJobs()
+    {
+        return true;
+    }
 
-	/**
-	 * @see JobQueue::doIsEmpty()
-	 * @return bool
-	 * @throws JobQueueError
-	 */
-	protected function doIsEmpty() {
-		return $this->doGetSize() == 0;
-	}
+    /**
+     * @return bool
+     * @throws JobQueueError
+     * @see JobQueue::doIsEmpty()
+     */
+    protected function doIsEmpty()
+    {
+        return $this->doGetSize() == 0;
+    }
 
-	/**
-	 * @see JobQueue::doGetSize()
-	 * @return int
-	 * @throws JobQueueError
-	 */
-	protected function doGetSize() {
-		$conn = $this->getConnection();
-		try {
-			return $conn->lLen( $this->getQueueKey( 'l-unclaimed' ) );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+    /**
+     * @return int
+     * @throws JobQueueError
+     * @see JobQueue::doGetSize()
+     */
+    protected function doGetSize()
+    {
+        $conn = $this->getConnection();
+        try {
+            return $conn->lLen($this->getQueueKey('l-unclaimed'));
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::doGetAcquiredCount()
-	 * @return int
-	 * @throws JobQueueError
-	 */
-	protected function doGetAcquiredCount() {
-		$conn = $this->getConnection();
-		try {
-			$conn->multi( Redis::PIPELINE );
-			$conn->zCard( $this->getQueueKey( 'z-claimed' ) );
-			$conn->zCard( $this->getQueueKey( 'z-abandoned' ) );
+    /**
+     * @return int
+     * @throws JobQueueError
+     * @see JobQueue::doGetAcquiredCount()
+     */
+    protected function doGetAcquiredCount()
+    {
+        $conn = $this->getConnection();
+        try {
+            $conn->multi(Redis::PIPELINE);
+            $conn->zCard($this->getQueueKey('z-claimed'));
+            $conn->zCard($this->getQueueKey('z-abandoned'));
 
-			return array_sum( $conn->exec() );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+            return array_sum($conn->exec());
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::doGetDelayedCount()
-	 * @return int
-	 * @throws JobQueueError
-	 */
-	protected function doGetDelayedCount() {
-		$conn = $this->getConnection();
-		try {
-			return $conn->zCard( $this->getQueueKey( 'z-delayed' ) );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+    /**
+     * @return int
+     * @throws JobQueueError
+     * @see JobQueue::doGetDelayedCount()
+     */
+    protected function doGetDelayedCount()
+    {
+        $conn = $this->getConnection();
+        try {
+            return $conn->zCard($this->getQueueKey('z-delayed'));
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::doGetAbandonedCount()
-	 * @return int
-	 * @throws JobQueueError
-	 */
-	protected function doGetAbandonedCount() {
-		$conn = $this->getConnection();
-		try {
-			return $conn->zCard( $this->getQueueKey( 'z-abandoned' ) );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+    /**
+     * @return int
+     * @throws JobQueueError
+     * @see JobQueue::doGetAbandonedCount()
+     */
+    protected function doGetAbandonedCount()
+    {
+        $conn = $this->getConnection();
+        try {
+            return $conn->zCard($this->getQueueKey('z-abandoned'));
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::doBatchPush()
-	 * @param IJobSpecification[] $jobs
-	 * @param int $flags
-	 * @return void
-	 * @throws JobQueueError
-	 */
-	protected function doBatchPush( array $jobs, $flags ) {
-		// Convert the jobs into field maps (de-duplicated against each other)
-		$items = []; // (job ID => job fields map)
-		foreach ( $jobs as $job ) {
-			$item = $this->getNewJobFields( $job );
-			if ( strlen( $item['sha1'] ) ) { // hash identifier => de-duplicate
-				$items[$item['sha1']] = $item;
-			} else {
-				$items[$item['uuid']] = $item;
-			}
-		}
+    /**
+     * @param IJobSpecification[] $jobs
+     * @param int $flags
+     * @return void
+     * @throws JobQueueError
+     * @see JobQueue::doBatchPush()
+     */
+    protected function doBatchPush(array $jobs, $flags)
+    {
+        // Convert the jobs into field maps (de-duplicated against each other)
+        $items = []; // (job ID => job fields map)
+        foreach ($jobs as $job) {
+            $item = $this->getNewJobFields($job);
+            if (strlen($item['sha1'])) { // hash identifier => de-duplicate
+                $items[$item['sha1']] = $item;
+            } else {
+                $items[$item['uuid']] = $item;
+            }
+        }
 
-		if ( $items === [] ) {
-			return; // nothing to do
-		}
+        if ($items === []) {
+            return; // nothing to do
+        }
 
-		$conn = $this->getConnection();
-		try {
-			// Actually push the non-duplicate jobs into the queue...
-			if ( $flags & self::QOS_ATOMIC ) {
-				$batches = [ $items ]; // all or nothing
-			} else {
-				$batches = array_chunk( $items, self::MAX_PUSH_SIZE );
-			}
-			$failed = 0;
-			$pushed = 0;
-			foreach ( $batches as $itemBatch ) {
-				$added = $this->pushBlobs( $conn, $itemBatch );
-				if ( is_int( $added ) ) {
-					$pushed += $added;
-				} else {
-					$failed += count( $itemBatch );
-				}
-			}
-			$this->incrStats( 'inserts', $this->type, count( $items ) );
-			$this->incrStats( 'inserts_actual', $this->type, $pushed );
-			$this->incrStats( 'dupe_inserts', $this->type,
-				count( $items ) - $failed - $pushed );
-			if ( $failed > 0 ) {
-				$err = "Could not insert {$failed} {$this->type} job(s).";
-				wfDebugLog( 'JobQueueRedis', $err );
-				throw new RedisException( $err );
-			}
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+        $conn = $this->getConnection();
+        try {
+            // Actually push the non-duplicate jobs into the queue...
+            if ($flags & self::QOS_ATOMIC) {
+                $batches = [$items]; // all or nothing
+            } else {
+                $batches = array_chunk($items, self::MAX_PUSH_SIZE);
+            }
+            $failed = 0;
+            $pushed = 0;
+            foreach ($batches as $itemBatch) {
+                $added = $this->pushBlobs($conn, $itemBatch);
+                if (is_int($added)) {
+                    $pushed += $added;
+                } else {
+                    $failed += count($itemBatch);
+                }
+            }
+            $this->incrStats('inserts', $this->type, count($items));
+            $this->incrStats('inserts_actual', $this->type, $pushed);
+            $this->incrStats('dupe_inserts', $this->type,
+                count($items) - $failed - $pushed);
+            if ($failed > 0) {
+                $err = "Could not insert {$failed} {$this->type} job(s).";
+                wfDebugLog('JobQueueRedis', $err);
+                throw new RedisException($err);
+            }
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @param RedisConnRef $conn
-	 * @param array[] $items List of results from JobQueueRedis::getNewJobFields()
-	 * @return int Number of jobs inserted (duplicates are ignored)
-	 * @throws RedisException
-	 */
-	protected function pushBlobs( RedisConnRef $conn, array $items ) {
-		$args = [ $this->encodeQueueName() ];
-		// Next args come in 4s ([id, sha1, rtime, blob [, id, sha1, rtime, blob ... ] ] )
-		foreach ( $items as $item ) {
-			$args[] = (string)$item['uuid'];
-			$args[] = (string)$item['sha1'];
-			$args[] = (string)$item['rtimestamp'];
-			$args[] = (string)$this->serialize( $item );
-		}
-		static $script =
-		/** @lang Lua */
-<<<LUA
+    /**
+     * @param RedisConnRef $conn
+     * @param array[] $items List of results from JobQueueRedis::getNewJobFields()
+     * @return int Number of jobs inserted (duplicates are ignored)
+     * @throws RedisException
+     */
+    protected function pushBlobs(RedisConnRef $conn, array $items)
+    {
+        $args = [$this->encodeQueueName()];
+        // Next args come in 4s ([id, sha1, rtime, blob [, id, sha1, rtime, blob ... ] ] )
+        foreach ($items as $item) {
+            $args[] = (string)$item['uuid'];
+            $args[] = (string)$item['sha1'];
+            $args[] = (string)$item['rtimestamp'];
+            $args[] = (string)$this->serialize($item);
+        }
+        static $script =
+            /** @lang Lua */
+            <<<LUA
 		local kUnclaimed, kSha1ById, kIdBySha1, kDelayed, kData, kQwJobs = unpack(KEYS)
 		-- First argument is the queue ID
 		local queueId = ARGV[1]
@@ -291,64 +303,67 @@ class JobQueueRedis extends JobQueue {
 		redis.call('sAdd',kQwJobs,queueId)
 		return pushed
 LUA;
-		return $conn->luaEval( $script,
-			array_merge(
-				[
-					$this->getQueueKey( 'l-unclaimed' ), # KEYS[1]
-					$this->getQueueKey( 'h-sha1ById' ), # KEYS[2]
-					$this->getQueueKey( 'h-idBySha1' ), # KEYS[3]
-					$this->getQueueKey( 'z-delayed' ), # KEYS[4]
-					$this->getQueueKey( 'h-data' ), # KEYS[5]
-					$this->getGlobalKey( 's-queuesWithJobs' ), # KEYS[6]
-				],
-				$args
-			),
-			6 # number of first argument(s) that are keys
-		);
-	}
 
-	/**
-	 * @see JobQueue::doPop()
-	 * @return RunnableJob|bool
-	 * @throws JobQueueError
-	 */
-	protected function doPop() {
-		$job = false;
+        return $conn->luaEval($script,
+            array_merge(
+                [
+                    $this->getQueueKey('l-unclaimed'), # KEYS[1]
+                    $this->getQueueKey('h-sha1ById'), # KEYS[2]
+                    $this->getQueueKey('h-idBySha1'), # KEYS[3]
+                    $this->getQueueKey('z-delayed'), # KEYS[4]
+                    $this->getQueueKey('h-data'), # KEYS[5]
+                    $this->getGlobalKey('s-queuesWithJobs'), # KEYS[6]
+                ],
+                $args
+            ),
+            6 # number of first argument(s) that are keys
+        );
+    }
 
-		$conn = $this->getConnection();
-		try {
-			do {
-				$blob = $this->popAndAcquireBlob( $conn );
-				if ( !is_string( $blob ) ) {
-					break; // no jobs; nothing to do
-				}
+    /**
+     * @return RunnableJob|bool
+     * @throws JobQueueError
+     * @see JobQueue::doPop()
+     */
+    protected function doPop()
+    {
+        $job = false;
 
-				$this->incrStats( 'pops', $this->type );
-				$item = $this->unserialize( $blob );
-				if ( $item === false ) {
-					wfDebugLog( 'JobQueueRedis', "Could not unserialize {$this->type} job." );
-					continue;
-				}
+        $conn = $this->getConnection();
+        try {
+            do {
+                $blob = $this->popAndAcquireBlob($conn);
+                if (!is_string($blob)) {
+                    break; // no jobs; nothing to do
+                }
 
-				// If $item is invalid, the runner loop recycling will cleanup as needed
-				$job = $this->getJobFromFields( $item ); // may be false
-			} while ( !$job ); // job may be false if invalid
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+                $this->incrStats('pops', $this->type);
+                $item = $this->unserialize($blob);
+                if ($item === false) {
+                    wfDebugLog('JobQueueRedis', "Could not unserialize {$this->type} job.");
+                    continue;
+                }
 
-		return $job;
-	}
+                // If $item is invalid, the runner loop recycling will cleanup as needed
+                $job = $this->getJobFromFields($item); // may be false
+            } while (!$job); // job may be false if invalid
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-	/**
-	 * @param RedisConnRef $conn
-	 * @return array Serialized string or false
-	 * @throws RedisException
-	 */
-	protected function popAndAcquireBlob( RedisConnRef $conn ) {
-		static $script =
-		/** @lang Lua */
-<<<LUA
+        return $job;
+    }
+
+    /**
+     * @param RedisConnRef $conn
+     * @return array Serialized string or false
+     * @throws RedisException
+     */
+    protected function popAndAcquireBlob(RedisConnRef $conn)
+    {
+        static $script =
+            /** @lang Lua */
+            <<<LUA
 		local kUnclaimed, kSha1ById, kIdBySha1, kClaimed, kAttempts, kData = unpack(KEYS)
 		local rTime = unpack(ARGV)
 		-- Pop an item off the queue
@@ -365,38 +380,40 @@ LUA;
 		redis.call('hIncrBy',kAttempts,id,1)
 		return redis.call('hGet',kData,id)
 LUA;
-		return $conn->luaEval( $script,
-			[
-				$this->getQueueKey( 'l-unclaimed' ), # KEYS[1]
-				$this->getQueueKey( 'h-sha1ById' ), # KEYS[2]
-				$this->getQueueKey( 'h-idBySha1' ), # KEYS[3]
-				$this->getQueueKey( 'z-claimed' ), # KEYS[4]
-				$this->getQueueKey( 'h-attempts' ), # KEYS[5]
-				$this->getQueueKey( 'h-data' ), # KEYS[6]
-				time(), # ARGV[1] (injected to be replication-safe)
-			],
-			6 # number of first argument(s) that are keys
-		);
-	}
 
-	/**
-	 * @see JobQueue::doAck()
-	 * @param RunnableJob $job
-	 * @return RunnableJob|bool
-	 * @throws UnexpectedValueException
-	 * @throws JobQueueError
-	 */
-	protected function doAck( RunnableJob $job ) {
-		$uuid = $job->getMetadata( 'uuid' );
-		if ( $uuid === null ) {
-			throw new UnexpectedValueException( "Job of type '{$job->getType()}' has no UUID." );
-		}
+        return $conn->luaEval($script,
+            [
+                $this->getQueueKey('l-unclaimed'), # KEYS[1]
+                $this->getQueueKey('h-sha1ById'), # KEYS[2]
+                $this->getQueueKey('h-idBySha1'), # KEYS[3]
+                $this->getQueueKey('z-claimed'), # KEYS[4]
+                $this->getQueueKey('h-attempts'), # KEYS[5]
+                $this->getQueueKey('h-data'), # KEYS[6]
+                time(), # ARGV[1] (injected to be replication-safe)
+            ],
+            6 # number of first argument(s) that are keys
+        );
+    }
 
-		$conn = $this->getConnection();
-		try {
-			static $script =
-			/** @lang Lua */
-<<<LUA
+    /**
+     * @param RunnableJob $job
+     * @return RunnableJob|bool
+     * @throws UnexpectedValueException
+     * @throws JobQueueError
+     * @see JobQueue::doAck()
+     */
+    protected function doAck(RunnableJob $job)
+    {
+        $uuid = $job->getMetadata('uuid');
+        if ($uuid === null) {
+            throw new UnexpectedValueException("Job of type '{$job->getType()}' has no UUID.");
+        }
+
+        $conn = $this->getConnection();
+        try {
+            static $script =
+                /** @lang Lua */
+                <<<LUA
 			local kClaimed, kAttempts, kData = unpack(KEYS)
 			local id = unpack(ARGV)
 			-- Unmark the job as claimed
@@ -410,418 +427,442 @@ LUA;
 			-- Delete the job data itself
 			return redis.call('hDel',kData,id)
 LUA;
-			$res = $conn->luaEval( $script,
-				[
-					$this->getQueueKey( 'z-claimed' ), # KEYS[1]
-					$this->getQueueKey( 'h-attempts' ), # KEYS[2]
-					$this->getQueueKey( 'h-data' ), # KEYS[3]
-					$uuid # ARGV[1]
-				],
-				3 # number of first argument(s) that are keys
-			);
+            $res = $conn->luaEval($script,
+                [
+                    $this->getQueueKey('z-claimed'), # KEYS[1]
+                    $this->getQueueKey('h-attempts'), # KEYS[2]
+                    $this->getQueueKey('h-data'), # KEYS[3]
+                    $uuid # ARGV[1]
+                ],
+                3 # number of first argument(s) that are keys
+            );
 
-			if ( !$res ) {
-				wfDebugLog( 'JobQueueRedis', "Could not acknowledge {$this->type} job $uuid." );
+            if (!$res) {
+                wfDebugLog('JobQueueRedis', "Could not acknowledge {$this->type} job $uuid.");
 
-				return false;
-			}
+                return false;
+            }
 
-			$this->incrStats( 'acks', $this->type );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+            $this->incrStats('acks', $this->type);
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * @see JobQueue::doDeduplicateRootJob()
-	 * @param IJobSpecification $job
-	 * @return bool
-	 * @throws JobQueueError
-	 * @throws LogicException
-	 */
-	protected function doDeduplicateRootJob( IJobSpecification $job ) {
-		if ( !$job->hasRootJobParams() ) {
-			throw new LogicException( "Cannot register root job; missing parameters." );
-		}
-		$params = $job->getRootJobParams();
+    /**
+     * @param IJobSpecification $job
+     * @return bool
+     * @throws JobQueueError
+     * @throws LogicException
+     * @see JobQueue::doDeduplicateRootJob()
+     */
+    protected function doDeduplicateRootJob(IJobSpecification $job)
+    {
+        if (!$job->hasRootJobParams()) {
+            throw new LogicException("Cannot register root job; missing parameters.");
+        }
+        $params = $job->getRootJobParams();
 
-		$key = $this->getRootJobCacheKey( $params['rootJobSignature'], $job->getType() );
+        $key = $this->getRootJobCacheKey($params['rootJobSignature'], $job->getType());
 
-		$conn = $this->getConnection();
-		try {
-			$timestamp = $conn->get( $key ); // last known timestamp of such a root job
-			if ( $timestamp && $timestamp >= $params['rootJobTimestamp'] ) {
-				return true; // a newer version of this root job was enqueued
-			}
+        $conn = $this->getConnection();
+        try {
+            $timestamp = $conn->get($key); // last known timestamp of such a root job
+            if ($timestamp && $timestamp >= $params['rootJobTimestamp']) {
+                return true; // a newer version of this root job was enqueued
+            }
 
-			// Update the timestamp of the last root job started at the location...
-			return $conn->set( $key, $params['rootJobTimestamp'], self::ROOTJOB_TTL ); // 2 weeks
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+            // Update the timestamp of the last root job started at the location...
+            return $conn->set($key, $params['rootJobTimestamp'], self::ROOTJOB_TTL); // 2 weeks
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::doIsRootJobOldDuplicate()
-	 * @param IJobSpecification $job
-	 * @return bool
-	 * @throws JobQueueError
-	 */
-	protected function doIsRootJobOldDuplicate( IJobSpecification $job ) {
-		if ( !$job->hasRootJobParams() ) {
-			return false; // job has no de-duplication info
-		}
-		$params = $job->getRootJobParams();
+    /**
+     * @param IJobSpecification $job
+     * @return bool
+     * @throws JobQueueError
+     * @see JobQueue::doIsRootJobOldDuplicate()
+     */
+    protected function doIsRootJobOldDuplicate(IJobSpecification $job)
+    {
+        if (!$job->hasRootJobParams()) {
+            return false; // job has no de-duplication info
+        }
+        $params = $job->getRootJobParams();
 
-		$conn = $this->getConnection();
-		try {
-			// Get the last time this root job was enqueued
-			$timestamp = $conn->get( $this->getRootJobCacheKey( $params['rootJobSignature'], $job->getType() ) );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+        $conn = $this->getConnection();
+        try {
+            // Get the last time this root job was enqueued
+            $timestamp = $conn->get($this->getRootJobCacheKey($params['rootJobSignature'], $job->getType()));
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		// Check if a new root job was started at the location after this one's...
-		return ( $timestamp && $timestamp > $params['rootJobTimestamp'] );
-	}
+        // Check if a new root job was started at the location after this one's...
+        return ($timestamp && $timestamp > $params['rootJobTimestamp']);
+    }
 
-	/**
-	 * @see JobQueue::doDelete()
-	 * @return bool
-	 * @throws JobQueueError
-	 */
-	protected function doDelete() {
-		static $props = [ 'l-unclaimed', 'z-claimed', 'z-abandoned',
-			'z-delayed', 'h-idBySha1', 'h-sha1ById', 'h-attempts', 'h-data' ];
+    /**
+     * @return bool
+     * @throws JobQueueError
+     * @see JobQueue::doDelete()
+     */
+    protected function doDelete()
+    {
+        static $props = ['l-unclaimed', 'z-claimed', 'z-abandoned',
+            'z-delayed', 'h-idBySha1', 'h-sha1ById', 'h-attempts', 'h-data'];
 
-		$conn = $this->getConnection();
-		try {
-			$keys = [];
-			foreach ( $props as $prop ) {
-				$keys[] = $this->getQueueKey( $prop );
-			}
+        $conn = $this->getConnection();
+        try {
+            $keys = [];
+            foreach ($props as $prop) {
+                $keys[] = $this->getQueueKey($prop);
+            }
 
-			$ok = ( $conn->del( $keys ) !== false );
-			$conn->sRem( $this->getGlobalKey( 's-queuesWithJobs' ), $this->encodeQueueName() );
+            $ok = ($conn->del($keys) !== false);
+            $conn->sRem($this->getGlobalKey('s-queuesWithJobs'), $this->encodeQueueName());
 
-			return $ok;
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+            return $ok;
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @see JobQueue::getAllQueuedJobs()
-	 * @return Iterator
-	 * @throws JobQueueError
-	 */
-	public function getAllQueuedJobs() {
-		$conn = $this->getConnection();
-		try {
-			$uids = $conn->lRange( $this->getQueueKey( 'l-unclaimed' ), 0, -1 );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+    /**
+     * @return Iterator
+     * @throws JobQueueError
+     * @see JobQueue::getAllQueuedJobs()
+     */
+    public function getAllQueuedJobs()
+    {
+        $conn = $this->getConnection();
+        try {
+            $uids = $conn->lRange($this->getQueueKey('l-unclaimed'), 0, -1);
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $this->getJobIterator( $conn, $uids );
-	}
+        return $this->getJobIterator($conn, $uids);
+    }
 
-	/**
-	 * @see JobQueue::getAllDelayedJobs()
-	 * @return Iterator
-	 * @throws JobQueueError
-	 */
-	public function getAllDelayedJobs() {
-		$conn = $this->getConnection();
-		try {
-			$uids = $conn->zRange( $this->getQueueKey( 'z-delayed' ), 0, -1 );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+    /**
+     * @return Iterator
+     * @throws JobQueueError
+     * @see JobQueue::getAllDelayedJobs()
+     */
+    public function getAllDelayedJobs()
+    {
+        $conn = $this->getConnection();
+        try {
+            $uids = $conn->zRange($this->getQueueKey('z-delayed'), 0, -1);
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $this->getJobIterator( $conn, $uids );
-	}
+        return $this->getJobIterator($conn, $uids);
+    }
 
-	/**
-	 * @see JobQueue::getAllAcquiredJobs()
-	 * @return Iterator
-	 * @throws JobQueueError
-	 */
-	public function getAllAcquiredJobs() {
-		$conn = $this->getConnection();
-		try {
-			$uids = $conn->zRange( $this->getQueueKey( 'z-claimed' ), 0, -1 );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+    /**
+     * @return Iterator
+     * @throws JobQueueError
+     * @see JobQueue::getAllAcquiredJobs()
+     */
+    public function getAllAcquiredJobs()
+    {
+        $conn = $this->getConnection();
+        try {
+            $uids = $conn->zRange($this->getQueueKey('z-claimed'), 0, -1);
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $this->getJobIterator( $conn, $uids );
-	}
+        return $this->getJobIterator($conn, $uids);
+    }
 
-	/**
-	 * @see JobQueue::getAllAbandonedJobs()
-	 * @return Iterator
-	 * @throws JobQueueError
-	 */
-	public function getAllAbandonedJobs() {
-		$conn = $this->getConnection();
-		try {
-			$uids = $conn->zRange( $this->getQueueKey( 'z-abandoned' ), 0, -1 );
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+    /**
+     * @return Iterator
+     * @throws JobQueueError
+     * @see JobQueue::getAllAbandonedJobs()
+     */
+    public function getAllAbandonedJobs()
+    {
+        $conn = $this->getConnection();
+        try {
+            $uids = $conn->zRange($this->getQueueKey('z-abandoned'), 0, -1);
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $this->getJobIterator( $conn, $uids );
-	}
+        return $this->getJobIterator($conn, $uids);
+    }
 
-	/**
-	 * @param RedisConnRef $conn
-	 * @param array $uids List of job UUIDs
-	 * @return MappedIterator
-	 */
-	protected function getJobIterator( RedisConnRef $conn, array $uids ) {
-		return new MappedIterator(
-			$uids,
-			function ( $uid ) use ( $conn ) {
-				return $this->getJobFromUidInternal( $uid, $conn );
-			},
-			[ 'accept' => static function ( $job ) {
-				return is_object( $job );
-			} ]
-		);
-	}
+    /**
+     * @param RedisConnRef $conn
+     * @param array $uids List of job UUIDs
+     * @return MappedIterator
+     */
+    protected function getJobIterator(RedisConnRef $conn, array $uids)
+    {
+        return new MappedIterator(
+            $uids,
+            function ($uid) use ($conn) {
+                return $this->getJobFromUidInternal($uid, $conn);
+            },
+            ['accept' => static function ($job) {
+                return is_object($job);
+            }]
+        );
+    }
 
-	public function getCoalesceLocationInternal() {
-		return "RedisServer:" . $this->server;
-	}
+    public function getCoalesceLocationInternal()
+    {
+        return "RedisServer:" . $this->server;
+    }
 
-	protected function doGetSiblingQueuesWithJobs( array $types ) {
-		return array_keys( array_filter( $this->doGetSiblingQueueSizes( $types ) ) );
-	}
+    protected function doGetSiblingQueuesWithJobs(array $types)
+    {
+        return array_keys(array_filter($this->doGetSiblingQueueSizes($types)));
+    }
 
-	protected function doGetSiblingQueueSizes( array $types ) {
-		$sizes = []; // (type => size)
-		$types = array_values( $types ); // reindex
-		$conn = $this->getConnection();
-		try {
-			$conn->multi( Redis::PIPELINE );
-			foreach ( $types as $type ) {
-				$conn->lLen( $this->getQueueKey( 'l-unclaimed', $type ) );
-			}
-			$res = $conn->exec();
-			if ( is_array( $res ) ) {
-				foreach ( $res as $i => $size ) {
-					$sizes[$types[$i]] = $size;
-				}
-			}
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+    protected function doGetSiblingQueueSizes(array $types)
+    {
+        $sizes = []; // (type => size)
+        $types = array_values($types); // reindex
+        $conn = $this->getConnection();
+        try {
+            $conn->multi(Redis::PIPELINE);
+            foreach ($types as $type) {
+                $conn->lLen($this->getQueueKey('l-unclaimed', $type));
+            }
+            $res = $conn->exec();
+            if (is_array($res)) {
+                foreach ($res as $i => $size) {
+                    $sizes[$types[$i]] = $size;
+                }
+            }
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $sizes;
-	}
+        return $sizes;
+    }
 
-	/**
-	 * This function should not be called outside JobQueueRedis
-	 *
-	 * @param string $uid
-	 * @param RedisConnRef|Redis $conn
-	 * @return RunnableJob|bool Returns false if the job does not exist
-	 * @throws JobQueueError
-	 * @throws UnexpectedValueException
-	 */
-	public function getJobFromUidInternal( $uid, $conn ) {
-		try {
-			$data = $conn->hGet( $this->getQueueKey( 'h-data' ), $uid );
-			if ( $data === false ) {
-				return false; // not found
-			}
-			$item = $this->unserialize( $data );
-			if ( !is_array( $item ) ) { // this shouldn't happen
-				throw new UnexpectedValueException( "Could not unserialize job with ID '$uid'." );
-			}
+    /**
+     * This function should not be called outside JobQueueRedis
+     *
+     * @param string $uid
+     * @param RedisConnRef|Redis $conn
+     * @return RunnableJob|bool Returns false if the job does not exist
+     * @throws JobQueueError
+     * @throws UnexpectedValueException
+     */
+    public function getJobFromUidInternal($uid, $conn)
+    {
+        try {
+            $data = $conn->hGet($this->getQueueKey('h-data'), $uid);
+            if ($data === false) {
+                return false; // not found
+            }
+            $item = $this->unserialize($data);
+            if (!is_array($item)) { // this shouldn't happen
+                throw new UnexpectedValueException("Could not unserialize job with ID '$uid'.");
+            }
 
-			$params = $item['params'];
-			$params += [ 'namespace' => $item['namespace'], 'title' => $item['title'] ];
-			$job = $this->factoryJob( $item['type'], $params );
-			$job->setMetadata( 'uuid', $item['uuid'] );
-			$job->setMetadata( 'timestamp', $item['timestamp'] );
-			// Add in attempt count for debugging at showJobs.php
-			$job->setMetadata( 'attempts',
-				$conn->hGet( $this->getQueueKey( 'h-attempts' ), $uid ) );
+            $params = $item['params'];
+            $params += ['namespace' => $item['namespace'], 'title' => $item['title']];
+            $job = $this->factoryJob($item['type'], $params);
+            $job->setMetadata('uuid', $item['uuid']);
+            $job->setMetadata('timestamp', $item['timestamp']);
+            // Add in attempt count for debugging at showJobs.php
+            $job->setMetadata('attempts',
+                $conn->hGet($this->getQueueKey('h-attempts'), $uid));
 
-			return $job;
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
-	}
+            return $job;
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
+    }
 
-	/**
-	 * @return array List of (wiki,type) tuples for queues with non-abandoned jobs
-	 * @throws JobQueueConnectionError
-	 * @throws JobQueueError
-	 */
-	public function getServerQueuesWithJobs() {
-		$queues = [];
+    /**
+     * @return array List of (wiki,type) tuples for queues with non-abandoned jobs
+     * @throws JobQueueConnectionError
+     * @throws JobQueueError
+     */
+    public function getServerQueuesWithJobs()
+    {
+        $queues = [];
 
-		$conn = $this->getConnection();
-		try {
-			$set = $conn->sMembers( $this->getGlobalKey( 's-queuesWithJobs' ) );
-			foreach ( $set as $queue ) {
-				$queues[] = $this->decodeQueueName( $queue );
-			}
-		} catch ( RedisException $e ) {
-			throw $this->handleErrorAndMakeException( $conn, $e );
-		}
+        $conn = $this->getConnection();
+        try {
+            $set = $conn->sMembers($this->getGlobalKey('s-queuesWithJobs'));
+            foreach ($set as $queue) {
+                $queues[] = $this->decodeQueueName($queue);
+            }
+        } catch (RedisException $e) {
+            throw $this->handleErrorAndMakeException($conn, $e);
+        }
 
-		return $queues;
-	}
+        return $queues;
+    }
 
-	/**
-	 * @param IJobSpecification $job
-	 * @return array
-	 */
-	protected function getNewJobFields( IJobSpecification $job ) {
-		return [
-			// Fields that describe the nature of the job
-			'type' => $job->getType(),
-			'namespace' => $job->getParams()['namespace'] ?? NS_SPECIAL,
-			'title' => $job->getParams()['title'] ?? '',
-			'params' => $job->getParams(),
-			// Some jobs cannot run until a "release timestamp"
-			'rtimestamp' => $job->getReleaseTimestamp() ?: 0,
-			// Additional job metadata
-			'uuid' => $this->idGenerator->newRawUUIDv4(),
-			'sha1' => $job->ignoreDuplicates()
-				? Wikimedia\base_convert( sha1( serialize( $job->getDeduplicationInfo() ) ), 16, 36, 31 )
-				: '',
-			'timestamp' => time() // UNIX timestamp
-		];
-	}
+    /**
+     * @param IJobSpecification $job
+     * @return array
+     */
+    protected function getNewJobFields(IJobSpecification $job)
+    {
+        return [
+            // Fields that describe the nature of the job
+            'type'       => $job->getType(),
+            'namespace'  => $job->getParams()['namespace'] ?? NS_SPECIAL,
+            'title'      => $job->getParams()['title'] ?? '',
+            'params'     => $job->getParams(),
+            // Some jobs cannot run until a "release timestamp"
+            'rtimestamp' => $job->getReleaseTimestamp() ?: 0,
+            // Additional job metadata
+            'uuid'       => $this->idGenerator->newRawUUIDv4(),
+            'sha1'       => $job->ignoreDuplicates()
+                ? Wikimedia\base_convert(sha1(serialize($job->getDeduplicationInfo())), 16, 36, 31)
+                : '',
+            'timestamp'  => time() // UNIX timestamp
+        ];
+    }
 
-	/**
-	 * @param array $fields
-	 * @return RunnableJob|bool
-	 */
-	protected function getJobFromFields( array $fields ) {
-		$params = $fields['params'];
-		$params += [ 'namespace' => $fields['namespace'], 'title' => $fields['title'] ];
+    /**
+     * @param array $fields
+     * @return RunnableJob|bool
+     */
+    protected function getJobFromFields(array $fields)
+    {
+        $params = $fields['params'];
+        $params += ['namespace' => $fields['namespace'], 'title' => $fields['title']];
 
-		$job = $this->factoryJob( $fields['type'], $params );
-		$job->setMetadata( 'uuid', $fields['uuid'] );
-		$job->setMetadata( 'timestamp', $fields['timestamp'] );
+        $job = $this->factoryJob($fields['type'], $params);
+        $job->setMetadata('uuid', $fields['uuid']);
+        $job->setMetadata('timestamp', $fields['timestamp']);
 
-		return $job;
-	}
+        return $job;
+    }
 
-	/**
-	 * @param array $fields
-	 * @return string Serialized and possibly compressed version of $fields
-	 */
-	protected function serialize( array $fields ) {
-		$blob = serialize( $fields );
-		if ( $this->compression === 'gzip'
-			&& strlen( $blob ) >= 1024
-			&& function_exists( 'gzdeflate' )
-		) {
-			$object = (object)[ 'blob' => gzdeflate( $blob ), 'enc' => 'gzip' ];
-			$blobz = serialize( $object );
+    /**
+     * @param array $fields
+     * @return string Serialized and possibly compressed version of $fields
+     */
+    protected function serialize(array $fields)
+    {
+        $blob = serialize($fields);
+        if ($this->compression === 'gzip'
+            && strlen($blob) >= 1024
+            && function_exists('gzdeflate')
+        ) {
+            $object = (object)['blob' => gzdeflate($blob), 'enc' => 'gzip'];
+            $blobz = serialize($object);
 
-			return ( strlen( $blobz ) < strlen( $blob ) ) ? $blobz : $blob;
-		} else {
-			return $blob;
-		}
-	}
+            return (strlen($blobz) < strlen($blob)) ? $blobz : $blob;
+        } else {
+            return $blob;
+        }
+    }
 
-	/**
-	 * @param string $blob
-	 * @return array|bool Unserialized version of $blob or false
-	 */
-	protected function unserialize( $blob ) {
-		$fields = unserialize( $blob );
-		if ( is_object( $fields ) ) {
-			if ( $fields->enc === 'gzip' && function_exists( 'gzinflate' ) ) {
-				$fields = unserialize( gzinflate( $fields->blob ) );
-			} else {
-				$fields = false;
-			}
-		}
+    /**
+     * @param string $blob
+     * @return array|bool Unserialized version of $blob or false
+     */
+    protected function unserialize($blob)
+    {
+        $fields = unserialize($blob);
+        if (is_object($fields)) {
+            if ($fields->enc === 'gzip' && function_exists('gzinflate')) {
+                $fields = unserialize(gzinflate($fields->blob));
+            } else {
+                $fields = false;
+            }
+        }
 
-		return is_array( $fields ) ? $fields : false;
-	}
+        return is_array($fields) ? $fields : false;
+    }
 
-	/**
-	 * Get a connection to the server that handles all sub-queues for this queue
-	 *
-	 * @return RedisConnRef|Redis
-	 * @throws JobQueueConnectionError
-	 */
-	protected function getConnection() {
-		$conn = $this->redisPool->getConnection( $this->server, $this->logger );
-		if ( !$conn ) {
-			throw new JobQueueConnectionError(
-				"Unable to connect to redis server {$this->server}." );
-		}
+    /**
+     * Get a connection to the server that handles all sub-queues for this queue
+     *
+     * @return RedisConnRef|Redis
+     * @throws JobQueueConnectionError
+     */
+    protected function getConnection()
+    {
+        $conn = $this->redisPool->getConnection($this->server, $this->logger);
+        if (!$conn) {
+            throw new JobQueueConnectionError(
+                "Unable to connect to redis server {$this->server}.");
+        }
 
-		return $conn;
-	}
+        return $conn;
+    }
 
-	/**
-	 * @param RedisConnRef $conn
-	 * @param RedisException $e
-	 * @return JobQueueError
-	 */
-	protected function handleErrorAndMakeException( RedisConnRef $conn, $e ) {
-		$this->redisPool->handleError( $conn, $e );
-		return new JobQueueError( "Redis server error: {$e->getMessage()}\n" );
-	}
+    /**
+     * @param RedisConnRef $conn
+     * @param RedisException $e
+     * @return JobQueueError
+     */
+    protected function handleErrorAndMakeException(RedisConnRef $conn, $e)
+    {
+        $this->redisPool->handleError($conn, $e);
 
-	/**
-	 * @return string JSON
-	 */
-	private function encodeQueueName() {
-		return json_encode( [ $this->type, $this->domain ] );
-	}
+        return new JobQueueError("Redis server error: {$e->getMessage()}\n");
+    }
 
-	/**
-	 * @param string $name JSON
-	 * @return array (type, wiki)
-	 */
-	private function decodeQueueName( $name ) {
-		return json_decode( $name );
-	}
+    /**
+     * @return string JSON
+     */
+    private function encodeQueueName()
+    {
+        return json_encode([$this->type, $this->domain]);
+    }
 
-	/**
-	 * @param string $name
-	 * @return string
-	 */
-	private function getGlobalKey( $name ) {
-		$parts = [ 'global', 'jobqueue', $name ];
-		foreach ( $parts as $part ) {
-			if ( !preg_match( '/[a-zA-Z0-9_-]+/', $part ) ) {
-				throw new InvalidArgumentException( "Key part characters are out of range." );
-			}
-		}
+    /**
+     * @param string $name JSON
+     * @return array (type, wiki)
+     */
+    private function decodeQueueName($name)
+    {
+        return json_decode($name);
+    }
 
-		return implode( ':', $parts );
-	}
+    /**
+     * @param string $name
+     * @return string
+     */
+    private function getGlobalKey($name)
+    {
+        $parts = ['global', 'jobqueue', $name];
+        foreach ($parts as $part) {
+            if (!preg_match('/[a-zA-Z0-9_-]+/', $part)) {
+                throw new InvalidArgumentException("Key part characters are out of range.");
+            }
+        }
 
-	/**
-	 * @param string $prop
-	 * @param string|null $type Override this for sibling queues
-	 * @return string
-	 */
-	private function getQueueKey( $prop, $type = null ) {
-		$type = is_string( $type ) ? $type : $this->type;
+        return implode(':', $parts);
+    }
 
-		// Use wiki ID for b/c
-		$keyspace = WikiMap::getWikiIdFromDbDomain( $this->domain );
+    /**
+     * @param string $prop
+     * @param string|null $type Override this for sibling queues
+     * @return string
+     */
+    private function getQueueKey($prop, $type = null)
+    {
+        $type = is_string($type) ? $type : $this->type;
 
-		$parts = [ $keyspace, 'jobqueue', $type, $prop ];
+        // Use wiki ID for b/c
+        $keyspace = WikiMap::getWikiIdFromDbDomain($this->domain);
 
-		// Parts are typically ASCII, but encode to escape ":"
-		return implode( ':', array_map( 'rawurlencode', $parts ) );
-	}
+        $parts = [$keyspace, 'jobqueue', $type, $prop];
+
+        // Parts are typically ASCII, but encode to escape ":"
+        return implode(':', array_map('rawurlencode', $parts));
+    }
 }

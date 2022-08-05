@@ -22,90 +22,91 @@
 
 namespace MediaWiki\Block\Restriction;
 
-interface Restriction {
+interface Restriction
+{
 
-	/**
-	 * Gets the id of the block.
-	 *
-	 * @since 1.33
-	 * @return int
-	 */
-	public function getBlockId();
+    /**
+     * Gets the id of the block.
+     *
+     * @return int
+     * @since 1.33
+     */
+    public function getBlockId();
 
-	/**
-	 * Sets the id of the block.
-	 *
-	 * @since 1.33
-	 * @param int $blockId
-	 * @return self
-	 */
-	public function setBlockId( $blockId );
+    /**
+     * Sets the id of the block.
+     *
+     * @param int $blockId
+     * @return self
+     * @since 1.33
+     */
+    public function setBlockId($blockId);
 
-	/**
-	 * Gets the value of the restriction.
-	 *
-	 * @since 1.33
-	 * @return int
-	 */
-	public function getValue();
+    /**
+     * Gets the value of the restriction.
+     *
+     * @return int
+     * @since 1.33
+     */
+    public function getValue();
 
-	/**
-	 * Gets the type of restriction
-	 *
-	 * @since 1.33
-	 * @return string
-	 */
-	public static function getType();
+    /**
+     * Gets the type of restriction
+     *
+     * @return string
+     * @since 1.33
+     */
+    public static function getType();
 
-	/**
-	 * Gets the id of the type of restriction. This id is used in the database.
-	 *
-	 * @since 1.33
-	 * @return int
-	 */
-	public static function getTypeId();
+    /**
+     * Gets the id of the type of restriction. This id is used in the database.
+     *
+     * @return int
+     * @since 1.33
+     */
+    public static function getTypeId();
 
-	/**
-	 * Creates a new Restriction from a database row.
-	 *
-	 * @since 1.33
-	 * @param \stdClass $row
-	 * @return static
-	 */
-	public static function newFromRow( \stdClass $row );
+    /**
+     * Creates a new Restriction from a database row.
+     *
+     * @param \stdClass $row
+     * @return static
+     * @since 1.33
+     */
+    public static function newFromRow(\stdClass $row);
 
-	/**
-	 * Convert a restriction object into a row array for insertion.
-	 *
-	 * @since 1.33
-	 * @return array
-	 */
-	public function toRow();
+    /**
+     * Convert a restriction object into a row array for insertion.
+     *
+     * @return array
+     * @since 1.33
+     */
+    public function toRow();
 
-	/**
-	 * Determine if a restriction matches a given title.
-	 *
-	 * @since 1.33
-	 * @param \Title $title
-	 * @return bool
-	 */
-	public function matches( \Title $title );
+    /**
+     * Determine if a restriction matches a given title.
+     *
+     * @param \Title $title
+     * @return bool
+     * @since 1.33
+     */
+    public function matches(\Title $title);
 
-	/**
-	 * Determine if a restriction equals another restriction.
-	 *
-	 * @since 1.33
-	 * @param Restriction $other
-	 * @return bool
-	 */
-	public function equals( Restriction $other );
+    /**
+     * Determine if a restriction equals another restriction.
+     *
+     * @param Restriction $other
+     * @return bool
+     * @since 1.33
+     */
+    public function equals(Restriction $other);
 
-	/**
-	 * Create a unique hash of the block restriction based on the type and value.
-	 *
-	 * @since 1.33
-	 * @return string
-	 */
-	public function getHash();
+    /**
+     * Create a unique hash of the block restriction based on the type and value.
+     *
+     * @return string
+     * @since 1.33
+     */
+    public function getHash();
 
 }

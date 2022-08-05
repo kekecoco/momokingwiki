@@ -33,74 +33,79 @@ use MediaWiki\Mail\UserEmailContact;
  *
  * @newable
  */
-class MailAddress {
-	/**
-	 * @var string
-	 */
-	public $name;
+class MailAddress
+{
+    /**
+     * @var string
+     */
+    public $name;
 
-	/**
-	 * @var string
-	 */
-	public $realName;
+    /**
+     * @var string
+     */
+    public $realName;
 
-	/**
-	 * @var string
-	 */
-	public $address;
+    /**
+     * @var string
+     */
+    public $address;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $address String with an email address
-	 * @param string|null $name Human-readable name if a string address is given
-	 * @param string|null $realName Human-readable real name if a string address is given
-	 */
-	public function __construct( $address, $name = null, $realName = null ) {
-		$this->address = strval( $address );
-		$this->name = strval( $name );
-		$this->realName = strval( $realName );
-	}
+    /**
+     * @stable to call
+     *
+     * @param string $address String with an email address
+     * @param string|null $name Human-readable name if a string address is given
+     * @param string|null $realName Human-readable real name if a string address is given
+     */
+    public function __construct($address, $name = null, $realName = null)
+    {
+        $this->address = strval($address);
+        $this->name = strval($name);
+        $this->realName = strval($realName);
+    }
 
-	/**
-	 * Create a new MailAddress object for the given user
-	 *
-	 * @param UserEmailContact $user
-	 * @return MailAddress
-	 * @since 1.24
-	 */
-	public static function newFromUser( UserEmailContact $user ) {
-		return new MailAddress( $user->getEmail(), $user->getUser()->getName(), $user->getRealName() );
-	}
+    /**
+     * Create a new MailAddress object for the given user
+     *
+     * @param UserEmailContact $user
+     * @return MailAddress
+     * @since 1.24
+     */
+    public static function newFromUser(UserEmailContact $user)
+    {
+        return new MailAddress($user->getEmail(), $user->getUser()->getName(), $user->getRealName());
+    }
 
-	/**
-	 * Return formatted and quoted address to insert into SMTP headers
-	 * @return string
-	 */
-	public function toString() {
-		if ( !$this->address ) {
-			return '';
-		}
+    /**
+     * Return formatted and quoted address to insert into SMTP headers
+     * @return string
+     */
+    public function toString()
+    {
+        if (!$this->address) {
+            return '';
+        }
 
-		# PHP's mail() implementation under Windows is somewhat shite, and
-		# can't handle "Joe Bloggs <joe@bloggs.com>" format email addresses,
-		# so don't bother generating them
-		if ( $this->name === '' || wfIsWindows() ) {
-			return $this->address;
-		}
+        # PHP's mail() implementation under Windows is somewhat shite, and
+        # can't handle "Joe Bloggs <joe@bloggs.com>" format email addresses,
+        # so don't bother generating them
+        if ($this->name === '' || wfIsWindows()) {
+            return $this->address;
+        }
 
-		global $wgEnotifUseRealName;
-		$name = ( $wgEnotifUseRealName && $this->realName !== '' ) ? $this->realName : $this->name;
-		$quoted = UserMailer::quotedPrintable( $name );
-		// Must only be quoted if string does not use =? encoding (T191931)
-		if ( $quoted === $name ) {
-			$quoted = '"' . addslashes( $quoted ) . '"';
-		}
+        global $wgEnotifUseRealName;
+        $name = ($wgEnotifUseRealName && $this->realName !== '') ? $this->realName : $this->name;
+        $quoted = UserMailer::quotedPrintable($name);
+        // Must only be quoted if string does not use =? encoding (T191931)
+        if ($quoted === $name) {
+            $quoted = '"' . addslashes($quoted) . '"';
+        }
 
-		return "$quoted <{$this->address}>";
-	}
+        return "$quoted <{$this->address}>";
+    }
 
-	public function __toString() {
-		return $this->toString();
-	}
+    public function __toString()
+    {
+        return $this->toString();
+    }
 }

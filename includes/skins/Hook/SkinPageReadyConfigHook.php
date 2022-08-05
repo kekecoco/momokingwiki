@@ -10,17 +10,18 @@ use MediaWiki\ResourceLoader as RL;
  *
  * @stable to implement
  */
-interface SkinPageReadyConfigHook {
-	/**
-	 * Allows skins to change the `mediawiki.page.ready` module configuration.
-	 *
-	 * @since 1.36
-	 * @param RL\Context $context
-	 * @param mixed[] &$config Associative array of configurable options
-	 * @return void This hook must not abort, it must return no value
-	 */
-	public function onSkinPageReadyConfig(
-		RL\Context $context,
-		array &$config
-	): void;
+interface SkinPageReadyConfigHook
+{
+    /**
+     * Allows skins to change the `mediawiki.page.ready` module configuration.
+     *
+     * @param RL\Context $context
+     * @param mixed[] &$config Associative array of configurable options
+     * @return void This hook must not abort, it must return no value
+     * @since 1.36
+     */
+    public function onSkinPageReadyConfig(
+        RL\Context $context,
+        array &$config
+    ): void;
 }

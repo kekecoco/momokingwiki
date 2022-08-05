@@ -23,52 +23,56 @@
  * @file
  * @ingroup Maintenance
  */
+
 use MediaWiki\MediaWikiServices;
 
-require_once dirname( __DIR__ ) . '/Maintenance.php';
+require_once dirname(__DIR__) . '/Maintenance.php';
 
 /**
  * @since 1.24
  */
-class ListVariants extends Maintenance {
+class ListVariants extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Outputs a list of language variants' );
-		$this->addOption( 'flat', 'Output variants in a flat list' );
-		$this->addOption( 'json', 'Output variants as JSON' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Outputs a list of language variants');
+        $this->addOption('flat', 'Output variants in a flat list');
+        $this->addOption('json', 'Output variants as JSON');
+    }
 
-	public function execute() {
-		$variantLangs = [];
-		$variants = [];
-		foreach ( LanguageConverter::$languagesWithVariants as $langCode ) {
-			$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( $langCode );
-			if ( $lang->hasVariants() ) {
-				$variants += array_fill_keys( $lang->getVariants(), true );
-				$variantLangs[$langCode] = $lang->getVariants();
-			}
-		}
-		$variants = array_keys( $variants );
-		sort( $variants );
-		$result = $this->hasOption( 'flat' ) ? $variants : $variantLangs;
+    public function execute()
+    {
+        $variantLangs = [];
+        $variants = [];
+        foreach (LanguageConverter::$languagesWithVariants as $langCode) {
+            $lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage($langCode);
+            if ($lang->hasVariants()) {
+                $variants += array_fill_keys($lang->getVariants(), true);
+                $variantLangs[$langCode] = $lang->getVariants();
+            }
+        }
+        $variants = array_keys($variants);
+        sort($variants);
+        $result = $this->hasOption('flat') ? $variants : $variantLangs;
 
-		// Not using $this->output() because muting makes no sense here
-		if ( $this->hasOption( 'json' ) ) {
-			echo FormatJson::encode( $result, true ) . "\n";
-		} else {
-			foreach ( $result as $key => $value ) {
-				if ( is_array( $value ) ) {
-					echo "$key\n";
-					foreach ( $value as $variant ) {
-						echo "   $variant\n";
-					}
-				} else {
-					echo "$value\n";
-				}
-			}
-		}
-	}
+        // Not using $this->output() because muting makes no sense here
+        if ($this->hasOption('json')) {
+            echo FormatJson::encode($result, true) . "\n";
+        } else {
+            foreach ($result as $key => $value) {
+                if (is_array($value)) {
+                    echo "$key\n";
+                    foreach ($value as $variant) {
+                        echo "   $variant\n";
+                    }
+                } else {
+                    echo "$value\n";
+                }
+            }
+        }
+    }
 }
 
 $maintClass = ListVariants::class;

@@ -19,146 +19,154 @@ use Wikimedia\Message\MessageValue;
  *
  * @group Database
  */
-class LanguageLinksHandlerTest extends \MediaWikiIntegrationTestCase {
-	use DummyServicesTrait;
-	use HandlerTestTrait;
+class LanguageLinksHandlerTest extends \MediaWikiIntegrationTestCase
+{
+    use DummyServicesTrait;
+    use HandlerTestTrait;
 
-	public function addDBData() {
-		$defaults = [
-			'iw_local' => 0,
-			'iw_api' => '/w/api.php',
-			'iw_url' => ''
-		];
+    public function addDBData()
+    {
+        $defaults = [
+            'iw_local' => 0,
+            'iw_api'   => '/w/api.php',
+            'iw_url'   => ''
+        ];
 
-		$base = 'https://wiki.test/';
+        $base = 'https://wiki.test/';
 
-		$this->overrideConfigValue(
-			MainConfigNames::InterwikiCache,
-			ClassicInterwikiLookup::buildCdbHash( [
-				[ 'iw_prefix' => 'de', 'iw_url' => $base . '/de', 'iw_wikiid' => 'dewiki' ] + $defaults,
-				[ 'iw_prefix' => 'en', 'iw_url' => $base . '/en', 'iw_wikiid' => 'enwiki' ] + $defaults,
-				[ 'iw_prefix' => 'fr', 'iw_url' => $base . '/fr', 'iw_wikiid' => 'frwiki' ] + $defaults
-			] )
-		);
+        $this->overrideConfigValue(
+            MainConfigNames::InterwikiCache,
+            ClassicInterwikiLookup::buildCdbHash([
+                ['iw_prefix' => 'de', 'iw_url' => $base . '/de', 'iw_wikiid' => 'dewiki'] + $defaults,
+                ['iw_prefix' => 'en', 'iw_url' => $base . '/en', 'iw_wikiid' => 'enwiki'] + $defaults,
+                ['iw_prefix' => 'fr', 'iw_url' => $base . '/fr', 'iw_wikiid' => 'frwiki'] + $defaults
+            ])
+        );
 
-		$this->editPage( __CLASS__ . '_Foo', 'Foo [[fr:Fou baux]] [[de:Füh bär]]' );
-	}
+        $this->editPage(__CLASS__ . '_Foo', 'Foo [[fr:Fou baux]] [[de:Füh bär]]');
+    }
 
-	private function newHandler() {
-		$languageNameUtils = new LanguageNameUtils(
-			new ServiceOptions(
-				LanguageNameUtils::CONSTRUCTOR_OPTIONS,
-				[ 'ExtraLanguageNames' => [], 'UsePigLatinVariant' => false ]
-			),
-			$this->getServiceContainer()->getHookContainer()
-		);
+    private function newHandler()
+    {
+        $languageNameUtils = new LanguageNameUtils(
+            new ServiceOptions(
+                LanguageNameUtils::CONSTRUCTOR_OPTIONS,
+                ['ExtraLanguageNames' => [], 'UsePigLatinVariant' => false]
+            ),
+            $this->getServiceContainer()->getHookContainer()
+        );
 
-		// DummyServicesTrait::getDummyMediaWikiTitleCodec
-		$titleCodec = $this->getDummyMediaWikiTitleCodec();
+        // DummyServicesTrait::getDummyMediaWikiTitleCodec
+        $titleCodec = $this->getDummyMediaWikiTitleCodec();
 
-		return new LanguageLinksHandler(
-			$this->getServiceContainer()->getDBLoadBalancer(),
-			$languageNameUtils,
-			$titleCodec,
-			$titleCodec,
-			$this->getServiceContainer()->getPageStore()
-		);
-	}
+        return new LanguageLinksHandler(
+            $this->getServiceContainer()->getDBLoadBalancer(),
+            $languageNameUtils,
+            $titleCodec,
+            $titleCodec,
+            $this->getServiceContainer()->getPageStore()
+        );
+    }
 
-	private function assertLink( $expected, $actual ) {
-		foreach ( $expected as $key => $value ) {
-			$this->assertArrayHasKey( $key, $actual );
-			$this->assertSame( $value, $actual[$key], $key );
-		}
-	}
+    private function assertLink($expected, $actual)
+    {
+        foreach ($expected as $key => $value) {
+            $this->assertArrayHasKey($key, $actual);
+            $this->assertSame($value, $actual[$key], $key);
+        }
+    }
 
-	public function testExecute() {
-		$title = __CLASS__ . '_Foo';
-		$request = new RequestData( [ 'pathParams' => [ 'title' => $title ] ] );
+    public function testExecute()
+    {
+        $title = __CLASS__ . '_Foo';
+        $request = new RequestData(['pathParams' => ['title' => $title]]);
 
-		$handler = $this->newHandler();
-		$data = $this->executeHandlerAndGetBodyData( $handler, $request );
+        $handler = $this->newHandler();
+        $data = $this->executeHandlerAndGetBodyData($handler, $request);
 
-		$this->assertCount( 2, $data );
+        $this->assertCount(2, $data);
 
-		$links = [];
-		foreach ( $data as $row ) {
-			$links[$row['code']] = $row;
-		}
+        $links = [];
+        foreach ($data as $row) {
+            $links[$row['code']] = $row;
+        }
 
-		$this->assertArrayHasKey( 'de', $links );
-		$this->assertArrayHasKey( 'fr', $links );
+        $this->assertArrayHasKey('de', $links);
+        $this->assertArrayHasKey('fr', $links);
 
-		$this->assertLink( [
-			'code' => 'de',
-			'name' => 'Deutsch',
-			'title' => 'Füh bär',
-			'key' => 'Füh_bär',
-		], $links['de'] );
+        $this->assertLink([
+            'code'  => 'de',
+            'name'  => 'Deutsch',
+            'title' => 'Füh bär',
+            'key'   => 'Füh_bär',
+        ], $links['de']);
 
-		$this->assertLink( [
-			'code' => 'fr',
-			'name' => 'français',
-			'title' => 'Fou baux',
-			'key' => 'Fou_baux',
-		], $links['fr'] );
-	}
+        $this->assertLink([
+            'code'  => 'fr',
+            'name'  => 'français',
+            'title' => 'Fou baux',
+            'key'   => 'Fou_baux',
+        ], $links['fr']);
+    }
 
-	public function testCacheControl() {
-		$title = Title::newFromText( __METHOD__ );
-		$this->editPage( $title->getPrefixedDBkey(), 'First' );
+    public function testCacheControl()
+    {
+        $title = Title::newFromText(__METHOD__);
+        $this->editPage($title->getPrefixedDBkey(), 'First');
 
-		$request = new RequestData( [ 'pathParams' => [ 'title' => $title->getPrefixedDBkey() ] ] );
+        $request = new RequestData(['pathParams' => ['title' => $title->getPrefixedDBkey()]]);
 
-		$handler = $this->newHandler();
-		$response = $this->executeHandler( $handler, $request );
+        $handler = $this->newHandler();
+        $response = $this->executeHandler($handler, $request);
 
-		$firstETag = $response->getHeaderLine( 'ETag' );
-		$this->assertSame(
-			wfTimestamp( TS_RFC2822, $title->getTouched() ),
-			$response->getHeaderLine( 'Last-Modified' )
-		);
+        $firstETag = $response->getHeaderLine('ETag');
+        $this->assertSame(
+            wfTimestamp(TS_RFC2822, $title->getTouched()),
+            $response->getHeaderLine('Last-Modified')
+        );
 
-		$this->editPage( $title->getPrefixedDBkey(), 'Second' );
+        $this->editPage($title->getPrefixedDBkey(), 'Second');
 
-		Title::clearCaches();
-		$handler = $this->newHandler();
-		$response = $this->executeHandler( $handler, $request );
+        Title::clearCaches();
+        $handler = $this->newHandler();
+        $response = $this->executeHandler($handler, $request);
 
-		$this->assertNotEquals( $response->getHeaderLine( 'ETag' ), $firstETag );
-		$this->assertSame(
-			wfTimestamp( TS_RFC2822, $title->getTouched() ),
-			$response->getHeaderLine( 'Last-Modified' )
-		);
-	}
+        $this->assertNotEquals($response->getHeaderLine('ETag'), $firstETag);
+        $this->assertSame(
+            wfTimestamp(TS_RFC2822, $title->getTouched()),
+            $response->getHeaderLine('Last-Modified')
+        );
+    }
 
-	public function testExecute_notFound() {
-		$title = __CLASS__ . '_Xyzzy';
-		$request = new RequestData( [ 'pathParams' => [ 'title' => $title ] ] );
+    public function testExecute_notFound()
+    {
+        $title = __CLASS__ . '_Xyzzy';
+        $request = new RequestData(['pathParams' => ['title' => $title]]);
 
-		$handler = $this->newHandler();
+        $handler = $this->newHandler();
 
-		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'rest-nonexistent-title' ), 404 )
-		);
-		$this->executeHandler( $handler, $request );
-	}
+        $this->expectExceptionObject(
+            new LocalizedHttpException(new MessageValue('rest-nonexistent-title'), 404)
+        );
+        $this->executeHandler($handler, $request);
+    }
 
-	public function testExecute_forbidden() {
-		// The mock PermissionHandler forbids access to pages that have "Forbidden" in the name
-		$title = __CLASS__ . '_Forbidden';
-		$this->editPage( $title, 'Forbidden text' );
-		$request = new RequestData( [ 'pathParams' => [ 'title' => $title ] ] );
+    public function testExecute_forbidden()
+    {
+        // The mock PermissionHandler forbids access to pages that have "Forbidden" in the name
+        $title = __CLASS__ . '_Forbidden';
+        $this->editPage($title, 'Forbidden text');
+        $request = new RequestData(['pathParams' => ['title' => $title]]);
 
-		$handler = $this->newHandler();
+        $handler = $this->newHandler();
 
-		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'rest-permission-denied-title' ), 403 )
-		);
-		$this->executeHandler( $handler, $request, [ 'userCan' => false ], [], [], [],
-			$this->mockAnonAuthority( static function ( string $permission, ?PageIdentity $target ) {
-				return $target && !preg_match( '/Forbidden/', $target->getDBkey() );
-			} ) );
-	}
+        $this->expectExceptionObject(
+            new LocalizedHttpException(new MessageValue('rest-permission-denied-title'), 403)
+        );
+        $this->executeHandler($handler, $request, ['userCan' => false], [], [], [],
+            $this->mockAnonAuthority(static function (string $permission, ?PageIdentity $target) {
+                return $target && !preg_match('/Forbidden/', $target->getDBkey());
+            }));
+    }
 
 }

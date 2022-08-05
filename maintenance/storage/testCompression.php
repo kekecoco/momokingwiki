@@ -25,87 +25,87 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 
-$optionsWithArgs = [ 'start', 'limit', 'type' ];
+$optionsWithArgs = ['start', 'limit', 'type'];
 require __DIR__ . '/../CommandLineInc.php';
 
-if ( !isset( $args[0] ) ) {
-	echo "Usage: php testCompression.php [--type=<type>] [--start=<start-date>] " .
-		"[--limit=<num-revs>] <page-title>\n";
-	exit( 1 );
+if (!isset($args[0])) {
+    echo "Usage: php testCompression.php [--type=<type>] [--start=<start-date>] " .
+        "[--limit=<num-revs>] <page-title>\n";
+    exit(1);
 }
 
-$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' );
-$title = Title::newFromText( $args[0] );
-if ( isset( $options['start'] ) ) {
-	$start = wfTimestamp( TS_MW, strtotime( $options['start'] ) );
-	echo "Starting from " . $lang->timeanddate( $start ) . "\n";
+$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage('en');
+$title = Title::newFromText($args[0]);
+if (isset($options['start'])) {
+    $start = wfTimestamp(TS_MW, strtotime($options['start']));
+    echo "Starting from " . $lang->timeanddate($start) . "\n";
 } else {
-	$start = '19700101000000';
+    $start = '19700101000000';
 }
-if ( isset( $options['limit'] ) ) {
-	$limit = $options['limit'];
-	$untilHappy = false;
+if (isset($options['limit'])) {
+    $limit = $options['limit'];
+    $untilHappy = false;
 } else {
-	$limit = 1000;
-	$untilHappy = true;
+    $limit = 1000;
+    $untilHappy = true;
 }
 $type = $options['type'] ?? ConcatenatedGzipHistoryBlob::class;
 
-$dbr = wfGetDB( DB_REPLICA );
+$dbr = wfGetDB(DB_REPLICA);
 $revStore = MediaWikiServices::getInstance()->getRevisionStore();
-$revQuery = $revStore->getQueryInfo( [ 'page' ] );
+$revQuery = $revStore->getQueryInfo(['page']);
 $res = $dbr->select(
-	$revQuery['tables'],
-	$revQuery['fields'],
-	[
-		'page_namespace' => $title->getNamespace(),
-		'page_title' => $title->getDBkey(),
-		'rev_timestamp > ' . $dbr->addQuotes( $dbr->timestamp( $start ) ),
-	],
-	__FILE__,
-	[ 'LIMIT' => $limit ],
-	$revQuery['joins']
+    $revQuery['tables'],
+    $revQuery['fields'],
+    [
+        'page_namespace' => $title->getNamespace(),
+        'page_title'     => $title->getDBkey(),
+        'rev_timestamp > ' . $dbr->addQuotes($dbr->timestamp($start)),
+    ],
+    __FILE__,
+    ['LIMIT' => $limit],
+    $revQuery['joins']
 );
 
 $blob = new $type;
 $hashes = [];
 $keys = [];
 $uncompressedSize = 0;
-$t = -microtime( true );
-foreach ( $res as $row ) {
-	$revRecord = $revStore->newRevisionFromRow( $row );
-	$text = $revRecord->getSlot( SlotRecord::MAIN, RevisionRecord::RAW )
-		->getContent()
-		->serialize();
-	$uncompressedSize += strlen( $text );
-	$hashes[$row->rev_id] = md5( $text );
-	$keys[$row->rev_id] = $blob->addItem( $text );
-	if ( $untilHappy && !$blob->isHappy() ) {
-		break;
-	}
+$t = -microtime(true);
+foreach ($res as $row) {
+    $revRecord = $revStore->newRevisionFromRow($row);
+    $text = $revRecord->getSlot(SlotRecord::MAIN, RevisionRecord::RAW)
+        ->getContent()
+        ->serialize();
+    $uncompressedSize += strlen($text);
+    $hashes[$row->rev_id] = md5($text);
+    $keys[$row->rev_id] = $blob->addItem($text);
+    if ($untilHappy && !$blob->isHappy()) {
+        break;
+    }
 }
 
-$serialized = serialize( $blob );
-$t += microtime( true );
+$serialized = serialize($blob);
+$t += microtime(true);
 # print_r( $blob->mDiffMap );
 
-printf( "%s\nCompression ratio for %d revisions: %5.2f, %s -> %d\n",
-	$type,
-	count( $hashes ),
-	$uncompressedSize / strlen( $serialized ),
-	$lang->formatSize( $uncompressedSize ),
-	strlen( $serialized )
+printf("%s\nCompression ratio for %d revisions: %5.2f, %s -> %d\n",
+    $type,
+    count($hashes),
+    $uncompressedSize / strlen($serialized),
+    $lang->formatSize($uncompressedSize),
+    strlen($serialized)
 );
-printf( "Compression time: %5.2f ms\n", $t * 1000 );
+printf("Compression time: %5.2f ms\n", $t * 1000);
 
-$t = -microtime( true );
-$blob = unserialize( $serialized );
-foreach ( $keys as $id => $key ) {
-	$text = $blob->getItem( $key );
-	if ( md5( $text ) != $hashes[$id] ) {
-		echo "Content hash mismatch for rev_id $id\n";
-		# var_dump( $text );
-	}
+$t = -microtime(true);
+$blob = unserialize($serialized);
+foreach ($keys as $id => $key) {
+    $text = $blob->getItem($key);
+    if (md5($text) != $hashes[$id]) {
+        echo "Content hash mismatch for rev_id $id\n";
+        # var_dump( $text );
+    }
 }
-$t += microtime( true );
-printf( "Decompression time: %5.2f ms\n", $t * 1000 );
+$t += microtime(true);
+printf("Decompression time: %5.2f ms\n", $t * 1000);

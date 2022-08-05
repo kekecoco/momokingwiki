@@ -19,13 +19,15 @@
  * @ingroup Installer
  */
 
-class WebInstallerUpgradeDoc extends WebInstallerDocument {
+class WebInstallerUpgradeDoc extends WebInstallerDocument
+{
 
-	/**
-	 * @return string
-	 */
-	protected function getFileName() {
-		return 'UPGRADE';
-	}
+    /**
+     * @return string
+     */
+    protected function getFileName()
+    {
+        return 'UPGRADE';
+    }
 
 }

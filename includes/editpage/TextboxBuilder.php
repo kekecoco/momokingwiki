@@ -35,110 +35,117 @@ use Title;
  *
  * @since 1.31
  */
-class TextboxBuilder {
+class TextboxBuilder
+{
 
-	/**
-	 * @param string $wikitext
-	 * @return string
-	 */
-	public function addNewLineAtEnd( $wikitext ) {
-		if ( strval( $wikitext ) !== '' ) {
-			// Ensure there's a newline at the end, otherwise adding lines
-			// is awkward.
-			// But don't add a newline if the text is empty, or Firefox in XHTML
-			// mode will show an extra newline. A bit annoying.
-			$wikitext .= "\n";
-			return $wikitext;
-		}
-		return $wikitext;
-	}
+    /**
+     * @param string $wikitext
+     * @return string
+     */
+    public function addNewLineAtEnd($wikitext)
+    {
+        if (strval($wikitext) !== '') {
+            // Ensure there's a newline at the end, otherwise adding lines
+            // is awkward.
+            // But don't add a newline if the text is empty, or Firefox in XHTML
+            // mode will show an extra newline. A bit annoying.
+            $wikitext .= "\n";
 
-	/**
-	 * @param string[] $classes
-	 * @param mixed[] $attribs
-	 * @return mixed[]
-	 */
-	public function mergeClassesIntoAttributes( array $classes, array $attribs ) {
-		if ( $classes === [] ) {
-			return $attribs;
-		}
+            return $wikitext;
+        }
 
-		return Sanitizer::mergeAttributes(
-			$attribs,
-			[ 'class' => implode( ' ', $classes ) ]
-		);
-	}
+        return $wikitext;
+    }
 
-	/**
-	 * @param PageIdentity $page
-	 * @return string[]
-	 */
-	public function getTextboxProtectionCSSClasses( PageIdentity $page ) {
-		$classes = []; // Textarea CSS
-		$services = MediaWikiServices::getInstance();
-		if ( $services->getRestrictionStore()->isProtected( $page, 'edit' ) &&
-			$services->getPermissionManager()
-				->getNamespaceRestrictionLevels( $page->getNamespace() ) !== [ '' ]
-		) {
-			# Is the title semi-protected?
-			if ( $services->getRestrictionStore()->isSemiProtected( $page ) ) {
-				$classes[] = 'mw-textarea-sprotected';
-			} else {
-				# Then it must be protected based on static groups (regular)
-				$classes[] = 'mw-textarea-protected';
-			}
-			# Is the title cascade-protected?
-			if ( $services->getRestrictionStore()->isCascadeProtected( $page ) ) {
-				$classes[] = 'mw-textarea-cprotected';
-			}
-		}
+    /**
+     * @param string[] $classes
+     * @param mixed[] $attribs
+     * @return mixed[]
+     */
+    public function mergeClassesIntoAttributes(array $classes, array $attribs)
+    {
+        if ($classes === []) {
+            return $attribs;
+        }
 
-		return $classes;
-	}
+        return Sanitizer::mergeAttributes(
+            $attribs,
+            ['class' => implode(' ', $classes)]
+        );
+    }
 
-	/**
-	 * @param string $name
-	 * @param mixed[] $customAttribs
-	 * @param UserIdentity $user
-	 * @param PageIdentity $page
-	 * @return mixed[]
-	 */
-	public function buildTextboxAttribs(
-		$name, array $customAttribs, UserIdentity $user, PageIdentity $page
-	) {
-		$attribs = $customAttribs + [
-				'accesskey' => ',',
-				'id' => $name,
-				'cols' => 80,
-				'rows' => 25,
-				// Avoid PHP notices when appending preferences
-				// (appending allows customAttribs['style'] to still work).
-				'style' => ''
-			];
+    /**
+     * @param PageIdentity $page
+     * @return string[]
+     */
+    public function getTextboxProtectionCSSClasses(PageIdentity $page)
+    {
+        $classes = []; // Textarea CSS
+        $services = MediaWikiServices::getInstance();
+        if ($services->getRestrictionStore()->isProtected($page, 'edit') &&
+            $services->getPermissionManager()
+                ->getNamespaceRestrictionLevels($page->getNamespace()) !== ['']
+        ) {
+            # Is the title semi-protected?
+            if ($services->getRestrictionStore()->isSemiProtected($page)) {
+                $classes[] = 'mw-textarea-sprotected';
+            } else {
+                # Then it must be protected based on static groups (regular)
+                $classes[] = 'mw-textarea-protected';
+            }
+            # Is the title cascade-protected?
+            if ($services->getRestrictionStore()->isCascadeProtected($page)) {
+                $classes[] = 'mw-textarea-cprotected';
+            }
+        }
 
-		// The following classes can be used here:
-		// * mw-editfont-monospace
-		// * mw-editfont-sans-serif
-		// * mw-editfont-serif
-		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
-		$class = 'mw-editfont-' . $userOptionsLookup->getOption( $user, 'editfont' );
+        return $classes;
+    }
 
-		if ( isset( $attribs['class'] ) ) {
-			if ( is_string( $attribs['class'] ) ) {
-				$attribs['class'] .= ' ' . $class;
-			} elseif ( is_array( $attribs['class'] ) ) {
-				$attribs['class'][] = $class;
-			}
-		} else {
-			$attribs['class'] = $class;
-		}
+    /**
+     * @param string $name
+     * @param mixed[] $customAttribs
+     * @param UserIdentity $user
+     * @param PageIdentity $page
+     * @return mixed[]
+     */
+    public function buildTextboxAttribs(
+        $name, array $customAttribs, UserIdentity $user, PageIdentity $page
+    )
+    {
+        $attribs = $customAttribs + [
+                'accesskey' => ',',
+                'id'        => $name,
+                'cols'      => 80,
+                'rows'      => 25,
+                // Avoid PHP notices when appending preferences
+                // (appending allows customAttribs['style'] to still work).
+                'style'     => ''
+            ];
 
-		$title = Title::castFromPageIdentity( $page );
-		$pageLang = $title->getPageLanguage();
-		$attribs['lang'] = $pageLang->getHtmlCode();
-		$attribs['dir'] = $pageLang->getDir();
+        // The following classes can be used here:
+        // * mw-editfont-monospace
+        // * mw-editfont-sans-serif
+        // * mw-editfont-serif
+        $userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
+        $class = 'mw-editfont-' . $userOptionsLookup->getOption($user, 'editfont');
 
-		return $attribs;
-	}
+        if (isset($attribs['class'])) {
+            if (is_string($attribs['class'])) {
+                $attribs['class'] .= ' ' . $class;
+            } elseif (is_array($attribs['class'])) {
+                $attribs['class'][] = $class;
+            }
+        } else {
+            $attribs['class'] = $class;
+        }
+
+        $title = Title::castFromPageIdentity($page);
+        $pageLang = $title->getPageLanguage();
+        $attribs['lang'] = $pageLang->getHtmlCode();
+        $attribs['dir'] = $pageLang->getDir();
+
+        return $attribs;
+    }
 
 }

@@ -30,99 +30,108 @@ use Psr\Log\LogLevel;
  *
  * @since 1.27
  */
-class TestLogger extends \Psr\Log\AbstractLogger {
-	private $collect;
-	private $collectContext;
-	private $buffer = [];
-	/** @var callable|null */
-	private $filter;
+class TestLogger extends \Psr\Log\AbstractLogger
+{
+    private $collect;
+    private $collectContext;
+    private $buffer = [];
+    /** @var callable|null */
+    private $filter;
 
-	/**
-	 * @param bool $collect Whether to collect logs. @see setCollect()
-	 * @param callable|null $filter Filter logs before collecting/printing. Signature is
-	 *  string|null function ( string $message, string $level, array $context );
-	 * @param bool $collectContext Whether to keep the context passed to log
-	 *             (since 1.29, @see setCollectContext()).
-	 */
-	public function __construct( $collect = false, $filter = null, $collectContext = false ) {
-		$this->collect = $collect;
-		$this->collectContext = $collectContext;
-		$this->filter = $filter;
-	}
+    /**
+     * @param bool $collect Whether to collect logs. @see setCollect()
+     * @param callable|null $filter Filter logs before collecting/printing. Signature is
+     *  string|null function ( string $message, string $level, array $context );
+     * @param bool $collectContext Whether to keep the context passed to log
+     *             (since 1.29, @see setCollectContext()).
+     */
+    public function __construct($collect = false, $filter = null, $collectContext = false)
+    {
+        $this->collect = $collect;
+        $this->collectContext = $collectContext;
+        $this->filter = $filter;
+    }
 
-	/**
-	 * Set the "collect" flag
-	 * @param bool $collect
-	 * @return TestLogger $this
-	 */
-	public function setCollect( $collect ) {
-		$this->collect = $collect;
-		return $this;
-	}
+    /**
+     * Set the "collect" flag
+     * @param bool $collect
+     * @return TestLogger $this
+     */
+    public function setCollect($collect)
+    {
+        $this->collect = $collect;
 
-	/**
-	 * Set the collectContext flag
-	 *
-	 * @param bool $collectContext
-	 * @since 1.29
-	 * @return TestLogger $this
-	 */
-	public function setCollectContext( $collectContext ) {
-		$this->collectContext = $collectContext;
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Return the collected logs
-	 * @return array Array of [ string $level, string $message ], or
-	 *   [ string $level, string $message, array $context ] if $collectContext was true.
-	 */
-	public function getBuffer() {
-		return $this->buffer;
-	}
+    /**
+     * Set the collectContext flag
+     *
+     * @param bool $collectContext
+     * @return TestLogger $this
+     * @since 1.29
+     */
+    public function setCollectContext($collectContext)
+    {
+        $this->collectContext = $collectContext;
 
-	/**
-	 * Clear the collected log buffer
-	 */
-	public function clearBuffer() {
-		$this->buffer = [];
-	}
+        return $this;
+    }
 
-	public function log( $level, $message, array $context = [] ) {
-		$message = trim( $message );
+    /**
+     * Return the collected logs
+     * @return array Array of [ string $level, string $message ], or
+     *   [ string $level, string $message, array $context ] if $collectContext was true.
+     */
+    public function getBuffer()
+    {
+        return $this->buffer;
+    }
 
-		if ( $this->filter ) {
-			$message = ( $this->filter )( $message, $level, $context );
-			if ( $message === null ) {
-				return;
-			}
-		}
+    /**
+     * Clear the collected log buffer
+     */
+    public function clearBuffer()
+    {
+        $this->buffer = [];
+    }
 
-		if ( $this->collect ) {
-			if ( $this->collectContext ) {
-				$this->buffer[] = [ $level, $message, $context ];
-			} else {
-				$this->buffer[] = [ $level, $message ];
-			}
-		} else {
-			switch ( $level ) {
-				case LogLevel::DEBUG:
-				case LogLevel::INFO:
-				case LogLevel::NOTICE:
-					trigger_error( "LOG[$level]: $message", E_USER_NOTICE );
-					break;
+    public function log($level, $message, array $context = [])
+    {
+        $message = trim($message);
 
-				case LogLevel::WARNING:
-					trigger_error( "LOG[$level]: $message", E_USER_WARNING );
-					break;
+        if ($this->filter) {
+            $message = ($this->filter)($message, $level, $context);
+            if ($message === null) {
+                return;
+            }
+        }
 
-				case LogLevel::ERROR:
-				case LogLevel::CRITICAL:
-				case LogLevel::ALERT:
-				case LogLevel::EMERGENCY:
-					trigger_error( "LOG[$level]: $message", E_USER_ERROR );
-					break;
-			}
-		}
-	}
+        if ($this->collect) {
+            if ($this->collectContext) {
+                $this->buffer[] = [$level, $message, $context];
+            } else {
+                $this->buffer[] = [$level, $message];
+            }
+        } else {
+            switch ($level) {
+                case LogLevel::DEBUG:
+                case LogLevel::INFO:
+                case LogLevel::NOTICE:
+                    trigger_error("LOG[$level]: $message", E_USER_NOTICE);
+                    break;
+
+                case LogLevel::WARNING:
+                    trigger_error("LOG[$level]: $message", E_USER_WARNING);
+                    break;
+
+                case LogLevel::ERROR:
+                case LogLevel::CRITICAL:
+                case LogLevel::ALERT:
+                case LogLevel::EMERGENCY:
+                    trigger_error("LOG[$level]: $message", E_USER_ERROR);
+                    break;
+            }
+        }
+    }
 }

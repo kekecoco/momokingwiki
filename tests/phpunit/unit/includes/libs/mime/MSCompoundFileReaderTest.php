@@ -18,42 +18,47 @@
  * @group Media
  * @covers MSCompoundFileReader
  */
-class MSCompoundFileReaderTest extends PHPUnit\Framework\TestCase {
-	public static function provideValid() {
-		return [
-			[ 'calc.xls', 'application/vnd.ms-excel' ],
-			[ 'excel2016-compat97.xls', 'application/vnd.ms-excel' ],
-			[ 'gnumeric.xls', 'application/vnd.ms-excel' ],
-			[ 'impress.ppt', 'application/vnd.ms-powerpoint' ],
-			[ 'powerpoint2016-compat97.ppt', 'application/vnd.ms-powerpoint' ],
-			[ 'word2016-compat97.doc', 'application/msword' ],
-			[ 'writer.doc', 'application/msword' ],
-		];
-	}
+class MSCompoundFileReaderTest extends PHPUnit\Framework\TestCase
+{
+    public static function provideValid()
+    {
+        return [
+            ['calc.xls', 'application/vnd.ms-excel'],
+            ['excel2016-compat97.xls', 'application/vnd.ms-excel'],
+            ['gnumeric.xls', 'application/vnd.ms-excel'],
+            ['impress.ppt', 'application/vnd.ms-powerpoint'],
+            ['powerpoint2016-compat97.ppt', 'application/vnd.ms-powerpoint'],
+            ['word2016-compat97.doc', 'application/msword'],
+            ['writer.doc', 'application/msword'],
+        ];
+    }
 
-	/** @dataProvider provideValid */
-	public function testReadFile( $fileName, $expectedMime ) {
-		global $IP;
+    /** @dataProvider provideValid */
+    public function testReadFile($fileName, $expectedMime)
+    {
+        global $IP;
 
-		$info = MSCompoundFileReader::readFile( "$IP/tests/phpunit/data/MSCompoundFileReader/$fileName" );
-		$this->assertTrue( $info['valid'] );
-		$this->assertSame( $expectedMime, $info['mime'] );
-	}
+        $info = MSCompoundFileReader::readFile("$IP/tests/phpunit/data/MSCompoundFileReader/$fileName");
+        $this->assertTrue($info['valid']);
+        $this->assertSame($expectedMime, $info['mime']);
+    }
 
-	public static function provideInvalid() {
-		return [
-			[ 'dir-beyond-end.xls', MSCompoundFileReader::ERROR_READ_PAST_END ],
-			[ 'fat-loop.xls', MSCompoundFileReader::ERROR_INVALID_FORMAT ],
-			[ 'invalid-signature.xls', MSCompoundFileReader::ERROR_INVALID_SIGNATURE ],
-		];
-	}
+    public static function provideInvalid()
+    {
+        return [
+            ['dir-beyond-end.xls', MSCompoundFileReader::ERROR_READ_PAST_END],
+            ['fat-loop.xls', MSCompoundFileReader::ERROR_INVALID_FORMAT],
+            ['invalid-signature.xls', MSCompoundFileReader::ERROR_INVALID_SIGNATURE],
+        ];
+    }
 
-	/** @dataProvider provideInvalid */
-	public function testReadFileInvalid( $fileName, $expectedError ) {
-		global $IP;
+    /** @dataProvider provideInvalid */
+    public function testReadFileInvalid($fileName, $expectedError)
+    {
+        global $IP;
 
-		$info = MSCompoundFileReader::readFile( "$IP/tests/phpunit/data/MSCompoundFileReader/$fileName" );
-		$this->assertFalse( $info['valid'] );
-		$this->assertSame( $expectedError, $info['errorCode'] );
-	}
+        $info = MSCompoundFileReader::readFile("$IP/tests/phpunit/data/MSCompoundFileReader/$fileName");
+        $this->assertFalse($info['valid']);
+        $this->assertSame($expectedError, $info['errorCode']);
+    }
 }

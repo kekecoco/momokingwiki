@@ -5,87 +5,88 @@ use MediaWiki\Revision\SlotRecord;
 /**
  * @since 1.31
  */
-interface ImportableOldRevision {
+interface ImportableOldRevision
+{
 
-	/**
-	 * @deprecated since 1.39, use {@see getUser} instead; this is almost always null anyway
-	 * @since 1.31
-	 * @return User|null Typically null, use {@see getUser} instead
-	 */
-	public function getUserObj();
+    /**
+     * @return User|null Typically null, use {@see getUser} instead
+     * @since 1.31
+     * @deprecated since 1.39, use {@see getUser} instead; this is almost always null anyway
+     */
+    public function getUserObj();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getUser();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getUser();
 
-	/**
-	 * @since 1.31
-	 * @return Title
-	 */
-	public function getTitle();
+    /**
+     * @return Title
+     * @since 1.31
+     */
+    public function getTitle();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getTimestamp();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getTimestamp();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getComment();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getComment();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getModel();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getModel();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getFormat();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getFormat();
 
-	/**
-	 * @since 1.31
-	 * @param string $role
-	 * @return Content
-	 */
-	public function getContent( $role = SlotRecord::MAIN );
+    /**
+     * @param string $role
+     * @return Content
+     * @since 1.31
+     */
+    public function getContent($role = SlotRecord::MAIN);
 
-	/**
-	 * @since 1.35
-	 * @param string $role
-	 * @return SlotRecord
-	 */
-	public function getSlot( $role );
+    /**
+     * @param string $role
+     * @return SlotRecord
+     * @since 1.35
+     */
+    public function getSlot($role);
 
-	/**
-	 * @since 1.35
-	 * @return string[]
-	 */
-	public function getSlotRoles();
+    /**
+     * @return string[]
+     * @since 1.35
+     */
+    public function getSlotRoles();
 
-	/**
-	 * @since 1.31
-	 * @return bool
-	 */
-	public function getMinor();
+    /**
+     * @return bool
+     * @since 1.31
+     */
+    public function getMinor();
 
-	/**
-	 * @since 1.31
-	 * @return bool|string
-	 */
-	public function getSha1Base36();
+    /**
+     * @return bool|string
+     * @since 1.31
+     */
+    public function getSha1Base36();
 
-	/**
-	 * @since 1.34
-	 * @return string[]
-	 */
-	public function getTags();
+    /**
+     * @return string[]
+     * @since 1.34
+     */
+    public function getTags();
 
 }

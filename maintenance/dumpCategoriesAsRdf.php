@@ -30,161 +30,171 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.30
  */
-class DumpCategoriesAsRdf extends Maintenance {
-	/**
-	 * @var RdfWriter
-	 */
-	private $rdfWriter;
-	/**
-	 * Categories RDF helper.
-	 * @var CategoriesRdf
-	 */
-	private $categoriesRdf;
+class DumpCategoriesAsRdf extends Maintenance
+{
+    /**
+     * @var RdfWriter
+     */
+    private $rdfWriter;
+    /**
+     * Categories RDF helper.
+     * @var CategoriesRdf
+     */
+    private $categoriesRdf;
 
-	public function __construct() {
-		parent::__construct();
+    public function __construct()
+    {
+        parent::__construct();
 
-		$this->addDescription( "Generate RDF dump of categories in a wiki." );
+        $this->addDescription("Generate RDF dump of categories in a wiki.");
 
-		$this->setBatchSize( 200 );
-		$this->addOption( 'output', "Output file (default is stdout). Will be overwritten.",
-			false, true );
-		$this->addOption( 'format', "Set the dump format.", false, true );
-	}
+        $this->setBatchSize(200);
+        $this->addOption('output', "Output file (default is stdout). Will be overwritten.",
+            false, true);
+        $this->addOption('format', "Set the dump format.", false, true);
+    }
 
-	/**
-	 * Produce row iterator for categories.
-	 * @param IDatabase $dbr Database connection
-	 * @param string $fname Name of the calling function
-	 * @return RecursiveIterator
-	 */
-	public function getCategoryIterator( IDatabase $dbr, $fname ) {
-		$it = new BatchRowIterator(
-			$dbr,
-			[ 'page', 'page_props', 'category' ],
-			[ 'page_title' ],
-			$this->getBatchSize()
-		);
-		$it->addConditions( [
-			'page_namespace' => NS_CATEGORY,
-		] );
-		$it->setFetchColumns( [
-			'page_title',
-			'page_id',
-			'pp_propname',
-			'cat_pages',
-			'cat_subcats',
-			'cat_files'
-		] );
-		$it->addJoinConditions(
-			[
-				'page_props' => [
-					'LEFT JOIN', [ 'pp_propname' => 'hiddencat', 'pp_page = page_id' ]
-				],
-				'category' => [
-					'LEFT JOIN', [ 'cat_title = page_title' ]
-				]
-			]
+    /**
+     * Produce row iterator for categories.
+     * @param IDatabase $dbr Database connection
+     * @param string $fname Name of the calling function
+     * @return RecursiveIterator
+     */
+    public function getCategoryIterator(IDatabase $dbr, $fname)
+    {
+        $it = new BatchRowIterator(
+            $dbr,
+            ['page', 'page_props', 'category'],
+            ['page_title'],
+            $this->getBatchSize()
+        );
+        $it->addConditions([
+            'page_namespace' => NS_CATEGORY,
+        ]);
+        $it->setFetchColumns([
+            'page_title',
+            'page_id',
+            'pp_propname',
+            'cat_pages',
+            'cat_subcats',
+            'cat_files'
+        ]);
+        $it->addJoinConditions(
+            [
+                'page_props' => [
+                    'LEFT JOIN', ['pp_propname' => 'hiddencat', 'pp_page = page_id']
+                ],
+                'category'   => [
+                    'LEFT JOIN', ['cat_title = page_title']
+                ]
+            ]
 
-		);
-		$it->setCaller( $fname );
-		return $it;
-	}
+        );
+        $it->setCaller($fname);
 
-	/**
-	 * Get iterator for links for categories.
-	 * @param IDatabase $dbr
-	 * @param int[] $ids List of page IDs
-	 * @param string $fname Name of the calling function
-	 * @return Traversable
-	 */
-	public function getCategoryLinksIterator( IDatabase $dbr, array $ids, $fname ) {
-		$it = new BatchRowIterator(
-			$dbr,
-			'categorylinks',
-			[ 'cl_from', 'cl_to' ],
-			$this->getBatchSize()
-		);
-		$it->addConditions( [
-			'cl_type' => 'subcat',
-			'cl_from' => $ids
-		] );
-		$it->setFetchColumns( [ 'cl_from', 'cl_to' ] );
-		$it->setCaller( $fname );
-		return new RecursiveIteratorIterator( $it );
-	}
+        return $it;
+    }
 
-	/**
-	 * @param int $timestamp
-	 */
-	public function addDumpHeader( $timestamp ) {
-		$licenseUrl = $this->getConfig()->get( MainConfigNames::RightsUrl );
-		if ( substr( $licenseUrl, 0, 2 ) == '//' ) {
-			$licenseUrl = 'https:' . $licenseUrl;
-		}
-		$this->rdfWriter->about( $this->categoriesRdf->getDumpURI() )
-			->a( 'schema', 'Dataset' )
-			->a( 'owl', 'Ontology' )
-			->say( 'cc', 'license' )->is( $licenseUrl )
-			->say( 'schema', 'softwareVersion' )->value( CategoriesRdf::FORMAT_VERSION )
-			->say( 'schema', 'dateModified' )
-			->value( wfTimestamp( TS_ISO_8601, $timestamp ), 'xsd', 'dateTime' )
-			->say( 'schema', 'isPartOf' )->is( wfExpandUrl( '/', PROTO_CANONICAL ) )
-			->say( 'owl', 'imports' )->is( CategoriesRdf::OWL_URL );
-	}
+    /**
+     * Get iterator for links for categories.
+     * @param IDatabase $dbr
+     * @param int[] $ids List of page IDs
+     * @param string $fname Name of the calling function
+     * @return Traversable
+     */
+    public function getCategoryLinksIterator(IDatabase $dbr, array $ids, $fname)
+    {
+        $it = new BatchRowIterator(
+            $dbr,
+            'categorylinks',
+            ['cl_from', 'cl_to'],
+            $this->getBatchSize()
+        );
+        $it->addConditions([
+            'cl_type' => 'subcat',
+            'cl_from' => $ids
+        ]);
+        $it->setFetchColumns(['cl_from', 'cl_to']);
+        $it->setCaller($fname);
 
-	public function execute() {
-		$outFile = $this->getOption( 'output', 'php://stdout' );
+        return new RecursiveIteratorIterator($it);
+    }
 
-		if ( $outFile === '-' ) {
-			$outFile = 'php://stdout';
-		}
+    /**
+     * @param int $timestamp
+     */
+    public function addDumpHeader($timestamp)
+    {
+        $licenseUrl = $this->getConfig()->get(MainConfigNames::RightsUrl);
+        if (substr($licenseUrl, 0, 2) == '//') {
+            $licenseUrl = 'https:' . $licenseUrl;
+        }
+        $this->rdfWriter->about($this->categoriesRdf->getDumpURI())
+            ->a('schema', 'Dataset')
+            ->a('owl', 'Ontology')
+            ->say('cc', 'license')->is($licenseUrl)
+            ->say('schema', 'softwareVersion')->value(CategoriesRdf::FORMAT_VERSION)
+            ->say('schema', 'dateModified')
+            ->value(wfTimestamp(TS_ISO_8601, $timestamp), 'xsd', 'dateTime')
+            ->say('schema', 'isPartOf')->is(wfExpandUrl('/', PROTO_CANONICAL))
+            ->say('owl', 'imports')->is(CategoriesRdf::OWL_URL);
+    }
 
-		$output = fopen( $outFile, 'w' );
-		$this->rdfWriter = $this->createRdfWriter( $this->getOption( 'format', 'ttl' ) );
-		$this->categoriesRdf = new CategoriesRdf( $this->rdfWriter );
+    public function execute()
+    {
+        $outFile = $this->getOption('output', 'php://stdout');
 
-		$this->categoriesRdf->setupPrefixes();
-		$this->rdfWriter->start();
+        if ($outFile === '-') {
+            $outFile = 'php://stdout';
+        }
 
-		$this->addDumpHeader( time() );
-		fwrite( $output, $this->rdfWriter->drain() );
+        $output = fopen($outFile, 'w');
+        $this->rdfWriter = $this->createRdfWriter($this->getOption('format', 'ttl'));
+        $this->categoriesRdf = new CategoriesRdf($this->rdfWriter);
 
-		$dbr = $this->getDB( DB_REPLICA, [ 'vslow' ] );
+        $this->categoriesRdf->setupPrefixes();
+        $this->rdfWriter->start();
 
-		foreach ( $this->getCategoryIterator( $dbr, __METHOD__ ) as $batch ) {
-			$pages = [];
-			foreach ( $batch as $row ) {
-				$this->categoriesRdf->writeCategoryData(
-					$row->page_title,
-					$row->pp_propname === 'hiddencat',
-					(int)$row->cat_pages - (int)$row->cat_subcats - (int)$row->cat_files,
-					(int)$row->cat_subcats
-				);
-				if ( $row->page_id ) {
-					$pages[$row->page_id] = $row->page_title;
-				}
-			}
+        $this->addDumpHeader(time());
+        fwrite($output, $this->rdfWriter->drain());
 
-			foreach ( $this->getCategoryLinksIterator( $dbr, array_keys( $pages ), __METHOD__ ) as $row ) {
-				$this->categoriesRdf->writeCategoryLinkData( $pages[$row->cl_from], $row->cl_to );
-			}
-			fwrite( $output, $this->rdfWriter->drain() );
-		}
-		fflush( $output );
-		if ( $outFile !== '-' ) {
-			fclose( $output );
-		}
-	}
+        $dbr = $this->getDB(DB_REPLICA, ['vslow']);
 
-	/**
-	 * @param string $format Writer format
-	 * @return RdfWriter
-	 */
-	private function createRdfWriter( $format ) {
-		$factory = new RdfWriterFactory();
-		return $factory->getWriter( $factory->getFormatName( $format ) );
-	}
+        foreach ($this->getCategoryIterator($dbr, __METHOD__) as $batch) {
+            $pages = [];
+            foreach ($batch as $row) {
+                $this->categoriesRdf->writeCategoryData(
+                    $row->page_title,
+                    $row->pp_propname === 'hiddencat',
+                    (int)$row->cat_pages - (int)$row->cat_subcats - (int)$row->cat_files,
+                    (int)$row->cat_subcats
+                );
+                if ($row->page_id) {
+                    $pages[$row->page_id] = $row->page_title;
+                }
+            }
+
+            foreach ($this->getCategoryLinksIterator($dbr, array_keys($pages), __METHOD__) as $row) {
+                $this->categoriesRdf->writeCategoryLinkData($pages[$row->cl_from], $row->cl_to);
+            }
+            fwrite($output, $this->rdfWriter->drain());
+        }
+        fflush($output);
+        if ($outFile !== '-') {
+            fclose($output);
+        }
+    }
+
+    /**
+     * @param string $format Writer format
+     * @return RdfWriter
+     */
+    private function createRdfWriter($format)
+    {
+        $factory = new RdfWriterFactory();
+
+        return $factory->getWriter($factory->getFormatName($format));
+    }
 }
 
 $maintClass = DumpCategoriesAsRdf::class;

@@ -26,18 +26,20 @@
  * @since 1.28
  * @ingroup Exception
  */
-class BadRequestError extends ErrorPageError {
+class BadRequestError extends ErrorPageError
+{
 
-	/**
-	 * @stable to override
-	 * @param int $action
-	 *
-	 * @throws FatalError
-	 * @throws MWException
-	 */
-	public function report( $action = self::SEND_OUTPUT ) {
-		global $wgOut;
-		$wgOut->setStatusCode( 400 );
-		parent::report( $action );
-	}
+    /**
+     * @stable to override
+     * @param int $action
+     *
+     * @throws FatalError
+     * @throws MWException
+     */
+    public function report($action = self::SEND_OUTPUT)
+    {
+        global $wgOut;
+        $wgOut->setStatusCode(400);
+        parent::report($action);
+    }
 }

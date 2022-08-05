@@ -44,172 +44,191 @@ use Liuggio\StatsdClient\Factory\StatsdDataFactory;
  * @method StatsdData produceStatsdDataEntity() We use StatsdData::setKey, which is not in
  *  StatsdDataInterface https://gerrit.wikimedia.org/r/643976
  */
-class BufferingStatsdDataFactory extends StatsdDataFactory implements IBufferingStatsdDataFactory {
-	/** @var array */
-	protected $buffer = [];
-	/** @var bool */
-	protected $enabled = true;
-	/** @var string */
-	private $prefix;
+class BufferingStatsdDataFactory extends StatsdDataFactory implements IBufferingStatsdDataFactory
+{
+    /** @var array */
+    protected $buffer = [];
+    /** @var bool */
+    protected $enabled = true;
+    /** @var string */
+    private $prefix;
 
-	public function __construct( $prefix ) {
-		parent::__construct();
-		$this->prefix = $prefix;
-	}
+    public function __construct($prefix)
+    {
+        parent::__construct();
+        $this->prefix = $prefix;
+    }
 
-	//
-	// Methods for StatsdDataFactoryInterface
-	//
+    //
+    // Methods for StatsdDataFactoryInterface
+    //
 
-	/**
-	 * @param string $key
-	 * @param float|int $time
-	 * @return void
-	 */
-	public function timing( $key, $time ) {
-		if ( !$this->enabled ) {
-			return;
-		}
-		$this->buffer[] = [ $key, $time, StatsdDataInterface::STATSD_METRIC_TIMING ];
-	}
+    /**
+     * @param string $key
+     * @param float|int $time
+     * @return void
+     */
+    public function timing($key, $time)
+    {
+        if (!$this->enabled) {
+            return;
+        }
+        $this->buffer[] = [$key, $time, StatsdDataInterface::STATSD_METRIC_TIMING];
+    }
 
-	/**
-	 * @param string $key
-	 * @param float|int $value
-	 * @return void
-	 */
-	public function gauge( $key, $value ) {
-		if ( !$this->enabled ) {
-			return;
-		}
-		$this->buffer[] = [ $key, $value, StatsdDataInterface::STATSD_METRIC_GAUGE ];
-	}
+    /**
+     * @param string $key
+     * @param float|int $value
+     * @return void
+     */
+    public function gauge($key, $value)
+    {
+        if (!$this->enabled) {
+            return;
+        }
+        $this->buffer[] = [$key, $value, StatsdDataInterface::STATSD_METRIC_GAUGE];
+    }
 
-	/**
-	 * @param string $key
-	 * @param float|int $value
-	 * @return array
-	 */
-	public function set( $key, $value ) {
-		if ( !$this->enabled ) {
-			return [];
-		}
-		$this->buffer[] = [ $key, $value, StatsdDataInterface::STATSD_METRIC_SET ];
-		return [];
-	}
+    /**
+     * @param string $key
+     * @param float|int $value
+     * @return array
+     */
+    public function set($key, $value)
+    {
+        if (!$this->enabled) {
+            return [];
+        }
+        $this->buffer[] = [$key, $value, StatsdDataInterface::STATSD_METRIC_SET];
 
-	/**
-	 * @param string $key
-	 * @return array
-	 */
-	public function increment( $key ) {
-		if ( !$this->enabled ) {
-			return [];
-		}
-		$this->buffer[] = [ $key, 1, StatsdDataInterface::STATSD_METRIC_COUNT ];
-		return [];
-	}
+        return [];
+    }
 
-	/**
-	 * @param string $key
-	 * @return void
-	 */
-	public function decrement( $key ) {
-		if ( !$this->enabled ) {
-			return;
-		}
-		$this->buffer[] = [ $key, -1, StatsdDataInterface::STATSD_METRIC_COUNT ];
-	}
+    /**
+     * @param string $key
+     * @return array
+     */
+    public function increment($key)
+    {
+        if (!$this->enabled) {
+            return [];
+        }
+        $this->buffer[] = [$key, 1, StatsdDataInterface::STATSD_METRIC_COUNT];
 
-	/**
-	 * @param string $key
-	 * @param int $delta
-	 * @return void
-	 */
-	public function updateCount( $key, $delta ) {
-		if ( !$this->enabled ) {
-			return;
-		}
-		$this->buffer[] = [ $key, $delta, StatsdDataInterface::STATSD_METRIC_COUNT ];
-	}
+        return [];
+    }
 
-	/**
-	 * Normalize a metric key for StatsD
-	 *
-	 * The following are changes you may rely on:
-	 *
-	 * - Non-alphanumerical characters are converted to underscores.
-	 * - Empty segments are removed, e.g. "foo..bar" becomes "foo.bar".
-	 *   This is mainly for StatsD-Graphite-Carbon setups where each segment is a directory
-	 *   and must have a non-empty name.
-	 * - Deliberately invalid input that looks like `__METHOD__` (namespaced PHP class and method)
-	 *   is changed from "\\Namespace\\Class::method" to "Namespace_Class.method".
-	 *   This is used by ProfilerOutputStats.
-	 *
-	 * @param string $key
-	 * @return string
-	 */
-	private static function normalizeMetricKey( $key ) {
-		$key = strtr( $key, [ '::' => '.' ] );
-		$key = preg_replace( '/[^a-zA-Z0-9.]+/', '_', $key );
-		$key = trim( $key, '_.' );
-		return strtr( $key, [ '..' => '.' ] );
-	}
+    /**
+     * @param string $key
+     * @return void
+     */
+    public function decrement($key)
+    {
+        if (!$this->enabled) {
+            return;
+        }
+        $this->buffer[] = [$key, -1, StatsdDataInterface::STATSD_METRIC_COUNT];
+    }
 
-	public function produceStatsdData(
-		$key, $value = 1, $metric = StatsdDataInterface::STATSD_METRIC_COUNT
-	) {
-		$entity = $this->produceStatsdDataEntity();
-		if ( $key !== null ) {
-			$key = self::normalizeMetricKey( "{$this->prefix}.{$key}" );
-			$entity->setKey( $key );
-		}
-		if ( $value !== null ) {
-			$entity->setValue( $value );
-		}
-		if ( $metric !== null ) {
-			$entity->setMetric( $metric );
-		}
-		return $entity;
-	}
+    /**
+     * @param string $key
+     * @param int $delta
+     * @return void
+     */
+    public function updateCount($key, $delta)
+    {
+        if (!$this->enabled) {
+            return;
+        }
+        $this->buffer[] = [$key, $delta, StatsdDataInterface::STATSD_METRIC_COUNT];
+    }
 
-	//
-	// Methods for IBufferingStatsdDataFactory
-	//
+    /**
+     * Normalize a metric key for StatsD
+     *
+     * The following are changes you may rely on:
+     *
+     * - Non-alphanumerical characters are converted to underscores.
+     * - Empty segments are removed, e.g. "foo..bar" becomes "foo.bar".
+     *   This is mainly for StatsD-Graphite-Carbon setups where each segment is a directory
+     *   and must have a non-empty name.
+     * - Deliberately invalid input that looks like `__METHOD__` (namespaced PHP class and method)
+     *   is changed from "\\Namespace\\Class::method" to "Namespace_Class.method".
+     *   This is used by ProfilerOutputStats.
+     *
+     * @param string $key
+     * @return string
+     */
+    private static function normalizeMetricKey($key)
+    {
+        $key = strtr($key, ['::' => '.']);
+        $key = preg_replace('/[^a-zA-Z0-9.]+/', '_', $key);
+        $key = trim($key, '_.');
 
-	public function hasData() {
-		return (bool)$this->buffer;
-	}
+        return strtr($key, ['..' => '.']);
+    }
 
-	/**
-	 * @since 1.30
-	 * @return StatsdData[]
-	 */
-	public function getData() {
-		$data = [];
-		foreach ( $this->buffer as list( $key, $val, $metric ) ) {
-			// Optimization: Don't bother transmitting a counter update with a delta of zero
-			if ( $metric === StatsdDataInterface::STATSD_METRIC_COUNT && !$val ) {
-				continue;
-			}
+    public function produceStatsdData(
+        $key, $value = 1, $metric = StatsdDataInterface::STATSD_METRIC_COUNT
+    )
+    {
+        $entity = $this->produceStatsdDataEntity();
+        if ($key !== null) {
+            $key = self::normalizeMetricKey("{$this->prefix}.{$key}");
+            $entity->setKey($key);
+        }
+        if ($value !== null) {
+            $entity->setValue($value);
+        }
+        if ($metric !== null) {
+            $entity->setMetric($metric);
+        }
 
-			// Optimisation: Avoid produceStatsdData cost during web requests (T288702).
-			// Instead, we do it here in getData() right before the data is transmitted.
-			$data[] = $this->produceStatsdData( $key, $val, $metric );
-		}
+        return $entity;
+    }
 
-		return $data;
-	}
+    //
+    // Methods for IBufferingStatsdDataFactory
+    //
 
-	public function clearData() {
-		$this->buffer = [];
-	}
+    public function hasData()
+    {
+        return (bool)$this->buffer;
+    }
 
-	public function getDataCount() {
-		return count( $this->buffer );
-	}
+    /**
+     * @return StatsdData[]
+     * @since 1.30
+     */
+    public function getData()
+    {
+        $data = [];
+        foreach ($this->buffer as [$key, $val, $metric]) {
+            // Optimization: Don't bother transmitting a counter update with a delta of zero
+            if ($metric === StatsdDataInterface::STATSD_METRIC_COUNT && !$val) {
+                continue;
+            }
 
-	public function setEnabled( $enabled ) {
-		$this->enabled = $enabled;
-	}
+            // Optimisation: Avoid produceStatsdData cost during web requests (T288702).
+            // Instead, we do it here in getData() right before the data is transmitted.
+            $data[] = $this->produceStatsdData($key, $val, $metric);
+        }
+
+        return $data;
+    }
+
+    public function clearData()
+    {
+        $this->buffer = [];
+    }
+
+    public function getDataCount()
+    {
+        return count($this->buffer);
+    }
+
+    public function setEnabled($enabled)
+    {
+        $this->enabled = $enabled;
+    }
 }

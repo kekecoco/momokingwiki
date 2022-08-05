@@ -9,30 +9,34 @@ use Doctrine\DBAL\Types\Type;
  * Handling timestamp edge cases in mediawiki.
  * https://www.mediawiki.org/wiki/Manual:Timestamp
  */
-class TimestampType extends Type {
-	public const TIMESTAMP = 'mwtimestamp';
+class TimestampType extends Type
+{
+    public const TIMESTAMP = 'mwtimestamp';
 
-	public function getSQLDeclaration( array $fieldDeclaration, AbstractPlatform $platform ) {
-		if ( $platform->getName() == 'mysql' ) {
-			// "infinite" (in expiry values has to be VARBINARY)
-			if ( isset( $fieldDeclaration['allowInfinite'] ) && $fieldDeclaration['allowInfinite'] ) {
-				return 'VARBINARY(14)';
-			}
-			return 'BINARY(14)';
-		}
+    public function getSQLDeclaration(array $fieldDeclaration, AbstractPlatform $platform)
+    {
+        if ($platform->getName() == 'mysql') {
+            // "infinite" (in expiry values has to be VARBINARY)
+            if (isset($fieldDeclaration['allowInfinite']) && $fieldDeclaration['allowInfinite']) {
+                return 'VARBINARY(14)';
+            }
 
-		if ( $platform->getName() == 'sqlite' ) {
-			return 'BLOB';
-		}
+            return 'BINARY(14)';
+        }
 
-		if ( $platform->getName() == 'postgresql' ) {
-			return 'TIMESTAMPTZ';
-		}
+        if ($platform->getName() == 'sqlite') {
+            return 'BLOB';
+        }
 
-		return $platform->getDateTimeTzTypeDeclarationSQL( $fieldDeclaration );
-	}
+        if ($platform->getName() == 'postgresql') {
+            return 'TIMESTAMPTZ';
+        }
 
-	public function getName() {
-		return self::TIMESTAMP;
-	}
+        return $platform->getDateTimeTzTypeDeclarationSQL($fieldDeclaration);
+    }
+
+    public function getName()
+    {
+        return self::TIMESTAMP;
+    }
 }

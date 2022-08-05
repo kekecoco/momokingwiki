@@ -11,17 +11,18 @@ use User;
  * @stable to implement
  * @ingroup Hooks
  */
-interface UserSaveSettingsHook {
-	/**
-	 * This hook is called directly after user settings have been saved to the database.
-	 *
-	 * Compare to the SaveUserOptions hook, which is called before saving and is only
-	 * called for options managed by UserOptionsManager.
-	 *
-	 * @since 1.35
-	 *
-	 * @param User $user The User for which the settings have been saved
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onUserSaveSettings( $user );
+interface UserSaveSettingsHook
+{
+    /**
+     * This hook is called directly after user settings have been saved to the database.
+     *
+     * Compare to the SaveUserOptions hook, which is called before saving and is only
+     * called for options managed by UserOptionsManager.
+     *
+     * @param User $user The User for which the settings have been saved
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onUserSaveSettings($user);
 }

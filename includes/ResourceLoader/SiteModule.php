@@ -30,35 +30,39 @@ use MediaWiki\MainConfigNames;
  * @ingroup ResourceLoader
  * @internal
  */
-class SiteModule extends WikiModule {
-	/** @var string[] What client platforms the module targets (e.g. desktop, mobile) */
-	protected $targets = [ 'desktop', 'mobile' ];
+class SiteModule extends WikiModule
+{
+    /** @var string[] What client platforms the module targets (e.g. desktop, mobile) */
+    protected $targets = ['desktop', 'mobile'];
 
-	/**
-	 * Get list of pages used by this module
-	 *
-	 * @param Context $context
-	 * @return array[]
-	 */
-	protected function getPages( Context $context ) {
-		$pages = [];
-		if ( $this->getConfig()->get( MainConfigNames::UseSiteJs ) ) {
-			$skin = $context->getSkin();
-			$pages['MediaWiki:Common.js'] = [ 'type' => 'script' ];
-			$pages['MediaWiki:' . ucfirst( $skin ) . '.js'] = [ 'type' => 'script' ];
-			$this->getHookRunner()->onResourceLoaderSiteModulePages( $skin, $pages );
-		}
-		return $pages;
-	}
+    /**
+     * Get list of pages used by this module
+     *
+     * @param Context $context
+     * @return array[]
+     */
+    protected function getPages(Context $context)
+    {
+        $pages = [];
+        if ($this->getConfig()->get(MainConfigNames::UseSiteJs)) {
+            $skin = $context->getSkin();
+            $pages['MediaWiki:Common.js'] = ['type' => 'script'];
+            $pages['MediaWiki:' . ucfirst($skin) . '.js'] = ['type' => 'script'];
+            $this->getHookRunner()->onResourceLoaderSiteModulePages($skin, $pages);
+        }
 
-	/**
-	 * @param Context|null $context
-	 * @return array
-	 */
-	public function getDependencies( Context $context = null ) {
-		return [ 'site.styles' ];
-	}
+        return $pages;
+    }
+
+    /**
+     * @param Context|null $context
+     * @return array
+     */
+    public function getDependencies(Context $context = null)
+    {
+        return ['site.styles'];
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( SiteModule::class, 'ResourceLoaderSiteModule' );
+class_alias(SiteModule::class, 'ResourceLoaderSiteModule');

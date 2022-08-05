@@ -34,79 +34,86 @@ use MediaWiki\Languages\LanguageFactory;
  *
  * @since 1.28
  */
-class NumericUppercaseCollation extends UppercaseCollation {
+class NumericUppercaseCollation extends UppercaseCollation
+{
 
-	/**
-	 * @var Language How to convert digits (usually the content language)
-	 */
-	private $digitTransformLang;
+    /**
+     * @var Language How to convert digits (usually the content language)
+     */
+    private $digitTransformLang;
 
-	/**
-	 * @param LanguageFactory $languageFactory
-	 * @param string|Language $digitTransformLang How to convert digits.
-	 *  For example, if given language "my" than ၇ is treated like 7.
-	 *  It is expected that usually this is given the content language.
-	 */
-	public function __construct(
-		LanguageFactory $languageFactory,
-		$digitTransformLang
-	) {
-		$this->digitTransformLang = $digitTransformLang instanceof Language
-			? $digitTransformLang
-			: $languageFactory->getLanguage( $digitTransformLang );
-		parent::__construct( $languageFactory );
-	}
+    /**
+     * @param LanguageFactory $languageFactory
+     * @param string|Language $digitTransformLang How to convert digits.
+     *  For example, if given language "my" than ၇ is treated like 7.
+     *  It is expected that usually this is given the content language.
+     */
+    public function __construct(
+        LanguageFactory $languageFactory,
+        $digitTransformLang
+    )
+    {
+        $this->digitTransformLang = $digitTransformLang instanceof Language
+            ? $digitTransformLang
+            : $languageFactory->getLanguage($digitTransformLang);
+        parent::__construct($languageFactory);
+    }
 
-	public function getSortKey( $string ) {
-		$sortkey = parent::getSortKey( $string );
-		$sortkey = $this->convertDigits( $sortkey );
-		// For each sequence of digits, insert the digit '0' and then the length of the sequence
-		// (encoded in two bytes) before it. That's all folks, it sorts correctly now! The '0' ensures
-		// correct position (where digits would normally sort), then the length will be compared putting
-		// shorter numbers before longer ones; if identical, then the characters will be compared, which
-		// generates the correct results for numbers of equal length.
-		$sortkey = preg_replace_callback( '/\d+/', static function ( $matches ) {
-			// Strip any leading zeros
-			$number = ltrim( $matches[0], '0' );
-			$len = strlen( $number );
-			// This allows sequences of up to 65536 numeric characters to be handled correctly. One byte
-			// would allow only for 256, which doesn't feel future-proof.
-			$prefix = chr( (int)floor( $len / 256 ) ) . chr( $len % 256 );
-			return '0' . $prefix . $number;
-		}, $sortkey );
+    public function getSortKey($string)
+    {
+        $sortkey = parent::getSortKey($string);
+        $sortkey = $this->convertDigits($sortkey);
+        // For each sequence of digits, insert the digit '0' and then the length of the sequence
+        // (encoded in two bytes) before it. That's all folks, it sorts correctly now! The '0' ensures
+        // correct position (where digits would normally sort), then the length will be compared putting
+        // shorter numbers before longer ones; if identical, then the characters will be compared, which
+        // generates the correct results for numbers of equal length.
+        $sortkey = preg_replace_callback('/\d+/', static function ($matches) {
+            // Strip any leading zeros
+            $number = ltrim($matches[0], '0');
+            $len = strlen($number);
+            // This allows sequences of up to 65536 numeric characters to be handled correctly. One byte
+            // would allow only for 256, which doesn't feel future-proof.
+            $prefix = chr((int)floor($len / 256)) . chr($len % 256);
 
-		return $sortkey;
-	}
+            return '0' . $prefix . $number;
+        }, $sortkey);
 
-	/**
-	 * Convert localized digits to english digits.
-	 *
-	 * based on Language::parseFormattedNumber but without commas.
-	 *
-	 * @param string $string sortkey to unlocalize digits of
-	 * @return string Sortkey with all localized digits replaced with ASCII digits.
-	 */
-	private function convertDigits( $string ) {
-		$table = $this->digitTransformLang->digitTransformTable();
-		if ( $table ) {
-			$table = array_filter( $table );
-			$flipped = array_flip( $table );
-			// Some languages seem to also have commas in this table.
-			$flipped = array_filter( $flipped, 'is_numeric' );
-			$string = strtr( $string, $flipped );
-		}
-		return $string;
-	}
+        return $sortkey;
+    }
 
-	public function getFirstLetter( $string ) {
-		$convertedString = $this->convertDigits( $string );
+    /**
+     * Convert localized digits to english digits.
+     *
+     * based on Language::parseFormattedNumber but without commas.
+     *
+     * @param string $string sortkey to unlocalize digits of
+     * @return string Sortkey with all localized digits replaced with ASCII digits.
+     */
+    private function convertDigits($string)
+    {
+        $table = $this->digitTransformLang->digitTransformTable();
+        if ($table) {
+            $table = array_filter($table);
+            $flipped = array_flip($table);
+            // Some languages seem to also have commas in this table.
+            $flipped = array_filter($flipped, 'is_numeric');
+            $string = strtr($string, $flipped);
+        }
 
-		if ( preg_match( '/^\d/', $convertedString ) ) {
-			return wfMessage( 'category-header-numerals' )
-				->numParams( 0, 9 )
-				->text();
-		} else {
-			return parent::getFirstLetter( $string );
-		}
-	}
+        return $string;
+    }
+
+    public function getFirstLetter($string)
+    {
+        $convertedString = $this->convertDigits($string);
+
+        if (preg_match('/^\d/', $convertedString)) {
+            return wfMessage('category-header-numerals')
+                ->numParams(0, 9)
+                ->text();
+        } else {
+            return parent::getFirstLetter($string);
+        }
+    }
 }

@@ -29,130 +29,144 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup JobQueue
  */
-class ThumbnailRenderJob extends Job {
-	public function __construct( Title $title, array $params ) {
-		parent::__construct( 'ThumbnailRender', $title, $params );
-	}
+class ThumbnailRenderJob extends Job
+{
+    public function __construct(Title $title, array $params)
+    {
+        parent::__construct('ThumbnailRender', $title, $params);
+    }
 
-	public function run() {
-		$uploadThumbnailRenderMethod = MediaWikiServices::getInstance()
-			->getMainConfig()->get( MainConfigNames::UploadThumbnailRenderMethod );
+    public function run()
+    {
+        $uploadThumbnailRenderMethod = MediaWikiServices::getInstance()
+            ->getMainConfig()->get(MainConfigNames::UploadThumbnailRenderMethod);
 
-		$transformParams = $this->params['transformParams'];
+        $transformParams = $this->params['transformParams'];
 
-		$file = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
-			->newFile( $this->title );
-		$file->load( File::READ_LATEST );
+        $file = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
+            ->newFile($this->title);
+        $file->load(File::READ_LATEST);
 
-		if ( $file && $file->exists() ) {
-			if ( $uploadThumbnailRenderMethod === 'jobqueue' ) {
-				$thumb = $file->transform( $transformParams, File::RENDER_NOW );
+        if ($file && $file->exists()) {
+            if ($uploadThumbnailRenderMethod === 'jobqueue') {
+                $thumb = $file->transform($transformParams, File::RENDER_NOW);
 
-				if ( !$thumb || $thumb->isError() ) {
-					if ( $thumb instanceof MediaTransformError ) {
-						$this->setLastError( __METHOD__ . ': thumbnail couln\'t be generated:' .
-							$thumb->toText() );
-					} else {
-						$this->setLastError( __METHOD__ . ': thumbnail couln\'t be generated' );
-					}
-					return false;
-				}
-				return true;
-			} elseif ( $uploadThumbnailRenderMethod === 'http' ) {
-				return $this->hitThumbUrl( $file, $transformParams );
-			} else {
-				$this->setLastError( __METHOD__ . ': unknown thumbnail render method ' .
-					$uploadThumbnailRenderMethod );
-				return false;
-			}
-		} else {
-			$this->setLastError( __METHOD__ . ': file doesn\'t exist' );
-			return false;
-		}
-	}
+                if (!$thumb || $thumb->isError()) {
+                    if ($thumb instanceof MediaTransformError) {
+                        $this->setLastError(__METHOD__ . ': thumbnail couln\'t be generated:' .
+                            $thumb->toText());
+                    } else {
+                        $this->setLastError(__METHOD__ . ': thumbnail couln\'t be generated');
+                    }
 
-	/**
-	 * @param LocalFile $file
-	 * @param array $transformParams
-	 * @return bool Success status (error will be set via setLastError() when false)
-	 */
-	protected function hitThumbUrl( LocalFile $file, $transformParams ) {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$uploadThumbnailRenderHttpCustomHost =
-			$config->get( MainConfigNames::UploadThumbnailRenderHttpCustomHost );
-		$uploadThumbnailRenderHttpCustomDomain =
-			$config->get( MainConfigNames::UploadThumbnailRenderHttpCustomDomain );
-		$handler = $file->getHandler();
-		if ( !$handler ) {
-			$this->setLastError( __METHOD__ . ': could not get handler' );
-			return false;
-		} elseif ( !$handler->normaliseParams( $file, $transformParams ) ) {
-			$this->setLastError( __METHOD__ . ': failed to normalize' );
-			return false;
-		}
-		$thumbName = $file->thumbName( $transformParams );
-		$thumbUrl = $file->getThumbUrl( $thumbName );
+                    return false;
+                }
 
-		if ( $thumbUrl === null ) {
-			$this->setLastError( __METHOD__ . ': could not get thumb URL' );
-			return false;
-		}
+                return true;
+            } elseif ($uploadThumbnailRenderMethod === 'http') {
+                return $this->hitThumbUrl($file, $transformParams);
+            } else {
+                $this->setLastError(__METHOD__ . ': unknown thumbnail render method ' .
+                    $uploadThumbnailRenderMethod);
 
-		if ( $uploadThumbnailRenderHttpCustomDomain ) {
-			$parsedUrl = wfParseUrl( $thumbUrl );
+                return false;
+            }
+        } else {
+            $this->setLastError(__METHOD__ . ': file doesn\'t exist');
 
-			if ( !isset( $parsedUrl['path'] ) || $parsedUrl['path'] === '' ) {
-				$this->setLastError( __METHOD__ . ": invalid thumb URL: $thumbUrl" );
-				return false;
-			}
+            return false;
+        }
+    }
 
-			$thumbUrl = '//' . $uploadThumbnailRenderHttpCustomDomain . $parsedUrl['path'];
-		}
+    /**
+     * @param LocalFile $file
+     * @param array $transformParams
+     * @return bool Success status (error will be set via setLastError() when false)
+     */
+    protected function hitThumbUrl(LocalFile $file, $transformParams)
+    {
+        $config = MediaWikiServices::getInstance()->getMainConfig();
+        $uploadThumbnailRenderHttpCustomHost =
+            $config->get(MainConfigNames::UploadThumbnailRenderHttpCustomHost);
+        $uploadThumbnailRenderHttpCustomDomain =
+            $config->get(MainConfigNames::UploadThumbnailRenderHttpCustomDomain);
+        $handler = $file->getHandler();
+        if (!$handler) {
+            $this->setLastError(__METHOD__ . ': could not get handler');
 
-		wfDebug( __METHOD__ . ": hitting url {$thumbUrl}" );
+            return false;
+        } elseif (!$handler->normaliseParams($file, $transformParams)) {
+            $this->setLastError(__METHOD__ . ': failed to normalize');
 
-		// T203135 We don't wait for the request to complete, as this is mostly fire & forget.
-		// Looking at the HTTP status of requests that take less than 1s is a double check.
-		$request = MediaWikiServices::getInstance()->getHttpRequestFactory()->create(
-			$thumbUrl,
-			[ 'method' => 'HEAD', 'followRedirects' => true, 'timeout' => 1 ],
-			__METHOD__
-		);
+            return false;
+        }
+        $thumbName = $file->thumbName($transformParams);
+        $thumbUrl = $file->getThumbUrl($thumbName);
 
-		if ( $uploadThumbnailRenderHttpCustomHost ) {
-			$request->setHeader( 'Host', $uploadThumbnailRenderHttpCustomHost );
-		}
+        if ($thumbUrl === null) {
+            $this->setLastError(__METHOD__ . ': could not get thumb URL');
 
-		$status = $request->execute();
-		$statusCode = $request->getStatus();
-		wfDebug( __METHOD__ . ": received status {$statusCode}" );
+            return false;
+        }
 
-		// 400 happens when requesting a size greater or equal than the original
-		// TODO use proper error signaling. 400 could mean a number of other things.
-		if ( $statusCode === 200 || $statusCode === 301 || $statusCode === 302 || $statusCode === 400 ) {
-			return true;
-		} elseif ( $statusCode ) {
-			$this->setLastError( __METHOD__ . ": incorrect HTTP status $statusCode when hitting $thumbUrl" );
-		} elseif ( $status->hasMessage( 'http-timed-out' ) ) {
-			// T203135 we ignore timeouts, as it would be inefficient for this job to wait for
-			// minutes for the slower thumbnails to complete.
-			return true;
-		} else {
-			$this->setLastError( __METHOD__ . ': HTTP request failure: '
-				. Status::wrap( $status )->getWikiText( false, false, 'en' ) );
-		}
-		return false;
-	}
+        if ($uploadThumbnailRenderHttpCustomDomain) {
+            $parsedUrl = wfParseUrl($thumbUrl);
 
-	/**
-	 * Whether to retry the job.
-	 * @return bool
-	 */
-	public function allowRetries() {
-		// ThumbnailRenderJob is a warmup for the thumbnails cache,
-		// so loosing it is not a problem. Most times the job fails
-		// for non-renderable or missing images which will not be fixed
-		// by a retry, but will create additional load on the renderer.
-		return false;
-	}
+            if (!isset($parsedUrl['path']) || $parsedUrl['path'] === '') {
+                $this->setLastError(__METHOD__ . ": invalid thumb URL: $thumbUrl");
+
+                return false;
+            }
+
+            $thumbUrl = '//' . $uploadThumbnailRenderHttpCustomDomain . $parsedUrl['path'];
+        }
+
+        wfDebug(__METHOD__ . ": hitting url {$thumbUrl}");
+
+        // T203135 We don't wait for the request to complete, as this is mostly fire & forget.
+        // Looking at the HTTP status of requests that take less than 1s is a double check.
+        $request = MediaWikiServices::getInstance()->getHttpRequestFactory()->create(
+            $thumbUrl,
+            ['method' => 'HEAD', 'followRedirects' => true, 'timeout' => 1],
+            __METHOD__
+        );
+
+        if ($uploadThumbnailRenderHttpCustomHost) {
+            $request->setHeader('Host', $uploadThumbnailRenderHttpCustomHost);
+        }
+
+        $status = $request->execute();
+        $statusCode = $request->getStatus();
+        wfDebug(__METHOD__ . ": received status {$statusCode}");
+
+        // 400 happens when requesting a size greater or equal than the original
+        // TODO use proper error signaling. 400 could mean a number of other things.
+        if ($statusCode === 200 || $statusCode === 301 || $statusCode === 302 || $statusCode === 400) {
+            return true;
+        } elseif ($statusCode) {
+            $this->setLastError(__METHOD__ . ": incorrect HTTP status $statusCode when hitting $thumbUrl");
+        } elseif ($status->hasMessage('http-timed-out')) {
+            // T203135 we ignore timeouts, as it would be inefficient for this job to wait for
+            // minutes for the slower thumbnails to complete.
+            return true;
+        } else {
+            $this->setLastError(__METHOD__ . ': HTTP request failure: '
+                . Status::wrap($status)->getWikiText(false, false, 'en'));
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether to retry the job.
+     * @return bool
+     */
+    public function allowRetries()
+    {
+        // ThumbnailRenderJob is a warmup for the thumbnails cache,
+        // so loosing it is not a problem. Most times the job fails
+        // for non-renderable or missing images which will not be fixed
+        // by a retry, but will create additional load on the renderer.
+        return false;
+    }
 }

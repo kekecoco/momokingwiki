@@ -30,45 +30,51 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class PurgePage extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Purge page.' );
-		$this->addOption( 'skip-exists-check', 'Skip page existence check', false, false );
-	}
+class PurgePage extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Purge page.');
+        $this->addOption('skip-exists-check', 'Skip page existence check', false, false);
+    }
 
-	public function execute() {
-		$stdin = $this->getStdin();
+    public function execute()
+    {
+        $stdin = $this->getStdin();
 
-		while ( !feof( $stdin ) ) {
-			$title = trim( fgets( $stdin ) );
-			if ( $title != '' ) {
-				$this->purge( $title );
-			}
-		}
-	}
+        while (!feof($stdin)) {
+            $title = trim(fgets($stdin));
+            if ($title != '') {
+                $this->purge($title);
+            }
+        }
+    }
 
-	private function purge( $titleText ) {
-		$title = Title::newFromText( $titleText );
+    private function purge($titleText)
+    {
+        $title = Title::newFromText($titleText);
 
-		if ( $title === null ) {
-			$this->error( 'Invalid page title' );
-			return;
-		}
+        if ($title === null) {
+            $this->error('Invalid page title');
 
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+            return;
+        }
 
-		if ( !$this->getOption( 'skip-exists-check' ) && !$page->exists() ) {
-			$this->error( "Page doesn't exist" );
-			return;
-		}
+        $page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle($title);
 
-		if ( $page->doPurge() ) {
-			$this->output( "Purged {$titleText}\n" );
-		} else {
-			$this->error( "Purge failed for {$titleText}" );
-		}
-	}
+        if (!$this->getOption('skip-exists-check') && !$page->exists()) {
+            $this->error("Page doesn't exist");
+
+            return;
+        }
+
+        if ($page->doPurge()) {
+            $this->output("Purged {$titleText}\n");
+        } else {
+            $this->error("Purge failed for {$titleText}");
+        }
+    }
 }
 
 $maintClass = PurgePage::class;

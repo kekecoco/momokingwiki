@@ -23,59 +23,66 @@
  * Create a file in the backend with the given content.
  * Parameters for this operation are outlined in FileBackend::doOperations().
  */
-class CreateFileOp extends FileOp {
-	protected function allowedParams() {
-		return [
-			[ 'content', 'dst' ],
-			[ 'overwrite', 'overwriteSame', 'headers' ],
-			[ 'dst' ]
-		];
-	}
+class CreateFileOp extends FileOp
+{
+    protected function allowedParams()
+    {
+        return [
+            ['content', 'dst'],
+            ['overwrite', 'overwriteSame', 'headers'],
+            ['dst']
+        ];
+    }
 
-	protected function doPrecheck( array &$predicates ) {
-		$status = StatusValue::newGood();
+    protected function doPrecheck(array &$predicates)
+    {
+        $status = StatusValue::newGood();
 
-		// Check if the source data is too big
-		$maxBytes = $this->backend->maxFileSizeInternal();
-		if ( strlen( $this->getParam( 'content' ) ) > $maxBytes ) {
-			$status->fatal( 'backend-fail-maxsize', $this->params['dst'], $maxBytes );
+        // Check if the source data is too big
+        $maxBytes = $this->backend->maxFileSizeInternal();
+        if (strlen($this->getParam('content')) > $maxBytes) {
+            $status->fatal('backend-fail-maxsize', $this->params['dst'], $maxBytes);
 
-			return $status;
-		}
-		// Check if an incompatible destination file exists
-		$status->merge( $this->precheckDestExistence( $predicates ) );
-		$this->params['dstExists'] = $this->destExists; // see FileBackendStore::setFileCache()
+            return $status;
+        }
+        // Check if an incompatible destination file exists
+        $status->merge($this->precheckDestExistence($predicates));
+        $this->params['dstExists'] = $this->destExists; // see FileBackendStore::setFileCache()
 
-		// Update file existence predicates if the operation is expected to be allowed to run
-		if ( $status->isOK() ) {
-			$predicates[self::ASSUMED_EXISTS][$this->params['dst']] = true;
-			$predicates[self::ASSUMED_SIZE][$this->params['dst']] = $this->sourceSize;
-			$predicates[self::ASSUMED_SHA1][$this->params['dst']] = $this->sourceSha1;
-		}
+        // Update file existence predicates if the operation is expected to be allowed to run
+        if ($status->isOK()) {
+            $predicates[self::ASSUMED_EXISTS][$this->params['dst']] = true;
+            $predicates[self::ASSUMED_SIZE][$this->params['dst']] = $this->sourceSize;
+            $predicates[self::ASSUMED_SHA1][$this->params['dst']] = $this->sourceSha1;
+        }
 
-		return $status; // safe to call attempt()
-	}
+        return $status; // safe to call attempt()
+    }
 
-	protected function doAttempt() {
-		if ( $this->overwriteSameCase ) {
-			$status = StatusValue::newGood(); // nothing to do
-		} else {
-			// Create the file at the destination
-			$status = $this->backend->createInternal( $this->setFlags( $this->params ) );
-		}
+    protected function doAttempt()
+    {
+        if ($this->overwriteSameCase) {
+            $status = StatusValue::newGood(); // nothing to do
+        } else {
+            // Create the file at the destination
+            $status = $this->backend->createInternal($this->setFlags($this->params));
+        }
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function getSourceSize() {
-		return strlen( $this->params['content'] );
-	}
+    protected function getSourceSize()
+    {
+        return strlen($this->params['content']);
+    }
 
-	protected function getSourceSha1Base36() {
-		return Wikimedia\base_convert( sha1( $this->params['content'] ), 16, 36, 31 );
-	}
+    protected function getSourceSha1Base36()
+    {
+        return Wikimedia\base_convert(sha1($this->params['content']), 16, 36, 31);
+    }
 
-	public function storagePathsChanged() {
-		return [ $this->params['dst'] ];
-	}
+    public function storagePathsChanged()
+    {
+        return [$this->params['dst']];
+    }
 }

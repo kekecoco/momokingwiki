@@ -8,23 +8,26 @@ use MediaWiki\Page\PageReferenceValue;
 /**
  * @group Cache
  */
-class CacheKeyHelperTest extends MediaWikiUnitTestCase {
+class CacheKeyHelperTest extends MediaWikiUnitTestCase
+{
 
-	public function provideKeyForPage() {
-		// NOTE: code changes that break these test cases
-		//       will result in incompatible cache keys when deployed!
+    public function provideKeyForPage()
+    {
+        // NOTE: code changes that break these test cases
+        //       will result in incompatible cache keys when deployed!
 
-		yield [ new PageReferenceValue( NS_USER, 'Yulduz', PageReference::LOCAL ), 'ns2:Yulduz' ];
-		yield [ new PageIdentityValue( 7, NS_USER, 'Yulduz', PageReference::LOCAL ), 'ns2:Yulduz' ];
-		yield [ Title::makeTitle( NS_USER, 'Yulduz' ), 'ns2:Yulduz' ];
-		yield [ new TitleValue( NS_USER, 'Yulduz' ), 'ns2:Yulduz' ];
-	}
+        yield [new PageReferenceValue(NS_USER, 'Yulduz', PageReference::LOCAL), 'ns2:Yulduz'];
+        yield [new PageIdentityValue(7, NS_USER, 'Yulduz', PageReference::LOCAL), 'ns2:Yulduz'];
+        yield [Title::makeTitle(NS_USER, 'Yulduz'), 'ns2:Yulduz'];
+        yield [new TitleValue(NS_USER, 'Yulduz'), 'ns2:Yulduz'];
+    }
 
-	/**
-	 * @dataProvider provideKeyForPage
-	 * @covers MediaWiki\Cache\CacheKeyHelper::getKeyForPage
-	 */
-	public function testKeyForPage( $page, $key ) {
-		$this->assertSame( $key, CacheKeyHelper::getKeyForPage( $page ) );
-	}
+    /**
+     * @dataProvider provideKeyForPage
+     * @covers       MediaWiki\Cache\CacheKeyHelper::getKeyForPage
+     */
+    public function testKeyForPage($page, $key)
+    {
+        $this->assertSame($key, CacheKeyHelper::getKeyForPage($page));
+    }
 }

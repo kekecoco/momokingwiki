@@ -25,135 +25,145 @@
  * @phan-file-suppress PhanTraitParentReference
  * @phan-file-suppress PhanUndeclaredMethod
  */
-trait ApiMessageTrait {
+trait ApiMessageTrait
+{
 
-	/**
-	 * Compatibility code mappings for various MW messages.
-	 * @todo Ideally anything relying on this should be changed to use ApiMessage.
-	 */
-	protected static $messageMap = [
-		'actionthrottledtext' => 'ratelimited',
-		'autoblockedtext' => 'autoblocked',
-		'badaccess-group0' => 'permissiondenied',
-		'badaccess-groups' => 'permissiondenied',
-		'badipaddress' => 'invalidip',
-		'blankpage' => 'emptypage',
-		'blockedtext' => 'blocked',
-		'blockedtext-composite' => 'blocked',
-		'blockedtext-partial' => 'blocked',
-		'cannotdelete' => 'cantdelete',
-		'cannotundelete' => 'cantundelete',
-		'cantmove-titleprotected' => 'protectedtitle',
-		'cantrollback' => 'onlyauthor',
-		'confirmedittext' => 'confirmemail',
-		'content-not-allowed-here' => 'contentnotallowedhere',
-		'deleteprotected' => 'cantedit',
-		'delete-toobig' => 'bigdelete',
-		'edit-conflict' => 'editconflict',
-		'imagenocrossnamespace' => 'nonfilenamespace',
-		'imagetypemismatch' => 'filetypemismatch',
-		'importbadinterwiki' => 'badinterwiki',
-		'importcantopen' => 'cantopenfile',
-		'import-noarticle' => 'badinterwiki',
-		'importnofile' => 'nofile',
-		'importuploaderrorpartial' => 'partialupload',
-		'importuploaderrorsize' => 'filetoobig',
-		'importuploaderrortemp' => 'notempdir',
-		'ipb_already_blocked' => 'alreadyblocked',
-		'ipb_blocked_as_range' => 'blockedasrange',
-		'ipb_cant_unblock' => 'cantunblock',
-		'ipb_expiry_invalid' => 'invalidexpiry',
-		'ip_range_invalid' => 'invalidrange',
-		'mailnologin' => 'cantsend',
-		'markedaspatrollederror-noautopatrol' => 'noautopatrol',
-		'movenologintext' => 'cantmove-anon',
-		'movenotallowed' => 'cantmove',
-		'movenotallowedfile' => 'cantmovefile',
-		'namespaceprotected' => 'protectednamespace',
-		'nocreate-loggedin' => 'cantcreate',
-		'nocreatetext' => 'cantcreate-anon',
-		'noname' => 'invaliduser',
-		'nosuchusershort' => 'nosuchuser',
-		'notanarticle' => 'missingtitle',
-		'nouserspecified' => 'invaliduser',
-		'ns-specialprotected' => 'unsupportednamespace',
-		'protect-cantedit' => 'cantedit',
-		'protectedinterface' => 'protectednamespace-interface',
-		'protectedpagetext' => 'protectedpage',
-		'range_block_disabled' => 'rangedisabled',
-		'rcpatroldisabled' => 'patroldisabled',
-		'readonlytext' => 'readonly',
-		'sessionfailure' => 'badtoken',
-		'systemblockedtext' => 'blocked',
-		'titleprotected' => 'protectedtitle',
-		'undo-failure' => 'undofailure',
-		'userrights-nodatabase' => 'nosuchdatabase',
-		'userrights-no-interwiki' => 'nointerwikiuserrights',
-	];
+    /**
+     * Compatibility code mappings for various MW messages.
+     * @todo Ideally anything relying on this should be changed to use ApiMessage.
+     */
+    protected static $messageMap = [
+        'actionthrottledtext'                 => 'ratelimited',
+        'autoblockedtext'                     => 'autoblocked',
+        'badaccess-group0'                    => 'permissiondenied',
+        'badaccess-groups'                    => 'permissiondenied',
+        'badipaddress'                        => 'invalidip',
+        'blankpage'                           => 'emptypage',
+        'blockedtext'                         => 'blocked',
+        'blockedtext-composite'               => 'blocked',
+        'blockedtext-partial'                 => 'blocked',
+        'cannotdelete'                        => 'cantdelete',
+        'cannotundelete'                      => 'cantundelete',
+        'cantmove-titleprotected'             => 'protectedtitle',
+        'cantrollback'                        => 'onlyauthor',
+        'confirmedittext'                     => 'confirmemail',
+        'content-not-allowed-here'            => 'contentnotallowedhere',
+        'deleteprotected'                     => 'cantedit',
+        'delete-toobig'                       => 'bigdelete',
+        'edit-conflict'                       => 'editconflict',
+        'imagenocrossnamespace'               => 'nonfilenamespace',
+        'imagetypemismatch'                   => 'filetypemismatch',
+        'importbadinterwiki'                  => 'badinterwiki',
+        'importcantopen'                      => 'cantopenfile',
+        'import-noarticle'                    => 'badinterwiki',
+        'importnofile'                        => 'nofile',
+        'importuploaderrorpartial'            => 'partialupload',
+        'importuploaderrorsize'               => 'filetoobig',
+        'importuploaderrortemp'               => 'notempdir',
+        'ipb_already_blocked'                 => 'alreadyblocked',
+        'ipb_blocked_as_range'                => 'blockedasrange',
+        'ipb_cant_unblock'                    => 'cantunblock',
+        'ipb_expiry_invalid'                  => 'invalidexpiry',
+        'ip_range_invalid'                    => 'invalidrange',
+        'mailnologin'                         => 'cantsend',
+        'markedaspatrollederror-noautopatrol' => 'noautopatrol',
+        'movenologintext'                     => 'cantmove-anon',
+        'movenotallowed'                      => 'cantmove',
+        'movenotallowedfile'                  => 'cantmovefile',
+        'namespaceprotected'                  => 'protectednamespace',
+        'nocreate-loggedin'                   => 'cantcreate',
+        'nocreatetext'                        => 'cantcreate-anon',
+        'noname'                              => 'invaliduser',
+        'nosuchusershort'                     => 'nosuchuser',
+        'notanarticle'                        => 'missingtitle',
+        'nouserspecified'                     => 'invaliduser',
+        'ns-specialprotected'                 => 'unsupportednamespace',
+        'protect-cantedit'                    => 'cantedit',
+        'protectedinterface'                  => 'protectednamespace-interface',
+        'protectedpagetext'                   => 'protectedpage',
+        'range_block_disabled'                => 'rangedisabled',
+        'rcpatroldisabled'                    => 'patroldisabled',
+        'readonlytext'                        => 'readonly',
+        'sessionfailure'                      => 'badtoken',
+        'systemblockedtext'                   => 'blocked',
+        'titleprotected'                      => 'protectedtitle',
+        'undo-failure'                        => 'undofailure',
+        'userrights-nodatabase'               => 'nosuchdatabase',
+        'userrights-no-interwiki'             => 'nointerwikiuserrights',
+    ];
 
-	protected $apiCode = null;
-	protected $apiData = [];
+    protected $apiCode = null;
+    protected $apiData = [];
 
-	public function getApiCode() {
-		if ( $this->apiCode === null ) {
-			$key = $this->getKey();
-			if ( isset( self::$messageMap[$key] ) ) {
-				$this->apiCode = self::$messageMap[$key];
-			} elseif ( $key === 'apierror-missingparam' ) {
-				// @todo: Kill this case along with ApiBase::$messageMap
-				$this->apiCode = 'no' . $this->getParams()[0];
-			} elseif ( substr( $key, 0, 8 ) === 'apiwarn-' ) {
-				$this->apiCode = substr( $key, 8 );
-			} elseif ( substr( $key, 0, 9 ) === 'apierror-' ) {
-				$this->apiCode = substr( $key, 9 );
-			} else {
-				$this->apiCode = $key;
-			}
+    public function getApiCode()
+    {
+        if ($this->apiCode === null) {
+            $key = $this->getKey();
+            if (isset(self::$messageMap[$key])) {
+                $this->apiCode = self::$messageMap[$key];
+            } elseif ($key === 'apierror-missingparam') {
+                // @todo: Kill this case along with ApiBase::$messageMap
+                $this->apiCode = 'no' . $this->getParams()[0];
+            } elseif (substr($key, 0, 8) === 'apiwarn-') {
+                $this->apiCode = substr($key, 8);
+            } elseif (substr($key, 0, 9) === 'apierror-') {
+                $this->apiCode = substr($key, 9);
+            } else {
+                $this->apiCode = $key;
+            }
 
-			// Ensure the code is actually valid
-			$this->apiCode = preg_replace( '/[^a-zA-Z0-9_-]/', '_', $this->apiCode );
-		}
-		return $this->apiCode;
-	}
+            // Ensure the code is actually valid
+            $this->apiCode = preg_replace('/[^a-zA-Z0-9_-]/', '_', $this->apiCode);
+        }
 
-	public function setApiCode( $code, array $data = null ) {
-		if ( $code !== null && !ApiErrorFormatter::isValidApiCode( $code ) ) {
-			throw new InvalidArgumentException( "Invalid code \"$code\"" );
-		}
+        return $this->apiCode;
+    }
 
-		$this->apiCode = $code;
-		if ( $data !== null ) {
-			$this->setApiData( $data );
-		}
-	}
+    public function setApiCode($code, array $data = null)
+    {
+        if ($code !== null && !ApiErrorFormatter::isValidApiCode($code)) {
+            throw new InvalidArgumentException("Invalid code \"$code\"");
+        }
 
-	public function getApiData() {
-		return $this->apiData;
-	}
+        $this->apiCode = $code;
+        if ($data !== null) {
+            $this->setApiData($data);
+        }
+    }
 
-	public function setApiData( array $data ) {
-		$this->apiData = $data;
-	}
+    public function getApiData()
+    {
+        return $this->apiData;
+    }
 
-	public function serialize(): string {
-		return serialize( $this->__serialize() );
-	}
+    public function setApiData(array $data)
+    {
+        $this->apiData = $data;
+    }
 
-	public function __serialize() {
-		return [
-			'parent' => parent::__serialize(),
-			'apiCode' => $this->apiCode,
-			'apiData' => $this->apiData,
-		];
-	}
+    public function serialize(): string
+    {
+        return serialize($this->__serialize());
+    }
 
-	public function unserialize( $serialized ): void {
-		$this->__unserialize( unserialize( $serialized ) );
-	}
+    public function __serialize()
+    {
+        return [
+            'parent'  => parent::__serialize(),
+            'apiCode' => $this->apiCode,
+            'apiData' => $this->apiData,
+        ];
+    }
 
-	public function __unserialize( $data ) {
-		parent::__unserialize( $data['parent'] );
-		$this->apiCode = $data['apiCode'];
-		$this->apiData = $data['apiData'];
-	}
+    public function unserialize($serialized): void
+    {
+        $this->__unserialize(unserialize($serialized));
+    }
+
+    public function __unserialize($data)
+    {
+        parent::__unserialize($data['parent']);
+        $this->apiCode = $data['apiCode'];
+        $this->apiData = $data['apiData'];
+    }
 }

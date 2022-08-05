@@ -29,33 +29,39 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class MissingCommentConstraint implements IEditConstraint {
+class MissingCommentConstraint implements IEditConstraint
+{
 
-	/** @var string */
-	private $userComment;
+    /** @var string */
+    private $userComment;
 
-	/**
-	 * @param string $userComment
-	 */
-	public function __construct( string $userComment ) {
-		$this->userComment = $userComment;
-	}
+    /**
+     * @param string $userComment
+     */
+    public function __construct(string $userComment)
+    {
+        $this->userComment = $userComment;
+    }
 
-	public function checkConstraint(): string {
-		if ( $this->userComment == '' ) {
-			// TODO this was == in EditPage, can it be === ?
-			return self::CONSTRAINT_FAILED;
-		}
-		return self::CONSTRAINT_PASSED;
-	}
+    public function checkConstraint(): string
+    {
+        if ($this->userComment == '') {
+            // TODO this was == in EditPage, can it be === ?
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->userComment == '' ) {
-			$statusValue->fatal( 'missingcommenttext' );
-			$statusValue->value = self::AS_TEXTBOX_EMPTY;
-		}
-		return $statusValue;
-	}
+        return self::CONSTRAINT_PASSED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->userComment == '') {
+            $statusValue->fatal('missingcommenttext');
+            $statusValue->value = self::AS_TEXTBOX_EMPTY;
+        }
+
+        return $statusValue;
+    }
 
 }

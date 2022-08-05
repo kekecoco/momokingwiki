@@ -24,18 +24,23 @@
 /**
  * @ingroup API
  */
-class ApiFormatXmlRsd extends ApiFormatXml {
-	public function __construct( ApiMain $main, $format ) {
-		parent::__construct( $main, $format );
-		$this->setRootElement( 'rsd' );
-	}
+class ApiFormatXmlRsd extends ApiFormatXml
+{
+    public function __construct(ApiMain $main, $format)
+    {
+        parent::__construct($main, $format);
+        $this->setRootElement('rsd');
+    }
 
-	public function getMimeType() {
-		return 'application/rsd+xml';
-	}
+    public function getMimeType()
+    {
+        return 'application/rsd+xml';
+    }
 
-	public static function recXmlPrint( $name, $value, $indent, $attributes = [] ) {
-		unset( $attributes['_idx'] );
-		return parent::recXmlPrint( $name, $value, $indent, $attributes );
-	}
+    public static function recXmlPrint($name, $value, $indent, $attributes = [])
+    {
+        unset($attributes['_idx']);
+
+        return parent::recXmlPrint($name, $value, $indent, $attributes);
+    }
 }

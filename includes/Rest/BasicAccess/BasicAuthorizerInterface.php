@@ -11,18 +11,19 @@ use MediaWiki\Rest\RequestInterface;
  *
  * @internal
  */
-interface BasicAuthorizerInterface {
-	/**
-	 * Determine whether a request should be permitted, given the handler's
-	 * needsReadAccess() and needsWriteAccess().
-	 *
-	 * If the request should be permitted, return null. If the request should
-	 * be denied, return a string error identifier.
-	 *
-	 * @param RequestInterface $request
-	 * @param Handler $handler
-	 * @return string|null If the request is denied, the string error code. If
-	 *   the request is allowed, null.
-	 */
-	public function authorize( RequestInterface $request, Handler $handler );
+interface BasicAuthorizerInterface
+{
+    /**
+     * Determine whether a request should be permitted, given the handler's
+     * needsReadAccess() and needsWriteAccess().
+     *
+     * If the request should be permitted, return null. If the request should
+     * be denied, return a string error identifier.
+     *
+     * @param RequestInterface $request
+     * @param Handler $handler
+     * @return string|null If the request is denied, the string error code. If
+     *   the request is allowed, null.
+     */
+    public function authorize(RequestInterface $request, Handler $handler);
 }

@@ -3,12 +3,12 @@
 var slice = Array.prototype.slice;
 
 // Apply site-level data
-mw.config.set( require( './config.json' ) );
+mw.config.set(require('./config.json'));
 
 // Load other files in the package
-require( './log.js' );
-require( './errorLogger.js' );
-require( './legacy.wikibits.js' );
+require('./log.js');
+require('./errorLogger.js');
+require('./legacy.wikibits.js');
 
 /**
  * Object constructor for messages.
@@ -58,151 +58,151 @@ require( './legacy.wikibits.js' );
  * @param {string} key
  * @param {Array} [parameters]
  */
-function Message( map, key, parameters ) {
-	this.map = map;
-	this.key = key;
-	this.parameters = parameters || [];
+function Message(map, key, parameters) {
+    this.map = map;
+    this.key = key;
+    this.parameters = parameters || [];
 }
 
 Message.prototype = {
-	/**
-	 * Get parsed contents of the message.
-	 *
-	 * The default parser does simple $N replacements and nothing else.
-	 * This may be overridden to provide a more complex message parser.
-	 * The primary override is in the mediawiki.jqueryMsg module.
-	 *
-	 * This function will not be called for nonexistent messages.
-	 *
-	 * @private For internal use by mediawiki.jqueryMsg only
-	 * @param {string} format
-	 * @return {string} Parsed message
-	 */
-	parser: function ( format ) {
-		var text = this.map.get( this.key );
-		if (
-			mw.config.get( 'wgUserLanguage' ) === 'qqx' &&
-			text === '(' + this.key + ')'
-		) {
-			text = '(' + this.key + '$*)';
-		}
-		text = mw.format.apply( null, [ text ].concat( this.parameters ) );
-		if ( format === 'parse' ) {
-			// We don't know how to parse anything, so escape it all
-			text = mw.html.escape( text );
-		}
-		return text;
-	},
+    /**
+     * Get parsed contents of the message.
+     *
+     * The default parser does simple $N replacements and nothing else.
+     * This may be overridden to provide a more complex message parser.
+     * The primary override is in the mediawiki.jqueryMsg module.
+     *
+     * This function will not be called for nonexistent messages.
+     *
+     * @private For internal use by mediawiki.jqueryMsg only
+     * @param {string} format
+     * @return {string} Parsed message
+     */
+    parser: function (format) {
+        var text = this.map.get(this.key);
+        if (
+            mw.config.get('wgUserLanguage') === 'qqx' &&
+            text === '(' + this.key + ')'
+        ) {
+            text = '(' + this.key + '$*)';
+        }
+        text = mw.format.apply(null, [text].concat(this.parameters));
+        if (format === 'parse') {
+            // We don't know how to parse anything, so escape it all
+            text = mw.html.escape(text);
+        }
+        return text;
+    },
 
-	/**
-	 * Add (does not replace) parameters for `$N` placeholder values.
-	 *
-	 * @param {Array} parameters
-	 * @return {mw.Message}
-	 * @chainable
-	 */
-	params: function ( parameters ) {
-		// Optimization: push all parameter arguments at once. Can't use spread operator
-		// `this.parameters.push( ...parameters );` yet, but apply() does the same thing.
-		Array.prototype.push.apply( this.parameters, parameters );
-		return this;
-	},
+    /**
+     * Add (does not replace) parameters for `$N` placeholder values.
+     *
+     * @param {Array} parameters
+     * @return {mw.Message}
+     * @chainable
+     */
+    params: function (parameters) {
+        // Optimization: push all parameter arguments at once. Can't use spread operator
+        // `this.parameters.push( ...parameters );` yet, but apply() does the same thing.
+        Array.prototype.push.apply(this.parameters, parameters);
+        return this;
+    },
 
-	/**
-	 * Convert message object to a string using the "text"-format .
-	 *
-	 * This exists for implicit string type casting only.
-	 * Do not call this directly. Use mw.Message#text() instead, one of the
-	 * other format methods.
-	 *
-	 * @private
-	 * @param {string} [format="text"] Internal parameter. Uses "text" if called
-	 *  implicitly through string casting.
-	 * @return {string} Message in the given format, or `⧼key⧽` if the key
-	 *  does not exist.
-	 */
-	toString: function ( format ) {
-		if ( !this.exists() ) {
-			// Use ⧼key⧽ as text if key does not exist
-			// Err on the side of safety, ensure that the output
-			// is always html safe in the event the message key is
-			// missing, since in that case its highly likely the
-			// message key is user-controlled.
-			// '⧼' is used instead of '<' to side-step any
-			// double-escaping issues.
-			// (Keep synchronised with Message::toString() in PHP.)
-			return '⧼' + mw.html.escape( this.key ) + '⧽';
-		}
+    /**
+     * Convert message object to a string using the "text"-format .
+     *
+     * This exists for implicit string type casting only.
+     * Do not call this directly. Use mw.Message#text() instead, one of the
+     * other format methods.
+     *
+     * @private
+     * @param {string} [format="text"] Internal parameter. Uses "text" if called
+     *  implicitly through string casting.
+     * @return {string} Message in the given format, or `⧼key⧽` if the key
+     *  does not exist.
+     */
+    toString: function (format) {
+        if (!this.exists()) {
+            // Use ⧼key⧽ as text if key does not exist
+            // Err on the side of safety, ensure that the output
+            // is always html safe in the event the message key is
+            // missing, since in that case its highly likely the
+            // message key is user-controlled.
+            // '⧼' is used instead of '<' to side-step any
+            // double-escaping issues.
+            // (Keep synchronised with Message::toString() in PHP.)
+            return '⧼' + mw.html.escape(this.key) + '⧽';
+        }
 
-		if ( !format ) {
-			format = 'text';
-		}
+        if (!format) {
+            format = 'text';
+        }
 
-		if ( format === 'plain' || format === 'text' || format === 'parse' ) {
-			return this.parser( format );
-		}
+        if (format === 'plain' || format === 'text' || format === 'parse') {
+            return this.parser(format);
+        }
 
-		// Format: 'escaped' (including for any invalid format, default to safe escape)
-		return mw.html.escape( this.parser( 'escaped' ) );
-	},
+        // Format: 'escaped' (including for any invalid format, default to safe escape)
+        return mw.html.escape(this.parser('escaped'));
+    },
 
-	/**
-	 * Parse message as wikitext and return HTML.
-	 *
-	 * If jqueryMsg is loaded, this transforms text and parses a subset of supported wikitext
-	 * into HTML. Without jqueryMsg, it is equivalent to #escaped.
-	 *
-	 * @return {string} String form of parsed message
-	 */
-	parse: function () {
-		return this.toString( 'parse' );
-	},
+    /**
+     * Parse message as wikitext and return HTML.
+     *
+     * If jqueryMsg is loaded, this transforms text and parses a subset of supported wikitext
+     * into HTML. Without jqueryMsg, it is equivalent to #escaped.
+     *
+     * @return {string} String form of parsed message
+     */
+    parse: function () {
+        return this.toString('parse');
+    },
 
-	/**
-	 * Return message plainly.
-	 *
-	 * This substitutes parameters, but otherwise does not transform the
-	 * message content.
-	 *
-	 * @return {string} String form of plain message
-	 */
-	plain: function () {
-		return this.toString( 'plain' );
-	},
+    /**
+     * Return message plainly.
+     *
+     * This substitutes parameters, but otherwise does not transform the
+     * message content.
+     *
+     * @return {string} String form of plain message
+     */
+    plain: function () {
+        return this.toString('plain');
+    },
 
-	/**
-	 * Format message with text transformations applied.
-	 *
-	 * If jqueryMsg is loaded, `{{`-transformation is done for supported
-	 * magic words such as `{{plural:}}`, `{{gender:}}`, and `{{int:}}`.
-	 * Without jqueryMsg, it is equivalent to #plain.
-	 *
-	 * @return {string} String form of text message
-	 */
-	text: function () {
-		return this.toString( 'text' );
-	},
+    /**
+     * Format message with text transformations applied.
+     *
+     * If jqueryMsg is loaded, `{{`-transformation is done for supported
+     * magic words such as `{{plural:}}`, `{{gender:}}`, and `{{int:}}`.
+     * Without jqueryMsg, it is equivalent to #plain.
+     *
+     * @return {string} String form of text message
+     */
+    text: function () {
+        return this.toString('text');
+    },
 
-	/**
-	 * Format message and return as escaped text in HTML.
-	 *
-	 * This is equivalent to the #text format, which is then HTML-escaped.
-	 *
-	 * @return {string} String form of html escaped message
-	 */
-	escaped: function () {
-		return this.toString( 'escaped' );
-	},
+    /**
+     * Format message and return as escaped text in HTML.
+     *
+     * This is equivalent to the #text format, which is then HTML-escaped.
+     *
+     * @return {string} String form of html escaped message
+     */
+    escaped: function () {
+        return this.toString('escaped');
+    },
 
-	/**
-	 * Check if a message exists
-	 *
-	 * @see mw.Map#exists
-	 * @return {boolean}
-	 */
-	exists: function () {
-		return this.map.exists( this.key );
-	}
+    /**
+     * Check if a message exists
+     *
+     * @see mw.Map#exists
+     * @return {boolean}
+     */
+    exists: function () {
+        return this.map.exists(this.key);
+    }
 };
 
 /**
@@ -227,11 +227,11 @@ mw.widgets = {};
  * @method
  */
 mw.inspect = function () {
-	var args = arguments;
-	// Lazy-load
-	mw.loader.using( 'mediawiki.inspect', function () {
-		mw.inspect.runReports.apply( mw.inspect, args );
-	} );
+    var args = arguments;
+    // Lazy-load
+    mw.loader.using('mediawiki.inspect', function () {
+        mw.inspect.runReports.apply(mw.inspect, args);
+    });
 };
 
 /**
@@ -243,17 +243,17 @@ mw.inspect = function () {
  * @param {Array} parameters Values for $N replacements
  * @return {string} Transformed format string
  */
-mw.internalDoTransformFormatForQqx = function ( formatString, parameters ) {
-	if ( formatString.indexOf( '$*' ) !== -1 ) {
-		var replacement = '';
-		if ( parameters.length ) {
-			replacement = ': ' + parameters.map( function ( _, i ) {
-				return '$' + ( i + 1 );
-			} ).join( ', ' );
-		}
-		return formatString.replace( '$*', replacement );
-	}
-	return formatString;
+mw.internalDoTransformFormatForQqx = function (formatString, parameters) {
+    if (formatString.indexOf('$*') !== -1) {
+        var replacement = '';
+        if (parameters.length) {
+            replacement = ': ' + parameters.map(function (_, i) {
+                return '$' + (i + 1);
+            }).join(', ');
+        }
+        return formatString.replace('$*', replacement);
+    }
+    return formatString;
 };
 
 /**
@@ -266,13 +266,13 @@ mw.internalDoTransformFormatForQqx = function ( formatString, parameters ) {
  * @param {...Mixed} parameters Values for $N replacements
  * @return {string} Formatted string
  */
-mw.format = function ( formatString ) {
-	var parameters = slice.call( arguments, 1 );
-	formatString = mw.internalDoTransformFormatForQqx( formatString, parameters );
-	return formatString.replace( /\$(\d+)/g, function ( str, match ) {
-		var index = parseInt( match, 10 ) - 1;
-		return parameters[ index ] !== undefined ? parameters[ index ] : '$' + match;
-	} );
+mw.format = function (formatString) {
+    var parameters = slice.call(arguments, 1);
+    formatString = mw.internalDoTransformFormatForQqx(formatString, parameters);
+    return formatString.replace(/\$(\d+)/g, function (str, match) {
+        var index = parseInt(match, 10) - 1;
+        return parameters[index] !== undefined ? parameters[index] : '$' + match;
+    });
 };
 
 // Expose Message constructor
@@ -288,9 +288,9 @@ mw.Message = Message;
  * @param {...Mixed} parameters Values for $N replacements
  * @return {mw.Message}
  */
-mw.message = function ( key ) {
-	var parameters = slice.call( arguments, 1 );
-	return new Message( mw.messages, key, parameters );
+mw.message = function (key) {
+    var parameters = slice.call(arguments, 1);
+    return new Message(mw.messages, key, parameters);
 };
 
 /**
@@ -304,9 +304,9 @@ mw.message = function ( key ) {
  * @return {string}
  */
 mw.msg = function () {
-	// Shortcut must process text transformations by default
-	// if mediawiki.jqueryMsg is loaded. (T46459)
-	return mw.message.apply( mw, arguments ).text();
+    // Shortcut must process text transformations by default
+    // if mediawiki.jqueryMsg is loaded. (T46459)
+    return mw.message.apply(mw, arguments).text();
 };
 
 /**
@@ -315,15 +315,15 @@ mw.msg = function () {
  * @param {Object} [options] See mw.notification#defaults for the defaults.
  * @return {jQuery.Promise}
  */
-mw.notify = function ( message, options ) {
-	// Lazy load
-	return mw.loader.using( 'mediawiki.notification', function () {
-		return mw.notification.notify( message, options );
-	} );
+mw.notify = function (message, options) {
+    // Lazy load
+    return mw.loader.using('mediawiki.notification', function () {
+        return mw.notification.notify(message, options);
+    });
 };
 
 var mwLoaderTrack = mw.track;
-var trackCallbacks = $.Callbacks( 'memory' );
+var trackCallbacks = $.Callbacks('memory');
 var trackHandlers = [];
 
 /**
@@ -342,9 +342,9 @@ var trackHandlers = [];
  * @param {string} topic Topic name
  * @param {Object|number|string} [data] Data describing the event.
  */
-mw.track = function ( topic, data ) {
-	mwLoaderTrack( topic, data );
-	trackCallbacks.fire( mw.trackQueue );
+mw.track = function (topic, data) {
+    mwLoaderTrack(topic, data);
+    trackCallbacks.fire(mw.trackQueue);
 };
 
 /**
@@ -368,19 +368,20 @@ mw.track = function ( topic, data ) {
  * @param {string} callback.topic
  * @param {Object} [callback.data]
  */
-mw.trackSubscribe = function ( topic, callback ) {
-	var seen = 0;
-	function handler( trackQueue ) {
-		for ( ; seen < trackQueue.length; seen++ ) {
-			var event = trackQueue[ seen ];
-			if ( event.topic.indexOf( topic ) === 0 ) {
-				callback.call( event, event.topic, event.data );
-			}
-		}
-	}
+mw.trackSubscribe = function (topic, callback) {
+    var seen = 0;
 
-	trackHandlers.push( [ handler, callback ] );
-	trackCallbacks.add( handler );
+    function handler(trackQueue) {
+        for (; seen < trackQueue.length; seen++) {
+            var event = trackQueue[seen];
+            if (event.topic.indexOf(topic) === 0) {
+                callback.call(event, event.topic, event.data);
+            }
+        }
+    }
+
+    trackHandlers.push([handler, callback]);
+    trackCallbacks.add(handler);
 };
 
 /**
@@ -388,19 +389,19 @@ mw.trackSubscribe = function ( topic, callback ) {
  *
  * @param {Function} callback
  */
-mw.trackUnsubscribe = function ( callback ) {
-	trackHandlers = trackHandlers.filter( function ( fns ) {
-		if ( fns[ 1 ] === callback ) {
-			trackCallbacks.remove( fns[ 0 ] );
-			// Ensure the tuple is removed to avoid holding on to closures
-			return false;
-		}
-		return true;
-	} );
+mw.trackUnsubscribe = function (callback) {
+    trackHandlers = trackHandlers.filter(function (fns) {
+        if (fns[1] === callback) {
+            trackCallbacks.remove(fns[0]);
+            // Ensure the tuple is removed to avoid holding on to closures
+            return false;
+        }
+        return true;
+    });
 };
 
 // Fire events from before track() triggered fire()
-trackCallbacks.fire( mw.trackQueue );
+trackCallbacks.fire(mw.trackQueue);
 
 /**
  * Registry and firing of events.
@@ -442,7 +443,7 @@ trackCallbacks.fire( mw.trackQueue );
  * @class mw.hook
  */
 
-var hooks = Object.create( null );
+var hooks = Object.create(null);
 
 /**
  * Create an instance of mw.hook.
@@ -452,70 +453,72 @@ var hooks = Object.create( null );
  * @param {string} name Name of hook.
  * @return {mw.hook}
  */
-mw.hook = function ( name ) {
-	return hooks[ name ] || ( hooks[ name ] = ( function () {
-		var memory;
-		var fns = [];
-		function rethrow( e ) {
-			setTimeout( function () {
-				throw e;
-			} );
-		}
-		return {
-			/**
-			 * Register a hook handler
-			 *
-			 * @param {...Function} handler Function to bind.
-			 * @chainable
-			 */
-			add: function () {
-				for ( var i = 0; i < arguments.length; i++ ) {
-					if ( memory ) {
-						try {
-							arguments[ i ].apply( null, memory );
-						} catch ( e ) {
-							rethrow( e );
-						}
-					}
-					fns.push( arguments[ i ] );
-				}
-				return this;
-			},
-			/**
-			 * Unregister a hook handler
-			 *
-			 * @param {...Function} handler Function to unbind.
-			 * @chainable
-			 */
-			remove: function () {
-				for ( var i = 0; i < arguments.length; i++ ) {
-					var j;
-					while ( ( j = fns.indexOf( arguments[ i ] ) ) !== -1 ) {
-						fns.splice( j, 1 );
-					}
-				}
-				return this;
-			},
-			/**
-			 * Call hook handlers with data.
-			 *
-			 * @param {...Mixed} data
-			 * @return {mw.hook}
-			 * @chainable
-			 */
-			fire: function () {
-				for ( var i = 0; i < fns.length; i++ ) {
-					try {
-						fns[ i ].apply( null, arguments );
-					} catch ( e ) {
-						rethrow( e );
-					}
-				}
-				memory = slice.call( arguments );
-				return this;
-			}
-		};
-	}() ) );
+mw.hook = function (name) {
+    return hooks[name] || (hooks[name] = (function () {
+        var memory;
+        var fns = [];
+
+        function rethrow(e) {
+            setTimeout(function () {
+                throw e;
+            });
+        }
+
+        return {
+            /**
+             * Register a hook handler
+             *
+             * @param {...Function} handler Function to bind.
+             * @chainable
+             */
+            add: function () {
+                for (var i = 0; i < arguments.length; i++) {
+                    if (memory) {
+                        try {
+                            arguments[i].apply(null, memory);
+                        } catch (e) {
+                            rethrow(e);
+                        }
+                    }
+                    fns.push(arguments[i]);
+                }
+                return this;
+            },
+            /**
+             * Unregister a hook handler
+             *
+             * @param {...Function} handler Function to unbind.
+             * @chainable
+             */
+            remove: function () {
+                for (var i = 0; i < arguments.length; i++) {
+                    var j;
+                    while ((j = fns.indexOf(arguments[i])) !== -1) {
+                        fns.splice(j, 1);
+                    }
+                }
+                return this;
+            },
+            /**
+             * Call hook handlers with data.
+             *
+             * @param {...Mixed} data
+             * @return {mw.hook}
+             * @chainable
+             */
+            fire: function () {
+                for (var i = 0; i < fns.length; i++) {
+                    try {
+                        fns[i].apply(null, arguments);
+                    } catch (e) {
+                        rethrow(e);
+                    }
+                }
+                memory = slice.call(arguments);
+                return this;
+            }
+        };
+    }()));
 };
 
 /**
@@ -535,97 +538,98 @@ mw.hook = function ( name ) {
  * @singleton
  */
 
-function escapeCallback( s ) {
-	switch ( s ) {
-		case '\'':
-			return '&#039;';
-		case '"':
-			return '&quot;';
-		case '<':
-			return '&lt;';
-		case '>':
-			return '&gt;';
-		case '&':
-			return '&amp;';
-	}
+function escapeCallback(s) {
+    switch (s) {
+        case '\'':
+            return '&#039;';
+        case '"':
+            return '&quot;';
+        case '<':
+            return '&lt;';
+        case '>':
+            return '&gt;';
+        case '&':
+            return '&amp;';
+    }
 }
+
 mw.html = {
-	/**
-	 * Escape a string for HTML.
-	 *
-	 * Converts special characters to HTML entities.
-	 *
-	 *     mw.html.escape( '< > \' & "' );
-	 *     // Returns &lt; &gt; &#039; &amp; &quot;
-	 *
-	 * @param {string} s The string to escape
-	 * @return {string} HTML
-	 */
-	escape: function ( s ) {
-		return s.replace( /['"<>&]/g, escapeCallback );
-	},
+    /**
+     * Escape a string for HTML.
+     *
+     * Converts special characters to HTML entities.
+     *
+     *     mw.html.escape( '< > \' & "' );
+     *     // Returns &lt; &gt; &#039; &amp; &quot;
+     *
+     * @param {string} s The string to escape
+     * @return {string} HTML
+     */
+    escape: function (s) {
+        return s.replace(/['"<>&]/g, escapeCallback);
+    },
 
-	/**
-	 * Create an HTML element string, with safe escaping.
-	 *
-	 * @param {string} name The tag name.
-	 * @param {Object} [attrs] An object with members mapping element names to values
-	 * @param {string|mw.html.Raw|null} [contents=null] The contents of the element.
-	 *
-	 *  - string: Text to be escaped.
-	 *  - null: The element is treated as void with short closing form, e.g. `<br/>`.
-	 *  - this.Raw: The raw value is directly included.
-	 * @return {string} HTML
-	 */
-	element: function ( name, attrs, contents ) {
-		var s = '<' + name;
+    /**
+     * Create an HTML element string, with safe escaping.
+     *
+     * @param {string} name The tag name.
+     * @param {Object} [attrs] An object with members mapping element names to values
+     * @param {string|mw.html.Raw|null} [contents=null] The contents of the element.
+     *
+     *  - string: Text to be escaped.
+     *  - null: The element is treated as void with short closing form, e.g. `<br/>`.
+     *  - this.Raw: The raw value is directly included.
+     * @return {string} HTML
+     */
+    element: function (name, attrs, contents) {
+        var s = '<' + name;
 
-		if ( attrs ) {
-			for ( var attrName in attrs ) {
-				var v = attrs[ attrName ];
-				// Convert name=true, to name=name
-				if ( v === true ) {
-					v = attrName;
-					// Skip name=false
-				} else if ( v === false ) {
-					continue;
-				}
-				s += ' ' + attrName + '="' + this.escape( String( v ) ) + '"';
-			}
-		}
-		if ( contents === undefined || contents === null ) {
-			// Self close tag
-			s += '/>';
-			return s;
-		}
-		// Regular open tag
-		s += '>';
-		if ( typeof contents === 'string' ) {
-			// Escaped
-			s += this.escape( contents );
-		} else if ( typeof contents === 'number' || typeof contents === 'boolean' ) {
-			// Convert to string
-			s += String( contents );
-		} else if ( contents instanceof this.Raw ) {
-			// Raw HTML inclusion
-			s += contents.value;
-		} else {
-			throw new Error( 'Invalid content type' );
-		}
-		s += '</' + name + '>';
-		return s;
-	},
+        if (attrs) {
+            for (var attrName in attrs) {
+                var v = attrs[attrName];
+                // Convert name=true, to name=name
+                if (v === true) {
+                    v = attrName;
+                    // Skip name=false
+                } else if (v === false) {
+                    continue;
+                }
+                s += ' ' + attrName + '="' + this.escape(String(v)) + '"';
+            }
+        }
+        if (contents === undefined || contents === null) {
+            // Self close tag
+            s += '/>';
+            return s;
+        }
+        // Regular open tag
+        s += '>';
+        if (typeof contents === 'string') {
+            // Escaped
+            s += this.escape(contents);
+        } else if (typeof contents === 'number' || typeof contents === 'boolean') {
+            // Convert to string
+            s += String(contents);
+        } else if (contents instanceof this.Raw) {
+            // Raw HTML inclusion
+            s += contents.value;
+        } else {
+            throw new Error('Invalid content type');
+        }
+        s += '</' + name + '>';
+        return s;
+    },
 
-	/**
-	 * Wrapper object for raw HTML passed to mw.html.element().
-	 *
-	 * @class mw.html.Raw
-	 * @constructor
-	 * @param {string} value
-	 */
-	Raw: function ( value ) {
-		this.value = value;
-	}
+    /**
+     * Wrapper object for raw HTML passed to mw.html.element().
+     *
+     * @class mw.html.Raw
+     * @constructor
+     * @param {string} value
+     */
+    Raw: function (value) {
+        this.value = value;
+    }
 };
 
 /**
@@ -635,7 +639,7 @@ mw.html = {
  * @return {string[]}
  */
 mw.loader.getModuleNames = function () {
-	return Object.keys( mw.loader.moduleRegistry );
+    return Object.keys(mw.loader.moduleRegistry);
 };
 
 /**
@@ -675,35 +679,37 @@ mw.loader.getModuleNames = function () {
  * @param {Function} [error] Callback to execute if one or more dependencies failed
  * @return {jQuery.Promise} With a `require` function
  */
-mw.loader.using = function ( dependencies, ready, error ) {
-	var deferred = $.Deferred();
+mw.loader.using = function (dependencies, ready, error) {
+    var deferred = $.Deferred();
 
-	// Allow calling with a single dependency as a string
-	if ( !Array.isArray( dependencies ) ) {
-		dependencies = [ dependencies ];
-	}
+    // Allow calling with a single dependency as a string
+    if (!Array.isArray(dependencies)) {
+        dependencies = [dependencies];
+    }
 
-	if ( ready ) {
-		deferred.done( ready );
-	}
-	if ( error ) {
-		deferred.fail( error );
-	}
+    if (ready) {
+        deferred.done(ready);
+    }
+    if (error) {
+        deferred.fail(error);
+    }
 
-	try {
-		// Resolve entire dependency map
-		dependencies = mw.loader.resolve( dependencies );
-	} catch ( e ) {
-		return deferred.reject( e ).promise();
-	}
+    try {
+        // Resolve entire dependency map
+        dependencies = mw.loader.resolve(dependencies);
+    } catch (e) {
+        return deferred.reject(e).promise();
+    }
 
-	mw.loader.enqueue(
-		dependencies,
-		function () { deferred.resolve( mw.loader.require ); },
-		deferred.reject
-	);
+    mw.loader.enqueue(
+        dependencies,
+        function () {
+            deferred.resolve(mw.loader.require);
+        },
+        deferred.reject
+    );
 
-	return deferred.promise();
+    return deferred.promise();
 };
 
 /**
@@ -726,11 +732,11 @@ mw.loader.using = function ( dependencies, ready, error ) {
  * @param {string} url Script URL
  * @return {jQuery.Promise} Resolved when the script is loaded
  */
-mw.loader.getScript = function ( url ) {
-	return $.ajax( url, { dataType: 'script', cache: true } )
-		.catch( function () {
-			throw new Error( 'Failed to load script' );
-		} );
+mw.loader.getScript = function (url) {
+    return $.ajax(url, {dataType: 'script', cache: true})
+        .catch(function () {
+            throw new Error('Failed to load script');
+        });
 };
 
 // Skeleton user object, extended by the 'mediawiki.user' module.
@@ -739,17 +745,17 @@ mw.loader.getScript = function ( url ) {
  * @singleton
  */
 mw.user = {
-	/**
-	 * @property {mw.Map}
-	 */
-	options: new mw.Map(),
-	/**
-	 * @property {mw.Map}
-	 */
-	tokens: new mw.Map()
+    /**
+     * @property {mw.Map}
+     */
+    options: new mw.Map(),
+    /**
+     * @property {mw.Map}
+     */
+    tokens: new mw.Map()
 };
 
-mw.user.options.set( require( './user.json' ) );
+mw.user.options.set(require('./user.json'));
 
 // Process callbacks for modern browsers (Grade A) that require modules.
 var queue = window.RLQ;
@@ -758,14 +764,14 @@ var queue = window.RLQ;
 // require modules. It must also support late arrivals of
 // plain callbacks. (T208093)
 window.RLQ = {
-	push: function ( entry ) {
-		if ( typeof entry === 'function' ) {
-			entry();
-		} else {
-			mw.loader.using( entry[ 0 ], entry[ 1 ] );
-		}
-	}
+    push: function (entry) {
+        if (typeof entry === 'function') {
+            entry();
+        } else {
+            mw.loader.using(entry[0], entry[1]);
+        }
+    }
 };
-while ( queue[ 0 ] ) {
-	window.RLQ.push( queue.shift() );
+while (queue[0]) {
+    window.RLQ.push(queue.shift());
 }

@@ -26,254 +26,264 @@
  *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-abstract class GenericArrayObjectTest extends PHPUnit\Framework\TestCase {
+abstract class GenericArrayObjectTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	/**
-	 * Returns objects that can serve as elements in the concrete
-	 * GenericArrayObject deriving class being tested.
-	 *
-	 * @since 1.20
-	 *
-	 * @return array
-	 */
-	abstract public function elementInstancesProvider();
+    /**
+     * Returns objects that can serve as elements in the concrete
+     * GenericArrayObject deriving class being tested.
+     *
+     * @return array
+     * @since 1.20
+     *
+     */
+    abstract public function elementInstancesProvider();
 
-	/**
-	 * Returns the name of the concrete class being tested.
-	 *
-	 * @since 1.20
-	 *
-	 * @return string
-	 */
-	abstract public function getInstanceClass();
+    /**
+     * Returns the name of the concrete class being tested.
+     *
+     * @return string
+     * @since 1.20
+     *
+     */
+    abstract public function getInstanceClass();
 
-	/**
-	 * Provides instances of the concrete class being tested.
-	 *
-	 * @since 1.20
-	 *
-	 * @return array
-	 */
-	public function instanceProvider() {
-		$instances = [];
+    /**
+     * Provides instances of the concrete class being tested.
+     *
+     * @return array
+     * @since 1.20
+     *
+     */
+    public function instanceProvider()
+    {
+        $instances = [];
 
-		foreach ( $this->elementInstancesProvider() as $elementInstances ) {
-			$instances[] = $this->getNew( $elementInstances[0] );
-		}
+        foreach ($this->elementInstancesProvider() as $elementInstances) {
+            $instances[] = $this->getNew($elementInstances[0]);
+        }
 
-		return $this->arrayWrap( $instances );
-	}
+        return $this->arrayWrap($instances);
+    }
 
-	/**
-	 * @since 1.20
-	 *
-	 * @param array $elements
-	 *
-	 * @return GenericArrayObject
-	 */
-	protected function getNew( array $elements = [] ) {
-		$class = $this->getInstanceClass();
+    /**
+     * @param array $elements
+     *
+     * @return GenericArrayObject
+     * @since 1.20
+     *
+     */
+    protected function getNew(array $elements = [])
+    {
+        $class = $this->getInstanceClass();
 
-		return new $class( $elements );
-	}
+        return new $class($elements);
+    }
 
-	/**
-	 * @dataProvider elementInstancesProvider
-	 *
-	 * @since 1.20
-	 *
-	 * @param array $elements
-	 *
-	 * @covers GenericArrayObject::__construct
-	 */
-	public function testConstructor( array $elements ) {
-		$arrayObject = $this->getNew( $elements );
+    /**
+     * @dataProvider elementInstancesProvider
+     *
+     * @param array $elements
+     *
+     * @covers       GenericArrayObject::__construct
+     * @since 1.20
+     *
+     */
+    public function testConstructor(array $elements)
+    {
+        $arrayObject = $this->getNew($elements);
 
-		$this->assertEquals( count( $elements ), $arrayObject->count() );
-	}
+        $this->assertEquals(count($elements), $arrayObject->count());
+    }
 
-	/**
-	 * @dataProvider elementInstancesProvider
-	 *
-	 * @since 1.20
-	 *
-	 * @param array $elements
-	 *
-	 * @covers GenericArrayObject::isEmpty
-	 */
-	public function testIsEmpty( array $elements ) {
-		$arrayObject = $this->getNew( $elements );
+    /**
+     * @dataProvider elementInstancesProvider
+     *
+     * @param array $elements
+     *
+     * @covers       GenericArrayObject::isEmpty
+     * @since 1.20
+     *
+     */
+    public function testIsEmpty(array $elements)
+    {
+        $arrayObject = $this->getNew($elements);
 
-		$this->assertEquals( $elements === [], $arrayObject->isEmpty() );
-	}
+        $this->assertEquals($elements === [], $arrayObject->isEmpty());
+    }
 
-	/**
-	 * @dataProvider instanceProvider
-	 *
-	 * @since 1.20
-	 *
-	 * @param GenericArrayObject $list
-	 *
-	 * @covers GenericArrayObject::offsetUnset
-	 */
-	public function testUnset( GenericArrayObject $list ) {
-		if ( $list->isEmpty() ) {
-			$this->assertTrue( true ); // We cannot test unset if there are no elements
-		} else {
-			$offset = $list->getIterator()->key();
-			$count = $list->count();
-			$list->offsetUnset( $offset );
-			$this->assertEquals( $count - 1, $list->count() );
-		}
+    /**
+     * @dataProvider instanceProvider
+     *
+     * @param GenericArrayObject $list
+     *
+     * @covers       GenericArrayObject::offsetUnset
+     * @since 1.20
+     *
+     */
+    public function testUnset(GenericArrayObject $list)
+    {
+        if ($list->isEmpty()) {
+            $this->assertTrue(true); // We cannot test unset if there are no elements
+        } else {
+            $offset = $list->getIterator()->key();
+            $count = $list->count();
+            $list->offsetUnset($offset);
+            $this->assertEquals($count - 1, $list->count());
+        }
 
-		if ( !$list->isEmpty() ) {
-			$offset = $list->getIterator()->key();
-			$count = $list->count();
-			unset( $list[$offset] );
-			$this->assertEquals( $count - 1, $list->count() );
-		}
-	}
+        if (!$list->isEmpty()) {
+            $offset = $list->getIterator()->key();
+            $count = $list->count();
+            unset($list[$offset]);
+            $this->assertEquals($count - 1, $list->count());
+        }
+    }
 
-	/**
-	 * @dataProvider elementInstancesProvider
-	 *
-	 * @since 1.20
-	 *
-	 * @param array $elements
-	 *
-	 * @covers GenericArrayObject::append
-	 */
-	public function testAppend( array $elements ) {
-		$list = $this->getNew();
+    /**
+     * @dataProvider elementInstancesProvider
+     *
+     * @param array $elements
+     *
+     * @covers       GenericArrayObject::append
+     * @since 1.20
+     *
+     */
+    public function testAppend(array $elements)
+    {
+        $list = $this->getNew();
 
-		$listSize = count( $elements );
+        $listSize = count($elements);
 
-		foreach ( $elements as $element ) {
-			$list->append( $element );
-		}
+        foreach ($elements as $element) {
+            $list->append($element);
+        }
 
-		$this->assertEquals( $listSize, $list->count() );
+        $this->assertEquals($listSize, $list->count());
 
-		$list = $this->getNew();
+        $list = $this->getNew();
 
-		foreach ( $elements as $element ) {
-			$list[] = $element;
-		}
+        foreach ($elements as $element) {
+            $list[] = $element;
+        }
 
-		$this->assertEquals( $listSize, $list->count() );
+        $this->assertEquals($listSize, $list->count());
 
-		$this->checkTypeChecks( static function ( GenericArrayObject $list, $element ) {
-			$list->append( $element );
-		} );
-	}
+        $this->checkTypeChecks(static function (GenericArrayObject $list, $element) {
+            $list->append($element);
+        });
+    }
 
-	/**
-	 * @since 1.20
-	 *
-	 * @param callable $function
-	 */
-	protected function checkTypeChecks( $function ) {
-		$excption = null;
-		$list = $this->getNew();
+    /**
+     * @param callable $function
+     * @since 1.20
+     *
+     */
+    protected function checkTypeChecks($function)
+    {
+        $excption = null;
+        $list = $this->getNew();
 
-		$elementClass = $list->getObjectType();
+        $elementClass = $list->getObjectType();
 
-		foreach ( [ 42, 'foo', [], (object)[], 4.2 ] as $element ) {
-			$validValid = $element instanceof $elementClass;
+        foreach ([42, 'foo', [], (object)[], 4.2] as $element) {
+            $validValid = $element instanceof $elementClass;
 
-			try {
-				$function( $list, $element );
-				$valid = true;
-			} catch ( InvalidArgumentException $exception ) {
-				$valid = false;
-			}
+            try {
+                $function($list, $element);
+                $valid = true;
+            } catch (InvalidArgumentException $exception) {
+                $valid = false;
+            }
 
-			$this->assertEquals(
-				$validValid,
-				$valid,
-				'Object of invalid type got successfully added to a GenericArrayObject'
-			);
-		}
-	}
+            $this->assertEquals(
+                $validValid,
+                $valid,
+                'Object of invalid type got successfully added to a GenericArrayObject'
+            );
+        }
+    }
 
-	/**
-	 * @dataProvider elementInstancesProvider
-	 *
-	 * @since 1.20
-	 *
-	 * @param array $elements
-	 * @covers GenericArrayObject::getObjectType
-	 * @covers GenericArrayObject::offsetSet
-	 */
-	public function testOffsetSet( array $elements ) {
-		if ( $elements === [] ) {
-			$this->assertTrue( true );
+    /**
+     * @dataProvider elementInstancesProvider
+     *
+     * @param array $elements
+     * @covers       GenericArrayObject::getObjectType
+     * @covers       GenericArrayObject::offsetSet
+     * @since 1.20
+     *
+     */
+    public function testOffsetSet(array $elements)
+    {
+        if ($elements === []) {
+            $this->assertTrue(true);
 
-			return;
-		}
+            return;
+        }
 
-		$list = $this->getNew();
+        $list = $this->getNew();
 
-		$element = reset( $elements );
-		$list->offsetSet( 42, $element );
-		$this->assertEquals( $element, $list->offsetGet( 42 ) );
+        $element = reset($elements);
+        $list->offsetSet(42, $element);
+        $this->assertEquals($element, $list->offsetGet(42));
 
-		$list = $this->getNew();
+        $list = $this->getNew();
 
-		$element = reset( $elements );
-		$list['oHai'] = $element;
-		$this->assertEquals( $element, $list['oHai'] );
+        $element = reset($elements);
+        $list['oHai'] = $element;
+        $this->assertEquals($element, $list['oHai']);
 
-		$list = $this->getNew();
+        $list = $this->getNew();
 
-		$element = reset( $elements );
-		$list->offsetSet( 9001, $element );
-		$this->assertEquals( $element, $list[9001] );
+        $element = reset($elements);
+        $list->offsetSet(9001, $element);
+        $this->assertEquals($element, $list[9001]);
 
-		$list = $this->getNew();
+        $list = $this->getNew();
 
-		$element = reset( $elements );
-		$list->offsetSet( null, $element );
-		$this->assertEquals( $element, $list[0] );
+        $element = reset($elements);
+        $list->offsetSet(null, $element);
+        $this->assertEquals($element, $list[0]);
 
-		$list = $this->getNew();
-		$offset = 0;
+        $list = $this->getNew();
+        $offset = 0;
 
-		foreach ( $elements as $element ) {
-			$list->offsetSet( null, $element );
-			$this->assertEquals( $element, $list[$offset++] );
-		}
+        foreach ($elements as $element) {
+            $list->offsetSet(null, $element);
+            $this->assertEquals($element, $list[$offset++]);
+        }
 
-		$this->assertEquals( count( $elements ), $list->count() );
+        $this->assertEquals(count($elements), $list->count());
 
-		$this->checkTypeChecks( static function ( GenericArrayObject $list, $element ) {
-			$list->offsetSet( mt_rand(), $element );
-		} );
-	}
+        $this->checkTypeChecks(static function (GenericArrayObject $list, $element) {
+            $list->offsetSet(mt_rand(), $element);
+        });
+    }
 
-	/**
-	 * @dataProvider instanceProvider
-	 *
-	 * @since 1.21
-	 *
-	 * @param GenericArrayObject $list
-	 *
-	 * @covers GenericArrayObject::getSerializationData
-	 * @covers GenericArrayObject::serialize
-	 * @covers GenericArrayObject::unserialize
-	 */
-	public function testSerialization( GenericArrayObject $list ) {
-		$serialization = serialize( $list );
-		$copy = unserialize( $serialization );
+    /**
+     * @dataProvider instanceProvider
+     *
+     * @param GenericArrayObject $list
+     *
+     * @covers       GenericArrayObject::getSerializationData
+     * @covers       GenericArrayObject::serialize
+     * @covers       GenericArrayObject::unserialize
+     * @since 1.21
+     *
+     */
+    public function testSerialization(GenericArrayObject $list)
+    {
+        $serialization = serialize($list);
+        $copy = unserialize($serialization);
 
-		$this->assertEquals( $serialization, serialize( $copy ) );
-		$this->assertSame( count( $list ), count( $copy ) );
+        $this->assertEquals($serialization, serialize($copy));
+        $this->assertSame(count($list), count($copy));
 
-		$list = $list->getArrayCopy();
-		$copy = $copy->getArrayCopy();
+        $list = $list->getArrayCopy();
+        $copy = $copy->getArrayCopy();
 
-		$this->assertArrayEquals( $list, $copy, true, true );
-	}
+        $this->assertArrayEquals($list, $copy, true, true);
+    }
 }

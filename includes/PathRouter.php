@@ -70,372 +70,387 @@
  * @since 1.19
  * @author Daniel Friesen
  */
-class PathRouter {
+class PathRouter
+{
 
-	/**
-	 * @var stdClass[]
-	 */
-	private $patterns = [];
+    /**
+     * @var stdClass[]
+     */
+    private $patterns = [];
 
-	/**
-	 * Protected helper to do the actual bulk work of adding a single pattern.
-	 * This is in a separate method so that add() can handle the difference between
-	 * a single string $path and an array $path that contains multiple path
-	 * patterns each with an associated $key to pass on.
-	 * @param string $path
-	 * @param array $params
-	 * @param array $options
-	 * @param null|string $key
-	 */
-	protected function doAdd( $path, $params, $options, $key = null ) {
-		// Make sure all paths start with a /
-		if ( $path[0] !== '/' ) {
-			$path = '/' . $path;
-		}
+    /**
+     * Protected helper to do the actual bulk work of adding a single pattern.
+     * This is in a separate method so that add() can handle the difference between
+     * a single string $path and an array $path that contains multiple path
+     * patterns each with an associated $key to pass on.
+     * @param string $path
+     * @param array $params
+     * @param array $options
+     * @param null|string $key
+     */
+    protected function doAdd($path, $params, $options, $key = null)
+    {
+        // Make sure all paths start with a /
+        if ($path[0] !== '/') {
+            $path = '/' . $path;
+        }
 
-		if ( !isset( $options['strict'] ) || !$options['strict'] ) {
-			// Unless this is a strict path make sure that the path has a $1
-			if ( strpos( $path, '$1' ) === false ) {
-				if ( substr( $path, -1 ) !== '/' ) {
-					$path .= '/';
-				}
-				$path .= '$1';
-			}
-		}
+        if (!isset($options['strict']) || !$options['strict']) {
+            // Unless this is a strict path make sure that the path has a $1
+            if (strpos($path, '$1') === false) {
+                if (substr($path, -1) !== '/') {
+                    $path .= '/';
+                }
+                $path .= '$1';
+            }
+        }
 
-		// If 'title' is not specified and our path pattern contains a $1
-		// Add a default 'title' => '$1' rule to the parameters.
-		if ( !isset( $params['title'] ) && strpos( $path, '$1' ) !== false ) {
-			$params['title'] = '$1';
-		}
-		// If the user explicitly marked 'title' as false then omit it from the matches
-		if ( isset( $params['title'] ) && $params['title'] === false ) {
-			unset( $params['title'] );
-		}
+        // If 'title' is not specified and our path pattern contains a $1
+        // Add a default 'title' => '$1' rule to the parameters.
+        if (!isset($params['title']) && strpos($path, '$1') !== false) {
+            $params['title'] = '$1';
+        }
+        // If the user explicitly marked 'title' as false then omit it from the matches
+        if (isset($params['title']) && $params['title'] === false) {
+            unset($params['title']);
+        }
 
-		// Loop over our parameters and convert basic key => string
-		// patterns into fully descriptive array form
-		foreach ( $params as $paramName => $paramData ) {
-			if ( is_string( $paramData ) ) {
-				if ( preg_match( '/\$(\d+|key)/u', $paramData ) ) {
-					$paramArrKey = 'pattern';
-				} else {
-					// If there's no replacement use a value instead
-					// of a pattern for a little more efficiency
-					$paramArrKey = 'value';
-				}
-				$params[$paramName] = [
-					$paramArrKey => $paramData
-				];
-			}
-		}
+        // Loop over our parameters and convert basic key => string
+        // patterns into fully descriptive array form
+        foreach ($params as $paramName => $paramData) {
+            if (is_string($paramData)) {
+                if (preg_match('/\$(\d+|key)/u', $paramData)) {
+                    $paramArrKey = 'pattern';
+                } else {
+                    // If there's no replacement use a value instead
+                    // of a pattern for a little more efficiency
+                    $paramArrKey = 'value';
+                }
+                $params[$paramName] = [
+                    $paramArrKey => $paramData
+                ];
+            }
+        }
 
-		// Loop over our options and convert any single value $# restrictions
-		// into an array so we only have to do in_array tests.
-		foreach ( $options as $optionName => $optionData ) {
-			if ( preg_match( '/^\$\d+$/u', $optionName ) && !is_array( $optionData ) ) {
-				$options[$optionName] = [ $optionData ];
-			}
-		}
+        // Loop over our options and convert any single value $# restrictions
+        // into an array so we only have to do in_array tests.
+        foreach ($options as $optionName => $optionData) {
+            if (preg_match('/^\$\d+$/u', $optionName) && !is_array($optionData)) {
+                $options[$optionName] = [$optionData];
+            }
+        }
 
-		$pattern = (object)[
-			'path' => $path,
-			'params' => $params,
-			'options' => $options,
-			'key' => $key,
-		];
-		$pattern->weight = self::makeWeight( $pattern );
-		$this->patterns[] = $pattern;
-	}
+        $pattern = (object)[
+            'path'    => $path,
+            'params'  => $params,
+            'options' => $options,
+            'key'     => $key,
+        ];
+        $pattern->weight = self::makeWeight($pattern);
+        $this->patterns[] = $pattern;
+    }
 
-	/**
-	 * Add a new path pattern to the path router
-	 *
-	 * @param string|array $path The path pattern to add
-	 * @param array $params The params for this path pattern
-	 * @param array $options The options for this path pattern
-	 */
-	public function add( $path, $params = [], $options = [] ) {
-		if ( is_array( $path ) ) {
-			foreach ( $path as $key => $onePath ) {
-				$this->doAdd( $onePath, $params, $options, $key );
-			}
-		} else {
-			$this->doAdd( $path, $params, $options );
-		}
-	}
+    /**
+     * Add a new path pattern to the path router
+     *
+     * @param string|array $path The path pattern to add
+     * @param array $params The params for this path pattern
+     * @param array $options The options for this path pattern
+     */
+    public function add($path, $params = [], $options = [])
+    {
+        if (is_array($path)) {
+            foreach ($path as $key => $onePath) {
+                $this->doAdd($onePath, $params, $options, $key);
+            }
+        } else {
+            $this->doAdd($path, $params, $options);
+        }
+    }
 
-	/**
-	 * @internal For use by WebRequest::getPathInfo
-	 * @param string $path To be given to add()
-	 * @param string $varName Full name of configuration variable for use
-	 *  in error message and url to mediawiki.org Manual (e.g. "wgExample").
-	 * @throws FatalError If path is invalid
-	 */
-	public function validateRoute( $path, $varName ) {
-		if ( $path && !preg_match( '/^(https?:\/\/|\/)/', $path ) ) {
-			// T48998: Bail out early if path is non-absolute
-			throw new FatalError(
-				"If you use a relative URL for \$$varName, it must start " .
-				'with a slash (<code>/</code>).<br><br>See ' .
-				"<a href=\"https://www.mediawiki.org/wiki/Manual:\$$varName\">" .
-				"https://www.mediawiki.org/wiki/Manual:\$$varName</a>."
-			);
-		}
-	}
+    /**
+     * @param string $path To be given to add()
+     * @param string $varName Full name of configuration variable for use
+     *  in error message and url to mediawiki.org Manual (e.g. "wgExample").
+     * @throws FatalError If path is invalid
+     * @internal For use by WebRequest::getPathInfo
+     */
+    public function validateRoute($path, $varName)
+    {
+        if ($path && !preg_match('/^(https?:\/\/|\/)/', $path)) {
+            // T48998: Bail out early if path is non-absolute
+            throw new FatalError(
+                "If you use a relative URL for \$$varName, it must start " .
+                'with a slash (<code>/</code>).<br><br>See ' .
+                "<a href=\"https://www.mediawiki.org/wiki/Manual:\$$varName\">" .
+                "https://www.mediawiki.org/wiki/Manual:\$$varName</a>."
+            );
+        }
+    }
 
-	/**
-	 * Add a new path pattern to the path router with the strict option on
-	 * @see self::add
-	 * @param string|array $path
-	 * @param array $params
-	 * @param array $options
-	 */
-	public function addStrict( $path, $params = [], $options = [] ) {
-		$options['strict'] = true;
-		$this->add( $path, $params, $options );
-	}
+    /**
+     * Add a new path pattern to the path router with the strict option on
+     * @param string|array $path
+     * @param array $params
+     * @param array $options
+     * @see self::add
+     */
+    public function addStrict($path, $params = [], $options = [])
+    {
+        $options['strict'] = true;
+        $this->add($path, $params, $options);
+    }
 
-	/**
-	 * Protected helper to re-sort our patterns so that the most specific
-	 * (most heavily weighted) patterns are at the start of the array.
-	 */
-	protected function sortByWeight() {
-		$weights = [];
-		foreach ( $this->patterns as $key => $pattern ) {
-			$weights[$key] = $pattern->weight;
-		}
-		array_multisort( $weights, SORT_DESC, SORT_NUMERIC, $this->patterns );
-	}
+    /**
+     * Protected helper to re-sort our patterns so that the most specific
+     * (most heavily weighted) patterns are at the start of the array.
+     */
+    protected function sortByWeight()
+    {
+        $weights = [];
+        foreach ($this->patterns as $key => $pattern) {
+            $weights[$key] = $pattern->weight;
+        }
+        array_multisort($weights, SORT_DESC, SORT_NUMERIC, $this->patterns);
+    }
 
-	/**
-	 * @param stdClass $pattern
-	 * @return float|int
-	 */
-	protected static function makeWeight( $pattern ) {
-		# Start with a weight of 0
-		$weight = 0;
+    /**
+     * @param stdClass $pattern
+     * @return float|int
+     */
+    protected static function makeWeight($pattern)
+    {
+        # Start with a weight of 0
+        $weight = 0;
 
-		// Explode the path to work with
-		$path = explode( '/', $pattern->path );
+        // Explode the path to work with
+        $path = explode('/', $pattern->path);
 
-		# For each level of the path
-		foreach ( $path as $piece ) {
-			if ( preg_match( '/^\$(\d+|key)$/u', $piece ) ) {
-				# For a piece that is only a $1 variable add 1 points of weight
-				$weight += 1;
-			} elseif ( preg_match( '/\$(\d+|key)/u', $piece ) ) {
-				# For a piece that simply contains a $1 variable add 2 points of weight
-				$weight += 2;
-			} else {
-				# For a solid piece add a full 3 points of weight
-				$weight += 3;
-			}
-		}
+        # For each level of the path
+        foreach ($path as $piece) {
+            if (preg_match('/^\$(\d+|key)$/u', $piece)) {
+                # For a piece that is only a $1 variable add 1 points of weight
+                $weight += 1;
+            } elseif (preg_match('/\$(\d+|key)/u', $piece)) {
+                # For a piece that simply contains a $1 variable add 2 points of weight
+                $weight += 2;
+            } else {
+                # For a solid piece add a full 3 points of weight
+                $weight += 3;
+            }
+        }
 
-		foreach ( $pattern->options as $key => $option ) {
-			if ( preg_match( '/^\$\d+$/u', $key ) ) {
-				# Add 0.5 for restrictions to values
-				# This way given two separate "/$2/$1" patterns the
-				# one with a limited set of $2 values will dominate
-				# the one that'll match more loosely
-				$weight += 0.5;
-			}
-		}
+        foreach ($pattern->options as $key => $option) {
+            if (preg_match('/^\$\d+$/u', $key)) {
+                # Add 0.5 for restrictions to values
+                # This way given two separate "/$2/$1" patterns the
+                # one with a limited set of $2 values will dominate
+                # the one that'll match more loosely
+                $weight += 0.5;
+            }
+        }
 
-		return $weight;
-	}
+        return $weight;
+    }
 
-	/**
-	 * Parse a path and return the query matches for the path
-	 *
-	 * @param string $path The path to parse
-	 * @return array The array of matches for the path
-	 */
-	public function parse( $path ) {
-		// Make sure our patterns are sorted by weight so the most specific
-		// matches are tested first
-		$this->sortByWeight();
+    /**
+     * Parse a path and return the query matches for the path
+     *
+     * @param string $path The path to parse
+     * @return array The array of matches for the path
+     */
+    public function parse($path)
+    {
+        // Make sure our patterns are sorted by weight so the most specific
+        // matches are tested first
+        $this->sortByWeight();
 
-		$matches = $this->internalParse( $path );
-		if ( $matches === null ) {
-			// Try with the normalized path (T100782)
-			$path = wfRemoveDotSegments( $path );
-			$path = preg_replace( '#/+#', '/', $path );
-			$matches = $this->internalParse( $path );
-		}
+        $matches = $this->internalParse($path);
+        if ($matches === null) {
+            // Try with the normalized path (T100782)
+            $path = wfRemoveDotSegments($path);
+            $path = preg_replace('#/+#', '/', $path);
+            $matches = $this->internalParse($path);
+        }
 
-		// We know the difference between null (no matches) and
-		// [] (a match with no data) but our WebRequest caller
-		// expects [] even when we have no matches so return
-		// a [] when we have null
-		return $matches ?? [];
-	}
+        // We know the difference between null (no matches) and
+        // [] (a match with no data) but our WebRequest caller
+        // expects [] even when we have no matches so return
+        // a [] when we have null
+        return $matches ?? [];
+    }
 
-	/**
-	 * Match a path against each defined pattern
-	 *
-	 * @param string $path
-	 * @return array|null
-	 */
-	protected function internalParse( $path ) {
-		$matches = null;
+    /**
+     * Match a path against each defined pattern
+     *
+     * @param string $path
+     * @return array|null
+     */
+    protected function internalParse($path)
+    {
+        $matches = null;
 
-		foreach ( $this->patterns as $pattern ) {
-			$matches = self::extractTitle( $path, $pattern );
-			if ( $matches !== null ) {
-				break;
-			}
-		}
-		return $matches;
-	}
+        foreach ($this->patterns as $pattern) {
+            $matches = self::extractTitle($path, $pattern);
+            if ($matches !== null) {
+                break;
+            }
+        }
 
-	/**
-	 * @param string $path
-	 * @param stdClass $pattern
-	 * @return array|null
-	 */
-	protected static function extractTitle( $path, $pattern ) {
-		// Convert the path pattern into a regexp we can match with
-		$regexp = preg_quote( $pattern->path, '#' );
-		// .* for the $1
-		$regexp = preg_replace( '#\\\\\$1#u', '(?P<par1>.*)', $regexp );
-		// .+ for the rest of the parameter numbers
-		$regexp = preg_replace( '#\\\\\$(\d+)#u', '(?P<par$1>.+?)', $regexp );
-		$regexp = "#^{$regexp}$#";
+        return $matches;
+    }
 
-		$matches = [];
-		$data = [];
+    /**
+     * @param string $path
+     * @param stdClass $pattern
+     * @return array|null
+     */
+    protected static function extractTitle($path, $pattern)
+    {
+        // Convert the path pattern into a regexp we can match with
+        $regexp = preg_quote($pattern->path, '#');
+        // .* for the $1
+        $regexp = preg_replace('#\\\\\$1#u', '(?P<par1>.*)', $regexp);
+        // .+ for the rest of the parameter numbers
+        $regexp = preg_replace('#\\\\\$(\d+)#u', '(?P<par$1>.+?)', $regexp);
+        $regexp = "#^{$regexp}$#";
 
-		// Try to match the path we were asked to parse with our regexp
-		if ( preg_match( $regexp, $path, $m ) ) {
-			// Ensure that any $# restriction we have set in our {$option}s
-			// matches properly here.
-			foreach ( $pattern->options as $key => $option ) {
-				if ( preg_match( '/^\$\d+$/u', $key ) ) {
-					$n = intval( substr( $key, 1 ) );
-					$value = rawurldecode( $m["par{$n}"] );
-					if ( !in_array( $value, $option ) ) {
-						// If any restriction does not match return null
-						// to signify that this rule did not match.
-						return null;
-					}
-				}
-			}
+        $matches = [];
+        $data = [];
 
-			// Give our $data array a copy of every $# that was matched
-			foreach ( $m as $matchKey => $matchValue ) {
-				if ( preg_match( '/^par\d+$/u', $matchKey ) ) {
-					$n = intval( substr( $matchKey, 3 ) );
-					$data['$' . $n] = rawurldecode( $matchValue );
-				}
-			}
-			// If present give our $data array a $key as well
-			if ( isset( $pattern->key ) ) {
-				$data['$key'] = $pattern->key;
-			}
+        // Try to match the path we were asked to parse with our regexp
+        if (preg_match($regexp, $path, $m)) {
+            // Ensure that any $# restriction we have set in our {$option}s
+            // matches properly here.
+            foreach ($pattern->options as $key => $option) {
+                if (preg_match('/^\$\d+$/u', $key)) {
+                    $n = intval(substr($key, 1));
+                    $value = rawurldecode($m["par{$n}"]);
+                    if (!in_array($value, $option)) {
+                        // If any restriction does not match return null
+                        // to signify that this rule did not match.
+                        return null;
+                    }
+                }
+            }
 
-			// Go through our parameters for this match and add data to our matches and data arrays
-			foreach ( $pattern->params as $paramName => $paramData ) {
-				$value = null;
-				// Differentiate data: from normal parameters and keep the correct
-				// array key around (ie: foo for data:foo)
-				if ( preg_match( '/^data:/u', $paramName ) ) {
-					$isData = true;
-					$key = substr( $paramName, 5 );
-				} else {
-					$isData = false;
-					$key = $paramName;
-				}
+            // Give our $data array a copy of every $# that was matched
+            foreach ($m as $matchKey => $matchValue) {
+                if (preg_match('/^par\d+$/u', $matchKey)) {
+                    $n = intval(substr($matchKey, 3));
+                    $data['$' . $n] = rawurldecode($matchValue);
+                }
+            }
+            // If present give our $data array a $key as well
+            if (isset($pattern->key)) {
+                $data['$key'] = $pattern->key;
+            }
 
-				if ( isset( $paramData['value'] ) ) {
-					// For basic values just set the raw data as the value
-					$value = $paramData['value'];
-				} elseif ( isset( $paramData['pattern'] ) ) {
-					// For patterns we have to make value replacements on the string
-					$value = self::expandParamValue( $m, $pattern->key ?? null,
-						$paramData['pattern'] );
-					if ( $value === false ) {
-						// Pattern required data that wasn't available, abort
-						return null;
-					}
-				}
+            // Go through our parameters for this match and add data to our matches and data arrays
+            foreach ($pattern->params as $paramName => $paramData) {
+                $value = null;
+                // Differentiate data: from normal parameters and keep the correct
+                // array key around (ie: foo for data:foo)
+                if (preg_match('/^data:/u', $paramName)) {
+                    $isData = true;
+                    $key = substr($paramName, 5);
+                } else {
+                    $isData = false;
+                    $key = $paramName;
+                }
 
-				// Send things that start with data: to $data, the rest to $matches
-				if ( $isData ) {
-					$data[$key] = $value;
-				} else {
-					$matches[$key] = $value;
-				}
-			}
+                if (isset($paramData['value'])) {
+                    // For basic values just set the raw data as the value
+                    $value = $paramData['value'];
+                } elseif (isset($paramData['pattern'])) {
+                    // For patterns we have to make value replacements on the string
+                    $value = self::expandParamValue($m, $pattern->key ?? null,
+                        $paramData['pattern']);
+                    if ($value === false) {
+                        // Pattern required data that wasn't available, abort
+                        return null;
+                    }
+                }
 
-			// If this match includes a callback, execute it
-			if ( isset( $pattern->options['callback'] ) ) {
-				call_user_func_array( $pattern->options['callback'], [ &$matches, $data ] );
-			}
-		} else {
-			// Our regexp didn't match, return null to signify no match.
-			return null;
-		}
-		// Fall through, everything went ok, return our matches array
-		return $matches;
-	}
+                // Send things that start with data: to $data, the rest to $matches
+                if ($isData) {
+                    $data[$key] = $value;
+                } else {
+                    $matches[$key] = $value;
+                }
+            }
 
-	/**
-	 * Replace $key etc. in param values with the matched strings from the path.
-	 *
-	 * @param array $pathMatches The match results from the path
-	 * @param string|null $key The key of the matching pattern
-	 * @param string $value The param value to be expanded
-	 * @return string|false
-	 */
-	protected static function expandParamValue( $pathMatches, $key, $value ) {
-		$error = false;
+            // If this match includes a callback, execute it
+            if (isset($pattern->options['callback'])) {
+                call_user_func_array($pattern->options['callback'], [&$matches, $data]);
+            }
+        } else {
+            // Our regexp didn't match, return null to signify no match.
+            return null;
+        }
 
-		$replacer = static function ( $m ) use ( $pathMatches, $key, &$error ) {
-			if ( $m[1] == "key" ) {
-				if ( $key === null ) {
-					$error = true;
+        // Fall through, everything went ok, return our matches array
+        return $matches;
+    }
 
-					return '';
-				}
+    /**
+     * Replace $key etc. in param values with the matched strings from the path.
+     *
+     * @param array $pathMatches The match results from the path
+     * @param string|null $key The key of the matching pattern
+     * @param string $value The param value to be expanded
+     * @return string|false
+     */
+    protected static function expandParamValue($pathMatches, $key, $value)
+    {
+        $error = false;
 
-				return $key;
-			} else {
-				$d = $m[1];
-				if ( !isset( $pathMatches["par$d"] ) ) {
-					$error = true;
+        $replacer = static function ($m) use ($pathMatches, $key, &$error) {
+            if ($m[1] == "key") {
+                if ($key === null) {
+                    $error = true;
 
-					return '';
-				}
+                    return '';
+                }
 
-				return rawurldecode( $pathMatches["par$d"] );
-			}
-		};
+                return $key;
+            } else {
+                $d = $m[1];
+                if (!isset($pathMatches["par$d"])) {
+                    $error = true;
 
-		$value = preg_replace_callback( '/\$(\d+|key)/u', $replacer, $value );
-		if ( $error ) {
-			return false;
-		}
+                    return '';
+                }
 
-		return $value;
-	}
+                return rawurldecode($pathMatches["par$d"]);
+            }
+        };
 
-	/**
-	 * @internal For use by Title and WebRequest only.
-	 * @param array $actionPaths
-	 * @param string $articlePath
-	 * @return string[]|false
-	 */
-	public static function getActionPaths( array $actionPaths, $articlePath ) {
-		if ( !$actionPaths ) {
-			return false;
-		}
-		// Processing of urls for this feature requires that 'view' is set.
-		// By default, set it to the pretty article path.
-		if ( !isset( $actionPaths['view'] ) ) {
-			$actionPaths['view'] = $articlePath;
-		}
-		return $actionPaths;
-	}
+        $value = preg_replace_callback('/\$(\d+|key)/u', $replacer, $value);
+        if ($error) {
+            return false;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array $actionPaths
+     * @param string $articlePath
+     * @return string[]|false
+     * @internal For use by Title and WebRequest only.
+     */
+    public static function getActionPaths(array $actionPaths, $articlePath)
+    {
+        if (!$actionPaths) {
+            return false;
+        }
+        // Processing of urls for this feature requires that 'view' is set.
+        // By default, set it to the pretty article path.
+        if (!isset($actionPaths['view'])) {
+            $actionPaths['view'] = $articlePath;
+        }
+
+        return $actionPaths;
+    }
 }

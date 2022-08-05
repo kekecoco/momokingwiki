@@ -30,39 +30,40 @@ use Wikimedia\Rdbms\IDatabase;
  * @package MediaWiki\User
  * @since 1.36
  */
-interface UserIdentityLookup extends IDBAccessObject {
+interface UserIdentityLookup extends IDBAccessObject
+{
 
-	/**
-	 * Find an identity of a user by $name
-	 *
-	 * @param string $name
-	 * @param int $queryFlags one of IDBAccessObject constants
-	 * @return UserIdentity|null
-	 * @throws InvalidArgumentException if non-normalizable actor name is passed.
-	 */
-	public function getUserIdentityByName(
-		string $name,
-		int $queryFlags = self::READ_NORMAL
-	): ?UserIdentity;
+    /**
+     * Find an identity of a user by $name
+     *
+     * @param string $name
+     * @param int $queryFlags one of IDBAccessObject constants
+     * @return UserIdentity|null
+     * @throws InvalidArgumentException if non-normalizable actor name is passed.
+     */
+    public function getUserIdentityByName(
+        string $name,
+        int $queryFlags = self::READ_NORMAL
+    ): ?UserIdentity;
 
-	/**
-	 * Find an identity of a user by $userId
-	 *
-	 * @param int $userId
-	 * @param int $queryFlags one of IDBAccessObject constants
-	 * @return UserIdentity|null
-	 */
-	public function getUserIdentityByUserId(
-		int $userId,
-		int $queryFlags = self::READ_NORMAL
-	): ?UserIdentity;
+    /**
+     * Find an identity of a user by $userId
+     *
+     * @param int $userId
+     * @param int $queryFlags one of IDBAccessObject constants
+     * @return UserIdentity|null
+     */
+    public function getUserIdentityByUserId(
+        int $userId,
+        int $queryFlags = self::READ_NORMAL
+    ): ?UserIdentity;
 
-	/**
-	 * Returns a specialized SelectQueryBuilder for querying the UserIdentity objects.
-	 *
-	 * @param IDatabase|int $dbOrQueryFlags The database connection to perform the query on,
-	 *   or one of the self::READ_* constants.
-	 * @return UserSelectQueryBuilder
-	 */
-	public function newSelectQueryBuilder( $dbOrQueryFlags = self::READ_NORMAL ): UserSelectQueryBuilder;
+    /**
+     * Returns a specialized SelectQueryBuilder for querying the UserIdentity objects.
+     *
+     * @param IDatabase|int $dbOrQueryFlags The database connection to perform the query on,
+     *   or one of the self::READ_* constants.
+     * @return UserSelectQueryBuilder
+     */
+    public function newSelectQueryBuilder($dbOrQueryFlags = self::READ_NORMAL): UserSelectQueryBuilder;
 }

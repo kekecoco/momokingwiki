@@ -51,36 +51,37 @@ use User;
  *
  * @stable to implement
  */
-interface PreferencesFactory {
+interface PreferencesFactory
+{
 
-	/**
-	 * Get the preferences form for a given user. This method retrieves the form descriptor for the
-	 * user, instantiates a new form using the descriptor and returns the instantiated form object.
-	 * @param User $user
-	 * @param IContextSource $contextSource
-	 * @param string $formClass
-	 * @param array $remove
-	 * @return HTMLForm
-	 */
-	public function getForm(
-		User $user,
-		IContextSource $contextSource,
-		$formClass = PreferencesFormOOUI::class,
-		array $remove = []
-	);
+    /**
+     * Get the preferences form for a given user. This method retrieves the form descriptor for the
+     * user, instantiates a new form using the descriptor and returns the instantiated form object.
+     * @param User $user
+     * @param IContextSource $contextSource
+     * @param string $formClass
+     * @param array $remove
+     * @return HTMLForm
+     */
+    public function getForm(
+        User $user,
+        IContextSource $contextSource,
+        $formClass = PreferencesFormOOUI::class,
+        array $remove = []
+    );
 
-	/**
-	 * Get the preferences form descriptor.
-	 * @param User $user
-	 * @param IContextSource $contextSource
-	 * @return mixed[][] An HTMLForm descriptor array.
-	 */
-	public function getFormDescriptor( User $user, IContextSource $contextSource );
+    /**
+     * Get the preferences form descriptor.
+     * @param User $user
+     * @param IContextSource $contextSource
+     * @return mixed[][] An HTMLForm descriptor array.
+     */
+    public function getFormDescriptor(User $user, IContextSource $contextSource);
 
-	/**
-	 * Get the names of preferences that should never be saved
-	 * (such as 'realname' and 'emailaddress').
-	 * @return string[]
-	 */
-	public function getSaveBlacklist();
+    /**
+     * Get the names of preferences that should never be saved
+     * (such as 'realname' and 'emailaddress').
+     * @return string[]
+     */
+    public function getSaveBlacklist();
 }

@@ -28,19 +28,21 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Parser
  */
-class MWTidy {
-	/**
-	 * Interface with Remex tidy.
-	 * If tidy isn't able to correct the markup, the original will be
-	 * returned in all its glory with a warning comment appended.
-	 *
-	 * @param string $text HTML input fragment. This should not contain a
-	 *                     <body> or <html> tag.
-	 * @return string Corrected HTML output
-	 * @throws MWException
-	 * @deprecated since 1.36; use MediaWikiServices::getTidy()->tidy() instead
-	 */
-	public static function tidy( $text ) {
-		return MediaWikiServices::getInstance()->getTidy()->tidy( $text );
-	}
+class MWTidy
+{
+    /**
+     * Interface with Remex tidy.
+     * If tidy isn't able to correct the markup, the original will be
+     * returned in all its glory with a warning comment appended.
+     *
+     * @param string $text HTML input fragment. This should not contain a
+     *                     <body> or <html> tag.
+     * @return string Corrected HTML output
+     * @throws MWException
+     * @deprecated since 1.36; use MediaWikiServices::getTidy()->tidy() instead
+     */
+    public static function tidy($text)
+    {
+        return MediaWikiServices::getInstance()->getTidy()->tidy($text);
+    }
 }

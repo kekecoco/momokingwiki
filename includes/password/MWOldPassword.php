@@ -20,7 +20,7 @@
  * @file
  */
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 /**
  * The old style of MediaWiki password hashing. It involves
@@ -28,29 +28,33 @@ declare( strict_types = 1 );
  *
  * @since 1.24
  */
-class MWOldPassword extends ParameterizedPassword {
-	protected function getDefaultParams(): array {
-		return [];
-	}
+class MWOldPassword extends ParameterizedPassword
+{
+    protected function getDefaultParams(): array
+    {
+        return [];
+    }
 
-	protected function getDelimiter(): string {
-		return ':';
-	}
+    protected function getDelimiter(): string
+    {
+        return ':';
+    }
 
-	public function crypt( string $plaintext ): void {
-		if ( count( $this->args ) === 1 ) {
-			// Accept (but do not generate) salted passwords with :A: prefix.
-			// These are actually B-type passwords, but an error in a previous
-			// version of MediaWiki caused them to be written with an :A:
-			// prefix.
-			$this->hash = md5( $this->args[0] . '-' . md5( $plaintext ) );
-		} else {
-			$this->args = [];
-			$this->hash = md5( $plaintext );
-		}
+    public function crypt(string $plaintext): void
+    {
+        if (count($this->args) === 1) {
+            // Accept (but do not generate) salted passwords with :A: prefix.
+            // These are actually B-type passwords, but an error in a previous
+            // version of MediaWiki caused them to be written with an :A:
+            // prefix.
+            $this->hash = md5($this->args[0] . '-' . md5($plaintext));
+        } else {
+            $this->args = [];
+            $this->hash = md5($plaintext);
+        }
 
-		if ( !is_string( $this->hash ) || strlen( $this->hash ) < 32 ) {
-			throw new PasswordError( 'Error when hashing password.' );
-		}
-	}
+        if (!is_string($this->hash) || strlen($this->hash) < 32) {
+            throw new PasswordError('Error when hashing password.');
+        }
+    }
 }

@@ -27,30 +27,33 @@
  * @ingroup Exception
  * @note Don't use this in a situation where MessageCache is not functional.
  */
-class LocalizedException extends Exception implements ILocalizedException {
-	/** @var string|array|MessageSpecifier */
-	protected $messageSpec;
+class LocalizedException extends Exception implements ILocalizedException
+{
+    /** @var string|array|MessageSpecifier */
+    protected $messageSpec;
 
-	/**
-	 * @stable to call
-	 * @param string|array|MessageSpecifier $messageSpec See Message::newFromSpecifier
-	 * @param int $code
-	 * @param Throwable|null $previous The previous exception used for the exception
-	 *  chaining.
-	 */
-	public function __construct( $messageSpec, $code = 0, Throwable $previous = null ) {
-		$this->messageSpec = $messageSpec;
+    /**
+     * @stable to call
+     * @param string|array|MessageSpecifier $messageSpec See Message::newFromSpecifier
+     * @param int $code
+     * @param Throwable|null $previous The previous exception used for the exception
+     *  chaining.
+     */
+    public function __construct($messageSpec, $code = 0, Throwable $previous = null)
+    {
+        $this->messageSpec = $messageSpec;
 
-		// Exception->getMessage() should be in plain English, not localized.
-		// So fetch the English version of the message, without local
-		// customizations, and make a basic attempt to turn markup into text.
-		$msg = $this->getMessageObject()->inLanguage( 'en' )->useDatabase( false )->text();
-		$msg = preg_replace( '!</?(var|kbd|samp|code)>!', '"', $msg );
-		$msg = Sanitizer::stripAllTags( $msg );
-		parent::__construct( $msg, $code, $previous );
-	}
+        // Exception->getMessage() should be in plain English, not localized.
+        // So fetch the English version of the message, without local
+        // customizations, and make a basic attempt to turn markup into text.
+        $msg = $this->getMessageObject()->inLanguage('en')->useDatabase(false)->text();
+        $msg = preg_replace('!</?(var|kbd|samp|code)>!', '"', $msg);
+        $msg = Sanitizer::stripAllTags($msg);
+        parent::__construct($msg, $code, $previous);
+    }
 
-	public function getMessageObject() {
-		return Message::newFromSpecifier( $this->messageSpec );
-	}
+    public function getMessageObject()
+    {
+        return Message::newFromSpecifier($this->messageSpec);
+    }
 }

@@ -12,15 +12,16 @@ use ApiModuleManager;
  * @stable to implement
  * @ingroup Hooks
  */
-interface ApiMain__moduleManagerHook {
-	/**
-	 * This hook is called when ApiMain has finished initializing its
-	 * module manager. Use this hook to conditionally register API modules.
-	 *
-	 * @since 1.35
-	 *
-	 * @param ApiModuleManager $moduleManager
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onApiMain__moduleManager( $moduleManager );
+interface ApiMain__moduleManagerHook
+{
+    /**
+     * This hook is called when ApiMain has finished initializing its
+     * module manager. Use this hook to conditionally register API modules.
+     *
+     * @param ApiModuleManager $moduleManager
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onApiMain__moduleManager($moduleManager);
 }

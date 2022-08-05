@@ -2,62 +2,69 @@
 
 use MediaWiki\Content\Renderer\ContentParseParams;
 
-class DummyNonTextContentHandler extends DummyContentHandlerForTesting {
+class DummyNonTextContentHandler extends DummyContentHandlerForTesting
+{
 
-	public function __construct( $dataModel ) {
-		parent::__construct( $dataModel, [ "testing-nontext" ] );
-	}
+    public function __construct($dataModel)
+    {
+        parent::__construct($dataModel, ["testing-nontext"]);
+    }
 
-	/**
-	 * @see ContentHandler::serializeContent
-	 *
-	 * @param Content $content
-	 * @param string|null $format
-	 *
-	 * @return string
-	 */
-	public function serializeContent( Content $content, $format = null ) {
-		return $content->serialize();
-	}
+    /**
+     * @param Content $content
+     * @param string|null $format
+     *
+     * @return string
+     * @see ContentHandler::serializeContent
+     *
+     */
+    public function serializeContent(Content $content, $format = null)
+    {
+        return $content->serialize();
+    }
 
-	/**
-	 * @see ContentHandler::unserializeContent
-	 *
-	 * @param string $blob
-	 * @param string|null $format Unused.
-	 *
-	 * @return Content
-	 */
-	public function unserializeContent( $blob, $format = null ) {
-		return new DummyNonTextContent( $blob );
-	}
+    /**
+     * @param string $blob
+     * @param string|null $format Unused.
+     *
+     * @return Content
+     * @see ContentHandler::unserializeContent
+     *
+     */
+    public function unserializeContent($blob, $format = null)
+    {
+        return new DummyNonTextContent($blob);
+    }
 
-	/**
-	 * Creates an empty Content object of the type supported by this ContentHandler.
-	 * @return DummyNonTextContent
-	 */
-	public function makeEmptyContent() {
-		return new DummyNonTextContent( '' );
-	}
+    /**
+     * Creates an empty Content object of the type supported by this ContentHandler.
+     * @return DummyNonTextContent
+     */
+    public function makeEmptyContent()
+    {
+        return new DummyNonTextContent('');
+    }
 
-	public function supportsDirectApiEditing() {
-		return true;
-	}
+    public function supportsDirectApiEditing()
+    {
+        return true;
+    }
 
-	/**
-	 * @see ContentHandler::fillParserOutput()
-	 *
-	 * @since 1.38
-	 * @param Content $content
-	 * @param ContentParseParams $cpoParams
-	 * @param ParserOutput &$output The output object to fill (reference).
-	 */
-	protected function fillParserOutput(
-		Content $content,
-		ContentParseParams $cpoParams,
-		ParserOutput &$output
-	) {
-			'@phan-var DummyNonTextContent $content';
-			$output = new ParserOutput( $content->serialize() );
-	}
+    /**
+     * @param Content $content
+     * @param ContentParseParams $cpoParams
+     * @param ParserOutput &$output The output object to fill (reference).
+     * @since 1.38
+     * @see ContentHandler::fillParserOutput()
+     *
+     */
+    protected function fillParserOutput(
+        Content $content,
+        ContentParseParams $cpoParams,
+        ParserOutput &$output
+    )
+    {
+        '@phan-var DummyNonTextContent $content';
+        $output = new ParserOutput($content->serialize());
+    }
 }

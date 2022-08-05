@@ -9,17 +9,18 @@ namespace MediaWiki\Hook;
  * @stable to implement
  * @ingroup Hooks
  */
-interface ImportSourcesHook {
-	/**
-	 * This hook is called when reading from the $wgImportSources configuration variable.
-	 *
-	 * This can be used to lazy-load the import sources list.
-	 *
-	 * @since 1.35
-	 *
-	 * @param array &$importSources The value of $wgImportSources. Modify as necessary. See
-	 *   docs/Configuration.md for details about the structure of the ImportSources setting.
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onImportSources( &$importSources );
+interface ImportSourcesHook
+{
+    /**
+     * This hook is called when reading from the $wgImportSources configuration variable.
+     *
+     * This can be used to lazy-load the import sources list.
+     *
+     * @param array &$importSources The value of $wgImportSources. Modify as necessary. See
+     *   docs/Configuration.md for details about the structure of the ImportSources setting.
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onImportSources(&$importSources);
 }

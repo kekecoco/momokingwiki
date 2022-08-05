@@ -25,95 +25,106 @@ use MediaWiki\Revision\RevisionFactory;
 /**
  * Item class for a archive table row
  */
-class RevDelArchiveItem extends RevDelRevisionItem {
-	protected static function initRevisionRecord( $list, $row ) {
-		$revRecord = MediaWikiServices::getInstance()
-			->getRevisionFactory()
-			->newRevisionFromArchiveRow(
-				$row,
-				RevisionFactory::READ_NORMAL,
-				null,
-				[ 'page_id' => $list->getPage()->getId() ]
-			);
+class RevDelArchiveItem extends RevDelRevisionItem
+{
+    protected static function initRevisionRecord($list, $row)
+    {
+        $revRecord = MediaWikiServices::getInstance()
+            ->getRevisionFactory()
+            ->newRevisionFromArchiveRow(
+                $row,
+                RevisionFactory::READ_NORMAL,
+                null,
+                ['page_id' => $list->getPage()->getId()]
+            );
 
-		return $revRecord;
-	}
+        return $revRecord;
+    }
 
-	public function getIdField() {
-		return 'ar_timestamp';
-	}
+    public function getIdField()
+    {
+        return 'ar_timestamp';
+    }
 
-	public function getTimestampField() {
-		return 'ar_timestamp';
-	}
+    public function getTimestampField()
+    {
+        return 'ar_timestamp';
+    }
 
-	public function getAuthorIdField() {
-		return 'ar_user';
-	}
+    public function getAuthorIdField()
+    {
+        return 'ar_user';
+    }
 
-	public function getAuthorNameField() {
-		return 'ar_user_text';
-	}
+    public function getAuthorNameField()
+    {
+        return 'ar_user_text';
+    }
 
-	public function getAuthorActorField() {
-		return 'ar_actor';
-	}
+    public function getAuthorActorField()
+    {
+        return 'ar_actor';
+    }
 
-	public function getId() {
-		# Convert DB timestamp to MW timestamp
-		return $this->revisionRecord->getTimestamp();
-	}
+    public function getId()
+    {
+        # Convert DB timestamp to MW timestamp
+        return $this->revisionRecord->getTimestamp();
+    }
 
-	public function setBits( $bits ) {
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->update( 'archive',
-			[ 'ar_deleted' => $bits ],
-			[
-				'ar_namespace' => $this->list->getPage()->getNamespace(),
-				'ar_title' => $this->list->getPage()->getDBkey(),
-				// use timestamp for index
-				'ar_timestamp' => $this->row->ar_timestamp,
-				'ar_rev_id' => $this->row->ar_rev_id,
-				'ar_deleted' => $this->getBits()
-			],
-			__METHOD__ );
+    public function setBits($bits)
+    {
+        $dbw = wfGetDB(DB_PRIMARY);
+        $dbw->update('archive',
+            ['ar_deleted' => $bits],
+            [
+                'ar_namespace' => $this->list->getPage()->getNamespace(),
+                'ar_title'     => $this->list->getPage()->getDBkey(),
+                // use timestamp for index
+                'ar_timestamp' => $this->row->ar_timestamp,
+                'ar_rev_id'    => $this->row->ar_rev_id,
+                'ar_deleted'   => $this->getBits()
+            ],
+            __METHOD__);
 
-		return (bool)$dbw->affectedRows();
-	}
+        return (bool)$dbw->affectedRows();
+    }
 
-	protected function getRevisionLink() {
-		$date = $this->list->getLanguage()->userTimeAndDate(
-			$this->revisionRecord->getTimestamp(), $this->list->getUser() );
+    protected function getRevisionLink()
+    {
+        $date = $this->list->getLanguage()->userTimeAndDate(
+            $this->revisionRecord->getTimestamp(), $this->list->getUser());
 
-		if ( $this->isDeleted() && !$this->canViewContent() ) {
-			return htmlspecialchars( $date );
-		}
+        if ($this->isDeleted() && !$this->canViewContent()) {
+            return htmlspecialchars($date);
+        }
 
-		return $this->getLinkRenderer()->makeLink(
-			SpecialPage::getTitleFor( 'Undelete' ),
-			$date,
-			[],
-			[
-				'target' => $this->list->getPageName(),
-				'timestamp' => $this->revisionRecord->getTimestamp()
-			]
-		);
-	}
+        return $this->getLinkRenderer()->makeLink(
+            SpecialPage::getTitleFor('Undelete'),
+            $date,
+            [],
+            [
+                'target'    => $this->list->getPageName(),
+                'timestamp' => $this->revisionRecord->getTimestamp()
+            ]
+        );
+    }
 
-	protected function getDiffLink() {
-		if ( $this->isDeleted() && !$this->canViewContent() ) {
-			return $this->list->msg( 'diff' )->escaped();
-		}
+    protected function getDiffLink()
+    {
+        if ($this->isDeleted() && !$this->canViewContent()) {
+            return $this->list->msg('diff')->escaped();
+        }
 
-		return $this->getLinkRenderer()->makeLink(
-			SpecialPage::getTitleFor( 'Undelete' ),
-			$this->list->msg( 'diff' )->text(),
-			[],
-			[
-				'target' => $this->list->getPageName(),
-				'diff' => 'prev',
-				'timestamp' => $this->revisionRecord->getTimestamp()
-			]
-		);
-	}
+        return $this->getLinkRenderer()->makeLink(
+            SpecialPage::getTitleFor('Undelete'),
+            $this->list->msg('diff')->text(),
+            [],
+            [
+                'target'    => $this->list->getPageName(),
+                'diff'      => 'prev',
+                'timestamp' => $this->revisionRecord->getTimestamp()
+            ]
+        );
+    }
 }

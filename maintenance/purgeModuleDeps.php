@@ -28,41 +28,44 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class PurgeModuleDeps extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Remove all cache entries for ResourceLoader modules from the database' );
-		$this->setBatchSize( 500 );
-	}
+class PurgeModuleDeps extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Remove all cache entries for ResourceLoader modules from the database');
+        $this->setBatchSize(500);
+    }
 
-	public function execute() {
-		$this->output( "Cleaning up module_deps table...\n" );
+    public function execute()
+    {
+        $this->output("Cleaning up module_deps table...\n");
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		$res = $dbw->select( 'module_deps', [ 'md_module', 'md_skin' ], [], __METHOD__ );
-		$rows = iterator_to_array( $res, false );
+        $dbw = $this->getDB(DB_PRIMARY);
+        $res = $dbw->select('module_deps', ['md_module', 'md_skin'], [], __METHOD__);
+        $rows = iterator_to_array($res, false);
 
-		$modDeps = $dbw->tableName( 'module_deps' );
-		$i = 1;
-		foreach ( array_chunk( $rows, $this->getBatchSize() ) as $chunk ) {
-			// WHERE ( mod=A AND skin=A ) OR ( mod=A AND skin=B) ..
-			$conds = array_map( static function ( stdClass $row ) use ( $dbw ) {
-				return $dbw->makeList( (array)$row, IDatabase::LIST_AND );
-			}, $chunk );
-			$conds = $dbw->makeList( $conds, IDatabase::LIST_OR );
+        $modDeps = $dbw->tableName('module_deps');
+        $i = 1;
+        foreach (array_chunk($rows, $this->getBatchSize()) as $chunk) {
+            // WHERE ( mod=A AND skin=A ) OR ( mod=A AND skin=B) ..
+            $conds = array_map(static function (stdClass $row) use ($dbw) {
+                return $dbw->makeList((array)$row, IDatabase::LIST_AND);
+            }, $chunk);
+            $conds = $dbw->makeList($conds, IDatabase::LIST_OR);
 
-			$this->beginTransaction( $dbw, __METHOD__ );
-			$dbw->query( "DELETE FROM $modDeps WHERE $conds", __METHOD__ );
-			$numRows = $dbw->affectedRows();
-			$this->output( "Batch $i: $numRows rows\n" );
-			$this->commitTransaction( $dbw, __METHOD__ );
+            $this->beginTransaction($dbw, __METHOD__);
+            $dbw->query("DELETE FROM $modDeps WHERE $conds", __METHOD__);
+            $numRows = $dbw->affectedRows();
+            $this->output("Batch $i: $numRows rows\n");
+            $this->commitTransaction($dbw, __METHOD__);
 
-			$i++;
-		}
+            $i++;
+        }
 
-		$this->output( "Done\n" );
-	}
+        $this->output("Done\n");
+    }
 }
 
 $maintClass = PurgeModuleDeps::class;

@@ -33,76 +33,84 @@ use Title;
  * @internal
  * @author DannyS712
  */
-class ContentModelChangeConstraint implements IEditConstraint {
+class ContentModelChangeConstraint implements IEditConstraint
+{
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var string */
-	private $newContentModel;
+    /** @var string */
+    private $newContentModel;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param Authority $performer
-	 * @param Title $title
-	 * @param string $newContentModel
-	 */
-	public function __construct(
-		Authority $performer,
-		Title $title,
-		string $newContentModel
-	) {
-		$this->performer = $performer;
-		$this->title = $title;
-		$this->newContentModel = $newContentModel;
-	}
+    /**
+     * @param Authority $performer
+     * @param Title $title
+     * @param string $newContentModel
+     */
+    public function __construct(
+        Authority $performer,
+        Title $title,
+        string $newContentModel
+    )
+    {
+        $this->performer = $performer;
+        $this->title = $title;
+        $this->newContentModel = $newContentModel;
+    }
 
-	public function checkConstraint(): string {
-		if ( $this->newContentModel === $this->title->getContentModel() ) {
-			// No change
-			$this->result = self::CONSTRAINT_PASSED;
-			return self::CONSTRAINT_PASSED;
-		}
+    public function checkConstraint(): string
+    {
+        if ($this->newContentModel === $this->title->getContentModel()) {
+            // No change
+            $this->result = self::CONSTRAINT_PASSED;
 
-		if ( !$this->performer->isAllowed( 'editcontentmodel' ) ) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+            return self::CONSTRAINT_PASSED;
+        }
 
-		// Make sure the user can edit the page under the new content model too
-		$titleWithNewContentModel = clone $this->title;
-		$titleWithNewContentModel->setContentModel( $this->newContentModel );
+        if (!$this->performer->isAllowed('editcontentmodel')) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		$canEditModel = $this->performer->authorizeWrite(
-			'editcontentmodel',
-			$titleWithNewContentModel
-		);
+            return self::CONSTRAINT_FAILED;
+        }
 
-		if (
-			!$canEditModel
-			|| !$this->performer->authorizeWrite( 'edit', $titleWithNewContentModel )
-		) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+        // Make sure the user can edit the page under the new content model too
+        $titleWithNewContentModel = clone $this->title;
+        $titleWithNewContentModel->setContentModel($this->newContentModel);
 
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+        $canEditModel = $this->performer->authorizeWrite(
+            'editcontentmodel',
+            $titleWithNewContentModel
+        );
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        if (
+            !$canEditModel
+            || !$this->performer->authorizeWrite('edit', $titleWithNewContentModel)
+        ) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->setResult( false, self::AS_NO_CHANGE_CONTENT_MODEL );
-		}
+            return self::CONSTRAINT_FAILED;
+        }
 
-		return $statusValue;
-	}
+        $this->result = self::CONSTRAINT_PASSED;
+
+        return self::CONSTRAINT_PASSED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->setResult(false, self::AS_NO_CHANGE_CONTENT_MODEL);
+        }
+
+        return $statusValue;
+    }
 
 }

@@ -31,93 +31,100 @@ use Wikimedia\Rdbms\IDatabase;
  *
  * @ingroup FileRepo
  */
-class ForeignDBRepo extends LocalRepo {
-	/** @var string */
-	protected $dbType;
+class ForeignDBRepo extends LocalRepo
+{
+    /** @var string */
+    protected $dbType;
 
-	/** @var string */
-	protected $dbServer;
+    /** @var string */
+    protected $dbServer;
 
-	/** @var string */
-	protected $dbUser;
+    /** @var string */
+    protected $dbUser;
 
-	/** @var string */
-	protected $dbPassword;
+    /** @var string */
+    protected $dbPassword;
 
-	/** @var string */
-	protected $dbName;
+    /** @var string */
+    protected $dbName;
 
-	/** @var string */
-	protected $dbFlags;
+    /** @var string */
+    protected $dbFlags;
 
-	/** @var string */
-	protected $tablePrefix;
+    /** @var string */
+    protected $tablePrefix;
 
-	/** @var IDatabase */
-	protected $dbConn;
+    /** @var IDatabase */
+    protected $dbConn;
 
-	/** @var callable */
-	protected $fileFactory = [ ForeignDBFile::class, 'newFromTitle' ];
-	/** @var callable */
-	protected $fileFromRowFactory = [ ForeignDBFile::class, 'newFromRow' ];
+    /** @var callable */
+    protected $fileFactory = [ForeignDBFile::class, 'newFromTitle'];
+    /** @var callable */
+    protected $fileFromRowFactory = [ForeignDBFile::class, 'newFromRow'];
 
-	/**
-	 * @param array|null $info
-	 */
-	public function __construct( $info ) {
-		parent::__construct( $info );
+    /**
+     * @param array|null $info
+     */
+    public function __construct($info)
+    {
+        parent::__construct($info);
 
-		'@phan-var array $info';
-		$this->dbType = $info['dbType'];
-		$this->dbServer = $info['dbServer'];
-		$this->dbUser = $info['dbUser'];
-		$this->dbPassword = $info['dbPassword'];
-		$this->dbName = $info['dbName'];
-		$this->dbFlags = $info['dbFlags'];
-		$this->tablePrefix = $info['tablePrefix'];
-		$this->hasAccessibleSharedCache = $info['hasSharedCache'];
+        '@phan-var array $info';
+        $this->dbType = $info['dbType'];
+        $this->dbServer = $info['dbServer'];
+        $this->dbUser = $info['dbUser'];
+        $this->dbPassword = $info['dbPassword'];
+        $this->dbName = $info['dbName'];
+        $this->dbFlags = $info['dbFlags'];
+        $this->tablePrefix = $info['tablePrefix'];
+        $this->hasAccessibleSharedCache = $info['hasSharedCache'];
 
-		$dbDomain = new DatabaseDomain( $this->dbName, null, $this->tablePrefix );
-		$this->dbDomain = $dbDomain->getId();
-	}
+        $dbDomain = new DatabaseDomain($this->dbName, null, $this->tablePrefix);
+        $this->dbDomain = $dbDomain->getId();
+    }
 
-	public function getPrimaryDB() {
-		if ( !isset( $this->dbConn ) ) {
-			$func = $this->getDBFactory();
-			$this->dbConn = $func( DB_PRIMARY );
-		}
+    public function getPrimaryDB()
+    {
+        if (!isset($this->dbConn)) {
+            $func = $this->getDBFactory();
+            $this->dbConn = $func(DB_PRIMARY);
+        }
 
-		return $this->dbConn;
-	}
+        return $this->dbConn;
+    }
 
-	public function getReplicaDB() {
-		return $this->getPrimaryDB();
-	}
+    public function getReplicaDB()
+    {
+        return $this->getPrimaryDB();
+    }
 
-	/**
-	 * @return Closure
-	 */
-	protected function getDBFactory() {
-		$type = $this->dbType;
-		$params = [
-			'host' => $this->dbServer,
-			'user' => $this->dbUser,
-			'password' => $this->dbPassword,
-			'dbname' => $this->dbName,
-			'flags' => $this->dbFlags,
-			'tablePrefix' => $this->tablePrefix
-		];
+    /**
+     * @return Closure
+     */
+    protected function getDBFactory()
+    {
+        $type = $this->dbType;
+        $params = [
+            'host'        => $this->dbServer,
+            'user'        => $this->dbUser,
+            'password'    => $this->dbPassword,
+            'dbname'      => $this->dbName,
+            'flags'       => $this->dbFlags,
+            'tablePrefix' => $this->tablePrefix
+        ];
 
-		return static function ( $index ) use ( $type, $params ) {
-			return Database::factory( $type, $params );
-		};
-	}
+        return static function ($index) use ($type, $params) {
+            return Database::factory($type, $params);
+        };
+    }
 
-	protected function assertWritableRepo() {
-		throw new MWException( static::class . ': write operations are not supported.' );
-	}
+    protected function assertWritableRepo()
+    {
+        throw new MWException(static::class . ': write operations are not supported.');
+    }
 
-	public function getBlobStore(): ?BlobStore {
-		return null;
-	}
+    public function getBlobStore(): ?BlobStore
+    {
+        return null;
+    }
 }

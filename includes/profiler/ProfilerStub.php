@@ -23,25 +23,32 @@
  *
  * @ingroup Profiler
  */
-class ProfilerStub extends Profiler {
-	public function scopedProfileIn( $section ) {
-		return null; // no-op
-	}
+class ProfilerStub extends Profiler
+{
+    public function scopedProfileIn($section)
+    {
+        return null; // no-op
+    }
 
-	public function getFunctionStats() {
-		return [];
-	}
+    public function getFunctionStats()
+    {
+        return [];
+    }
 
-	public function getOutput() {
-		return '';
-	}
+    public function getOutput()
+    {
+        return '';
+    }
 
-	public function close() {
-	}
+    public function close()
+    {
+    }
 
-	public function logData() {
-	}
+    public function logData()
+    {
+    }
 
-	public function logDataPageOutputOnly() {
-	}
+    public function logDataPageOutputOnly()
+    {
+    }
 }

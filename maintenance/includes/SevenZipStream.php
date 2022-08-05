@@ -33,72 +33,85 @@ use MediaWiki\Shell\Shell;
  *
  * @ingroup Maintenance
  */
-class SevenZipStream {
-	/** @var resource|false */
-	protected $stream;
+class SevenZipStream
+{
+    /** @var resource|false */
+    protected $stream;
 
-	public static function register() {
-		static $done = false;
-		if ( !$done ) {
-			$done = true;
-			stream_wrapper_register( 'mediawiki.compress.7z', self::class );
-		}
-	}
+    public static function register()
+    {
+        static $done = false;
+        if (!$done) {
+            $done = true;
+            stream_wrapper_register('mediawiki.compress.7z', self::class);
+        }
+    }
 
-	private function stripPath( $path ) {
-		$prefix = 'mediawiki.compress.7z://';
+    private function stripPath($path)
+    {
+        $prefix = 'mediawiki.compress.7z://';
 
-		return substr( $path, strlen( $prefix ) );
-	}
+        return substr($path, strlen($prefix));
+    }
 
-	public function stream_open( $path, $mode, $options, &$opened_path ) {
-		if ( $mode[0] == 'r' ) {
-			$options = 'e -bd -so';
-		} elseif ( $mode[0] == 'w' ) {
-			$options = 'a -bd -si';
-		} else {
-			return false;
-		}
-		$arg = Shell::escape( $this->stripPath( $path ) );
-		$command = "7za $options $arg";
-		if ( !wfIsWindows() ) {
-			// Suppress the stupid messages on stderr
-			$command .= ' 2>/dev/null';
-		}
-		// popen() doesn't like two-letter modes
-		$this->stream = popen( $command, $mode[0] );
-		return ( $this->stream !== false );
-	}
+    public function stream_open($path, $mode, $options, &$opened_path)
+    {
+        if ($mode[0] == 'r') {
+            $options = 'e -bd -so';
+        } elseif ($mode[0] == 'w') {
+            $options = 'a -bd -si';
+        } else {
+            return false;
+        }
+        $arg = Shell::escape($this->stripPath($path));
+        $command = "7za $options $arg";
+        if (!wfIsWindows()) {
+            // Suppress the stupid messages on stderr
+            $command .= ' 2>/dev/null';
+        }
+        // popen() doesn't like two-letter modes
+        $this->stream = popen($command, $mode[0]);
 
-	public function url_stat( $path, $flags ) {
-		return stat( $this->stripPath( $path ) );
-	}
+        return ($this->stream !== false);
+    }
 
-	public function stream_close() {
-		return fclose( $this->stream );
-	}
+    public function url_stat($path, $flags)
+    {
+        return stat($this->stripPath($path));
+    }
 
-	public function stream_flush() {
-		return fflush( $this->stream );
-	}
+    public function stream_close()
+    {
+        return fclose($this->stream);
+    }
 
-	public function stream_read( $count ) {
-		return fread( $this->stream, $count );
-	}
+    public function stream_flush()
+    {
+        return fflush($this->stream);
+    }
 
-	public function stream_write( $data ) {
-		return fwrite( $this->stream, $data );
-	}
+    public function stream_read($count)
+    {
+        return fread($this->stream, $count);
+    }
 
-	public function stream_tell() {
-		return ftell( $this->stream );
-	}
+    public function stream_write($data)
+    {
+        return fwrite($this->stream, $data);
+    }
 
-	public function stream_eof() {
-		return feof( $this->stream );
-	}
+    public function stream_tell()
+    {
+        return ftell($this->stream);
+    }
 
-	public function stream_seek( $offset, $whence ) {
-		return fseek( $this->stream, $offset, $whence );
-	}
+    public function stream_eof()
+    {
+        return feof($this->stream);
+    }
+
+    public function stream_seek($offset, $whence)
+    {
+        return fseek($this->stream, $offset, $whence);
+    }
 }

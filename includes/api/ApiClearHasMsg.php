@@ -27,47 +27,54 @@ use MediaWiki\User\TalkPageNotificationManager;
  * API module that clears the hasmsg flag for current user
  * @ingroup API
  */
-class ApiClearHasMsg extends ApiBase {
+class ApiClearHasMsg extends ApiBase
+{
 
-	/** @var TalkPageNotificationManager */
-	private $talkPageNotificationManager;
+    /** @var TalkPageNotificationManager */
+    private $talkPageNotificationManager;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param TalkPageNotificationManager $talkPageNotificationManager
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		TalkPageNotificationManager $talkPageNotificationManager
-	) {
-		parent::__construct( $main, $action );
-		$this->talkPageNotificationManager = $talkPageNotificationManager;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param TalkPageNotificationManager $talkPageNotificationManager
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        TalkPageNotificationManager $talkPageNotificationManager
+    )
+    {
+        parent::__construct($main, $action);
+        $this->talkPageNotificationManager = $talkPageNotificationManager;
+    }
 
-	public function execute() {
-		$this->talkPageNotificationManager->removeUserHasNewMessages( $this->getUser() );
+    public function execute()
+    {
+        $this->talkPageNotificationManager->removeUserHasNewMessages($this->getUser());
 
-		$this->getResult()->addValue( null, $this->getModuleName(), 'success' );
-	}
+        $this->getResult()->addValue(null, $this->getModuleName(), 'success');
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=clearhasmsg'
-				=> 'apihelp-clearhasmsg-example-1',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=clearhasmsg'
+            => 'apihelp-clearhasmsg-example-1',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:ClearHasMsg';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:ClearHasMsg';
+    }
 }

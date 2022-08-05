@@ -26,10 +26,11 @@ namespace Wikimedia\Rdbms;
  * @stable to extend
  * @ingroup Database
  */
-class DBUnexpectedError extends DBError {
+class DBUnexpectedError extends DBError
+{
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBUnexpectedError::class, 'DBUnexpectedError' );
+class_alias(DBUnexpectedError::class, 'DBUnexpectedError');

@@ -10,14 +10,15 @@ use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
  * @since 1.27
  * @author Addshore
  */
-interface StatsdAwareInterface {
+interface StatsdAwareInterface
+{
 
-	/**
-	 * Sets a StatsdDataFactory instance on the object
-	 *
-	 * @param StatsdDataFactoryInterface $statsFactory
-	 * @return null
-	 */
-	public function setStatsdDataFactory( StatsdDataFactoryInterface $statsFactory );
+    /**
+     * Sets a StatsdDataFactory instance on the object
+     *
+     * @param StatsdDataFactoryInterface $statsFactory
+     * @return null
+     */
+    public function setStatsdDataFactory(StatsdDataFactoryInterface $statsFactory);
 
 }

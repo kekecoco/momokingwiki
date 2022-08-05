@@ -29,25 +29,28 @@ use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
  *
  * @covers \MediaWiki\EditPage\Constraint\CreationPermissionConstraint
  */
-class CreationPermissionConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
-	use MockAuthorityTrait;
-	use MockTitleTrait;
+class CreationPermissionConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
+    use MockAuthorityTrait;
+    use MockTitleTrait;
 
-	public function testPass() {
-		$constraint = new CreationPermissionConstraint(
-			$this->mockRegisteredAuthorityWithPermissions( [ 'create' ] ),
-			$this->makeMockTitle( __METHOD__ )
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testPass()
+    {
+        $constraint = new CreationPermissionConstraint(
+            $this->mockRegisteredAuthorityWithPermissions(['create']),
+            $this->makeMockTitle(__METHOD__)
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$constraint = new CreationPermissionConstraint(
-			$this->mockRegisteredAuthorityWithoutPermissions( [ 'create' ] ),
-			$this->makeMockTitle( __METHOD__ )
-		);
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_NO_CREATE_PERMISSION );
-	}
+    public function testFailure()
+    {
+        $constraint = new CreationPermissionConstraint(
+            $this->mockRegisteredAuthorityWithoutPermissions(['create']),
+            $this->makeMockTitle(__METHOD__)
+        );
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_NO_CREATE_PERMISSION);
+    }
 
 }

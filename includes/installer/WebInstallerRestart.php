@@ -19,28 +19,30 @@
  * @ingroup Installer
  */
 
-class WebInstallerRestart extends WebInstallerPage {
+class WebInstallerRestart extends WebInstallerPage
+{
 
-	/**
-	 * @return string|null
-	 */
-	public function execute() {
-		$r = $this->parent->request;
-		if ( $r->wasPosted() ) {
-			$really = $r->getVal( 'submit-restart' );
-			if ( $really ) {
-				$this->parent->reset();
-			}
+    /**
+     * @return string|null
+     */
+    public function execute()
+    {
+        $r = $this->parent->request;
+        if ($r->wasPosted()) {
+            $really = $r->getVal('submit-restart');
+            if ($really) {
+                $this->parent->reset();
+            }
 
-			return 'continue';
-		}
+            return 'continue';
+        }
 
-		$this->startForm();
-		$s = Html::warningBox( wfMessage( 'config-help-restart' )->plain(), 'config-warning-box' );
-		$this->addHTML( $s );
-		$this->endForm( 'restart' );
+        $this->startForm();
+        $s = Html::warningBox(wfMessage('config-help-restart')->plain(), 'config-warning-box');
+        $this->addHTML($s);
+        $this->endForm('restart');
 
-		return null;
-	}
+        return null;
+    }
 
 }

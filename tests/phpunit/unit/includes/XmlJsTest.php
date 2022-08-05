@@ -3,17 +3,19 @@
 /**
  * @group Xml
  */
-class XmlJsTest extends MediaWikiUnitTestCase {
+class XmlJsTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @covers XmlJsCode::__construct
-	 */
-	public function testConstruction() {
-		$obj = new XmlJsCode( '' );
-		$this->assertSame( '', $obj->value );
+    /**
+     * @covers XmlJsCode::__construct
+     */
+    public function testConstruction()
+    {
+        $obj = new XmlJsCode('');
+        $this->assertSame('', $obj->value);
 
-		$obj = new XmlJsCode( null );
-		$this->assertNull( $obj->value );
-	}
+        $obj = new XmlJsCode(null);
+        $this->assertNull($obj->value);
+    }
 
 }

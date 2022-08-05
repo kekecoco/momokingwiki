@@ -13,24 +13,24 @@
  * @constructor
  */
 function TextParamMixin() {
-	// This mixin does not manage state, nothing to do here
+    // This mixin does not manage state, nothing to do here
 }
 
 /**
  * @return {Mixed}
  */
 TextParamMixin.prototype.getApiValue = function () {
-	return this.getValue();
+    return this.getValue();
 };
 
 /**
  * @param {Mixed|undefined} newValue
  */
-TextParamMixin.prototype.setApiValue = function ( newValue ) {
-	if ( newValue === undefined ) {
-		newValue = this.paramInfo.default;
-	}
-	this.setValue( newValue );
+TextParamMixin.prototype.setApiValue = function (newValue) {
+    if (newValue === undefined) {
+        newValue = this.paramInfo.default;
+    }
+    this.setValue(newValue);
 };
 
 /**
@@ -41,17 +41,17 @@ TextParamMixin.prototype.setApiValue = function ( newValue ) {
  * @param {boolean} shouldSuppressErrors
  * @return {jQuery.Promise}
  */
-TextParamMixin.prototype.apiCheckValid = function ( shouldSuppressErrors ) {
-	var that = this;
-	return this.getValidity().then( function () {
-		return $.Deferred().resolve( true ).promise();
-	}, function () {
-		return $.Deferred().resolve( false ).promise();
-	} ).done( function ( ok ) {
-		ok = ok || shouldSuppressErrors;
-		that.setIcon( ok ? null : 'alert' );
-		that.setTitle( ok ? '' : mw.message( 'apisandbox-alert-field' ).plain() );
-	} );
+TextParamMixin.prototype.apiCheckValid = function (shouldSuppressErrors) {
+    var that = this;
+    return this.getValidity().then(function () {
+        return $.Deferred().resolve(true).promise();
+    }, function () {
+        return $.Deferred().resolve(false).promise();
+    }).done(function (ok) {
+        ok = ok || shouldSuppressErrors;
+        that.setIcon(ok ? null : 'alert');
+        that.setTitle(ok ? '' : mw.message('apisandbox-alert-field').plain());
+    });
 };
 
 module.exports = TextParamMixin;

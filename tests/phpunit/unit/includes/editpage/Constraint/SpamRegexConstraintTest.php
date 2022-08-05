@@ -31,88 +31,91 @@ use Psr\Log\NullLogger;
  *
  * @covers \MediaWiki\EditPage\Constraint\SpamRegexConstraint
  */
-class SpamRegexConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class SpamRegexConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$summary = __METHOD__ . '-summary';
-		$sectionHeading = __METHOD__ . '-section-heading';
-		$text = __METHOD__ . '-text';
+    public function testPass()
+    {
+        $summary = __METHOD__ . '-summary';
+        $sectionHeading = __METHOD__ . '-section-heading';
+        $text = __METHOD__ . '-text';
 
-		$spamChecker = $this->createMock( SpamChecker::class );
-		$spamChecker->expects( $this->once() )
-			->method( 'checkSummary' )
-			->with( $summary )
-			->willReturn( false );
-		$spamChecker->expects( $this->exactly( 2 ) )
-			->method( 'checkContent' )
-			->withConsecutive(
-				[ $sectionHeading ],
-				[ $text ]
-			)
-			->willReturn( false );
+        $spamChecker = $this->createMock(SpamChecker::class);
+        $spamChecker->expects($this->once())
+            ->method('checkSummary')
+            ->with($summary)
+            ->willReturn(false);
+        $spamChecker->expects($this->exactly(2))
+            ->method('checkContent')
+            ->withConsecutive(
+                [$sectionHeading],
+                [$text]
+            )
+            ->willReturn(false);
 
-		$title = $this->createMock( Title::class );
-		$title->expects( $this->never() )
-			->method( 'getPrefixedDBkey' );
+        $title = $this->createMock(Title::class);
+        $title->expects($this->never())
+            ->method('getPrefixedDBkey');
 
-		$logger = new NullLogger();
+        $logger = new NullLogger();
 
-		$constraint = new SpamRegexConstraint(
-			$logger,
-			$spamChecker,
-			$summary,
-			$sectionHeading,
-			$text,
-			'Request-IP',
-			$title
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        $constraint = new SpamRegexConstraint(
+            $logger,
+            $spamChecker,
+            $summary,
+            $sectionHeading,
+            $text,
+            'Request-IP',
+            $title
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$summary = __METHOD__ . '-summary';
-		$sectionHeading = __METHOD__ . '-section-heading';
-		$text = __METHOD__ . '-text';
-		$matchingText = __METHOD__ . '-match';
+    public function testFailure()
+    {
+        $summary = __METHOD__ . '-summary';
+        $sectionHeading = __METHOD__ . '-section-heading';
+        $text = __METHOD__ . '-text';
+        $matchingText = __METHOD__ . '-match';
 
-		$spamChecker = $this->createMock( SpamChecker::class );
-		$spamChecker->expects( $this->once() )
-			->method( 'checkSummary' )
-			->with( $summary )
-			->willReturn( $matchingText );
+        $spamChecker = $this->createMock(SpamChecker::class);
+        $spamChecker->expects($this->once())
+            ->method('checkSummary')
+            ->with($summary)
+            ->willReturn($matchingText);
 
-		$prefixedDBKey = 'PrefixedDBKeyGoesHere';
-		$title = $this->createMock( Title::class );
-		$title->expects( $this->once() )
-			->method( 'getPrefixedDBkey' )
-			->willReturn( $prefixedDBKey );
+        $prefixedDBKey = 'PrefixedDBKeyGoesHere';
+        $title = $this->createMock(Title::class);
+        $title->expects($this->once())
+            ->method('getPrefixedDBkey')
+            ->willReturn($prefixedDBKey);
 
-		$logger = new TestLogger( true );
+        $logger = new TestLogger(true);
 
-		$constraint = new SpamRegexConstraint(
-			$logger,
-			$spamChecker,
-			$summary,
-			$sectionHeading,
-			$text,
-			'Request-IP',
-			$title
-		);
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_SPAM_ERROR );
+        $constraint = new SpamRegexConstraint(
+            $logger,
+            $spamChecker,
+            $summary,
+            $sectionHeading,
+            $text,
+            'Request-IP',
+            $title
+        );
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_SPAM_ERROR);
 
-		$this->assertSame( [
-			[
-				LogLevel::DEBUG,
-				'{ip} spam regex hit [[{title}]]: "{match}"'
-			],
-		], $logger->getBuffer() );
-		$logger->clearBuffer();
+        $this->assertSame([
+            [
+                LogLevel::DEBUG,
+                '{ip} spam regex hit [[{title}]]: "{match}"'
+            ],
+        ], $logger->getBuffer());
+        $logger->clearBuffer();
 
-		$this->assertSame(
-			$matchingText,
-			$constraint->getMatch()
-		);
-	}
+        $this->assertSame(
+            $matchingText,
+            $constraint->getMatch()
+        );
+    }
 
 }

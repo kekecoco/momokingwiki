@@ -30,113 +30,118 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup Feed
  */
-class ChangesFeed {
-	private $format;
+class ChangesFeed
+{
+    private $format;
 
-	/**
-	 * @param string $format Feed's format (either 'rss' or 'atom')
-	 */
-	public function __construct( $format ) {
-		$this->format = $format;
-	}
+    /**
+     * @param string $format Feed's format (either 'rss' or 'atom')
+     */
+    public function __construct($format)
+    {
+        $this->format = $format;
+    }
 
-	/**
-	 * Get a ChannelFeed subclass object to use
-	 *
-	 * @param string $title Feed's title
-	 * @param string $description Feed's description
-	 * @param string $url Url of origin page
-	 * @return ChannelFeed|bool ChannelFeed subclass or false on failure
-	 */
-	public function getFeedObject( $title, $description, $url ) {
-		$mainConfig = MediaWikiServices::getInstance()->getMainConfig();
-		$sitename = $mainConfig->get( MainConfigNames::Sitename );
-		$languageCode = $mainConfig->get( MainConfigNames::LanguageCode );
-		$feedClasses = $mainConfig->get( MainConfigNames::FeedClasses );
-		if ( !isset( $feedClasses[$this->format] ) ) {
-			return false;
-		}
+    /**
+     * Get a ChannelFeed subclass object to use
+     *
+     * @param string $title Feed's title
+     * @param string $description Feed's description
+     * @param string $url Url of origin page
+     * @return ChannelFeed|bool ChannelFeed subclass or false on failure
+     */
+    public function getFeedObject($title, $description, $url)
+    {
+        $mainConfig = MediaWikiServices::getInstance()->getMainConfig();
+        $sitename = $mainConfig->get(MainConfigNames::Sitename);
+        $languageCode = $mainConfig->get(MainConfigNames::LanguageCode);
+        $feedClasses = $mainConfig->get(MainConfigNames::FeedClasses);
+        if (!isset($feedClasses[$this->format])) {
+            return false;
+        }
 
-		if ( !array_key_exists( $this->format, $feedClasses ) ) {
-			// falling back to atom
-			$this->format = 'atom';
-		}
+        if (!array_key_exists($this->format, $feedClasses)) {
+            // falling back to atom
+            $this->format = 'atom';
+        }
 
-		$feedTitle = "{$sitename}  - {$title} [{$languageCode}]";
-		return new $feedClasses[$this->format](
-			$feedTitle, htmlspecialchars( $description ), $url );
-	}
+        $feedTitle = "{$sitename}  - {$title} [{$languageCode}]";
 
-	/**
-	 * Generate the feed items given a row from the database.
-	 * @param IResultWrapper $rows IDatabase resource with recentchanges rows
-	 * @return array
-	 * @suppress PhanTypeInvalidDimOffset False positives in the foreach
-	 */
-	public static function buildItems( $rows ) {
-		$items = [];
+        return new $feedClasses[$this->format](
+            $feedTitle, htmlspecialchars($description), $url);
+    }
 
-		# Merge adjacent edits by one user
-		$sorted = [];
-		$n = 0;
-		foreach ( $rows as $obj ) {
-			if ( $obj->rc_type == RC_EXTERNAL ) {
-				continue;
-			}
+    /**
+     * Generate the feed items given a row from the database.
+     * @param IResultWrapper $rows IDatabase resource with recentchanges rows
+     * @return array
+     * @suppress PhanTypeInvalidDimOffset False positives in the foreach
+     */
+    public static function buildItems($rows)
+    {
+        $items = [];
 
-			if ( $n > 0 &&
-				$obj->rc_type == RC_EDIT &&
-				$obj->rc_namespace >= 0 &&
-				$obj->rc_cur_id == $sorted[$n - 1]->rc_cur_id &&
-				$obj->rc_user_text == $sorted[$n - 1]->rc_user_text ) {
-				$sorted[$n - 1]->rc_last_oldid = $obj->rc_last_oldid;
-			} else {
-				$sorted[$n] = $obj;
-				$n++;
-			}
-		}
+        # Merge adjacent edits by one user
+        $sorted = [];
+        $n = 0;
+        foreach ($rows as $obj) {
+            if ($obj->rc_type == RC_EXTERNAL) {
+                continue;
+            }
 
-		$services = MediaWikiServices::getInstance();
-		$commentFormatter = $services->getRowCommentFormatter();
-		$formattedComments = $commentFormatter->formatItems(
-			$commentFormatter->rows( $rows )
-				->commentKey( 'rc_comment' )
-				->indexField( 'rc_id' )
-		);
+            if ($n > 0 &&
+                $obj->rc_type == RC_EDIT &&
+                $obj->rc_namespace >= 0 &&
+                $obj->rc_cur_id == $sorted[$n - 1]->rc_cur_id &&
+                $obj->rc_user_text == $sorted[$n - 1]->rc_user_text) {
+                $sorted[$n - 1]->rc_last_oldid = $obj->rc_last_oldid;
+            } else {
+                $sorted[$n] = $obj;
+                $n++;
+            }
+        }
 
-		$nsInfo = $services->getNamespaceInfo();
-		foreach ( $sorted as $obj ) {
-			$title = Title::makeTitle( $obj->rc_namespace, $obj->rc_title );
-			$talkpage = $nsInfo->hasTalkNamespace( $obj->rc_namespace ) && $title->canExist()
-				? $title->getTalkPage()->getFullURL()
-				: '';
+        $services = MediaWikiServices::getInstance();
+        $commentFormatter = $services->getRowCommentFormatter();
+        $formattedComments = $commentFormatter->formatItems(
+            $commentFormatter->rows($rows)
+                ->commentKey('rc_comment')
+                ->indexField('rc_id')
+        );
 
-			// Skip items with deleted content (avoids partially complete/inconsistent output)
-			if ( $obj->rc_deleted ) {
-				continue;
-			}
+        $nsInfo = $services->getNamespaceInfo();
+        foreach ($sorted as $obj) {
+            $title = Title::makeTitle($obj->rc_namespace, $obj->rc_title);
+            $talkpage = $nsInfo->hasTalkNamespace($obj->rc_namespace) && $title->canExist()
+                ? $title->getTalkPage()->getFullURL()
+                : '';
 
-			if ( $obj->rc_this_oldid ) {
-				$url = $title->getFullURL( [
-					'diff' => $obj->rc_this_oldid,
-					'oldid' => $obj->rc_last_oldid,
-				] );
-			} else {
-				// log entry or something like that.
-				$url = $title->getFullURL();
-			}
+            // Skip items with deleted content (avoids partially complete/inconsistent output)
+            if ($obj->rc_deleted) {
+                continue;
+            }
 
-			$items[] = new FeedItem(
-				$title->getPrefixedText(),
-				FeedUtils::formatDiff( $obj, $formattedComments[$obj->rc_id] ),
-				$url,
-				$obj->rc_timestamp,
-				( $obj->rc_deleted & RevisionRecord::DELETED_USER )
-					? wfMessage( 'rev-deleted-user' )->escaped() : $obj->rc_user_text,
-				$talkpage
-			);
-		}
+            if ($obj->rc_this_oldid) {
+                $url = $title->getFullURL([
+                    'diff'  => $obj->rc_this_oldid,
+                    'oldid' => $obj->rc_last_oldid,
+                ]);
+            } else {
+                // log entry or something like that.
+                $url = $title->getFullURL();
+            }
 
-		return $items;
-	}
+            $items[] = new FeedItem(
+                $title->getPrefixedText(),
+                FeedUtils::formatDiff($obj, $formattedComments[$obj->rc_id]),
+                $url,
+                $obj->rc_timestamp,
+                ($obj->rc_deleted & RevisionRecord::DELETED_USER)
+                    ? wfMessage('rev-deleted-user')->escaped() : $obj->rc_user_text,
+                $talkpage
+            );
+        }
+
+        return $items;
+    }
 }

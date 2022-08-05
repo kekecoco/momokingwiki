@@ -35,51 +35,56 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialWantedTemplates extends WantedQueryPage {
+class SpecialWantedTemplates extends WantedQueryPage
+{
 
-	/** @var LinksMigration */
-	private $linksMigration;
+    /** @var LinksMigration */
+    private $linksMigration;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LinksMigration $linksMigration
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LinksMigration $linksMigration
-	) {
-		parent::__construct( 'Wantedtemplates' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->linksMigration = $linksMigration;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LinksMigration $linksMigration
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LinksMigration $linksMigration
+    )
+    {
+        parent::__construct('Wantedtemplates');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->linksMigration = $linksMigration;
+    }
 
-	public function getQueryInfo() {
-		$queryInfo = $this->linksMigration->getQueryInfo( 'templatelinks' );
-		list( $ns, $title ) = $this->linksMigration->getTitleFields( 'templatelinks' );
-		return [
-			'tables' => array_merge( $queryInfo['tables'], [ 'page' ] ),
-			'fields' => [
-				'namespace' => $ns,
-				'title' => $title,
-				'value' => 'COUNT(*)'
-			],
-			'conds' => [
-				'page_title IS NULL',
-				$ns => NS_TEMPLATE
-			],
-			'options' => [ 'GROUP BY' => [ $ns, $title ] ],
-			'join_conds' => array_merge(
-				[ 'page' => [ 'LEFT JOIN',
-					[ "page_namespace = $ns", "page_title = $title" ] ] ],
-				$queryInfo['joins']
-			)
-		];
-	}
+    public function getQueryInfo()
+    {
+        $queryInfo = $this->linksMigration->getQueryInfo('templatelinks');
+        [$ns, $title] = $this->linksMigration->getTitleFields('templatelinks');
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+        return [
+            'tables'     => array_merge($queryInfo['tables'], ['page']),
+            'fields'     => [
+                'namespace' => $ns,
+                'title'     => $title,
+                'value'     => 'COUNT(*)'
+            ],
+            'conds'      => [
+                'page_title IS NULL',
+                $ns => NS_TEMPLATE
+            ],
+            'options'    => ['GROUP BY' => [$ns, $title]],
+            'join_conds' => array_merge(
+                ['page' => ['LEFT JOIN',
+                    ["page_namespace = $ns", "page_title = $title"]]],
+                $queryInfo['joins']
+            )
+        ];
+    }
+
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

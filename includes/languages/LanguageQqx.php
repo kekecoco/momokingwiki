@@ -30,13 +30,15 @@
  *
  * @ingroup Languages
  */
-class LanguageQqx extends Language {
-	/**
-	 * @param string $key
-	 * @return string
-	 */
-	public function getMessage( $key ) {
-		// Special value replaced in Message::format()
-		return '($*)';
-	}
+class LanguageQqx extends Language
+{
+    /**
+     * @param string $key
+     * @return string
+     */
+    public function getMessage($key)
+    {
+        // Special value replaced in Message::format()
+        return '($*)';
+    }
 }

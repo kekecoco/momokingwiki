@@ -6,118 +6,127 @@
  * @group Database
  * @covers WikiImporter
  */
-class ImportFailureTest extends MediaWikiLangTestCase {
+class ImportFailureTest extends MediaWikiLangTestCase
+{
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$slotRoleRegistry = $this->getServiceContainer()->getSlotRoleRegistry();
+        $slotRoleRegistry = $this->getServiceContainer()->getSlotRoleRegistry();
 
-		if ( !$slotRoleRegistry->isDefinedRole( 'ImportFailureTest' ) ) {
-			$slotRoleRegistry->defineRoleWithModel( 'ImportFailureTest', CONTENT_MODEL_WIKITEXT );
-		}
-	}
+        if (!$slotRoleRegistry->isDefinedRole('ImportFailureTest')) {
+            $slotRoleRegistry->defineRoleWithModel('ImportFailureTest', CONTENT_MODEL_WIKITEXT);
+        }
+    }
 
-	/**
-	 * @param ImportSource $source
-	 *
-	 * @return WikiImporter
-	 */
-	private function getImporter( ImportSource $source ) {
-		$config = new HashConfig( [
-			'CommandLineMode' => true,
-		] );
-		$services = $this->getServiceContainer();
-		$importer = new WikiImporter(
-			$source,
-			$config,
-			$services->getHookContainer(),
-			$services->getContentLanguage(),
-			$services->getNamespaceInfo(),
-			$services->getTitleFactory(),
-			$services->getWikiPageFactory(),
-			$services->getWikiRevisionUploadImporter(),
-			$services->getPermissionManager(),
-			$services->getContentHandlerFactory(),
-			$services->getSlotRoleRegistry()
-		);
-		return $importer;
-	}
+    /**
+     * @param ImportSource $source
+     *
+     * @return WikiImporter
+     */
+    private function getImporter(ImportSource $source)
+    {
+        $config = new HashConfig([
+            'CommandLineMode' => true,
+        ]);
+        $services = $this->getServiceContainer();
+        $importer = new WikiImporter(
+            $source,
+            $config,
+            $services->getHookContainer(),
+            $services->getContentLanguage(),
+            $services->getNamespaceInfo(),
+            $services->getTitleFactory(),
+            $services->getWikiPageFactory(),
+            $services->getWikiRevisionUploadImporter(),
+            $services->getPermissionManager(),
+            $services->getContentHandlerFactory(),
+            $services->getSlotRoleRegistry()
+        );
 
-	/**
-	 * @param string $testName
-	 *
-	 * @return string[]
-	 */
-	private function getFileToImport( string $testName ) {
-		return __DIR__ . "/../../data/import/$testName.xml";
-	}
+        return $importer;
+    }
 
-	/**
-	 * @param string $prefix
-	 * @param string[] $keys
-	 *
-	 * @return string[]
-	 */
-	private function getUniqueNames( string $prefix, array $keys ) {
-		$names = [];
+    /**
+     * @param string $testName
+     *
+     * @return string[]
+     */
+    private function getFileToImport(string $testName)
+    {
+        return __DIR__ . "/../../data/import/$testName.xml";
+    }
 
-		foreach ( $keys as $k ) {
-			$names[$k] = "$prefix-$k-" . wfRandomString( 6 );
-		}
+    /**
+     * @param string $prefix
+     * @param string[] $keys
+     *
+     * @return string[]
+     */
+    private function getUniqueNames(string $prefix, array $keys)
+    {
+        $names = [];
 
-		return $names;
-	}
+        foreach ($keys as $k) {
+            $names[$k] = "$prefix-$k-" . wfRandomString(6);
+        }
 
-	/**
-	 * @param string $xmlData
-	 * @param string[] $pageTitles
-	 *
-	 * @return string
-	 */
-	private function injectPageTitles( string $xmlData, array $pageTitles ) {
-		$keys = array_map( static function ( $name ) {
-			return "{{{$name}_title}}";
-		}, array_keys( $pageTitles ) );
+        return $names;
+    }
 
-		return str_replace(
-			$keys,
-			array_values( $pageTitles ),
-			$xmlData
-		);
-	}
+    /**
+     * @param string $xmlData
+     * @param string[] $pageTitles
+     *
+     * @return string
+     */
+    private function injectPageTitles(string $xmlData, array $pageTitles)
+    {
+        $keys = array_map(static function ($name) {
+            return "{{{$name}_title}}";
+        }, array_keys($pageTitles));
 
-	public function provideImportFailure() {
-		yield [ 'BadXML', 'warning', '/^XMLReader::read\(\): .*$/' ];
-		yield [ 'MissingMediaWikiTag', MWException::class, '/^Expected <mediawiki> tag, got .*$/' ];
-		yield [ 'MissingMainTextField', MWException::class, '/^Missing text field in import.$/' ];
-		yield [ 'MissingSlotTextField', MWException::class, '/^Missing text field in import.$/' ];
-		yield [ 'MissingSlotRole', MWException::class, '/^Missing role for imported slot.$/' ];
-		yield [ 'UndefinedSlotRole', MWException::class, '/^Undefined slot role .*$/' ];
-		yield [ 'UndefinedContentModel', MWException::class, '/not registered on this wiki/' ];
-	}
+        return str_replace(
+            $keys,
+            array_values($pageTitles),
+            $xmlData
+        );
+    }
 
-	/**
-	 * @dataProvider provideImportFailure
-	 */
-	public function testImportFailure( $testName, $exceptionName, $exceptionMessage ) {
-		$fileName = $this->getFileToImport( $testName );
+    public function provideImportFailure()
+    {
+        yield ['BadXML', 'warning', '/^XMLReader::read\(\): .*$/'];
+        yield ['MissingMediaWikiTag', MWException::class, '/^Expected <mediawiki> tag, got .*$/'];
+        yield ['MissingMainTextField', MWException::class, '/^Missing text field in import.$/'];
+        yield ['MissingSlotTextField', MWException::class, '/^Missing text field in import.$/'];
+        yield ['MissingSlotRole', MWException::class, '/^Missing role for imported slot.$/'];
+        yield ['UndefinedSlotRole', MWException::class, '/^Undefined slot role .*$/'];
+        yield ['UndefinedContentModel', MWException::class, '/not registered on this wiki/'];
+    }
 
-		$pageKeys = [ 'page1', 'page2', 'page3', 'page4', ];
-		$pageTitles = $this->getUniqueNames( $testName, $pageKeys );
+    /**
+     * @dataProvider provideImportFailure
+     */
+    public function testImportFailure($testName, $exceptionName, $exceptionMessage)
+    {
+        $fileName = $this->getFileToImport($testName);
 
-		$xmlData = file_get_contents( $fileName );
-		$xmlData = $this->injectPageTitles( $xmlData, $pageTitles );
+        $pageKeys = ['page1', 'page2', 'page3', 'page4',];
+        $pageTitles = $this->getUniqueNames($testName, $pageKeys);
 
-		$source = new ImportStringSource( $xmlData );
-		$importer = $this->getImporter( $source );
-		if ( $exceptionName === 'warning' ) {
-			$this->expectWarning();
-			$this->expectWarningMessageMatches( $exceptionMessage );
-		} else {
-			$this->expectException( $exceptionName );
-			$this->expectExceptionMessageMatches( $exceptionMessage );
-		}
-		$importer->doImport();
-	}
+        $xmlData = file_get_contents($fileName);
+        $xmlData = $this->injectPageTitles($xmlData, $pageTitles);
+
+        $source = new ImportStringSource($xmlData);
+        $importer = $this->getImporter($source);
+        if ($exceptionName === 'warning') {
+            $this->expectWarning();
+            $this->expectWarningMessageMatches($exceptionMessage);
+        } else {
+            $this->expectException($exceptionName);
+            $this->expectExceptionMessageMatches($exceptionMessage);
+        }
+        $importer->doImport();
+    }
 }

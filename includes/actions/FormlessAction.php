@@ -27,24 +27,26 @@
  *
  * @ingroup Actions
  */
-abstract class FormlessAction extends Action {
+abstract class FormlessAction extends Action
+{
 
-	/**
-	 * Show something on GET request.
-	 * @return string|null Will be added to the HTMLForm if present, or just added to the
-	 *     output if not.  Return null to not add anything
-	 */
-	abstract public function onView();
+    /**
+     * Show something on GET request.
+     * @return string|null Will be added to the HTMLForm if present, or just added to the
+     *     output if not.  Return null to not add anything
+     */
+    abstract public function onView();
 
-	/**
-	 * @stable to override
-	 */
-	public function show() {
-		$this->setHeaders();
+    /**
+     * @stable to override
+     */
+    public function show()
+    {
+        $this->setHeaders();
 
-		// This will throw exceptions if there's a problem
-		$this->checkCanExecute( $this->getUser() );
+        // This will throw exceptions if there's a problem
+        $this->checkCanExecute($this->getUser());
 
-		$this->getOutput()->addHTML( $this->onView() );
-	}
+        $this->getOutput()->addHTML($this->onView());
+    }
 }

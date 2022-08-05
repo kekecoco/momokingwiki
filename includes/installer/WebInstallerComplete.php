@@ -19,47 +19,50 @@
  * @ingroup Installer
  */
 
-class WebInstallerComplete extends WebInstallerPage {
+class WebInstallerComplete extends WebInstallerPage
+{
 
-	public function execute() {
-		// Pop up a dialog box, to make it difficult for the user to forget
-		// to download the file
-		$lsUrl = $this->getVar( 'wgServer' ) . $this->parent->getUrl( [ 'localsettings' => 1 ] );
-		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) &&
-			strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE' ) !== false
-		) {
-			// JS appears to be the only method that works consistently with IE7+
-			$this->addHTML( "\n<script>jQuery( function () { location.href = " .
-				Xml::encodeJsVar( $lsUrl ) . "; } );</script>\n" );
-		} else {
-			$this->parent->request->response()->header( "Refresh: 0;url=$lsUrl" );
-		}
+    public function execute()
+    {
+        // Pop up a dialog box, to make it difficult for the user to forget
+        // to download the file
+        $lsUrl = $this->getVar('wgServer') . $this->parent->getUrl(['localsettings' => 1]);
+        if (isset($_SERVER['HTTP_USER_AGENT']) &&
+            strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false
+        ) {
+            // JS appears to be the only method that works consistently with IE7+
+            $this->addHTML("\n<script>jQuery( function () { location.href = " .
+                Xml::encodeJsVar($lsUrl) . "; } );</script>\n");
+        } else {
+            $this->parent->request->response()->header("Refresh: 0;url=$lsUrl");
+        }
 
-		$this->startForm();
-		$this->parent->disableLinkPopups();
-		$location = $this->parent->getLocalSettingsLocation();
-		$msg = 'config-install-done';
-		if ( $location !== false ) {
-			// config-install-done-path
-			$msg .= '-path';
-		}
-		$this->addHTML(
-			$this->parent->getInfoBox(
-				new HtmlArmor( wfMessage( $msg,
-					$lsUrl,
-					$this->getVar( 'wgServer' ) .
-						$this->getVar( 'wgScriptPath' ) . '/index.php',
-					Message::rawParam( $this->parent->makeDownloadLinkHtml() ),
-					$location ?: ''
-				)->parse() ), 'tick-32.png'
-			)
-		);
-		$this->addHTML( $this->parent->getInfoBox(
-			wfMessage( 'config-extension-link' )->plain() ) );
+        $this->startForm();
+        $this->parent->disableLinkPopups();
+        $location = $this->parent->getLocalSettingsLocation();
+        $msg = 'config-install-done';
+        if ($location !== false) {
+            // config-install-done-path
+            $msg .= '-path';
+        }
+        $this->addHTML(
+            $this->parent->getInfoBox(
+                new HtmlArmor(wfMessage($msg,
+                    $lsUrl,
+                    $this->getVar('wgServer') .
+                    $this->getVar('wgScriptPath') . '/index.php',
+                    Message::rawParam($this->parent->makeDownloadLinkHtml()),
+                    $location ?: ''
+                )->parse()), 'tick-32.png'
+            )
+        );
+        $this->addHTML($this->parent->getInfoBox(
+            wfMessage('config-extension-link')->plain()));
 
-		$this->parent->restoreLinkPopups();
-		$this->endForm( false, false );
-		return '';
-	}
+        $this->parent->restoreLinkPopups();
+        $this->endForm(false, false);
+
+        return '';
+    }
 
 }

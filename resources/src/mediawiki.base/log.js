@@ -16,21 +16,21 @@
  * @return {boolean|undefined} return.return True if the caller was not seen before.
  */
 function stackSet() {
-	// Optimisation: Don't create or compute anything for the common case
-	// where deprecations are not triggered.
-	var stacks;
+    // Optimisation: Don't create or compute anything for the common case
+    // where deprecations are not triggered.
+    var stacks;
 
-	return function isFirst() {
-		if ( !stacks ) {
-			/* global Set */
-			stacks = new Set();
-		}
-		var stack = new Error().stack;
-		if ( !stacks.has( stack ) ) {
-			stacks.add( stack );
-			return true;
-		}
-	};
+    return function isFirst() {
+        if (!stacks) {
+            /* global Set */
+            stacks = new Set();
+        }
+        var stack = new Error().stack;
+        if (!stacks.has(stack)) {
+            stacks.add(stack);
+            return true;
+        }
+    };
 }
 
 /**
@@ -45,8 +45,9 @@ function stackSet() {
  * @param {...Mixed} msg Messages to output to console
  */
 mw.log.error = console.error ?
-	Function.prototype.bind.call( console.error, console ) :
-	function () {};
+    Function.prototype.bind.call(console.error, console) :
+    function () {
+    };
 
 /**
  * Create a function that logs a deprecation warning when called.
@@ -72,18 +73,19 @@ mw.log.error = console.error ?
  * @param {string} msg Deprecation warning.
  * @return {Function}
  */
-mw.log.makeDeprecated = function ( key, msg ) {
-	// Support IE 11, Safari 5: Use ES6 Set conditionally. Fallback to not logging.
-	var isFirst = window.Set ? stackSet() : function () {};
+mw.log.makeDeprecated = function (key, msg) {
+    // Support IE 11, Safari 5: Use ES6 Set conditionally. Fallback to not logging.
+    var isFirst = window.Set ? stackSet() : function () {
+    };
 
-	return function maybeLog() {
-		if ( isFirst() ) {
-			if ( key ) {
-				mw.track( 'mw.deprecate', key );
-			}
-			mw.log.warn( msg );
-		}
-	};
+    return function maybeLog() {
+        if (isFirst()) {
+            if (key) {
+                mw.track('mw.deprecate', key);
+            }
+            mw.log.warn(msg);
+        }
+    };
 };
 
 /**
@@ -104,31 +106,31 @@ mw.log.makeDeprecated = function ( key, msg ) {
  * @param {string} [logName] Name of the feature for deprecation tracker.
  *  Tracking is disabled by default, except for global variables on `window`.
  */
-mw.log.deprecate = function ( obj, key, val, msg, logName ) {
-	// Support IE 11, ES5: Use ES6 Set conditionally. Fallback to not logging.
-	//
-	// Support Safari 5.0: Object.defineProperty throws  "not supported on DOM Objects" for
-	// Node or Element objects (incl. document)
-	// Safari 4.0 doesn't have this method, and it was fixed in Safari 5.1.
-	if ( !window.Set ) {
-		obj[ key ] = val;
-		return;
-	}
+mw.log.deprecate = function (obj, key, val, msg, logName) {
+    // Support IE 11, ES5: Use ES6 Set conditionally. Fallback to not logging.
+    //
+    // Support Safari 5.0: Object.defineProperty throws  "not supported on DOM Objects" for
+    // Node or Element objects (incl. document)
+    // Safari 4.0 doesn't have this method, and it was fixed in Safari 5.1.
+    if (!window.Set) {
+        obj[key] = val;
+        return;
+    }
 
-	var maybeLog = mw.log.makeDeprecated(
-		logName || ( obj === window ? key : null ),
-		'Use of "' + ( logName || key ) + '" is deprecated.' + ( msg ? ' ' + msg : '' )
-	);
-	Object.defineProperty( obj, key, {
-		configurable: true,
-		enumerable: true,
-		get: function () {
-			maybeLog();
-			return val;
-		},
-		set: function ( newVal ) {
-			maybeLog();
-			val = newVal;
-		}
-	} );
+    var maybeLog = mw.log.makeDeprecated(
+        logName || (obj === window ? key : null),
+        'Use of "' + (logName || key) + '" is deprecated.' + (msg ? ' ' + msg : '')
+    );
+    Object.defineProperty(obj, key, {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+            maybeLog();
+            return val;
+        },
+        set: function (newVal) {
+            maybeLog();
+            val = newVal;
+        }
+    });
 };

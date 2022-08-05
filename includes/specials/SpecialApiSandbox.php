@@ -25,36 +25,40 @@
  * @ingroup SpecialPage
  * @since 1.27
  */
-class SpecialApiSandbox extends SpecialPage {
+class SpecialApiSandbox extends SpecialPage
+{
 
-	public function __construct() {
-		parent::__construct( 'ApiSandbox' );
-	}
+    public function __construct()
+    {
+        parent::__construct('ApiSandbox');
+    }
 
-	public function execute( $par ) {
-		$this->setHeaders();
-		$out = $this->getOutput();
-		$this->addHelpLink( 'Help:ApiSandbox' );
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $out = $this->getOutput();
+        $this->addHelpLink('Help:ApiSandbox');
 
-		$out->addJsConfigVars(
-			'apihighlimits',
-			$this->getAuthority()->isAllowed( 'apihighlimits' )
-		);
-		$out->addModuleStyles( [
-			'mediawiki.special',
-			'mediawiki.hlist',
-		] );
-		$out->addModules( [
-			'mediawiki.special.apisandbox',
-			'mediawiki.apipretty',
-		] );
-		$out->wrapWikiMsg(
-			"<div id='mw-apisandbox'><div class='mw-apisandbox-nojs error'>\n$1\n</div></div>",
-			'apisandbox-jsonly'
-		);
-	}
+        $out->addJsConfigVars(
+            'apihighlimits',
+            $this->getAuthority()->isAllowed('apihighlimits')
+        );
+        $out->addModuleStyles([
+            'mediawiki.special',
+            'mediawiki.hlist',
+        ]);
+        $out->addModules([
+            'mediawiki.special.apisandbox',
+            'mediawiki.apipretty',
+        ]);
+        $out->wrapWikiMsg(
+            "<div id='mw-apisandbox'><div class='mw-apisandbox-nojs error'>\n$1\n</div></div>",
+            'apisandbox-jsonly'
+        );
+    }
 
-	protected function getGroupName() {
-		return 'wiki';
-	}
+    protected function getGroupName()
+    {
+        return 'wiki';
+    }
 }

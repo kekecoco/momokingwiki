@@ -21,15 +21,15 @@
 $fallback = 'zh-hans, zh, zh-hant';
 
 $datePreferences = [
-	'default',
-	'wuu',
-	'ISO 8601',
+    'default',
+    'wuu',
+    'ISO 8601',
 ];
 
 $defaultDateFormat = 'wuu';
 
 $dateFormats = [
-	'wuu time' => 'H:i',
-	'wuu date' => 'Y年n月j号 (D)',
-	'wuu both' => 'Y年n月j号 (D) H:i',
+    'wuu time' => 'H:i',
+    'wuu date' => 'Y年n月j号 (D)',
+    'wuu both' => 'Y年n月j号 (D) H:i',
 ];

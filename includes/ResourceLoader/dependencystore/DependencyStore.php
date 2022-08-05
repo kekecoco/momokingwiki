@@ -25,84 +25,88 @@ namespace Wikimedia\DependencyStore;
  *
  * @internal For use by ResourceLoader\Module only
  */
-abstract class DependencyStore {
-	/** @var string */
-	protected const KEY_PATHS = 'paths';
-	/** @var string */
-	protected const KEY_AS_OF = 'asOf';
+abstract class DependencyStore
+{
+    /** @var string */
+    protected const KEY_PATHS = 'paths';
+    /** @var string */
+    protected const KEY_AS_OF = 'asOf';
 
-	/**
-	 * @param string[] $paths List of dependency paths
-	 * @param int|null $asOf UNIX timestamp or null
-	 * @return array
-	 */
-	public function newEntityDependencies( array $paths = [], $asOf = null ) {
-		return [ self::KEY_PATHS => $paths, self::KEY_AS_OF => $asOf ];
-	}
+    /**
+     * @param string[] $paths List of dependency paths
+     * @param int|null $asOf UNIX timestamp or null
+     * @return array
+     */
+    public function newEntityDependencies(array $paths = [], $asOf = null)
+    {
+        return [self::KEY_PATHS => $paths, self::KEY_AS_OF => $asOf];
+    }
 
-	/**
-	 * Get the currently tracked dependencies for an entity
-	 *
-	 * The "paths" field contains a sorted list of unique paths
-	 *
-	 * The "asOf" field reflects the last-modified timestamp of the dependency data itself.
-	 * It will be null if there is no tracking data available. Note that if empty path lists
-	 * are never stored (as an optimisation) then it will not be possible to discern whether
-	 * the result is up-to-date.
-	 *
-	 * @param string $type Entity type
-	 * @param string $entity Entity name
-	 * @return array Map of (paths: paths, asOf: UNIX timestamp or null)
-	 * @throws DependencyStoreException
-	 */
-	final public function retrieve( $type, $entity ) {
-		return $this->retrieveMulti( $type, [ $entity ] )[$entity];
-	}
+    /**
+     * Get the currently tracked dependencies for an entity
+     *
+     * The "paths" field contains a sorted list of unique paths
+     *
+     * The "asOf" field reflects the last-modified timestamp of the dependency data itself.
+     * It will be null if there is no tracking data available. Note that if empty path lists
+     * are never stored (as an optimisation) then it will not be possible to discern whether
+     * the result is up-to-date.
+     *
+     * @param string $type Entity type
+     * @param string $entity Entity name
+     * @return array Map of (paths: paths, asOf: UNIX timestamp or null)
+     * @throws DependencyStoreException
+     */
+    final public function retrieve($type, $entity)
+    {
+        return $this->retrieveMulti($type, [$entity])[$entity];
+    }
 
-	/**
-	 * Get the currently tracked dependencies for a set of entities
-	 *
-	 * @see KeyValueDependencyStore::retrieve()
-	 *
-	 * @param string $type Entity type
-	 * @param string[] $entities Entity names
-	 * @return array[] Map of (entity => (paths: paths, asOf: UNIX timestamp or null))
-	 * @throws DependencyStoreException
-	 */
-	abstract public function retrieveMulti( $type, array $entities );
+    /**
+     * Get the currently tracked dependencies for a set of entities
+     *
+     * @param string $type Entity type
+     * @param string[] $entities Entity names
+     * @return array[] Map of (entity => (paths: paths, asOf: UNIX timestamp or null))
+     * @throws DependencyStoreException
+     * @see KeyValueDependencyStore::retrieve()
+     *
+     */
+    abstract public function retrieveMulti($type, array $entities);
 
-	/**
-	 * Set the currently tracked dependencies for an entity
-	 *
-	 * @param string $type Entity type
-	 * @param string $entity Entity name
-	 * @param array $data Map of (paths: paths, asOf: UNIX timestamp or null)
-	 * @param int $ttl New time-to-live in seconds
-	 * @throws DependencyStoreException
-	 */
-	final public function store( $type, $entity, array $data, $ttl ) {
-		$this->storeMulti( $type, [ $entity => $data ], $ttl );
-	}
+    /**
+     * Set the currently tracked dependencies for an entity
+     *
+     * @param string $type Entity type
+     * @param string $entity Entity name
+     * @param array $data Map of (paths: paths, asOf: UNIX timestamp or null)
+     * @param int $ttl New time-to-live in seconds
+     * @throws DependencyStoreException
+     */
+    final public function store($type, $entity, array $data, $ttl)
+    {
+        $this->storeMulti($type, [$entity => $data], $ttl);
+    }
 
-	/**
-	 * Set the currently tracked dependencies for a set of entities
-	 *
-	 * @see KeyValueDependencyStore::store()
-	 *
-	 * @param string $type Entity type
-	 * @param array[] $dataByEntity Map of (entity => (paths: paths, asOf: UNIX timestamp or null))
-	 * @param int $ttl New time-to-live in seconds
-	 * @throws DependencyStoreException
-	 *
-	 */
-	abstract public function storeMulti( $type, array $dataByEntity, $ttl );
+    /**
+     * Set the currently tracked dependencies for a set of entities
+     *
+     * @param string $type Entity type
+     * @param array[] $dataByEntity Map of (entity => (paths: paths, asOf: UNIX timestamp or null))
+     * @param int $ttl New time-to-live in seconds
+     * @throws DependencyStoreException
+     *
+     * @see KeyValueDependencyStore::store()
+     *
+     */
+    abstract public function storeMulti($type, array $dataByEntity, $ttl);
 
-	/**
-	 * Delete the currently tracked dependencies for an entity or set of entities
-	 *
-	 * @param string $type Entity type
-	 * @param string|string[] $entities Entity name(s)
-	 * @throws DependencyStoreException
-	 */
-	abstract public function remove( $type, $entities );
+    /**
+     * Delete the currently tracked dependencies for an entity or set of entities
+     *
+     * @param string $type Entity type
+     * @param string|string[] $entities Entity name(s)
+     * @throws DependencyStoreException
+     */
+    abstract public function remove($type, $entities);
 }

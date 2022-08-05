@@ -19,14 +19,16 @@
  * @ingroup FileBackend
  */
 
-class FSFileBackendDirList extends FSFileBackendList {
-	protected function filterViaNext() {
-		while ( $this->iter->valid() ) {
-			if ( $this->iter->current()->isDot() || !$this->iter->current()->isDir() ) {
-				$this->iter->next(); // skip non-directories and dot files
-			} else {
-				break;
-			}
-		}
-	}
+class FSFileBackendDirList extends FSFileBackendList
+{
+    protected function filterViaNext()
+    {
+        while ($this->iter->valid()) {
+            if ($this->iter->current()->isDot() || !$this->iter->current()->isDir()) {
+                $this->iter->next(); // skip non-directories and dot files
+            } else {
+                break;
+            }
+        }
+    }
 }

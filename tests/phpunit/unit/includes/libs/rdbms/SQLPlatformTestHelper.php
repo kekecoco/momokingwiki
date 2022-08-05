@@ -24,29 +24,35 @@ namespace MediaWiki\Tests\Unit\Libs\Rdbms;
 
 use Wikimedia\Rdbms\Platform\SQLPlatform;
 
-class SQLPlatformTestHelper extends SQLPlatform {
-	/**
-	 * @var bool Value to return from unionSupportsOrderAndLimit()
-	 */
-	protected $unionSupportsOrderAndLimit = true;
+class SQLPlatformTestHelper extends SQLPlatform
+{
+    /**
+     * @var bool Value to return from unionSupportsOrderAndLimit()
+     */
+    protected $unionSupportsOrderAndLimit = true;
 
-	public function addIdentifierQuotes( $s ) {
-		return $s;
-	}
+    public function addIdentifierQuotes($s)
+    {
+        return $s;
+    }
 
-	public function useIndexClause( $index ) {
-		return "FORCE INDEX (" . $this->indexName( $index ) . ")";
-	}
+    public function useIndexClause($index)
+    {
+        return "FORCE INDEX (" . $this->indexName($index) . ")";
+    }
 
-	public function ignoreIndexClause( $index ) {
-		return "IGNORE INDEX (" . $this->indexName( $index ) . ")";
-	}
+    public function ignoreIndexClause($index)
+    {
+        return "IGNORE INDEX (" . $this->indexName($index) . ")";
+    }
 
-	public function unionSupportsOrderAndLimit() {
-		return $this->unionSupportsOrderAndLimit;
-	}
+    public function unionSupportsOrderAndLimit()
+    {
+        return $this->unionSupportsOrderAndLimit;
+    }
 
-	public function setUnionSupportsOrderAndLimit( $v ) {
-		$this->unionSupportsOrderAndLimit = (bool)$v;
-	}
+    public function setUnionSupportsOrderAndLimit($v)
+    {
+        $this->unionSupportsOrderAndLimit = (bool)$v;
+    }
 }

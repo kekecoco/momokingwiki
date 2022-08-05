@@ -26,91 +26,101 @@
 /**
  * @ingroup Dump
  */
-class DumpFileOutput extends DumpOutput {
-	/** @var resource|false */
-	protected $handle = false;
-	/** @var string */
-	protected $filename;
+class DumpFileOutput extends DumpOutput
+{
+    /** @var resource|false */
+    protected $handle = false;
+    /** @var string */
+    protected $filename;
 
-	/**
-	 * @param string $file
-	 */
-	public function __construct( $file ) {
-		$this->handle = fopen( $file, "wt" );
-		$this->filename = $file;
-	}
+    /**
+     * @param string $file
+     */
+    public function __construct($file)
+    {
+        $this->handle = fopen($file, "wt");
+        $this->filename = $file;
+    }
 
-	/**
-	 * @param string $string
-	 */
-	public function writeCloseStream( $string ) {
-		parent::writeCloseStream( $string );
-		if ( $this->handle ) {
-			fclose( $this->handle );
-			$this->handle = false;
-		}
-	}
+    /**
+     * @param string $string
+     */
+    public function writeCloseStream($string)
+    {
+        parent::writeCloseStream($string);
+        if ($this->handle) {
+            fclose($this->handle);
+            $this->handle = false;
+        }
+    }
 
-	/**
-	 * @param string $string
-	 */
-	public function write( $string ) {
-		fputs( $this->handle, $string );
-	}
+    /**
+     * @param string $string
+     */
+    public function write($string)
+    {
+        fputs($this->handle, $string);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function closeRenameAndReopen( $newname ) {
-		$this->closeAndRename( $newname, true );
-	}
+    /**
+     * @inheritDoc
+     */
+    public function closeRenameAndReopen($newname)
+    {
+        $this->closeAndRename($newname, true);
+    }
 
-	/**
-	 * @param string $newname
-	 * @throws MWException
-	 */
-	protected function renameOrException( $newname ) {
-		if ( !rename( $this->filename, $newname ) ) {
-			throw new MWException( __METHOD__ . ": rename of file {$this->filename} to $newname failed\n" );
-		}
-	}
+    /**
+     * @param string $newname
+     * @throws MWException
+     */
+    protected function renameOrException($newname)
+    {
+        if (!rename($this->filename, $newname)) {
+            throw new MWException(__METHOD__ . ": rename of file {$this->filename} to $newname failed\n");
+        }
+    }
 
-	/**
-	 * @param string|string[] $newname
-	 * @return string
-	 * @throws MWException
-	 */
-	protected function checkRenameArgCount( $newname ) {
-		if ( is_array( $newname ) ) {
-			if ( count( $newname ) > 1 ) {
-				throw new MWException( __METHOD__ . ": passed multiple arguments for rename of single file\n" );
-			}
-			$newname = $newname[0];
-		}
-		return $newname;
-	}
+    /**
+     * @param string|string[] $newname
+     * @return string
+     * @throws MWException
+     */
+    protected function checkRenameArgCount($newname)
+    {
+        if (is_array($newname)) {
+            if (count($newname) > 1) {
+                throw new MWException(__METHOD__ . ": passed multiple arguments for rename of single file\n");
+            }
+            $newname = $newname[0];
+        }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function closeAndRename( $newname, $open = false ) {
-		$newname = $this->checkRenameArgCount( $newname );
-		if ( $newname ) {
-			if ( $this->handle ) {
-				fclose( $this->handle );
-				$this->handle = false;
-			}
-			$this->renameOrException( $newname );
-			if ( $open ) {
-				$this->handle = fopen( $this->filename, "wt" );
-			}
-		}
-	}
+        return $newname;
+    }
 
-	/**
-	 * @return string|null
-	 */
-	public function getFilenames() {
-		return $this->filename;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function closeAndRename($newname, $open = false)
+    {
+        $newname = $this->checkRenameArgCount($newname);
+        if ($newname) {
+            if ($this->handle) {
+                fclose($this->handle);
+                $this->handle = false;
+            }
+            $this->renameOrException($newname);
+            if ($open) {
+                $this->handle = fopen($this->filename, "wt");
+            }
+        }
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getFilenames()
+    {
+        return $this->filename;
+    }
 }

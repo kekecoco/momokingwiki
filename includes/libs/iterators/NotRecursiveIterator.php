@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Wraps a non-recursive iterator with methods to be recursive
  * without children.
@@ -24,13 +25,16 @@
  * @file
  * @ingroup Maintenance
  */
-class NotRecursiveIterator extends IteratorDecorator implements RecursiveIterator {
-	public function hasChildren(): bool {
-		return false;
-	}
+class NotRecursiveIterator extends IteratorDecorator implements RecursiveIterator
+{
+    public function hasChildren(): bool
+    {
+        return false;
+    }
 
-	public function getChildren(): ?RecursiveIterator {
-		// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal False positive
-		return null;
-	}
+    public function getChildren(): ?RecursiveIterator
+    {
+        // @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal False positive
+        return null;
+    }
 }

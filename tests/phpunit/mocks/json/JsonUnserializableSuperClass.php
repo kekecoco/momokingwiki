@@ -10,26 +10,31 @@ use MediaWiki\Json\JsonUnserializer;
  * Testing class for JsonUnserializer unit tests.
  * @package MediaWiki\Tests\Json
  */
-class JsonUnserializableSuperClass implements JsonUnserializable {
-	use JsonUnserializableTrait;
+class JsonUnserializableSuperClass implements JsonUnserializable
+{
+    use JsonUnserializableTrait;
 
-	private $superClassField;
+    private $superClassField;
 
-	public function __construct( string $superClassFieldValue ) {
-		$this->superClassField = $superClassFieldValue;
-	}
+    public function __construct(string $superClassFieldValue)
+    {
+        $this->superClassField = $superClassFieldValue;
+    }
 
-	public function getSuperClassField(): string {
-		return $this->superClassField;
-	}
+    public function getSuperClassField(): string
+    {
+        return $this->superClassField;
+    }
 
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
-		return new self( $json['super_class_field'] );
-	}
+    public static function newFromJsonArray(JsonUnserializer $unserializer, array $json)
+    {
+        return new self($json['super_class_field']);
+    }
 
-	protected function toJsonArray(): array {
-		return [
-			'super_class_field' => $this->getSuperClassField()
-		];
-	}
+    protected function toJsonArray(): array
+    {
+        return [
+            'super_class_field' => $this->getSuperClassField()
+        ];
+    }
 }

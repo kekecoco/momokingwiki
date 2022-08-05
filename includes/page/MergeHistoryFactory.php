@@ -30,17 +30,18 @@ use MergeHistory;
  *
  * @since 1.35
  */
-interface MergeHistoryFactory {
+interface MergeHistoryFactory
+{
 
-	/**
-	 * @param PageIdentity $source
-	 * @param PageIdentity $destination
-	 * @param string|null $timestamp
-	 * @return MergeHistory
-	 */
-	public function newMergeHistory(
-		PageIdentity $source,
-		PageIdentity $destination,
-		string $timestamp = null
-	): MergeHistory;
+    /**
+     * @param PageIdentity $source
+     * @param PageIdentity $destination
+     * @param string|null $timestamp
+     * @return MergeHistory
+     */
+    public function newMergeHistory(
+        PageIdentity $source,
+        PageIdentity $destination,
+        string $timestamp = null
+    ): MergeHistory;
 }

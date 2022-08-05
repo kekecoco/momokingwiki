@@ -32,102 +32,106 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class RollbackEdits extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			"Rollback all edits by a given user or IP provided they're the most recent edit" );
-		$this->addOption(
-			'titles',
-			'A list of titles, none means all titles where the given user is the most recent',
-			false,
-			true
-		);
-		$this->addOption( 'user', 'A user or IP to rollback all edits for', true, true );
-		$this->addOption( 'summary', 'Edit summary to use', false, true );
-		$this->addOption( 'bot', 'Mark the edits as bot' );
-	}
+class RollbackEdits extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            "Rollback all edits by a given user or IP provided they're the most recent edit");
+        $this->addOption(
+            'titles',
+            'A list of titles, none means all titles where the given user is the most recent',
+            false,
+            true
+        );
+        $this->addOption('user', 'A user or IP to rollback all edits for', true, true);
+        $this->addOption('summary', 'Edit summary to use', false, true);
+        $this->addOption('bot', 'Mark the edits as bot');
+    }
 
-	public function execute() {
-		$user = $this->getOption( 'user' );
-		$services = MediaWikiServices::getInstance();
-		$userNameUtils = $services->getUserNameUtils();
-		$username = $userNameUtils->isIP( $user ) ? $user : $userNameUtils->getCanonical( $user );
-		if ( !$username ) {
-			$this->fatalError( 'Invalid username' );
-		}
+    public function execute()
+    {
+        $user = $this->getOption('user');
+        $services = MediaWikiServices::getInstance();
+        $userNameUtils = $services->getUserNameUtils();
+        $username = $userNameUtils->isIP($user) ? $user : $userNameUtils->getCanonical($user);
+        if (!$username) {
+            $this->fatalError('Invalid username');
+        }
 
-		$bot = $this->hasOption( 'bot' );
-		$summary = $this->getOption( 'summary', $this->mSelf . ' mass rollback' );
-		$titles = [];
-		if ( $this->hasOption( 'titles' ) ) {
-			foreach ( explode( '|', $this->getOption( 'titles' ) ) as $title ) {
-				$t = Title::newFromText( $title );
-				if ( !$t ) {
-					$this->error( 'Invalid title, ' . $title );
-				} else {
-					$titles[] = $t;
-				}
-			}
-		} else {
-			$titles = $this->getRollbackTitles( $user );
-		}
+        $bot = $this->hasOption('bot');
+        $summary = $this->getOption('summary', $this->mSelf . ' mass rollback');
+        $titles = [];
+        if ($this->hasOption('titles')) {
+            foreach (explode('|', $this->getOption('titles')) as $title) {
+                $t = Title::newFromText($title);
+                if (!$t) {
+                    $this->error('Invalid title, ' . $title);
+                } else {
+                    $titles[] = $t;
+                }
+            }
+        } else {
+            $titles = $this->getRollbackTitles($user);
+        }
 
-		if ( !$titles ) {
-			$this->output( 'No suitable titles to be rolled back.' );
+        if (!$titles) {
+            $this->output('No suitable titles to be rolled back.');
 
-			return;
-		}
+            return;
+        }
 
-		$doer = User::newSystemUser( User::MAINTENANCE_SCRIPT_USER, [ 'steal' => true ] );
-		$byUser = $services->getUserIdentityLookup()->getUserIdentityByName( $username );
+        $doer = User::newSystemUser(User::MAINTENANCE_SCRIPT_USER, ['steal' => true]);
+        $byUser = $services->getUserIdentityLookup()->getUserIdentityByName($username);
 
-		if ( !$byUser ) {
-			$this->fatalError( 'Unknown user.' );
-		}
+        if (!$byUser) {
+            $this->fatalError('Unknown user.');
+        }
 
-		$wikiPageFactory = $services->getWikiPageFactory();
-		$rollbackPageFactory = $services->getRollbackPageFactory();
-		foreach ( $titles as $t ) {
-			$page = $wikiPageFactory->newFromTitle( $t );
-			$this->output( 'Processing ' . $t->getPrefixedText() . '...' );
-			$rollbackResult = $rollbackPageFactory
-				->newRollbackPage( $page, $doer, $byUser )
-				->markAsBot( $bot )
-				->setSummary( $summary )
-				->rollback();
-			if ( $rollbackResult->isGood() ) {
-				$this->output( "Done!\n" );
-			} else {
-				$this->output( "Failed!\n" );
-			}
-		}
-	}
+        $wikiPageFactory = $services->getWikiPageFactory();
+        $rollbackPageFactory = $services->getRollbackPageFactory();
+        foreach ($titles as $t) {
+            $page = $wikiPageFactory->newFromTitle($t);
+            $this->output('Processing ' . $t->getPrefixedText() . '...');
+            $rollbackResult = $rollbackPageFactory
+                ->newRollbackPage($page, $doer, $byUser)
+                ->markAsBot($bot)
+                ->setSummary($summary)
+                ->rollback();
+            if ($rollbackResult->isGood()) {
+                $this->output("Done!\n");
+            } else {
+                $this->output("Failed!\n");
+            }
+        }
+    }
 
-	/**
-	 * Get all pages that should be rolled back for a given user
-	 * @param string $user A name to check against
-	 * @return array
-	 */
-	private function getRollbackTitles( $user ) {
-		$dbr = $this->getDB( DB_REPLICA );
-		$titles = [];
-		$actorQuery = ActorMigration::newMigration()
-			->getWhere( $dbr, 'rev_user', User::newFromName( $user, false ) );
-		$results = $dbr->select(
-			[ 'page', 'revision' ] + $actorQuery['tables'],
-			[ 'page_namespace', 'page_title' ],
-			$actorQuery['conds'],
-			__METHOD__,
-			[],
-			[ 'revision' => [ 'JOIN', 'page_latest = rev_id' ] ] + $actorQuery['joins']
-		);
-		foreach ( $results as $row ) {
-			$titles[] = Title::makeTitle( $row->page_namespace, $row->page_title );
-		}
+    /**
+     * Get all pages that should be rolled back for a given user
+     * @param string $user A name to check against
+     * @return array
+     */
+    private function getRollbackTitles($user)
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        $titles = [];
+        $actorQuery = ActorMigration::newMigration()
+            ->getWhere($dbr, 'rev_user', User::newFromName($user, false));
+        $results = $dbr->select(
+            ['page', 'revision'] + $actorQuery['tables'],
+            ['page_namespace', 'page_title'],
+            $actorQuery['conds'],
+            __METHOD__,
+            [],
+            ['revision' => ['JOIN', 'page_latest = rev_id']] + $actorQuery['joins']
+        );
+        foreach ($results as $row) {
+            $titles[] = Title::makeTitle($row->page_namespace, $row->page_title);
+        }
 
-		return $titles;
-	}
+        return $titles;
+    }
 }
 
 $maintClass = RollbackEdits::class;

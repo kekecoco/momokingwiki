@@ -30,87 +30,96 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Feed
  */
-class AtomFeed extends ChannelFeed {
-	/**
-	 * Format a date given timestamp, if one is given.
-	 *
-	 * @param string|int|null $timestamp
-	 * @return string|null
-	 */
-	private function formatTime( $timestamp ) {
-		if ( $timestamp ) {
-			// need to use RFC 822 time format at least for rss2.0
-			return gmdate( 'Y-m-d\TH:i:s', (int)wfTimestamp( TS_UNIX, $timestamp ) );
-		}
-		return null;
-	}
+class AtomFeed extends ChannelFeed
+{
+    /**
+     * Format a date given timestamp, if one is given.
+     *
+     * @param string|int|null $timestamp
+     * @return string|null
+     */
+    private function formatTime($timestamp)
+    {
+        if ($timestamp) {
+            // need to use RFC 822 time format at least for rss2.0
+            return gmdate('Y-m-d\TH:i:s', (int)wfTimestamp(TS_UNIX, $timestamp));
+        }
 
-	/**
-	 * Outputs a basic header for Atom 1.0 feeds.
-	 */
-	public function outHeader() {
-		$this->outXmlHeader();
-		// Manually escaping rather than letting Mustache do it because Mustache
-		// uses htmlentities, which does not work with XML
-		$templateParams = [
-			'language' => $this->xmlEncode( $this->getLanguage() ),
-			'feedID' => $this->getFeedId(),
-			'title' => $this->getTitle(),
-			'url' => $this->xmlEncode( wfExpandUrl( $this->getUrlUnescaped(), PROTO_CURRENT ) ),
-			'selfUrl' => $this->getSelfUrl(),
-			'timestamp' => $this->xmlEncode( $this->formatTime( wfTimestampNow() ) ),
-			'description' => $this->getDescription(),
-			'version' => $this->xmlEncode( MW_VERSION ),
-		];
-		print $this->templateParser->processTemplate( 'AtomHeader', $templateParams );
-	}
+        return null;
+    }
 
-	/**
-	 * Atom 1.0 requires a unique, opaque IRI as a unique identifier
-	 * for every feed we create. For now just use the URL, but who
-	 * can tell if that's right? If we put options on the feed, do we
-	 * have to change the id? Maybe? Maybe not.
-	 *
-	 * @return string
-	 */
-	private function getFeedId() {
-		return $this->getSelfUrl();
-	}
+    /**
+     * Outputs a basic header for Atom 1.0 feeds.
+     */
+    public function outHeader()
+    {
+        $this->outXmlHeader();
+        // Manually escaping rather than letting Mustache do it because Mustache
+        // uses htmlentities, which does not work with XML
+        $templateParams = [
+            'language'    => $this->xmlEncode($this->getLanguage()),
+            'feedID'      => $this->getFeedId(),
+            'title'       => $this->getTitle(),
+            'url'         => $this->xmlEncode(wfExpandUrl($this->getUrlUnescaped(), PROTO_CURRENT)),
+            'selfUrl'     => $this->getSelfUrl(),
+            'timestamp'   => $this->xmlEncode($this->formatTime(wfTimestampNow())),
+            'description' => $this->getDescription(),
+            'version'     => $this->xmlEncode(MW_VERSION),
+        ];
+        print $this->templateParser->processTemplate('AtomHeader', $templateParams);
+    }
 
-	/**
-	 * Atom 1.0 requests a self-reference to the feed.
-	 * @return string
-	 */
-	private function getSelfUrl() {
-		global $wgRequest;
-		return htmlspecialchars( $wgRequest->getFullRequestURL() );
-	}
+    /**
+     * Atom 1.0 requires a unique, opaque IRI as a unique identifier
+     * for every feed we create. For now just use the URL, but who
+     * can tell if that's right? If we put options on the feed, do we
+     * have to change the id? Maybe? Maybe not.
+     *
+     * @return string
+     */
+    private function getFeedId()
+    {
+        return $this->getSelfUrl();
+    }
 
-	/**
-	 * Output a given item.
-	 * @param FeedItem $item
-	 */
-	public function outItem( $item ) {
-		$mimeType = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::MimeType );
-		// Manually escaping rather than letting Mustache do it because Mustache
-		// uses htmlentities, which does not work with XML
-		$templateParams = [
-			"uniqueID" => $item->getUniqueID(),
-			"title" => $item->getTitle(),
-			"mimeType" => $this->xmlEncode( $mimeType ),
-			"url" => $this->xmlEncode( wfExpandUrl( $item->getUrlUnescaped(), PROTO_CURRENT ) ),
-			"date" => $this->xmlEncode( $this->formatTime( $item->getDate() ) ),
-			"description" => $item->getDescription(),
-			"author" => $item->getAuthor()
-		];
-		print $this->templateParser->processTemplate( 'AtomItem', $templateParams );
-	}
+    /**
+     * Atom 1.0 requests a self-reference to the feed.
+     * @return string
+     */
+    private function getSelfUrl()
+    {
+        global $wgRequest;
 
-	/**
-	 * Outputs the footer for Atom 1.0 feed (basically '\</feed\>').
-	 */
-	public function outFooter() {
-		print "</feed>";
-	}
+        return htmlspecialchars($wgRequest->getFullRequestURL());
+    }
+
+    /**
+     * Output a given item.
+     * @param FeedItem $item
+     */
+    public function outItem($item)
+    {
+        $mimeType = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::MimeType);
+        // Manually escaping rather than letting Mustache do it because Mustache
+        // uses htmlentities, which does not work with XML
+        $templateParams = [
+            "uniqueID"    => $item->getUniqueID(),
+            "title"       => $item->getTitle(),
+            "mimeType"    => $this->xmlEncode($mimeType),
+            "url"         => $this->xmlEncode(wfExpandUrl($item->getUrlUnescaped(), PROTO_CURRENT)),
+            "date"        => $this->xmlEncode($this->formatTime($item->getDate())),
+            "description" => $item->getDescription(),
+            "author"      => $item->getAuthor()
+        ];
+        print $this->templateParser->processTemplate('AtomItem', $templateParams);
+    }
+
+    /**
+     * Outputs the footer for Atom 1.0 feed (basically '\</feed\>').
+     */
+    public function outFooter()
+    {
+        print "</feed>";
+    }
 }

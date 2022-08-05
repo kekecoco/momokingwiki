@@ -28,42 +28,46 @@
  *
  * @since 1.27
  */
-class ListToggle {
-	/** @var OutputPage */
-	private $output;
+class ListToggle
+{
+    /** @var OutputPage */
+    private $output;
 
-	public function __construct( OutputPage $output ) {
-		$this->output = $output;
+    public function __construct(OutputPage $output)
+    {
+        $this->output = $output;
 
-		$output->addModules( 'mediawiki.checkboxtoggle' );
-		$output->addModuleStyles( 'mediawiki.checkboxtoggle.styles' );
-	}
+        $output->addModules('mediawiki.checkboxtoggle');
+        $output->addModuleStyles('mediawiki.checkboxtoggle.styles');
+    }
 
-	private function checkboxLink( $checkboxType ) {
-		return Html::element(
-			// CSS classes: mw-checkbox-all, mw-checkbox-none, mw-checkbox-invert
-			'a', [ 'class' => 'mw-checkbox-' . $checkboxType, 'role' => 'button', 'tabindex' => 0 ],
-			$this->output->msg( 'checkbox-' . $checkboxType )->text()
-		);
-	}
+    private function checkboxLink($checkboxType)
+    {
+        return Html::element(
+        // CSS classes: mw-checkbox-all, mw-checkbox-none, mw-checkbox-invert
+            'a', ['class' => 'mw-checkbox-' . $checkboxType, 'role' => 'button', 'tabindex' => 0],
+            $this->output->msg('checkbox-' . $checkboxType)->text()
+        );
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getHTML() {
-		// Select: All, None, Invert
-		$links = [
-			$this->checkboxLink( 'all' ),
-			$this->checkboxLink( 'none' ),
-			$this->checkboxLink( 'invert' ),
-		];
+    /**
+     * @return string
+     */
+    public function getHTML()
+    {
+        // Select: All, None, Invert
+        $links = [
+            $this->checkboxLink('all'),
+            $this->checkboxLink('none'),
+            $this->checkboxLink('invert'),
+        ];
 
-		return Html::rawElement( 'div',
-			[
-				'class' => 'mw-checkbox-toggle-controls'
-			],
-			$this->output->msg( 'checkbox-select' )
-				->rawParams( $this->output->getLanguage()->commaList( $links ) )->escaped()
-		);
-	}
+        return Html::rawElement('div',
+            [
+                'class' => 'mw-checkbox-toggle-controls'
+            ],
+            $this->output->msg('checkbox-select')
+                ->rawParams($this->output->getLanguage()->commaList($links))->escaped()
+        );
+    }
 }

@@ -3,22 +3,22 @@
 
 // Helpers
 .mixin-mw-ui-anchor-styles( @mainColor ) {
-	color: @mainColor;
+  color: @mainColor;
 
-	&:hover {
-		color: lighten( @mainColor, @colorLightenPercentage );
-	}
+  &:hover {
+    color: lighten(@mainColor, @colorLightenPercentage);
+  }
 
-	&:focus,
-	&:active {
-		color: darken( @mainColor, @colorDarkenPercentage );
-		outline: 0;
-	}
+  &:focus,
+  &:active {
+    color: darken(@mainColor, @colorDarkenPercentage);
+    outline: 0;
+  }
 
-	// Quiet mode is gray at first
-	&.mw-ui-quiet {
-		.mixin-mw-ui-anchor-styles-quiet( @mainColor );
-	}
+  // Quiet mode is gray at first
+  &.mw-ui-quiet {
+    .mixin-mw-ui-anchor-styles-quiet(@mainColor);
+  }
 }
 
 /*
@@ -37,13 +37,13 @@ Markup:
 
 // Setup compound anchor selectors (such as .mw-ui-anchor.mw-ui-progressive)
 .mw-ui-anchor {
-	&.mw-ui-progressive {
-		.mixin-mw-ui-anchor-styles( @color-primary );
-	}
+  &.mw-ui-progressive {
+    .mixin-mw-ui-anchor-styles(@color-primary);
+  }
 
-	&.mw-ui-destructive {
-		.mixin-mw-ui-anchor-styles( @color-destructive );
-	}
+  &.mw-ui-destructive {
+    .mixin-mw-ui-anchor-styles(@color-destructive);
+  }
 }
 
 /*
@@ -57,15 +57,15 @@ Markup:
 <a href="#" class="mw-ui-anchor mw-ui-destructive mw-ui-quiet">Destructive</a>
 */
 .mixin-mw-ui-anchor-styles-quiet( @mainColor ) {
-	color: @color-base;
-	text-decoration: none;
+  color: @color-base;
+  text-decoration: none;
 
-	&:hover {
-		color: @mainColor;
-	}
+  &:hover {
+    color: @mainColor;
+  }
 
-	&:focus,
-	&:active {
-		color: darken( @mainColor, @colorDarkenPercentage );
-	}
+  &:focus,
+  &:active {
+    color: darken(@mainColor, @colorDarkenPercentage);
+  }
 }

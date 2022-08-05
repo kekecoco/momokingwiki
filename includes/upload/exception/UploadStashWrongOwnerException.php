@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashWrongOwnerException extends UploadStashException {
+class UploadStashWrongOwnerException extends UploadStashException
+{
 }

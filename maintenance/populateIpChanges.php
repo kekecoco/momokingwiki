@@ -36,118 +36,123 @@ use Wikimedia\IPUtils;
  *
  * @ingroup Maintenance
  */
-class PopulateIpChanges extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
+class PopulateIpChanges extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
 
-		$this->addDescription( <<<TEXT
+        $this->addDescription(<<<TEXT
 This script will find all rows in the revision table where the user is an IP,
 and copy relevant fields to the ip_changes table. This backfilled data will
 then be available when querying for IP ranges at Special:Contributions.
 TEXT
-		);
-		$this->addOption( 'rev-id', 'The rev_id to start copying from. Default: 0', false, true );
-		$this->addOption(
-			'max-rev-id',
-			'The rev_id to stop at. Default: result of MAX(rev_id)',
-			false,
-			true
-		);
-		$this->addOption(
-			'throttle',
-			'Wait this many milliseconds after copying each batch of revisions. Default: 0',
-			false,
-			true
-		);
-		$this->addOption( 'force', 'Run regardless of whether the database says it\'s been run already' );
-	}
+        );
+        $this->addOption('rev-id', 'The rev_id to start copying from. Default: 0', false, true);
+        $this->addOption(
+            'max-rev-id',
+            'The rev_id to stop at. Default: result of MAX(rev_id)',
+            false,
+            true
+        );
+        $this->addOption(
+            'throttle',
+            'Wait this many milliseconds after copying each batch of revisions. Default: 0',
+            false,
+            true
+        );
+        $this->addOption('force', 'Run regardless of whether the database says it\'s been run already');
+    }
 
-	public function doDBUpdates() {
-		$dbw = $this->getDB( DB_PRIMARY );
+    public function doDBUpdates()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		if ( !$dbw->tableExists( 'ip_changes', __METHOD__ ) ) {
-			$this->fatalError( 'ip_changes table does not exist' );
-		}
+        if (!$dbw->tableExists('ip_changes', __METHOD__)) {
+            $this->fatalError('ip_changes table does not exist');
+        }
 
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$dbr = $this->getDB( DB_REPLICA, [ 'vslow' ] );
-		$throttle = intval( $this->getOption( 'throttle', 0 ) );
-		$maxRevId = intval( $this->getOption( 'max-rev-id', 0 ) );
-		$start = $this->getOption( 'rev-id', 0 );
-		$end = $maxRevId > 0
-			? $maxRevId
-			: $dbw->selectField( 'revision', 'MAX(rev_id)', '', __METHOD__ );
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $dbr = $this->getDB(DB_REPLICA, ['vslow']);
+        $throttle = intval($this->getOption('throttle', 0));
+        $maxRevId = intval($this->getOption('max-rev-id', 0));
+        $start = $this->getOption('rev-id', 0);
+        $end = $maxRevId > 0
+            ? $maxRevId
+            : $dbw->selectField('revision', 'MAX(rev_id)', '', __METHOD__);
 
-		if ( empty( $end ) ) {
-			$this->output( "No revisions found, aborting.\n" );
-			return true;
-		}
+        if (empty($end)) {
+            $this->output("No revisions found, aborting.\n");
 
-		$blockStart = $start;
-		$attempted = 0;
-		$inserted = 0;
+            return true;
+        }
 
-		$this->output( "Copying IP revisions to ip_changes, from rev_id $start to rev_id $end\n" );
+        $blockStart = $start;
+        $attempted = 0;
+        $inserted = 0;
 
-		$actorMigration = ActorMigration::newMigration();
-		$actorQuery = $actorMigration->getJoin( 'rev_user' );
-		$revUserIsAnon = $actorMigration->isAnon( $actorQuery['fields']['rev_user'] );
+        $this->output("Copying IP revisions to ip_changes, from rev_id $start to rev_id $end\n");
 
-		while ( $blockStart <= $end ) {
-			$blockEnd = min( $blockStart + $this->getBatchSize(), $end );
-			$rows = $dbr->select(
-				[ 'revision' ] + $actorQuery['tables'],
-				[ 'rev_id', 'rev_timestamp', 'rev_user_text' => $actorQuery['fields']['rev_user_text'] ],
-				[ "rev_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd, $revUserIsAnon ],
-				__METHOD__,
-				[],
-				$actorQuery['joins']
-			);
+        $actorMigration = ActorMigration::newMigration();
+        $actorQuery = $actorMigration->getJoin('rev_user');
+        $revUserIsAnon = $actorMigration->isAnon($actorQuery['fields']['rev_user']);
 
-			$numRows = $rows->numRows();
+        while ($blockStart <= $end) {
+            $blockEnd = min($blockStart + $this->getBatchSize(), $end);
+            $rows = $dbr->select(
+                ['revision'] + $actorQuery['tables'],
+                ['rev_id', 'rev_timestamp', 'rev_user_text' => $actorQuery['fields']['rev_user_text']],
+                ["rev_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd, $revUserIsAnon],
+                __METHOD__,
+                [],
+                $actorQuery['joins']
+            );
 
-			if ( !$rows || $numRows === 0 ) {
-				$blockStart = $blockEnd + 1;
-				continue;
-			}
+            $numRows = $rows->numRows();
 
-			$this->output( "...checking $numRows revisions for IP edits that need copying, " .
-				"between rev_ids $blockStart and $blockEnd\n" );
+            if (!$rows || $numRows === 0) {
+                $blockStart = $blockEnd + 1;
+                continue;
+            }
 
-			$insertRows = [];
-			foreach ( $rows as $row ) {
-				// Make sure this is really an IP, e.g. not maintenance user or imported revision.
-				if ( IPUtils::isValid( $row->rev_user_text ) ) {
-					$insertRows[] = [
-						'ipc_rev_id' => $row->rev_id,
-						'ipc_rev_timestamp' => $row->rev_timestamp,
-						'ipc_hex' => IPUtils::toHex( $row->rev_user_text ),
-					];
+            $this->output("...checking $numRows revisions for IP edits that need copying, " .
+                "between rev_ids $blockStart and $blockEnd\n");
 
-					$attempted++;
-				}
-			}
+            $insertRows = [];
+            foreach ($rows as $row) {
+                // Make sure this is really an IP, e.g. not maintenance user or imported revision.
+                if (IPUtils::isValid($row->rev_user_text)) {
+                    $insertRows[] = [
+                        'ipc_rev_id'        => $row->rev_id,
+                        'ipc_rev_timestamp' => $row->rev_timestamp,
+                        'ipc_hex'           => IPUtils::toHex($row->rev_user_text),
+                    ];
 
-			if ( $insertRows ) {
-				$dbw->insert( 'ip_changes', $insertRows, __METHOD__, [ 'IGNORE' ] );
+                    $attempted++;
+                }
+            }
 
-				$inserted += $dbw->affectedRows();
-			}
+            if ($insertRows) {
+                $dbw->insert('ip_changes', $insertRows, __METHOD__, ['IGNORE']);
 
-			$lbFactory->waitForReplication();
-			usleep( $throttle * 1000 );
+                $inserted += $dbw->affectedRows();
+            }
 
-			$blockStart = $blockEnd + 1;
-		}
+            $lbFactory->waitForReplication();
+            usleep($throttle * 1000);
 
-		$this->output( "Attempted to insert $attempted IP revisions, $inserted actually done.\n" );
+            $blockStart = $blockEnd + 1;
+        }
 
-		return true;
-	}
+        $this->output("Attempted to insert $attempted IP revisions, $inserted actually done.\n");
 
-	protected function getUpdateKey() {
-		return 'populate ip_changes';
-	}
+        return true;
+    }
+
+    protected function getUpdateKey()
+    {
+        return 'populate ip_changes';
+    }
 }
 
 $maintClass = PopulateIpChanges::class;

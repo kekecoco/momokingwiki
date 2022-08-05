@@ -34,99 +34,107 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup SpecialPage
  */
-class SpecialMostCategories extends QueryPage {
+class SpecialMostCategories extends QueryPage
+{
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory
-	) {
-		parent::__construct( 'Mostcategories' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory
+    )
+    {
+        parent::__construct('Mostcategories');
+        $this->namespaceInfo = $namespaceInfo;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'categorylinks', 'page' ],
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-				'value' => 'COUNT(*)'
-			],
-			'conds' => [
-				'page_namespace' => $this->namespaceInfo->getContentNamespaces()
-			],
-			'options' => [
-				'HAVING' => 'COUNT(*) > 1',
-				'GROUP BY' => [ 'page_namespace', 'page_title' ]
-			],
-			'join_conds' => [
-				'page' => [
-					'LEFT JOIN',
-					'page_id = cl_from'
-				]
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'     => ['categorylinks', 'page'],
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+                'value'     => 'COUNT(*)'
+            ],
+            'conds'      => [
+                'page_namespace' => $this->namespaceInfo->getContentNamespaces()
+            ],
+            'options'    => [
+                'HAVING'   => 'COUNT(*) > 1',
+                'GROUP BY' => ['page_namespace', 'page_title']
+            ],
+            'join_conds' => [
+                'page' => [
+                    'LEFT JOIN',
+                    'page_id = cl_from'
+                ]
+            ]
+        ];
+    }
 
-	/**
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    /**
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$title = Title::makeTitleSafe( $result->namespace, $result->title );
-		if ( !$title ) {
-			return Html::element(
-				'span',
-				[ 'class' => 'mw-invalidtitle' ],
-				Linker::getInvalidTitleDescription(
-					$this->getContext(),
-					$result->namespace,
-					$result->title
-				)
-			);
-		}
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $title = Title::makeTitleSafe($result->namespace, $result->title);
+        if (!$title) {
+            return Html::element(
+                'span',
+                ['class' => 'mw-invalidtitle'],
+                Linker::getInvalidTitleDescription(
+                    $this->getContext(),
+                    $result->namespace,
+                    $result->title
+                )
+            );
+        }
 
-		$linkRenderer = $this->getLinkRenderer();
-		if ( $this->isCached() ) {
-			$link = $linkRenderer->makeLink( $title );
-		} else {
-			$link = $linkRenderer->makeKnownLink( $title );
-		}
+        $linkRenderer = $this->getLinkRenderer();
+        if ($this->isCached()) {
+            $link = $linkRenderer->makeLink($title);
+        } else {
+            $link = $linkRenderer->makeKnownLink($title);
+        }
 
-		$count = $this->msg( 'ncategories' )->numParams( $result->value )->escaped();
+        $count = $this->msg('ncategories')->numParams($result->value)->escaped();
 
-		return $this->getLanguage()->specialList( $link, $count );
-	}
+        return $this->getLanguage()->specialList($link, $count);
+    }
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

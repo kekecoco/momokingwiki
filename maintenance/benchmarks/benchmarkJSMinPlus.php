@@ -26,34 +26,37 @@ require_once __DIR__ . '/../includes/Benchmarker.php';
  *
  * @ingroup Benchmark
  */
-class BenchmarkJSMinPlus extends Benchmarker {
-	protected $defaultCount = 10;
+class BenchmarkJSMinPlus extends Benchmarker
+{
+    protected $defaultCount = 10;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Benchmarks JSMinPlus.' );
-		$this->addOption( 'file', 'Path to JS file. Default: jquery', false, true );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Benchmarks JSMinPlus.');
+        $this->addOption('file', 'Path to JS file. Default: jquery', false, true);
+    }
 
-	public function execute() {
-		$file = $this->getOption( 'file', __DIR__ . '/data/jsmin/jquery-3.2.1.js.gz' );
-		$content = $this->loadFile( $file );
-		if ( $content === false ) {
-			$this->fatalError( 'Unable to open input file' );
-		}
+    public function execute()
+    {
+        $file = $this->getOption('file', __DIR__ . '/data/jsmin/jquery-3.2.1.js.gz');
+        $content = $this->loadFile($file);
+        if ($content === false) {
+            $this->fatalError('Unable to open input file');
+        }
 
-		$filename = basename( $file );
-		$parser = new JSParser();
+        $filename = basename($file);
+        $parser = new JSParser();
 
-		$this->bench( [
-			"JSParser::parse ($filename)" => [
-				'function' => static function ( $parser, $content, $filename ) {
-					$parser->parse( $content, $filename, 1 );
-				},
-				'args' => [ $parser, $content, $filename ]
-			]
-		] );
-	}
+        $this->bench([
+            "JSParser::parse ($filename)" => [
+                'function' => static function ($parser, $content, $filename) {
+                    $parser->parse($content, $filename, 1);
+                },
+                'args'     => [$parser, $content, $filename]
+            ]
+        ]);
+    }
 }
 
 $maintClass = BenchmarkJSMinPlus::class;

@@ -15,20 +15,21 @@ namespace Wikimedia\Message;
  *
  * @package MediaWiki\MessageFormatter
  */
-interface ITextFormatter {
-	/**
-	 * Get the internal language code in which format() is
-	 * @return string
-	 */
-	public function getLangCode();
+interface ITextFormatter
+{
+    /**
+     * Get the internal language code in which format() is
+     * @return string
+     */
+    public function getLangCode();
 
-	/**
-	 * Convert a MessageValue to text.
-	 *
-	 * The result is not safe for use as raw HTML.
-	 *
-	 * @param MessageValue $message
-	 * @return string
-	 */
-	public function format( MessageValue $message );
+    /**
+     * Convert a MessageValue to text.
+     *
+     * The result is not safe for use as raw HTML.
+     *
+     * @param MessageValue $message
+     * @return string
+     */
+    public function format(MessageValue $message);
 }

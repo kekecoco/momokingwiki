@@ -33,17 +33,20 @@ use Psr\Http\Message\StreamInterface;
  * @property StreamInterface $stream Defined in StreamDecoratorTrait via `@property`, not read
  *  by phan
  */
-class MWCallbackStream implements StreamInterface {
-	use StreamDecoratorTrait;
+class MWCallbackStream implements StreamInterface
+{
+    use StreamDecoratorTrait;
 
-	private $callback;
+    private $callback;
 
-	public function __construct( callable $cb ) {
-		$this->stream = Utils::streamFor();
-		$this->callback = $cb;
-	}
+    public function __construct(callable $cb)
+    {
+        $this->stream = Utils::streamFor();
+        $this->callback = $cb;
+    }
 
-	public function write( $string ) {
-		return call_user_func( $this->callback, $this, $string );
-	}
+    public function write($string)
+    {
+        return call_user_func($this->callback, $this, $string);
+    }
 }

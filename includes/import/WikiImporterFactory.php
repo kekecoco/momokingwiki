@@ -30,91 +30,94 @@ use MediaWiki\Revision\SlotRoleRegistry;
  *
  * @since 1.37
  */
-class WikiImporterFactory {
-	/** @var Config */
-	private $config;
+class WikiImporterFactory
+{
+    /** @var Config */
+    private $config;
 
-	/** @var HookContainer */
-	private $hookContainer;
+    /** @var HookContainer */
+    private $hookContainer;
 
-	/** @var Language */
-	private $contentLanguage;
+    /** @var Language */
+    private $contentLanguage;
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var TitleFactory */
-	private $titleFactory;
+    /** @var TitleFactory */
+    private $titleFactory;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/** @var UploadRevisionImporter */
-	private $uploadRevisionImporter;
+    /** @var UploadRevisionImporter */
+    private $uploadRevisionImporter;
 
-	/** @var PermissionManager */
-	private $permissionManager;
+    /** @var PermissionManager */
+    private $permissionManager;
 
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
+    /** @var IContentHandlerFactory */
+    private $contentHandlerFactory;
 
-	/** @var SlotRoleRegistry */
-	private $slotRoleRegistry;
+    /** @var SlotRoleRegistry */
+    private $slotRoleRegistry;
 
-	/**
-	 * @param Config $config
-	 * @param HookContainer $hookContainer
-	 * @param Language $contentLanguage
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TitleFactory $titleFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param UploadRevisionImporter $uploadRevisionImporter
-	 * @param PermissionManager $permissionManager
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param SlotRoleRegistry $slotRoleRegistry
-	 */
-	public function __construct(
-		Config $config,
-		HookContainer $hookContainer,
-		Language $contentLanguage,
-		NamespaceInfo $namespaceInfo,
-		TitleFactory $titleFactory,
-		WikiPageFactory $wikiPageFactory,
-		UploadRevisionImporter $uploadRevisionImporter,
-		PermissionManager $permissionManager,
-		IContentHandlerFactory $contentHandlerFactory,
-		SlotRoleRegistry $slotRoleRegistry
-	) {
-		$this->config = $config;
-		$this->hookContainer = $hookContainer;
-		$this->contentLanguage = $contentLanguage;
-		$this->namespaceInfo = $namespaceInfo;
-		$this->titleFactory = $titleFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->uploadRevisionImporter = $uploadRevisionImporter;
-		$this->permissionManager = $permissionManager;
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->slotRoleRegistry = $slotRoleRegistry;
-	}
+    /**
+     * @param Config $config
+     * @param HookContainer $hookContainer
+     * @param Language $contentLanguage
+     * @param NamespaceInfo $namespaceInfo
+     * @param TitleFactory $titleFactory
+     * @param WikiPageFactory $wikiPageFactory
+     * @param UploadRevisionImporter $uploadRevisionImporter
+     * @param PermissionManager $permissionManager
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param SlotRoleRegistry $slotRoleRegistry
+     */
+    public function __construct(
+        Config $config,
+        HookContainer $hookContainer,
+        Language $contentLanguage,
+        NamespaceInfo $namespaceInfo,
+        TitleFactory $titleFactory,
+        WikiPageFactory $wikiPageFactory,
+        UploadRevisionImporter $uploadRevisionImporter,
+        PermissionManager $permissionManager,
+        IContentHandlerFactory $contentHandlerFactory,
+        SlotRoleRegistry $slotRoleRegistry
+    )
+    {
+        $this->config = $config;
+        $this->hookContainer = $hookContainer;
+        $this->contentLanguage = $contentLanguage;
+        $this->namespaceInfo = $namespaceInfo;
+        $this->titleFactory = $titleFactory;
+        $this->wikiPageFactory = $wikiPageFactory;
+        $this->uploadRevisionImporter = $uploadRevisionImporter;
+        $this->permissionManager = $permissionManager;
+        $this->contentHandlerFactory = $contentHandlerFactory;
+        $this->slotRoleRegistry = $slotRoleRegistry;
+    }
 
-	/**
-	 * @param ImportSource $source
-	 *
-	 * @return WikiImporter
-	 */
-	public function getWikiImporter( ImportSource $source ): WikiImporter {
-		return new WikiImporter(
-			$source,
-			$this->config,
-			$this->hookContainer,
-			$this->contentLanguage,
-			$this->namespaceInfo,
-			$this->titleFactory,
-			$this->wikiPageFactory,
-			$this->uploadRevisionImporter,
-			$this->permissionManager,
-			$this->contentHandlerFactory,
-			$this->slotRoleRegistry
-		);
-	}
+    /**
+     * @param ImportSource $source
+     *
+     * @return WikiImporter
+     */
+    public function getWikiImporter(ImportSource $source): WikiImporter
+    {
+        return new WikiImporter(
+            $source,
+            $this->config,
+            $this->hookContainer,
+            $this->contentLanguage,
+            $this->namespaceInfo,
+            $this->titleFactory,
+            $this->wikiPageFactory,
+            $this->uploadRevisionImporter,
+            $this->permissionManager,
+            $this->contentHandlerFactory,
+            $this->slotRoleRegistry
+        );
+    }
 }

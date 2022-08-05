@@ -27,81 +27,87 @@ use Wikimedia\Rdbms\IDatabase;
  * Stores a list of taggable revisions.
  * @since 1.25
  */
-class ChangeTagsRevisionList extends ChangeTagsList {
-	public function getType() {
-		return 'revision';
-	}
+class ChangeTagsRevisionList extends ChangeTagsList
+{
+    public function getType()
+    {
+        return 'revision';
+    }
 
-	/**
-	 * @param IDatabase $db
-	 * @return mixed
-	 */
-	public function doQuery( $db ) {
-		$ids = array_map( 'intval', $this->ids );
-		$revQuery = MediaWikiServices::getInstance()
-			->getRevisionStore()
-			->getQueryInfo( [ 'user' ] );
-		$queryInfo = [
-			'tables' => $revQuery['tables'],
-			'fields' => $revQuery['fields'],
-			'conds' => [
-				'rev_page' => $this->page->getId(),
-				'rev_id' => $ids,
-			],
-			'options' => [ 'ORDER BY' => 'rev_id DESC' ],
-			'join_conds' => $revQuery['joins'],
-		];
-		ChangeTags::modifyDisplayQuery(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
-			$queryInfo['conds'],
-			$queryInfo['join_conds'],
-			$queryInfo['options'],
-			''
-		);
-		return $db->select(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
-			$queryInfo['conds'],
-			__METHOD__,
-			$queryInfo['options'],
-			$queryInfo['join_conds']
-		);
-	}
+    /**
+     * @param IDatabase $db
+     * @return mixed
+     */
+    public function doQuery($db)
+    {
+        $ids = array_map('intval', $this->ids);
+        $revQuery = MediaWikiServices::getInstance()
+            ->getRevisionStore()
+            ->getQueryInfo(['user']);
+        $queryInfo = [
+            'tables'     => $revQuery['tables'],
+            'fields'     => $revQuery['fields'],
+            'conds'      => [
+                'rev_page' => $this->page->getId(),
+                'rev_id'   => $ids,
+            ],
+            'options'    => ['ORDER BY' => 'rev_id DESC'],
+            'join_conds' => $revQuery['joins'],
+        ];
+        ChangeTags::modifyDisplayQuery(
+            $queryInfo['tables'],
+            $queryInfo['fields'],
+            $queryInfo['conds'],
+            $queryInfo['join_conds'],
+            $queryInfo['options'],
+            ''
+        );
 
-	public function newItem( $row ) {
-		return new ChangeTagsRevisionItem( $this, $row );
-	}
+        return $db->select(
+            $queryInfo['tables'],
+            $queryInfo['fields'],
+            $queryInfo['conds'],
+            __METHOD__,
+            $queryInfo['options'],
+            $queryInfo['join_conds']
+        );
+    }
 
-	/**
-	 * Add/remove change tags from all the revisions in the list.
-	 *
-	 * @param string[] $tagsToAdd
-	 * @param string[] $tagsToRemove
-	 * @param string|null $params
-	 * @param string $reason
-	 * @param Authority $performer
-	 * @return Status
-	 */
-	public function updateChangeTagsOnAll(
-		array $tagsToAdd,
-		array $tagsToRemove,
-		?string $params,
-		string $reason,
-		Authority $performer
-	) {
-		$status = Status::newGood();
-		for ( $this->reset(); $this->current(); $this->next() ) {
-			$item = $this->current();
-			$status = ChangeTags::updateTagsWithChecks( $tagsToAdd, $tagsToRemove,
-				null, $item->getId(), null, $params, $reason, $performer );
-			// Should only fail on second and subsequent times if the user trips
-			// the rate limiter
-			if ( !$status->isOK() ) {
-				break;
-			}
-		}
+    public function newItem($row)
+    {
+        return new ChangeTagsRevisionItem($this, $row);
+    }
 
-		return $status;
-	}
+    /**
+     * Add/remove change tags from all the revisions in the list.
+     *
+     * @param string[] $tagsToAdd
+     * @param string[] $tagsToRemove
+     * @param string|null $params
+     * @param string $reason
+     * @param Authority $performer
+     * @return Status
+     */
+    public function updateChangeTagsOnAll(
+        array $tagsToAdd,
+        array $tagsToRemove,
+        ?string $params,
+        string $reason,
+        Authority $performer
+    )
+    {
+        $status = Status::newGood();
+        for ($this->reset(); $this->current(); $this->next()) {
+            $item = $this->current();
+            $status = ChangeTags::updateTagsWithChecks($tagsToAdd, $tagsToRemove,
+                null, $item->getId(), null, $params, $reason, $performer);
+            // Should only fail on second and subsequent times if the user trips
+            // the rate limiter
+            if (!$status->isOK()) {
+                break;
+            }
+        }
+
+        return $status;
+    }
 }

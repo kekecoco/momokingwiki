@@ -7,5 +7,6 @@ namespace Wikimedia\WRStats;
  *
  * @since 1.39
  */
-class WRStatsError extends \Exception {
+class WRStatsError extends \Exception
+{
 }

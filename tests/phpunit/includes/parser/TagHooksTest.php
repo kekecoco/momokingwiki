@@ -20,53 +20,61 @@
  * @covers PPNode_Hash_Array
  * @covers PPNode_Hash_Attr
  */
-class TagHooksTest extends MediaWikiIntegrationTestCase {
-	public static function provideValidNames() {
-		return [
-			[ 'foo' ],
-			[ 'foo-bar' ],
-			[ 'foo_bar' ],
-			[ 'FOO-BAR' ],
-			[ 'foo bar' ]
-		];
-	}
+class TagHooksTest extends MediaWikiIntegrationTestCase
+{
+    public static function provideValidNames()
+    {
+        return [
+            ['foo'],
+            ['foo-bar'],
+            ['foo_bar'],
+            ['FOO-BAR'],
+            ['foo bar']
+        ];
+    }
 
-	public static function provideBadNames() {
-		return [ [ "foo<bar" ], [ "foo>bar" ], [ "foo\nbar" ], [ "foo\rbar" ] ];
-	}
+    public static function provideBadNames()
+    {
+        return [["foo<bar"], ["foo>bar"], ["foo\nbar"], ["foo\rbar"]];
+    }
 
-	private function getParserOptions() {
-		$popt = ParserOptions::newFromUserAndLang( new User,
-			$this->getServiceContainer()->getContentLanguage() );
-		return $popt;
-	}
+    private function getParserOptions()
+    {
+        $popt = ParserOptions::newFromUserAndLang(new User,
+            $this->getServiceContainer()->getContentLanguage());
 
-	/**
-	 * @dataProvider provideValidNames
-	 */
-	public function testTagHooks( $tag ) {
-		$parser = $this->getServiceContainer()->getParserFactory()->create();
+        return $popt;
+    }
 
-		$parser->setHook( $tag, [ $this, 'tagCallback' ] );
-		$parserOutput = $parser->parse(
-			"Foo<$tag>Bar</$tag>Baz",
-			Title::makeTitle( NS_MAIN, 'Test' ),
-			$this->getParserOptions()
-		);
-		$this->assertEquals( "<p>FooOneBaz\n</p>", $parserOutput->getText( [ 'unwrap' => true ] ) );
-	}
+    /**
+     * @dataProvider provideValidNames
+     */
+    public function testTagHooks($tag)
+    {
+        $parser = $this->getServiceContainer()->getParserFactory()->create();
 
-	/**
-	 * @dataProvider provideBadNames
-	 */
-	public function testBadTagHooks( $tag ) {
-		$parser = $this->getServiceContainer()->getParserFactory()->create();
+        $parser->setHook($tag, [$this, 'tagCallback']);
+        $parserOutput = $parser->parse(
+            "Foo<$tag>Bar</$tag>Baz",
+            Title::makeTitle(NS_MAIN, 'Test'),
+            $this->getParserOptions()
+        );
+        $this->assertEquals("<p>FooOneBaz\n</p>", $parserOutput->getText(['unwrap' => true]));
+    }
 
-		$this->expectException( MWException::class );
-		$parser->setHook( $tag, [ $this, 'tagCallback' ] );
-	}
+    /**
+     * @dataProvider provideBadNames
+     */
+    public function testBadTagHooks($tag)
+    {
+        $parser = $this->getServiceContainer()->getParserFactory()->create();
 
-	public function tagCallback( $text, $params, $parser ) {
-		return str_rot13( $text );
-	}
+        $this->expectException(MWException::class);
+        $parser->setHook($tag, [$this, 'tagCallback']);
+    }
+
+    public function tagCallback($text, $params, $parser)
+    {
+        return str_rot13($text);
+    }
 }

@@ -23,19 +23,22 @@
  *
  * @ingroup Language
  */
-class ConstantDependency extends CacheDependency {
-	private $name;
-	private $value;
+class ConstantDependency extends CacheDependency
+{
+    private $name;
+    private $value;
 
-	public function __construct( $name ) {
-		$this->name = $name;
-		$this->value = constant( $name );
-	}
+    public function __construct($name)
+    {
+        $this->name = $name;
+        $this->value = constant($name);
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function isExpired() {
-		return constant( $this->name ) != $this->value;
-	}
+    /**
+     * @return bool
+     */
+    public function isExpired()
+    {
+        return constant($this->name) != $this->value;
+    }
 }

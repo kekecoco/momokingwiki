@@ -32,29 +32,32 @@ use MediaWiki\MediaWikiServices;
  *
  * @since 1.36
  */
-class UserEditCountInitJob extends Job implements GenericParameterJob {
+class UserEditCountInitJob extends Job implements GenericParameterJob
+{
 
-	public function __construct( array $params ) {
-		parent::__construct( 'userEditCountInit', $params );
-		$this->removeDuplicates = true;
-	}
+    public function __construct(array $params)
+    {
+        parent::__construct('userEditCountInit', $params);
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		$dbw = $lb->getConnectionRef( DB_PRIMARY );
+    public function run()
+    {
+        $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
+        $dbw = $lb->getConnectionRef(DB_PRIMARY);
 
-		$dbw->update(
-			'user',
-			// SET
-			[ 'user_editcount' => $this->params['editCount'] ],
-			// WHERE
-			[
-				'user_id' => $this->params['userId'],
-				'user_editcount IS NULL OR user_editcount < ' . $dbw->addQuotes( $this->params['editCount'] )
-			],
-			__METHOD__
-		);
+        $dbw->update(
+            'user',
+            // SET
+            ['user_editcount' => $this->params['editCount']],
+            // WHERE
+            [
+                'user_id' => $this->params['userId'],
+                'user_editcount IS NULL OR user_editcount < ' . $dbw->addQuotes($this->params['editCount'])
+            ],
+            __METHOD__
+        );
 
-		return true;
-	}
+        return true;
+    }
 }

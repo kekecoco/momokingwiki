@@ -25,27 +25,30 @@ namespace MediaWiki\Tests;
  *
  * @ingroup Testing
  */
-class AnsiTermColorer {
-	/**
-	 * Return ANSI terminal escape code for changing text attribs/color
-	 *
-	 * @param string|int $color Semicolon-separated list of attribute/color codes
-	 * @return string
-	 */
-	public function color( $color ) {
-		global $wgCommandLineDarkBg;
+class AnsiTermColorer
+{
+    /**
+     * Return ANSI terminal escape code for changing text attribs/color
+     *
+     * @param string|int $color Semicolon-separated list of attribute/color codes
+     * @return string
+     */
+    public function color($color)
+    {
+        global $wgCommandLineDarkBg;
 
-		$light = $wgCommandLineDarkBg ? "1;" : "0;";
+        $light = $wgCommandLineDarkBg ? "1;" : "0;";
 
-		return "\x1b[{$light}{$color}m";
-	}
+        return "\x1b[{$light}{$color}m";
+    }
 
-	/**
-	 * Return ANSI terminal escape code for restoring default text attributes
-	 *
-	 * @return string
-	 */
-	public function reset() {
-		return $this->color( '0' );
-	}
+    /**
+     * Return ANSI terminal escape code for restoring default text attributes
+     *
+     * @return string
+     */
+    public function reset()
+    {
+        return $this->color('0');
+    }
 }

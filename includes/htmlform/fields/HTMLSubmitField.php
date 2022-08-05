@@ -6,16 +6,19 @@
  *
  * @stable to extend
  */
-class HTMLSubmitField extends HTMLButtonField {
-	protected $buttonType = 'submit';
+class HTMLSubmitField extends HTMLButtonField
+{
+    protected $buttonType = 'submit';
 
-	protected $mFlags = [ 'primary', 'progressive' ];
+    protected $mFlags = ['primary', 'progressive'];
 
-	public function skipLoadData( $request ) {
-		return !$request->getCheck( $this->mName );
-	}
+    public function skipLoadData($request)
+    {
+        return !$request->getCheck($this->mName);
+    }
 
-	public function loadDataFromRequest( $request ) {
-		return $request->getCheck( $this->mName );
-	}
+    public function loadDataFromRequest($request)
+    {
+        return $request->getCheck($this->mName);
+    }
 }

@@ -22,33 +22,38 @@
 
 use MediaWiki\MediaWikiServices;
 
-class RevisionList extends RevisionListBase {
-	/** @inheritDoc */
-	public function getType() {
-		return 'revision';
-	}
+class RevisionList extends RevisionListBase
+{
+    /** @inheritDoc */
+    public function getType()
+    {
+        return 'revision';
+    }
 
-	/** @inheritDoc */
-	public function doQuery( $db ) {
-		$conds = [ 'rev_page' => $this->page->getId() ];
-		if ( $this->ids !== null ) {
-			$conds['rev_id'] = array_map( 'intval', $this->ids );
-		}
-		$revQuery = MediaWikiServices::getInstance()
-			->getRevisionStore()
-			->getQueryInfo( [ 'page', 'user' ] );
-		return $db->select(
-			$revQuery['tables'],
-			$revQuery['fields'],
-			$conds,
-			__METHOD__,
-			[ 'ORDER BY' => 'rev_id DESC' ],
-			$revQuery['joins']
-		);
-	}
+    /** @inheritDoc */
+    public function doQuery($db)
+    {
+        $conds = ['rev_page' => $this->page->getId()];
+        if ($this->ids !== null) {
+            $conds['rev_id'] = array_map('intval', $this->ids);
+        }
+        $revQuery = MediaWikiServices::getInstance()
+            ->getRevisionStore()
+            ->getQueryInfo(['page', 'user']);
 
-	/** @inheritDoc */
-	public function newItem( $row ) {
-		return new RevisionItem( $this, $row );
-	}
+        return $db->select(
+            $revQuery['tables'],
+            $revQuery['fields'],
+            $conds,
+            __METHOD__,
+            ['ORDER BY' => 'rev_id DESC'],
+            $revQuery['joins']
+        );
+    }
+
+    /** @inheritDoc */
+    public function newItem($row)
+    {
+        return new RevisionItem($this, $row);
+    }
 }

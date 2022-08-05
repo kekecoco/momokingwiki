@@ -28,12 +28,15 @@
  * @ingroup FileBackend
  * @since 1.22
  */
-class MockFileBackend extends MemoryFileBackend {
-	protected function doGetLocalCopyMulti( array $params ) {
-		$tmpFiles = []; // (path => MockFSFile)
-		foreach ( $params['srcs'] as $src ) {
-			$tmpFiles[$src] = new MockFSFile( "Fake path for $src" );
-		}
-		return $tmpFiles;
-	}
+class MockFileBackend extends MemoryFileBackend
+{
+    protected function doGetLocalCopyMulti(array $params)
+    {
+        $tmpFiles = []; // (path => MockFSFile)
+        foreach ($params['srcs'] as $src) {
+            $tmpFiles[$src] = new MockFSFile("Fake path for $src");
+        }
+
+        return $tmpFiles;
+    }
 }

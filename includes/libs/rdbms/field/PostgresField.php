@@ -2,18 +2,20 @@
 
 namespace Wikimedia\Rdbms;
 
-class PostgresField implements Field {
-	private $name, $tablename, $type, $nullable, $max_length, $deferred, $deferrable, $conname,
-		$has_default, $default;
+class PostgresField implements Field
+{
+    private $name, $tablename, $type, $nullable, $max_length, $deferred, $deferrable, $conname,
+        $has_default, $default;
 
-	/**
-	 * @param DatabasePostgres $db
-	 * @param string $table
-	 * @param string $field
-	 * @return null|PostgresField
-	 */
-	public static function fromText( DatabasePostgres $db, $table, $field ) {
-		$q = <<<SQL
+    /**
+     * @param DatabasePostgres $db
+     * @param string $table
+     * @param string $field
+     * @return null|PostgresField
+     */
+    public static function fromText(DatabasePostgres $db, $table, $field)
+    {
+        $q = <<<SQL
 SELECT
  attnotnull, attlen, conname AS conname,
  atthasdef,
@@ -37,78 +39,87 @@ AND relname=%s
 AND attname=%s;
 SQL;
 
-		foreach ( $db->getCoreSchemas() as $schema ) {
-			$res = $db->query(
-				sprintf( $q,
-					$db->addQuotes( $schema ),
-					$db->addQuotes( $table ),
-					$db->addQuotes( $field )
-				),
-				__METHOD__
-			);
-			$row = $res->fetchObject();
-			if ( !$row ) {
-				continue;
-			}
-			$n = new PostgresField;
-			$n->type = $row->typname;
-			$n->nullable = ( $row->attnotnull == 'f' );
-			$n->name = $field;
-			$n->tablename = $table;
-			$n->max_length = $row->attlen;
-			$n->deferrable = ( $row->deferrable == 't' );
-			$n->deferred = ( $row->deferred == 't' );
-			$n->conname = $row->conname;
-			$n->has_default = ( $row->atthasdef === 't' );
-			$n->default = $row->adsrc;
+        foreach ($db->getCoreSchemas() as $schema) {
+            $res = $db->query(
+                sprintf($q,
+                    $db->addQuotes($schema),
+                    $db->addQuotes($table),
+                    $db->addQuotes($field)
+                ),
+                __METHOD__
+            );
+            $row = $res->fetchObject();
+            if (!$row) {
+                continue;
+            }
+            $n = new PostgresField;
+            $n->type = $row->typname;
+            $n->nullable = ($row->attnotnull == 'f');
+            $n->name = $field;
+            $n->tablename = $table;
+            $n->max_length = $row->attlen;
+            $n->deferrable = ($row->deferrable == 't');
+            $n->deferred = ($row->deferred == 't');
+            $n->conname = $row->conname;
+            $n->has_default = ($row->atthasdef === 't');
+            $n->default = $row->adsrc;
 
-			return $n;
-		}
+            return $n;
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public function name() {
-		return $this->name;
-	}
+    public function name()
+    {
+        return $this->name;
+    }
 
-	public function tableName() {
-		return $this->tablename;
-	}
+    public function tableName()
+    {
+        return $this->tablename;
+    }
 
-	public function type() {
-		return $this->type;
-	}
+    public function type()
+    {
+        return $this->type;
+    }
 
-	public function isNullable() {
-		return $this->nullable;
-	}
+    public function isNullable()
+    {
+        return $this->nullable;
+    }
 
-	public function maxLength() {
-		return $this->max_length;
-	}
+    public function maxLength()
+    {
+        return $this->max_length;
+    }
 
-	public function is_deferrable() {
-		return $this->deferrable;
-	}
+    public function is_deferrable()
+    {
+        return $this->deferrable;
+    }
 
-	public function is_deferred() {
-		return $this->deferred;
-	}
+    public function is_deferred()
+    {
+        return $this->deferred;
+    }
 
-	public function conname() {
-		return $this->conname;
-	}
+    public function conname()
+    {
+        return $this->conname;
+    }
 
-	/**
-	 * @since 1.19
-	 * @return mixed|false
-	 */
-	public function defaultValue() {
-		if ( $this->has_default ) {
-			return $this->default;
-		} else {
-			return false;
-		}
-	}
+    /**
+     * @return mixed|false
+     * @since 1.19
+     */
+    public function defaultValue()
+    {
+        if ($this->has_default) {
+            return $this->default;
+        } else {
+            return false;
+        }
+    }
 }

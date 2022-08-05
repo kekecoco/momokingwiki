@@ -29,87 +29,99 @@ use InvalidArgumentException;
 /**
  * An LBFactory class that always returns a single database object.
  */
-class LBFactorySingle extends LBFactory {
-	/** @var LoadBalancerSingle */
-	private $lb;
+class LBFactorySingle extends LBFactory
+{
+    /** @var LoadBalancerSingle */
+    private $lb;
 
-	/**
-	 * You probably want to use {@link newFromConnection} instead.
-	 *
-	 * @param array $conf An associative array with one member:
-	 *  - connection: The IDatabase connection object
-	 */
-	public function __construct( array $conf ) {
-		parent::__construct( $conf );
+    /**
+     * You probably want to use {@link newFromConnection} instead.
+     *
+     * @param array $conf An associative array with one member:
+     *  - connection: The IDatabase connection object
+     */
+    public function __construct(array $conf)
+    {
+        parent::__construct($conf);
 
-		if ( !isset( $conf['connection'] ) ) {
-			throw new InvalidArgumentException( "Missing 'connection' argument." );
-		}
+        if (!isset($conf['connection'])) {
+            throw new InvalidArgumentException("Missing 'connection' argument.");
+        }
 
-		$lb = new LoadBalancerSingle( array_merge(
-			$this->baseLoadBalancerParams(),
-			$conf
-		) );
-		$this->initLoadBalancer( $lb );
+        $lb = new LoadBalancerSingle(array_merge(
+            $this->baseLoadBalancerParams(),
+            $conf
+        ));
+        $this->initLoadBalancer($lb);
 
-		$this->lb = $lb;
-	}
+        $this->lb = $lb;
+    }
 
-	/**
-	 * @param IDatabase $db Live connection handle
-	 * @param array $params Parameter map to LBFactorySingle::__constructs()
-	 * @return LBFactorySingle
-	 * @since 1.28
-	 */
-	public static function newFromConnection( IDatabase $db, array $params = [] ) {
-		return new static( array_merge(
-			[ 'localDomain' => $db->getDomainID() ],
-			$params,
-			[ 'connection' => $db ]
-		) );
-	}
+    /**
+     * @param IDatabase $db Live connection handle
+     * @param array $params Parameter map to LBFactorySingle::__constructs()
+     * @return LBFactorySingle
+     * @since 1.28
+     */
+    public static function newFromConnection(IDatabase $db, array $params = [])
+    {
+        return new static(array_merge(
+            ['localDomain' => $db->getDomainID()],
+            $params,
+            ['connection' => $db]
+        ));
+    }
 
-	public function newMainLB( $domain = false ): ILoadBalancerForOwner {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new BadMethodCallException( "Method is not supported." );
-	}
+    public function newMainLB($domain = false): ILoadBalancerForOwner
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new BadMethodCallException("Method is not supported.");
+    }
 
-	public function getMainLB( $domain = false ): ILoadBalancer {
-		return $this->lb;
-	}
+    public function getMainLB($domain = false): ILoadBalancer
+    {
+        return $this->lb;
+    }
 
-	public function newExternalLB( $cluster ): ILoadBalancerForOwner {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new BadMethodCallException( "Method is not supported." );
-	}
+    public function newExternalLB($cluster): ILoadBalancerForOwner
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new BadMethodCallException("Method is not supported.");
+    }
 
-	public function getExternalLB( $cluster ): ILoadBalancer {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new BadMethodCallException( "Method is not supported." );
-	}
+    public function getExternalLB($cluster): ILoadBalancer
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new BadMethodCallException("Method is not supported.");
+    }
 
-	public function getAllMainLBs(): array {
-		return [ self::CLUSTER_MAIN_DEFAULT => $this->lb ];
-	}
+    public function getAllMainLBs(): array
+    {
+        return [self::CLUSTER_MAIN_DEFAULT => $this->lb];
+    }
 
-	public function getAllExternalLBs(): array {
-		return [];
-	}
+    public function getAllExternalLBs(): array
+    {
+        return [];
+    }
 
-	public function forEachLB( $callback, array $params = [] ) {
-		wfDeprecated( __METHOD__, '1.39' );
-		if ( isset( $this->lb ) ) { // may not be set during _destruct()
-			$callback( $this->lb, ...$params );
-		}
-	}
+    public function forEachLB($callback, array $params = [])
+    {
+        wfDeprecated(__METHOD__, '1.39');
+        if (isset($this->lb)) { // may not be set during _destruct()
+            $callback($this->lb, ...$params);
+        }
+    }
 
-	protected function getLBsForOwner() {
-		if ( isset( $this->lb ) ) { // may not be set during _destruct()
-			yield $this->lb;
-		}
-	}
+    protected function getLBsForOwner()
+    {
+        if (isset($this->lb)) { // may not be set during _destruct()
+            yield $this->lb;
+        }
+    }
 
-	public function __destruct() {
-		// do nothing since the connection was injected
-	}
+    public function __destruct()
+    {
+        // do nothing since the connection was injected
+    }
 }

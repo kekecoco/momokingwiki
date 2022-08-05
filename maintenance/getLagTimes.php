@@ -31,49 +31,52 @@ use Wikimedia\IPUtils;
  *
  * @ingroup Maintenance
  */
-class GetLagTimes extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Dump replication lag times' );
-		$this->addOption( 'report', "Report the lag values to StatsD" );
-	}
+class GetLagTimes extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Dump replication lag times');
+        $this->addOption('report', "Report the lag values to StatsD");
+    }
 
-	public function execute() {
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$stats = $services->getStatsdDataFactory();
-		$lbsByType = [
-			'main' => $lbFactory->getAllMainLBs(),
-			'external' => $lbFactory->getAllExternalLBs()
-		];
+    public function execute()
+    {
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $stats = $services->getStatsdDataFactory();
+        $lbsByType = [
+            'main'     => $lbFactory->getAllMainLBs(),
+            'external' => $lbFactory->getAllExternalLBs()
+        ];
 
-		foreach ( $lbsByType as $type => $lbs ) {
-			foreach ( $lbs as $cluster => $lb ) {
-				if ( $lb->getServerCount() <= 1 ) {
-					continue;
-				}
-				$lags = $lb->getLagTimes();
-				foreach ( $lags as $serverIndex => $lag ) {
-					$host = $lb->getServerName( $serverIndex );
-					if ( IPUtils::isValid( $host ) ) {
-						$ip = $host;
-						$host = gethostbyaddr( $host );
-					} else {
-						$ip = gethostbyname( $host );
-					}
+        foreach ($lbsByType as $type => $lbs) {
+            foreach ($lbs as $cluster => $lb) {
+                if ($lb->getServerCount() <= 1) {
+                    continue;
+                }
+                $lags = $lb->getLagTimes();
+                foreach ($lags as $serverIndex => $lag) {
+                    $host = $lb->getServerName($serverIndex);
+                    if (IPUtils::isValid($host)) {
+                        $ip = $host;
+                        $host = gethostbyaddr($host);
+                    } else {
+                        $ip = gethostbyname($host);
+                    }
 
-					$starLen = min( intval( $lag ), 40 );
-					$stars = str_repeat( '*', $starLen );
-					$this->output( sprintf( "%10s %20s %3d %s\n", $ip, $host, $lag, $stars ) );
+                    $starLen = min(intval($lag), 40);
+                    $stars = str_repeat('*', $starLen);
+                    $this->output(sprintf("%10s %20s %3d %s\n", $ip, $host, $lag, $stars));
 
-					if ( $this->hasOption( 'report' ) ) {
-						$group = ( $type === 'external' ) ? 'external' : $cluster;
-						$stats->gauge( "loadbalancer.lag.$group.$host", intval( $lag * 1e3 ) );
-					}
-				}
-			}
-		}
-	}
+                    if ($this->hasOption('report')) {
+                        $group = ($type === 'external') ? 'external' : $cluster;
+                        $stats->gauge("loadbalancer.lag.$group.$host", intval($lag * 1e3));
+                    }
+                }
+            }
+        }
+    }
 }
 
 $maintClass = GetLagTimes::class;

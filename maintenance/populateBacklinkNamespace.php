@@ -30,69 +30,76 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class PopulateBacklinkNamespace extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Populate the *_from_namespace fields' );
-		$this->addOption( 'lastUpdatedId', "Highest page_id with updated links", false, true );
-	}
+class PopulateBacklinkNamespace extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Populate the *_from_namespace fields');
+        $this->addOption('lastUpdatedId', "Highest page_id with updated links", false, true);
+    }
 
-	protected function getUpdateKey() {
-		return 'populate *_from_namespace';
-	}
+    protected function getUpdateKey()
+    {
+        return 'populate *_from_namespace';
+    }
 
-	protected function updateSkippedMessage() {
-		return '*_from_namespace column of backlink tables already populated.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return '*_from_namespace column of backlink tables already populated.';
+    }
 
-	public function doDBUpdates() {
-		$db = $this->getDB( DB_PRIMARY );
+    public function doDBUpdates()
+    {
+        $db = $this->getDB(DB_PRIMARY);
 
-		$this->output( "Updating *_from_namespace fields in links tables.\n" );
+        $this->output("Updating *_from_namespace fields in links tables.\n");
 
-		$start = $this->getOption( 'lastUpdatedId' );
-		if ( !$start ) {
-			$start = $db->selectField( 'page', 'MIN(page_id)', '', __METHOD__ );
-		}
-		if ( !$start ) {
-			$this->output( "Nothing to do." );
-			return false;
-		}
-		$end = $db->selectField( 'page', 'MAX(page_id)', '', __METHOD__ );
-		$batchSize = $this->getBatchSize();
+        $start = $this->getOption('lastUpdatedId');
+        if (!$start) {
+            $start = $db->selectField('page', 'MIN(page_id)', '', __METHOD__);
+        }
+        if (!$start) {
+            $this->output("Nothing to do.");
 
-		# Do remaining chunk
-		$end += $batchSize - 1;
-		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		while ( $blockEnd <= $end ) {
-			$this->output( "...doing page_id from $blockStart to $blockEnd\n" );
-			$cond = "page_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd;
-			$res = $db->select( 'page', [ 'page_id', 'page_namespace' ], $cond, __METHOD__ );
-			foreach ( $res as $row ) {
-				$db->update( 'pagelinks',
-					[ 'pl_from_namespace' => $row->page_namespace ],
-					[ 'pl_from' => $row->page_id ],
-					__METHOD__
-				);
-				$db->update( 'templatelinks',
-					[ 'tl_from_namespace' => $row->page_namespace ],
-					[ 'tl_from' => $row->page_id ],
-					__METHOD__
-				);
-				$db->update( 'imagelinks',
-					[ 'il_from_namespace' => $row->page_namespace ],
-					[ 'il_from' => $row->page_id ],
-					__METHOD__
-				);
-			}
-			$blockStart += $batchSize - 1;
-			$blockEnd += $batchSize - 1;
-			$lbFactory->waitForReplication();
-		}
-		return true;
-	}
+            return false;
+        }
+        $end = $db->selectField('page', 'MAX(page_id)', '', __METHOD__);
+        $batchSize = $this->getBatchSize();
+
+        # Do remaining chunk
+        $end += $batchSize - 1;
+        $blockStart = $start;
+        $blockEnd = $start + $batchSize - 1;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        while ($blockEnd <= $end) {
+            $this->output("...doing page_id from $blockStart to $blockEnd\n");
+            $cond = "page_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd;
+            $res = $db->select('page', ['page_id', 'page_namespace'], $cond, __METHOD__);
+            foreach ($res as $row) {
+                $db->update('pagelinks',
+                    ['pl_from_namespace' => $row->page_namespace],
+                    ['pl_from' => $row->page_id],
+                    __METHOD__
+                );
+                $db->update('templatelinks',
+                    ['tl_from_namespace' => $row->page_namespace],
+                    ['tl_from' => $row->page_id],
+                    __METHOD__
+                );
+                $db->update('imagelinks',
+                    ['il_from_namespace' => $row->page_namespace],
+                    ['il_from' => $row->page_id],
+                    __METHOD__
+                );
+            }
+            $blockStart += $batchSize - 1;
+            $blockEnd += $batchSize - 1;
+            $lbFactory->waitForReplication();
+        }
+
+        return true;
+    }
 }
 
 $maintClass = PopulateBacklinkNamespace::class;

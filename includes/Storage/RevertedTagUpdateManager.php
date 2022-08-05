@@ -33,44 +33,48 @@ use RevertedTagUpdateJob;
  *
  * @since 1.36
  */
-class RevertedTagUpdateManager {
+class RevertedTagUpdateManager
+{
 
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
+    /** @var JobQueueGroup */
+    private $jobQueueGroup;
 
-	/** @var EditResultCache */
-	private $editResultCache;
+    /** @var EditResultCache */
+    private $editResultCache;
 
-	/**
-	 * @param EditResultCache $editResultCache
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
-	public function __construct(
-		EditResultCache $editResultCache,
-		JobQueueGroup $jobQueueGroup
-	) {
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->editResultCache = $editResultCache;
-	}
+    /**
+     * @param EditResultCache $editResultCache
+     * @param JobQueueGroup $jobQueueGroup
+     */
+    public function __construct(
+        EditResultCache $editResultCache,
+        JobQueueGroup $jobQueueGroup
+    )
+    {
+        $this->jobQueueGroup = $jobQueueGroup;
+        $this->editResultCache = $editResultCache;
+    }
 
-	/**
-	 * Enqueue a RevertedTagUpdateJob for the given revision, if needed. Call this when the
-	 * user "approves" the edit.
-	 *
-	 * This method is also called whenever the edit is patrolled or autopatrolled.
-	 *
-	 * @param int $revertRevisionId
-	 *
-	 * @return bool Whether the update was enqueued successfully
-	 */
-	public function approveRevertedTagForRevision( int $revertRevisionId ): bool {
-		$editResult = $this->editResultCache->get( $revertRevisionId );
-		if ( $editResult === null ) {
-			return false;
-		}
+    /**
+     * Enqueue a RevertedTagUpdateJob for the given revision, if needed. Call this when the
+     * user "approves" the edit.
+     *
+     * This method is also called whenever the edit is patrolled or autopatrolled.
+     *
+     * @param int $revertRevisionId
+     *
+     * @return bool Whether the update was enqueued successfully
+     */
+    public function approveRevertedTagForRevision(int $revertRevisionId): bool
+    {
+        $editResult = $this->editResultCache->get($revertRevisionId);
+        if ($editResult === null) {
+            return false;
+        }
 
-		$spec = RevertedTagUpdateJob::newSpec( $revertRevisionId, $editResult );
-		$this->jobQueueGroup->lazyPush( $spec );
-		return true;
-	}
+        $spec = RevertedTagUpdateJob::newSpec($revertRevisionId, $editResult);
+        $this->jobQueueGroup->lazyPush($spec);
+
+        return true;
+    }
 }

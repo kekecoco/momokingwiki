@@ -28,41 +28,45 @@
  *
  * @since 1.19
  */
-class NewUsersLogFormatter extends LogFormatter {
-	protected function getMessageParameters() {
-		$params = parent::getMessageParameters();
-		$subtype = $this->entry->getSubtype();
-		if ( $subtype === 'create2' || $subtype === 'byemail' ) {
-			if ( isset( $params[3] ) ) {
-				$target = User::newFromId( $params[3] );
-			} else {
-				$target = User::newFromName( $this->entry->getTarget()->getText(), false );
-			}
-			$params[2] = Message::rawParam( $this->makeUserLink( $target ) );
-			$params[3] = $target->getName();
-		}
+class NewUsersLogFormatter extends LogFormatter
+{
+    protected function getMessageParameters()
+    {
+        $params = parent::getMessageParameters();
+        $subtype = $this->entry->getSubtype();
+        if ($subtype === 'create2' || $subtype === 'byemail') {
+            if (isset($params[3])) {
+                $target = User::newFromId($params[3]);
+            } else {
+                $target = User::newFromName($this->entry->getTarget()->getText(), false);
+            }
+            $params[2] = Message::rawParam($this->makeUserLink($target));
+            $params[3] = $target->getName();
+        }
 
-		return $params;
-	}
+        return $params;
+    }
 
-	public function getComment() {
-		$timestamp = wfTimestamp( TS_MW, $this->entry->getTimestamp() );
-		if ( $timestamp < '20080129000000' ) {
-			# Suppress $comment from old entries (before 2008-01-29),
-			# not needed and can contain incorrect links
-			return '';
-		}
+    public function getComment()
+    {
+        $timestamp = wfTimestamp(TS_MW, $this->entry->getTimestamp());
+        if ($timestamp < '20080129000000') {
+            # Suppress $comment from old entries (before 2008-01-29),
+            # not needed and can contain incorrect links
+            return '';
+        }
 
-		return parent::getComment();
-	}
+        return parent::getComment();
+    }
 
-	public function getPreloadTitles() {
-		$subtype = $this->entry->getSubtype();
-		if ( $subtype === 'create2' || $subtype === 'byemail' ) {
-			// add the user talk to LinkBatch for the userLink
-			return [ Title::makeTitle( NS_USER_TALK, $this->entry->getTarget()->getText() ) ];
-		}
+    public function getPreloadTitles()
+    {
+        $subtype = $this->entry->getSubtype();
+        if ($subtype === 'create2' || $subtype === 'byemail') {
+            // add the user talk to LinkBatch for the userLink
+            return [Title::makeTitle(NS_USER_TALK, $this->entry->getTarget()->getText())];
+        }
 
-		return [];
-	}
+        return [];
+    }
 }

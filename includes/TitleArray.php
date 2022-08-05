@@ -34,26 +34,28 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @method int count()
  */
-abstract class TitleArray implements Iterator {
-	/**
-	 * @param IResultWrapper $res A SQL result including at least page_namespace and
-	 *   page_title -- also can have page_id, page_len, page_is_redirect,
-	 *   page_latest (if those will be used).  See Title::newFromRow.
-	 * @return TitleArrayFromResult
-	 */
-	public static function newFromResult( $res ) {
-		// TODO consider merging this class with TitleArrayFromResult now that the
-		// TitleArrayFromResult hook has been removed
-		return new TitleArrayFromResult( $res );
-	}
+abstract class TitleArray implements Iterator
+{
+    /**
+     * @param IResultWrapper $res A SQL result including at least page_namespace and
+     *   page_title -- also can have page_id, page_len, page_is_redirect,
+     *   page_latest (if those will be used).  See Title::newFromRow.
+     * @return TitleArrayFromResult
+     */
+    public static function newFromResult($res)
+    {
+        // TODO consider merging this class with TitleArrayFromResult now that the
+        // TitleArrayFromResult hook has been removed
+        return new TitleArrayFromResult($res);
+    }
 
-	/**
-	 * @return Title
-	 */
-	abstract public function current(): Title;
+    /**
+     * @return Title
+     */
+    abstract public function current(): Title;
 
-	/**
-	 * @return int
-	 */
-	abstract public function key(): int;
+    /**
+     * @return int
+     */
+    abstract public function key(): int;
 }

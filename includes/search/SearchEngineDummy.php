@@ -27,6 +27,7 @@
  * such as a LIKE search through titles.
  * @ingroup Search
  */
-class SearchEngineDummy extends SearchEngine {
-	// no-op
+class SearchEngineDummy extends SearchEngine
+{
+    // no-op
 }

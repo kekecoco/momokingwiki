@@ -7,14 +7,17 @@ namespace MediaWiki\User\TempUser;
  *
  * @since 1.39
  */
-class PlainNumericSerialMapping implements SerialMapping {
-	/**
-	 * @param array $config
-	 */
-	public function __construct( $config ) {
-	}
+class PlainNumericSerialMapping implements SerialMapping
+{
+    /**
+     * @param array $config
+     */
+    public function __construct($config)
+    {
+    }
 
-	public function getSerialIdForIndex( int $index ): string {
-		return (string)$index;
-	}
+    public function getSerialIdForIndex(int $index): string
+    {
+        return (string)$index;
+    }
 }

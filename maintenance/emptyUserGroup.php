@@ -26,38 +26,41 @@ require_once __DIR__ . '/Maintenance.php';
 
 use MediaWiki\MediaWikiServices;
 
-class EmptyUserGroup extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Remove all users from a given user group' );
-		$this->addArg( 'group', 'Group to be removed', true );
-		$this->setBatchSize( 100 );
-	}
+class EmptyUserGroup extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Remove all users from a given user group');
+        $this->addArg('group', 'Group to be removed', true);
+        $this->setBatchSize(100);
+    }
 
-	public function execute() {
-		$group = $this->getArg( 0 );
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$userGroupManager = MediaWikiServices::getInstance()->getUserGroupManager();
+    public function execute()
+    {
+        $group = $this->getArg(0);
+        $lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $userGroupManager = MediaWikiServices::getInstance()->getUserGroupManager();
 
-		$totalCount = 0;
-		$this->output( "Removing users from $group...\n" );
-		while ( true ) {
-			$users = User::findUsersByGroup( $group, $this->getBatchSize() );
-			if ( iterator_count( $users ) === 0 ) {
-				break;
-			}
+        $totalCount = 0;
+        $this->output("Removing users from $group...\n");
+        while (true) {
+            $users = User::findUsersByGroup($group, $this->getBatchSize());
+            if (iterator_count($users) === 0) {
+                break;
+            }
 
-			foreach ( $users as $user ) {
-				$totalCount += (int)$userGroupManager->removeUserFromGroup( $user, $group );
-			}
-			$lb->waitForReplication();
-		}
-		if ( $totalCount ) {
-			$this->output( "  ...done! Removed $totalCount users in total.\n" );
-		} else {
-			$this->output( "  ...nothing to do, group was empty.\n" );
-		}
-	}
+            foreach ($users as $user) {
+                $totalCount += (int)$userGroupManager->removeUserFromGroup($user, $group);
+            }
+            $lb->waitForReplication();
+        }
+        if ($totalCount) {
+            $this->output("  ...done! Removed $totalCount users in total.\n");
+        } else {
+            $this->output("  ...nothing to do, group was empty.\n");
+        }
+    }
 }
 
 $maintClass = EmptyUserGroup::class;

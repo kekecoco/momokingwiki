@@ -27,49 +27,53 @@ require_once __DIR__ . '/Maintenance.php';
 
 global $optionsWithArgs, $optionsWithoutArgs, $allowUnregisteredOptions;
 
-if ( !isset( $optionsWithArgs ) ) {
-	$optionsWithArgs = [];
+if (!isset($optionsWithArgs)) {
+    $optionsWithArgs = [];
 }
-if ( !isset( $optionsWithoutArgs ) ) {
-	$optionsWithoutArgs = [];
+if (!isset($optionsWithoutArgs)) {
+    $optionsWithoutArgs = [];
 }
-if ( !isset( $allowUnregisteredOptions ) ) {
-	$allowUnregisteredOptions = false;
+if (!isset($allowUnregisteredOptions)) {
+    $allowUnregisteredOptions = false;
 }
 
-class CommandLineInc extends Maintenance {
-	public function __construct() {
-		global $optionsWithArgs, $optionsWithoutArgs, $allowUnregisteredOptions;
+class CommandLineInc extends Maintenance
+{
+    public function __construct()
+    {
+        global $optionsWithArgs, $optionsWithoutArgs, $allowUnregisteredOptions;
 
-		parent::__construct();
+        parent::__construct();
 
-		foreach ( $optionsWithArgs as $name ) {
-			$this->addOption( $name, '', false, true );
-		}
-		foreach ( $optionsWithoutArgs as $name ) {
-			$this->addOption( $name, '', false, false );
-		}
+        foreach ($optionsWithArgs as $name) {
+            $this->addOption($name, '', false, true);
+        }
+        foreach ($optionsWithoutArgs as $name) {
+            $this->addOption($name, '', false, false);
+        }
 
-		$this->setAllowUnregisteredOptions( $allowUnregisteredOptions );
-	}
+        $this->setAllowUnregisteredOptions($allowUnregisteredOptions);
+    }
 
-	/**
-	 * No help, it would just be misleading since it misses custom options
-	 * @param bool $force
-	 */
-	protected function maybeHelp( $force = false ) {
-		if ( !$force ) {
-			return;
-		}
-		parent::maybeHelp( true );
-	}
+    /**
+     * No help, it would just be misleading since it misses custom options
+     * @param bool $force
+     */
+    protected function maybeHelp($force = false)
+    {
+        if (!$force) {
+            return;
+        }
+        parent::maybeHelp(true);
+    }
 
-	public function execute() {
-		global $args, $options;
+    public function execute()
+    {
+        global $args, $options;
 
-		$args = $this->mArgs;
-		$options = $this->mOptions;
-	}
+        $args = $this->mArgs;
+        $options = $this->mOptions;
+    }
 }
 
 $maintClass = CommandLineInc::class;

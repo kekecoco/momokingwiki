@@ -37,32 +37,33 @@
  *
  * @ingroup Language
  */
-interface LCStore {
+interface LCStore
+{
 
-	/**
-	 * Get a value.
-	 * @param string $code Language code
-	 * @param string $key Cache key
-	 */
-	public function get( $code, $key );
+    /**
+     * Get a value.
+     * @param string $code Language code
+     * @param string $key Cache key
+     */
+    public function get($code, $key);
 
-	/**
-	 * Start a write transaction.
-	 * @param string $code Language code
-	 */
-	public function startWrite( $code );
+    /**
+     * Start a write transaction.
+     * @param string $code Language code
+     */
+    public function startWrite($code);
 
-	/**
-	 * Finish a write transaction.
-	 */
-	public function finishWrite();
+    /**
+     * Finish a write transaction.
+     */
+    public function finishWrite();
 
-	/**
-	 * Set a key to a given value. startWrite() must be called before this
-	 * is called, and finishWrite() must be called afterwards.
-	 * @param string $key
-	 * @param mixed $value
-	 */
-	public function set( $key, $value );
+    /**
+     * Set a key to a given value. startWrite() must be called before this
+     * is called, and finishWrite() must be called afterwards.
+     * @param string $key
+     * @param mixed $value
+     */
+    public function set($key, $value);
 
 }

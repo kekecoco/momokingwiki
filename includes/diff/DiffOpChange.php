@@ -32,23 +32,26 @@
  * @internal
  * @ingroup DifferenceEngine
  */
-class DiffOpChange extends DiffOp {
-	/** @inheritDoc */
-	public $type = 'change';
+class DiffOpChange extends DiffOp
+{
+    /** @inheritDoc */
+    public $type = 'change';
 
-	/**
-	 * @param string[] $orig
-	 * @param string[] $closing
-	 */
-	public function __construct( $orig, $closing ) {
-		$this->orig = $orig;
-		$this->closing = $closing;
-	}
+    /**
+     * @param string[] $orig
+     * @param string[] $closing
+     */
+    public function __construct($orig, $closing)
+    {
+        $this->orig = $orig;
+        $this->closing = $closing;
+    }
 
-	/**
-	 * @return DiffOpChange
-	 */
-	public function reverse() {
-		return new DiffOpChange( $this->closing, $this->orig );
-	}
+    /**
+     * @return DiffOpChange
+     */
+    public function reverse()
+    {
+        return new DiffOpChange($this->closing, $this->orig);
+    }
 }

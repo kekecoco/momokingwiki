@@ -24,5 +24,6 @@
  * falls back to PackedHoverGallery. Degrades gracefully for
  * screen readers.
  */
-class PackedHoverImageGallery extends PackedOverlayImageGallery {
+class PackedHoverImageGallery extends PackedOverlayImageGallery
+{
 }

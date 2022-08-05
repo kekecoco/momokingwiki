@@ -25,80 +25,91 @@
  *
  * @ingroup Actions
  */
-class PurgeAction extends FormAction {
+class PurgeAction extends FormAction
+{
 
-	private $redirectParams;
+    private $redirectParams;
 
-	public function getName() {
-		return 'purge';
-	}
+    public function getName()
+    {
+        return 'purge';
+    }
 
-	public function getDescription() {
-		return '';
-	}
+    public function getDescription()
+    {
+        return '';
+    }
 
-	public function onSubmit( $data ) {
-		return $this->getWikiPage()->doPurge();
-	}
+    public function onSubmit($data)
+    {
+        return $this->getWikiPage()->doPurge();
+    }
 
-	public function show() {
-		$this->setHeaders();
+    public function show()
+    {
+        $this->setHeaders();
 
-		// This will throw exceptions if there's a problem
-		$this->checkCanExecute( $this->getUser() );
+        // This will throw exceptions if there's a problem
+        $this->checkCanExecute($this->getUser());
 
-		$user = $this->getUser();
+        $user = $this->getUser();
 
-		if ( $user->pingLimiter( 'purge' ) ) {
-			// TODO: Display actionthrottledtext
-			return;
-		}
+        if ($user->pingLimiter('purge')) {
+            // TODO: Display actionthrottledtext
+            return;
+        }
 
-		if ( $this->getRequest()->wasPosted() ) {
-			$this->redirectParams = wfArrayToCgi( array_diff_key(
-				$this->getRequest()->getQueryValues(),
-				[ 'title' => null, 'action' => null ]
-			) );
-			if ( $this->onSubmit( [] ) ) {
-				$this->onSuccess();
-			}
-		} else {
-			$this->redirectParams = $this->getRequest()->getVal( 'redirectparams', '' );
-			$form = $this->getForm();
-			if ( $form->show() ) {
-				$this->onSuccess();
-			}
-		}
-	}
+        if ($this->getRequest()->wasPosted()) {
+            $this->redirectParams = wfArrayToCgi(array_diff_key(
+                $this->getRequest()->getQueryValues(),
+                ['title' => null, 'action' => null]
+            ));
+            if ($this->onSubmit([])) {
+                $this->onSuccess();
+            }
+        } else {
+            $this->redirectParams = $this->getRequest()->getVal('redirectparams', '');
+            $form = $this->getForm();
+            if ($form->show()) {
+                $this->onSuccess();
+            }
+        }
+    }
 
-	protected function usesOOUI() {
-		return true;
-	}
+    protected function usesOOUI()
+    {
+        return true;
+    }
 
-	protected function getFormFields() {
-		return [
-			'intro' => [
-				'type' => 'info',
-				'raw' => true,
-				'default' => $this->msg( 'confirm-purge-top' )->parse()
-			]
-		];
-	}
+    protected function getFormFields()
+    {
+        return [
+            'intro' => [
+                'type'    => 'info',
+                'raw'     => true,
+                'default' => $this->msg('confirm-purge-top')->parse()
+            ]
+        ];
+    }
 
-	protected function alterForm( HTMLForm $form ) {
-		$form->setWrapperLegendMsg( 'confirm-purge-title' );
-		$form->setSubmitTextMsg( 'confirm_purge_button' );
-	}
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->setWrapperLegendMsg('confirm-purge-title');
+        $form->setSubmitTextMsg('confirm_purge_button');
+    }
 
-	protected function postText() {
-		return $this->msg( 'confirm-purge-bottom' )->parse();
-	}
+    protected function postText()
+    {
+        return $this->msg('confirm-purge-bottom')->parse();
+    }
 
-	public function onSuccess() {
-		$this->getOutput()->redirect( $this->getTitle()->getFullURL( $this->redirectParams ) );
-	}
+    public function onSuccess()
+    {
+        $this->getOutput()->redirect($this->getTitle()->getFullURL($this->redirectParams));
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 }

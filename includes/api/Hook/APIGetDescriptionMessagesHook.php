@@ -12,15 +12,16 @@ use Message;
  * @stable to implement
  * @ingroup Hooks
  */
-interface APIGetDescriptionMessagesHook {
-	/**
-	 * Use this hook to modify a module's help message.
-	 *
-	 * @since 1.35
-	 *
-	 * @param ApiBase $module
-	 * @param Message[] &$msg
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onAPIGetDescriptionMessages( $module, &$msg );
+interface APIGetDescriptionMessagesHook
+{
+    /**
+     * Use this hook to modify a module's help message.
+     *
+     * @param ApiBase $module
+     * @param Message[] &$msg
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onAPIGetDescriptionMessages($module, &$msg);
 }

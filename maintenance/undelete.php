@@ -23,39 +23,42 @@
 
 require_once __DIR__ . '/Maintenance.php';
 
-class Undelete extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Undelete a page' );
-		$this->addOption( 'user', 'The user to perform the undeletion', false, true, 'u' );
-		$this->addOption( 'reason', 'The reason to undelete', false, true, 'r' );
-		$this->addArg( 'pagename', 'Page to undelete' );
-	}
+class Undelete extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Undelete a page');
+        $this->addOption('user', 'The user to perform the undeletion', false, true, 'u');
+        $this->addOption('reason', 'The reason to undelete', false, true, 'r');
+        $this->addArg('pagename', 'Page to undelete');
+    }
 
-	public function execute() {
-		$username = $this->getOption( 'user', false );
-		$reason = $this->getOption( 'reason', '' );
-		$pageName = $this->getArg( 0 );
+    public function execute()
+    {
+        $username = $this->getOption('user', false);
+        $reason = $this->getOption('reason', '');
+        $pageName = $this->getArg(0);
 
-		$title = Title::newFromText( $pageName );
-		if ( !$title ) {
-			$this->fatalError( "Invalid title" );
-		}
-		if ( $username === false ) {
-			$user = User::newSystemUser( 'Command line script', [ 'steal' => true ] );
-		} else {
-			$user = User::newFromName( $username );
-		}
-		if ( !$user ) {
-			$this->fatalError( "Invalid username" );
-		}
-		StubGlobalUser::setUser( $user );
+        $title = Title::newFromText($pageName);
+        if (!$title) {
+            $this->fatalError("Invalid title");
+        }
+        if ($username === false) {
+            $user = User::newSystemUser('Command line script', ['steal' => true]);
+        } else {
+            $user = User::newFromName($username);
+        }
+        if (!$user) {
+            $this->fatalError("Invalid username");
+        }
+        StubGlobalUser::setUser($user);
 
-		$archive = new PageArchive( $title );
-		$this->output( "Undeleting " . $title->getPrefixedDBkey() . '...' );
-		$archive->undeleteAsUser( [], $user, $reason );
-		$this->output( "done\n" );
-	}
+        $archive = new PageArchive($title);
+        $this->output("Undeleting " . $title->getPrefixedDBkey() . '...');
+        $archive->undeleteAsUser([], $user, $reason);
+        $this->output("done\n");
+    }
 }
 
 $maintClass = Undelete::class;

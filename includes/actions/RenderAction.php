@@ -25,17 +25,21 @@
  *
  * @ingroup Actions
  */
-class RenderAction extends FormlessAction {
+class RenderAction extends FormlessAction
+{
 
-	public function getName() {
-		return 'render';
-	}
+    public function getName()
+    {
+        return 'render';
+    }
 
-	public function onView() {
-		return null;
-	}
+    public function onView()
+    {
+        return null;
+    }
 
-	public function show() {
-		$this->getArticle()->render();
-	}
+    public function show()
+    {
+        $this->getArticle()->render();
+    }
 }

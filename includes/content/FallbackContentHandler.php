@@ -33,104 +33,113 @@ use MediaWiki\Content\Renderer\ContentParseParams;
  *
  * @ingroup Content
  */
-class FallbackContentHandler extends ContentHandler {
+class FallbackContentHandler extends ContentHandler
+{
 
-	/**
-	 * Constructs an FallbackContentHandler. Since FallbackContentHandler can be registered
-	 * for multiple model IDs on a system, multiple instances of FallbackContentHandler may
-	 * coexist.
-	 *
-	 * To preserve the serialization format of the original content model, it must be supplied
-	 * to the constructor via the $formats parameter. If not given, the default format is
-	 * reported as 'application/octet-stream'.
-	 *
-	 * @param string $modelId
-	 * @param string[]|null $formats
-	 */
-	public function __construct( $modelId, $formats = null ) {
-		parent::__construct(
-			$modelId,
-			$formats ?? [
-				'application/octet-stream',
-				'application/unknown',
-				'application/x-binary',
-				'text/unknown',
-				'unknown/unknown',
-			]
-		);
-	}
+    /**
+     * Constructs an FallbackContentHandler. Since FallbackContentHandler can be registered
+     * for multiple model IDs on a system, multiple instances of FallbackContentHandler may
+     * coexist.
+     *
+     * To preserve the serialization format of the original content model, it must be supplied
+     * to the constructor via the $formats parameter. If not given, the default format is
+     * reported as 'application/octet-stream'.
+     *
+     * @param string $modelId
+     * @param string[]|null $formats
+     */
+    public function __construct($modelId, $formats = null)
+    {
+        parent::__construct(
+            $modelId,
+            $formats ?? [
+                'application/octet-stream',
+                'application/unknown',
+                'application/x-binary',
+                'text/unknown',
+                'unknown/unknown',
+            ]
+        );
+    }
 
-	/**
-	 * Returns the content's data as-is.
-	 *
-	 * @param Content $content
-	 * @param string|null $format The serialization format to check
-	 *
-	 * @return mixed
-	 */
-	public function serializeContent( Content $content, $format = null ) {
-		/** @var FallbackContent $content */
-		'@phan-var FallbackContent $content';
-		return $content->getData();
-	}
+    /**
+     * Returns the content's data as-is.
+     *
+     * @param Content $content
+     * @param string|null $format The serialization format to check
+     *
+     * @return mixed
+     */
+    public function serializeContent(Content $content, $format = null)
+    {
+        /** @var FallbackContent $content */
+        '@phan-var FallbackContent $content';
 
-	/**
-	 * Constructs an FallbackContent instance wrapping the given data.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string $blob serialized content in an unknown format
-	 * @param string|null $format ignored
-	 *
-	 * @return Content The FallbackContent object wrapping $data
-	 */
-	public function unserializeContent( $blob, $format = null ) {
-		return new FallbackContent( $blob, $this->getModelID() );
-	}
+        return $content->getData();
+    }
 
-	/**
-	 * Creates an empty FallbackContent object.
-	 *
-	 * @since 1.21
-	 *
-	 * @return Content A new FallbackContent object with empty text.
-	 */
-	public function makeEmptyContent() {
-		return $this->unserializeContent( '' );
-	}
+    /**
+     * Constructs an FallbackContent instance wrapping the given data.
+     *
+     * @param string $blob serialized content in an unknown format
+     * @param string|null $format ignored
+     *
+     * @return Content The FallbackContent object wrapping $data
+     * @since 1.21
+     *
+     */
+    public function unserializeContent($blob, $format = null)
+    {
+        return new FallbackContent($blob, $this->getModelID());
+    }
 
-	/**
-	 * @return false
-	 */
-	public function supportsDirectEditing() {
-		return false;
-	}
+    /**
+     * Creates an empty FallbackContent object.
+     *
+     * @return Content A new FallbackContent object with empty text.
+     * @since 1.21
+     *
+     */
+    public function makeEmptyContent()
+    {
+        return $this->unserializeContent('');
+    }
 
-	/**
-	 * Fills the ParserOutput with an error message.
-	 * @since 1.38
-	 * @param Content $content
-	 * @param ContentParseParams $cpoParams
-	 * @param ParserOutput &$output The output object to fill (reference).
-	 *
-	 */
-	protected function fillParserOutput(
-		Content $content,
-		ContentParseParams $cpoParams,
-		ParserOutput &$output
-	) {
-		'@phan-var FallbackContent $content';
-		$msg = wfMessage( 'unsupported-content-model', [ $content->getModel() ] );
-		$html = Html::rawElement( 'div', [ 'class' => 'error' ], $msg->inContentLanguage()->parse() );
-		$output->setText( $html );
-	}
+    /**
+     * @return false
+     */
+    public function supportsDirectEditing()
+    {
+        return false;
+    }
 
-	/**
-	 * @param IContextSource $context
-	 *
-	 * @return SlotDiffRenderer
-	 */
-	protected function getSlotDiffRendererInternal( IContextSource $context ) {
-		return new UnsupportedSlotDiffRenderer( $context );
-	}
+    /**
+     * Fills the ParserOutput with an error message.
+     * @param Content $content
+     * @param ContentParseParams $cpoParams
+     * @param ParserOutput &$output The output object to fill (reference).
+     *
+     * @since 1.38
+     */
+    protected function fillParserOutput(
+        Content $content,
+        ContentParseParams $cpoParams,
+        ParserOutput &$output
+    )
+    {
+        '@phan-var FallbackContent $content';
+        $msg = wfMessage('unsupported-content-model', [$content->getModel()]);
+        $html = Html::rawElement('div', ['class' => 'error'], $msg->inContentLanguage()->parse());
+        $output->setText($html);
+    }
+
+    /**
+     * @param IContextSource $context
+     *
+     * @return SlotDiffRenderer
+     */
+    protected function getSlotDiffRendererInternal(IContextSource $context)
+    {
+        return new UnsupportedSlotDiffRenderer($context);
+    }
 }

@@ -26,11 +26,13 @@
 /**
  * @ingroup Dump
  */
-class DumpBZip2Output extends DumpPipeOutput {
-	/**
-	 * @param string $file
-	 */
-	public function __construct( $file ) {
-		parent::__construct( "bzip2", $file );
-	}
+class DumpBZip2Output extends DumpPipeOutput
+{
+    /**
+     * @param string $file
+     */
+    public function __construct($file)
+    {
+        parent::__construct("bzip2", $file);
+    }
 }

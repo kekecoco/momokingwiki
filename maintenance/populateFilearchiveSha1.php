@@ -31,82 +31,87 @@ use MediaWiki\MediaWikiServices;
  * @ingroup Maintenance
  * @since 1.21
  */
-class PopulateFilearchiveSha1 extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Populate the fa_sha1 field from fa_storage_key' );
-	}
+class PopulateFilearchiveSha1 extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Populate the fa_sha1 field from fa_storage_key');
+    }
 
-	protected function getUpdateKey() {
-		return 'populate fa_sha1';
-	}
+    protected function getUpdateKey()
+    {
+        return 'populate fa_sha1';
+    }
 
-	protected function updateSkippedMessage() {
-		return 'fa_sha1 column of filearchive table already populated.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'fa_sha1 column of filearchive table already populated.';
+    }
 
-	public function doDBUpdates() {
-		$startTime = microtime( true );
-		$dbw = $this->getDB( DB_PRIMARY );
-		$table = 'filearchive';
-		$conds = [ 'fa_sha1' => '', 'fa_storage_key IS NOT NULL' ];
+    public function doDBUpdates()
+    {
+        $startTime = microtime(true);
+        $dbw = $this->getDB(DB_PRIMARY);
+        $table = 'filearchive';
+        $conds = ['fa_sha1' => '', 'fa_storage_key IS NOT NULL'];
 
-		if ( !$dbw->fieldExists( $table, 'fa_sha1', __METHOD__ ) ) {
-			$this->output( "fa_sha1 column does not exist\n\n", true );
+        if (!$dbw->fieldExists($table, 'fa_sha1', __METHOD__)) {
+            $this->output("fa_sha1 column does not exist\n\n", true);
 
-			return false;
-		}
+            return false;
+        }
 
-		$this->output( "Populating fa_sha1 field from fa_storage_key\n" );
-		$endId = $dbw->selectField( $table, 'MAX(fa_id)', '', __METHOD__ );
+        $this->output("Populating fa_sha1 field from fa_storage_key\n");
+        $endId = $dbw->selectField($table, 'MAX(fa_id)', '', __METHOD__);
 
-		$batchSize = $this->getBatchSize();
-		$done = 0;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $batchSize = $this->getBatchSize();
+        $done = 0;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-		do {
-			$res = $dbw->select(
-				$table,
-				[ 'fa_id', 'fa_storage_key' ],
-				$conds,
-				__METHOD__,
-				[ 'LIMIT' => $batchSize ]
-			);
+        do {
+            $res = $dbw->select(
+                $table,
+                ['fa_id', 'fa_storage_key'],
+                $conds,
+                __METHOD__,
+                ['LIMIT' => $batchSize]
+            );
 
-			$i = 0;
-			foreach ( $res as $row ) {
-				if ( $row->fa_storage_key == '' ) {
-					// Revision was missing pre-deletion
-					continue;
-				}
-				$sha1 = LocalRepo::getHashFromKey( $row->fa_storage_key );
-				$dbw->update( $table,
-					[ 'fa_sha1' => $sha1 ],
-					[ 'fa_id' => $row->fa_id ],
-					__METHOD__
-				);
-				$lastId = $row->fa_id;
-				$i++;
-			}
+            $i = 0;
+            foreach ($res as $row) {
+                if ($row->fa_storage_key == '') {
+                    // Revision was missing pre-deletion
+                    continue;
+                }
+                $sha1 = LocalRepo::getHashFromKey($row->fa_storage_key);
+                $dbw->update($table,
+                    ['fa_sha1' => $sha1],
+                    ['fa_id' => $row->fa_id],
+                    __METHOD__
+                );
+                $lastId = $row->fa_id;
+                $i++;
+            }
 
-			$done += $i;
-			if ( $i !== $batchSize ) {
-				break;
-			}
+            $done += $i;
+            if ($i !== $batchSize) {
+                break;
+            }
 
-			// print status and let replica DBs catch up
-			$this->output( sprintf(
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable $lastId is set for non-empty $res
-				"id %d done (up to %d), %5.3f%%  \r", $lastId, $endId, $lastId / $endId * 100 ) );
-			$lbFactory->waitForReplication();
-		} while ( true );
+            // print status and let replica DBs catch up
+            $this->output(sprintf(
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable $lastId is set for non-empty $res
+                "id %d done (up to %d), %5.3f%%  \r", $lastId, $endId, $lastId / $endId * 100));
+            $lbFactory->waitForReplication();
+        } while (true);
 
-		$processingTime = microtime( true ) - $startTime;
-		$this->output( sprintf( "\nDone %d files in %.1f seconds\n", $done, $processingTime ) );
+        $processingTime = microtime(true) - $startTime;
+        $this->output(sprintf("\nDone %d files in %.1f seconds\n", $done, $processingTime));
 
-		// we only updated *some* files, don't log
-		return true;
-	}
+        // we only updated *some* files, don't log
+        return true;
+    }
 }
 
 $maintClass = PopulateFilearchiveSha1::class;

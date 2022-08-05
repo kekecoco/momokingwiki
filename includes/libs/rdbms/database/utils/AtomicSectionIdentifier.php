@@ -18,6 +18,7 @@
  * @file
  * @ingroup Database
  */
+
 namespace Wikimedia\Rdbms;
 
 /**
@@ -26,5 +27,6 @@ namespace Wikimedia\Rdbms;
  * @ingroup Database
  * @internal
  */
-class AtomicSectionIdentifier {
+class AtomicSectionIdentifier
+{
 }

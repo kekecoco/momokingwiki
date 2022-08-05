@@ -8,5 +8,6 @@ namespace Wikimedia\Rdbms;
  * @since 1.30
  * @deprecated since 1.30, only exists for backwards compatibility
  */
-class NextSequenceValue {
+class NextSequenceValue
+{
 }

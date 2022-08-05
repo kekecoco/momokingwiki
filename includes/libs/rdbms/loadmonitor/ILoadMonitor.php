@@ -33,35 +33,36 @@ use WANObjectCache;
  *
  * @ingroup Database
  */
-interface ILoadMonitor extends LoggerAwareInterface, StatsdAwareInterface {
-	/**
-	 * Construct a new LoadMonitor with a given LoadBalancer parent
-	 *
-	 * @param ILoadBalancer $lb LoadBalancer this instance serves
-	 * @param BagOStuff $sCache Local server memory cache
-	 * @param WANObjectCache $wCache Local cluster memory cache
-	 * @param array $options Options map
-	 */
-	public function __construct(
-		ILoadBalancer $lb, BagOStuff $sCache, WANObjectCache $wCache, array $options = []
-	);
+interface ILoadMonitor extends LoggerAwareInterface, StatsdAwareInterface
+{
+    /**
+     * Construct a new LoadMonitor with a given LoadBalancer parent
+     *
+     * @param ILoadBalancer $lb LoadBalancer this instance serves
+     * @param BagOStuff $sCache Local server memory cache
+     * @param WANObjectCache $wCache Local cluster memory cache
+     * @param array $options Options map
+     */
+    public function __construct(
+        ILoadBalancer $lb, BagOStuff $sCache, WANObjectCache $wCache, array $options = []
+    );
 
-	/**
-	 * Perform load ratio adjustment before deciding which server to use
-	 *
-	 * @param int[] &$weightByServer Map of (server index => float weight)
-	 * @param string|false $domain
-	 */
-	public function scaleLoads( array &$weightByServer, $domain );
+    /**
+     * Perform load ratio adjustment before deciding which server to use
+     *
+     * @param int[] &$weightByServer Map of (server index => float weight)
+     * @param string|false $domain
+     */
+    public function scaleLoads(array &$weightByServer, $domain);
 
-	/**
-	 * Get an estimate of replication lag (in seconds) for each server
-	 *
-	 * Values may be "false" if replication is too broken to estimate
-	 *
-	 * @param int[] $serverIndexes
-	 * @param string $domain
-	 * @return array Map of (server index => float|int|false)
-	 */
-	public function getLagTimes( array $serverIndexes, $domain );
+    /**
+     * Get an estimate of replication lag (in seconds) for each server
+     *
+     * Values may be "false" if replication is too broken to estimate
+     *
+     * @param int[] $serverIndexes
+     * @param string $domain
+     * @return array Map of (server index => float|int|false)
+     */
+    public function getLagTimes(array $serverIndexes, $domain);
 }

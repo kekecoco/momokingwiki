@@ -29,44 +29,47 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class MakeTestEdits extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Make test edits for a user' );
-		$this->addOption( 'user', 'User name', true, true );
-		$this->addOption( 'count', 'Number of edits', true, true );
-		$this->addOption( 'namespace', 'Namespace number', false, true );
-		$this->setBatchSize( 100 );
-	}
+class MakeTestEdits extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Make test edits for a user');
+        $this->addOption('user', 'User name', true, true);
+        $this->addOption('count', 'Number of edits', true, true);
+        $this->addOption('namespace', 'Namespace number', false, true);
+        $this->setBatchSize(100);
+    }
 
-	public function execute() {
-		$user = User::newFromName( $this->getOption( 'user' ) );
-		if ( !$user->isRegistered() ) {
-			$this->fatalError( "No such user exists." );
-		}
+    public function execute()
+    {
+        $user = User::newFromName($this->getOption('user'));
+        if (!$user->isRegistered()) {
+            $this->fatalError("No such user exists.");
+        }
 
-		$count = $this->getOption( 'count' );
-		$namespace = (int)$this->getOption( 'namespace', 0 );
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$wikiPageFactory = $services->getWikiPageFactory();
+        $count = $this->getOption('count');
+        $namespace = (int)$this->getOption('namespace', 0);
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $wikiPageFactory = $services->getWikiPageFactory();
 
-		for ( $i = 0; $i < $count; ++$i ) {
-			$title = Title::makeTitleSafe( $namespace, "Page " . wfRandomString( 2 ) );
-			$page = $wikiPageFactory->newFromTitle( $title );
-			$content = ContentHandler::makeContent( wfRandomString(), $title );
-			$summary = "Change " . wfRandomString( 6 );
+        for ($i = 0; $i < $count; ++$i) {
+            $title = Title::makeTitleSafe($namespace, "Page " . wfRandomString(2));
+            $page = $wikiPageFactory->newFromTitle($title);
+            $content = ContentHandler::makeContent(wfRandomString(), $title);
+            $summary = "Change " . wfRandomString(6);
 
-			$page->doUserEditContent( $content, $user, $summary );
+            $page->doUserEditContent($content, $user, $summary);
 
-			$this->output( "Edited $title\n" );
-			if ( $i && ( $i % $this->getBatchSize() ) == 0 ) {
-				$lbFactory->waitForReplication();
-			}
-		}
+            $this->output("Edited $title\n");
+            if ($i && ($i % $this->getBatchSize()) == 0) {
+                $lbFactory->waitForReplication();
+            }
+        }
 
-		$this->output( "Done\n" );
-	}
+        $this->output("Done\n");
+    }
 }
 
 $maintClass = MakeTestEdits::class;

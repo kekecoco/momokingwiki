@@ -30,8 +30,10 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialListAdmins extends SpecialRedirectToSpecial {
-	public function __construct() {
-		parent::__construct( 'Listadmins', 'Listusers', 'sysop' );
-	}
+class SpecialListAdmins extends SpecialRedirectToSpecial
+{
+    public function __construct()
+    {
+        parent::__construct('Listadmins', 'Listusers', 'sysop');
+    }
 }

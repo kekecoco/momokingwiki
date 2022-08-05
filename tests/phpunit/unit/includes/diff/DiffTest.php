@@ -5,15 +5,17 @@
  *
  * @group Diff
  */
-class DiffTest extends \MediaWikiUnitTestCase {
+class DiffTest extends \MediaWikiUnitTestCase
+{
 
-	/**
-	 * @covers Diff::getEdits
-	 */
-	public function testGetEdits() {
-		$obj = new Diff( [], [] );
-		$obj->edits = 'FooBarBaz';
-		$this->assertEquals( 'FooBarBaz', $obj->getEdits() );
-	}
+    /**
+     * @covers Diff::getEdits
+     */
+    public function testGetEdits()
+    {
+        $obj = new Diff([], []);
+        $obj->edits = 'FooBarBaz';
+        $this->assertEquals('FooBarBaz', $obj->getEdits());
+    }
 
 }

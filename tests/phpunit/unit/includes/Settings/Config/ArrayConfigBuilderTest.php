@@ -10,35 +10,40 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \MediaWiki\Settings\Config\ArrayConfigBuilder
  */
-class ArrayConfigBuilderTest extends TestCase {
-	use ConfigSinkTestTrait;
+class ArrayConfigBuilderTest extends TestCase
+{
+    use ConfigSinkTestTrait;
 
-	/** @var ArrayConfigBuilder */
-	private $builder;
+    /** @var ArrayConfigBuilder */
+    private $builder;
 
-	protected function setUp(): void {
-		parent::setUp();
-		$this->builder = new ArrayConfigBuilder();
-	}
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->builder = new ArrayConfigBuilder();
+    }
 
-	protected function getConfigSink(): ConfigBuilder {
-		return $this->builder;
-	}
+    protected function getConfigSink(): ConfigBuilder
+    {
+        return $this->builder;
+    }
 
-	protected function assertKeyHasValue( string $key, $value ) {
-		$this->assertEquals( $value, $this->builder->build()->get( $key ) );
-	}
+    protected function assertKeyHasValue(string $key, $value)
+    {
+        $this->assertEquals($value, $this->builder->build()->get($key));
+    }
 
-	public function testBuild() {
-		$this->builder
-			->set( 'foo',  'bar' )
-			->set( 'baz', 'quu' );
+    public function testBuild()
+    {
+        $this->builder
+            ->set('foo', 'bar')
+            ->set('baz', 'quu');
 
-		$config = $this->builder->build();
+        $config = $this->builder->build();
 
-		$this->assertInstanceOf( IterableConfig::class, $config );
-		$this->assertSame( 'bar', $config->get( 'foo' ) );
-		$this->assertSame( 'quu', $config->get( 'baz' ) );
-		$this->assertSame( [ 'foo', 'baz' ], $config->getNames() );
-	}
+        $this->assertInstanceOf(IterableConfig::class, $config);
+        $this->assertSame('bar', $config->get('foo'));
+        $this->assertSame('quu', $config->get('baz'));
+        $this->assertSame(['foo', 'baz'], $config->getNames());
+    }
 }

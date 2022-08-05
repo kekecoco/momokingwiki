@@ -27,26 +27,30 @@ use MediaWiki\MediaWikiServices;
  * @deprecated Since 1.27, Use SearchEngine::defaultPrefixSearch or SearchEngine::completionSearch
  * @ingroup Search
  */
-class TitlePrefixSearch extends PrefixSearch {
+class TitlePrefixSearch extends PrefixSearch
+{
 
-	/**
-	 * @param Title[] $titles
-	 * @return Title[]
-	 */
-	protected function titles( array $titles ) {
-		return $titles;
-	}
+    /**
+     * @param Title[] $titles
+     * @return Title[]
+     */
+    protected function titles(array $titles)
+    {
+        return $titles;
+    }
 
-	/**
-	 * @param string[] $strings
-	 * @return Title[]
-	 */
-	protected function strings( array $strings ) {
-		$titles = array_map( [ Title::class, 'newFromText' ], $strings );
-		$linkBatchFactory = MediaWikiServices::getInstance()->getLinkBatchFactory();
-		$lb = $linkBatchFactory->newLinkBatch( $titles );
-		$lb->setCaller( __METHOD__ );
-		$lb->execute();
-		return $titles;
-	}
+    /**
+     * @param string[] $strings
+     * @return Title[]
+     */
+    protected function strings(array $strings)
+    {
+        $titles = array_map([Title::class, 'newFromText'], $strings);
+        $linkBatchFactory = MediaWikiServices::getInstance()->getLinkBatchFactory();
+        $lb = $linkBatchFactory->newLinkBatch($titles);
+        $lb->setCaller(__METHOD__);
+        $lb->execute();
+
+        return $titles;
+    }
 }

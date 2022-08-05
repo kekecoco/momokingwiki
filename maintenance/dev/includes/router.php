@@ -21,13 +21,13 @@
  * @file
  */
 
-if ( PHP_SAPI != 'cli-server' ) {
-	die( "This script can only be run by php's cli-server sapi." );
+if (PHP_SAPI != 'cli-server') {
+    die("This script can only be run by php's cli-server sapi.");
 }
 
-if ( !isset( $_SERVER['SCRIPT_FILENAME'] ) ) {
-	// Let built-in server handle error.
-	return false;
+if (!isset($_SERVER['SCRIPT_FILENAME'])) {
+    // Let built-in server handle error.
+    return false;
 }
 
 // The SCRIPT_FILENAME can be one of three things:
@@ -40,54 +40,54 @@ if ( !isset( $_SERVER['SCRIPT_FILENAME'] ) ) {
 // 3. Absolute path to {docroot}/index.php, for any other unknown path.
 //    Effectively treating it as a 404 handler.
 $file = $_SERVER['SCRIPT_FILENAME'];
-if ( !is_readable( $file ) ) {
-	// Let built-in server handle error.
-	return false;
+if (!is_readable($file)) {
+    // Let built-in server handle error.
+    return false;
 }
 
-$ext = pathinfo( $file, PATHINFO_EXTENSION );
-if ( $ext == 'php' ) {
-	// Let built-in server handle script inclusion.
-	return false;
+$ext = pathinfo($file, PATHINFO_EXTENSION);
+if ($ext == 'php') {
+    // Let built-in server handle script inclusion.
+    return false;
 } else {
-	// Serve static file with appropriate Content-Type headers.
-	// The built-in server for PHP 7.0+ supports most files already
-	// (contrary to PHP 5.2, which was supported when router.php was created).
-	// But it still doesn't support as many MIME types as MediaWiki (e.g. ".json")
-	require_once __DIR__ . "/../../../includes/libs/mime/MimeMap.php";
+    // Serve static file with appropriate Content-Type headers.
+    // The built-in server for PHP 7.0+ supports most files already
+    // (contrary to PHP 5.2, which was supported when router.php was created).
+    // But it still doesn't support as many MIME types as MediaWiki (e.g. ".json")
+    require_once __DIR__ . "/../../../includes/libs/mime/MimeMap.php";
 
-	// Fallback
-	$mime = 'text/plain';
-	// Borrow from MimeAnalyzer
-	foreach ( \Wikimedia\Mime\MimeMap::MIME_EXTENSIONS as $type => $exts ) {
-		if ( in_array( $ext, $exts ) ) {
-			$mime = $type;
-			break;
-		}
-	}
+    // Fallback
+    $mime = 'text/plain';
+    // Borrow from MimeAnalyzer
+    foreach (\Wikimedia\Mime\MimeMap::MIME_EXTENSIONS as $type => $exts) {
+        if (in_array($ext, $exts)) {
+            $mime = $type;
+            break;
+        }
+    }
 
-	if ( preg_match( '#^text/#', $mime ) ) {
-		// Text should have a charset=UTF-8 (PHP's webserver does this too)
-		header( "Content-Type: $mime; charset=UTF-8" );
-	} else {
-		header( "Content-Type: $mime" );
-	}
+    if (preg_match('#^text/#', $mime)) {
+        // Text should have a charset=UTF-8 (PHP's webserver does this too)
+        header("Content-Type: $mime; charset=UTF-8");
+    } else {
+        header("Content-Type: $mime");
+    }
 
-	$content = file_get_contents( $file );
+    $content = file_get_contents($file);
 
-	header( 'Vary: Accept-Encoding' );
-	$acceptGzip = preg_match( '/\bgzip\b/', $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '' );
-	if ( $acceptGzip &&
-		// Don't compress binary static files (e.g. png)
-		preg_match( '/text|javascript|json|css|xml|svg/', $mime ) &&
-		// Tiny files tend to grow instead of shrink. – <https://gerrit.wikimedia.org/r/537974>
-		strlen( $content ) > 150
-	) {
-		$content = gzencode( $content, 9 );
-		header( 'Content-Encoding: gzip' );
-	}
-	header( "Content-Length: " . strlen( $content ) );
-	echo $content;
+    header('Vary: Accept-Encoding');
+    $acceptGzip = preg_match('/\bgzip\b/', $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '');
+    if ($acceptGzip &&
+        // Don't compress binary static files (e.g. png)
+        preg_match('/text|javascript|json|css|xml|svg/', $mime) &&
+        // Tiny files tend to grow instead of shrink. – <https://gerrit.wikimedia.org/r/537974>
+        strlen($content) > 150
+    ) {
+        $content = gzencode($content, 9);
+        header('Content-Encoding: gzip');
+    }
+    header("Content-Length: " . strlen($content));
+    echo $content;
 
-	return true;
+    return true;
 }

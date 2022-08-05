@@ -38,232 +38,241 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  * @since 1.25
  */
-class ApiStashEdit extends ApiBase {
+class ApiStashEdit extends ApiBase
+{
 
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
+    /** @var IContentHandlerFactory */
+    private $contentHandlerFactory;
 
-	/** @var PageEditStash */
-	private $pageEditStash;
+    /** @var PageEditStash */
+    private $pageEditStash;
 
-	/** @var RevisionLookup */
-	private $revisionLookup;
+    /** @var RevisionLookup */
+    private $revisionLookup;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
+    /** @var IBufferingStatsdDataFactory */
+    private $statsdDataFactory;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param PageEditStash $pageEditStash
-	 * @param RevisionLookup $revisionLookup
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		IContentHandlerFactory $contentHandlerFactory,
-		PageEditStash $pageEditStash,
-		RevisionLookup $revisionLookup,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		WikiPageFactory $wikiPageFactory
-	) {
-		parent::__construct( $main, $action );
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param PageEditStash $pageEditStash
+     * @param RevisionLookup $revisionLookup
+     * @param IBufferingStatsdDataFactory $statsdDataFactory
+     * @param WikiPageFactory $wikiPageFactory
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        IContentHandlerFactory $contentHandlerFactory,
+        PageEditStash $pageEditStash,
+        RevisionLookup $revisionLookup,
+        IBufferingStatsdDataFactory $statsdDataFactory,
+        WikiPageFactory $wikiPageFactory
+    )
+    {
+        parent::__construct($main, $action);
 
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->pageEditStash = $pageEditStash;
-		$this->revisionLookup = $revisionLookup;
-		$this->statsdDataFactory = $statsdDataFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-	}
+        $this->contentHandlerFactory = $contentHandlerFactory;
+        $this->pageEditStash = $pageEditStash;
+        $this->revisionLookup = $revisionLookup;
+        $this->statsdDataFactory = $statsdDataFactory;
+        $this->wikiPageFactory = $wikiPageFactory;
+    }
 
-	public function execute() {
-		$user = $this->getUser();
-		$params = $this->extractRequestParams();
+    public function execute()
+    {
+        $user = $this->getUser();
+        $params = $this->extractRequestParams();
 
-		if ( $user->isBot() ) {
-			$this->dieWithError( 'apierror-botsnotsupported' );
-		}
+        if ($user->isBot()) {
+            $this->dieWithError('apierror-botsnotsupported');
+        }
 
-		$page = $this->getTitleOrPageId( $params );
-		$title = $page->getTitle();
-		$this->getErrorFormatter()->setContextTitle( $title );
+        $page = $this->getTitleOrPageId($params);
+        $title = $page->getTitle();
+        $this->getErrorFormatter()->setContextTitle($title);
 
-		if ( !$this->contentHandlerFactory
-			->getContentHandler( $params['contentmodel'] )
-			->isSupportedFormat( $params['contentformat'] )
-		) {
-			$this->dieWithError(
-				[ 'apierror-badformat-generic', $params['contentformat'], $params['contentmodel'] ],
-				'badmodelformat'
-			);
-		}
+        if (!$this->contentHandlerFactory
+            ->getContentHandler($params['contentmodel'])
+            ->isSupportedFormat($params['contentformat'])
+        ) {
+            $this->dieWithError(
+                ['apierror-badformat-generic', $params['contentformat'], $params['contentmodel']],
+                'badmodelformat'
+            );
+        }
 
-		$this->requireOnlyOneParameter( $params, 'stashedtexthash', 'text' );
+        $this->requireOnlyOneParameter($params, 'stashedtexthash', 'text');
 
-		$text = null;
-		$textHash = null;
-		if ( $params['stashedtexthash'] !== null ) {
-			// Load from cache since the client indicates the text is the same as last stash
-			$textHash = $params['stashedtexthash'];
-			if ( !preg_match( '/^[0-9a-f]{40}$/', $textHash ) ) {
-				$this->dieWithError( 'apierror-stashedit-missingtext', 'missingtext' );
-			}
-			$text = $this->pageEditStash->fetchInputText( $textHash );
-			if ( !is_string( $text ) ) {
-				$this->dieWithError( 'apierror-stashedit-missingtext', 'missingtext' );
-			}
-		} else {
-			// 'text' was passed.  Trim and fix newlines so the key SHA1's
-			// match (see WebRequest::getText())
-			$text = rtrim( str_replace( "\r\n", "\n", $params['text'] ) );
-			$textHash = sha1( $text );
-		}
+        $text = null;
+        $textHash = null;
+        if ($params['stashedtexthash'] !== null) {
+            // Load from cache since the client indicates the text is the same as last stash
+            $textHash = $params['stashedtexthash'];
+            if (!preg_match('/^[0-9a-f]{40}$/', $textHash)) {
+                $this->dieWithError('apierror-stashedit-missingtext', 'missingtext');
+            }
+            $text = $this->pageEditStash->fetchInputText($textHash);
+            if (!is_string($text)) {
+                $this->dieWithError('apierror-stashedit-missingtext', 'missingtext');
+            }
+        } else {
+            // 'text' was passed.  Trim and fix newlines so the key SHA1's
+            // match (see WebRequest::getText())
+            $text = rtrim(str_replace("\r\n", "\n", $params['text']));
+            $textHash = sha1($text);
+        }
 
-		$textContent = $this->contentHandlerFactory
-			->getContentHandler( $params['contentmodel'] )
-			->unserializeContent( $text, $params['contentformat'] );
+        $textContent = $this->contentHandlerFactory
+            ->getContentHandler($params['contentmodel'])
+            ->unserializeContent($text, $params['contentformat']);
 
-		$page = $this->wikiPageFactory->newFromTitle( $title );
-		if ( $page->exists() ) {
-			// Page exists: get the merged content with the proposed change
-			$baseRev = $this->revisionLookup->getRevisionByPageId(
-				$page->getId(),
-				$params['baserevid']
-			);
-			if ( !$baseRev ) {
-				$this->dieWithError( [ 'apierror-nosuchrevid', $params['baserevid'] ] );
-			}
-			$currentRev = $page->getRevisionRecord();
-			if ( !$currentRev ) {
-				$this->dieWithError( [ 'apierror-missingrev-pageid', $page->getId() ], 'missingrev' );
-			}
-			// Merge in the new version of the section to get the proposed version
-			$editContent = $page->replaceSectionAtRev(
-				$params['section'],
-				$textContent,
-				$params['sectiontitle'],
-				$baseRev->getId()
-			);
-			if ( !$editContent ) {
-				$this->dieWithError( 'apierror-sectionreplacefailed', 'replacefailed' );
-			}
-			if ( $currentRev->getId() == $baseRev->getId() ) {
-				// Base revision was still the latest; nothing to merge
-				$content = $editContent;
-			} else {
-				// Merge the edit into the current version
-				$baseContent = $baseRev->getContent( SlotRecord::MAIN );
-				$currentContent = $currentRev->getContent( SlotRecord::MAIN );
-				if ( !$baseContent || !$currentContent ) {
-					$this->dieWithError( [ 'apierror-missingcontent-pageid', $page->getId() ], 'missingrev' );
-				}
+        $page = $this->wikiPageFactory->newFromTitle($title);
+        if ($page->exists()) {
+            // Page exists: get the merged content with the proposed change
+            $baseRev = $this->revisionLookup->getRevisionByPageId(
+                $page->getId(),
+                $params['baserevid']
+            );
+            if (!$baseRev) {
+                $this->dieWithError(['apierror-nosuchrevid', $params['baserevid']]);
+            }
+            $currentRev = $page->getRevisionRecord();
+            if (!$currentRev) {
+                $this->dieWithError(['apierror-missingrev-pageid', $page->getId()], 'missingrev');
+            }
+            // Merge in the new version of the section to get the proposed version
+            $editContent = $page->replaceSectionAtRev(
+                $params['section'],
+                $textContent,
+                $params['sectiontitle'],
+                $baseRev->getId()
+            );
+            if (!$editContent) {
+                $this->dieWithError('apierror-sectionreplacefailed', 'replacefailed');
+            }
+            if ($currentRev->getId() == $baseRev->getId()) {
+                // Base revision was still the latest; nothing to merge
+                $content = $editContent;
+            } else {
+                // Merge the edit into the current version
+                $baseContent = $baseRev->getContent(SlotRecord::MAIN);
+                $currentContent = $currentRev->getContent(SlotRecord::MAIN);
+                if (!$baseContent || !$currentContent) {
+                    $this->dieWithError(['apierror-missingcontent-pageid', $page->getId()], 'missingrev');
+                }
 
-				$baseModel = $baseContent->getModel();
-				$currentModel = $currentContent->getModel();
+                $baseModel = $baseContent->getModel();
+                $currentModel = $currentContent->getModel();
 
-				// T255700: Put this in try-block because if the models of these three Contents
-				// happen to not be identical, the ContentHandler may throw exception here.
-				try {
-					$content = $this->contentHandlerFactory
-						->getContentHandler( $baseModel )
-						->merge3( $baseContent, $editContent, $currentContent );
-				} catch ( Exception $e ) {
-					$this->dieWithException( $e, [
-						'wrap' => ApiMessage::create(
-							[ 'apierror-contentmodel-mismatch', $currentModel, $baseModel ]
-						)
-					] );
-				}
+                // T255700: Put this in try-block because if the models of these three Contents
+                // happen to not be identical, the ContentHandler may throw exception here.
+                try {
+                    $content = $this->contentHandlerFactory
+                        ->getContentHandler($baseModel)
+                        ->merge3($baseContent, $editContent, $currentContent);
+                } catch (Exception $e) {
+                    $this->dieWithException($e, [
+                        'wrap' => ApiMessage::create(
+                            ['apierror-contentmodel-mismatch', $currentModel, $baseModel]
+                        )
+                    ]);
+                }
 
-			}
-		} else {
-			// New pages: use the user-provided content model
-			$content = $textContent;
-		}
+            }
+        } else {
+            // New pages: use the user-provided content model
+            $content = $textContent;
+        }
 
-		if ( !$content ) { // merge3() failed
-			$this->getResult()->addValue( null,
-				$this->getModuleName(), [ 'status' => 'editconflict' ] );
-			return;
-		}
+        if (!$content) { // merge3() failed
+            $this->getResult()->addValue(null,
+                $this->getModuleName(), ['status' => 'editconflict']);
 
-		if ( $user->pingLimiter( 'stashedit' ) ) {
-			$status = 'ratelimited';
-		} else {
-			$updater = $page->newPageUpdater( $user );
-			$status = $this->pageEditStash->parseAndCache( $updater, $content, $user, $params['summary'] );
-			$this->pageEditStash->stashInputText( $text, $textHash );
-		}
+            return;
+        }
 
-		$this->statsdDataFactory->increment( "editstash.cache_stores.$status" );
+        if ($user->pingLimiter('stashedit')) {
+            $status = 'ratelimited';
+        } else {
+            $updater = $page->newPageUpdater($user);
+            $status = $this->pageEditStash->parseAndCache($updater, $content, $user, $params['summary']);
+            $this->pageEditStash->stashInputText($text, $textHash);
+        }
 
-		$ret = [ 'status' => $status ];
-		// If we were rate-limited, we still return the pre-existing valid hash if one was passed
-		if ( $status !== 'ratelimited' || $params['stashedtexthash'] !== null ) {
-			$ret['texthash'] = $textHash;
-		}
+        $this->statsdDataFactory->increment("editstash.cache_stores.$status");
 
-		$this->getResult()->addValue( null, $this->getModuleName(), $ret );
-	}
+        $ret = ['status' => $status];
+        // If we were rate-limited, we still return the pre-existing valid hash if one was passed
+        if ($status !== 'ratelimited' || $params['stashedtexthash'] !== null) {
+            $ret['texthash'] = $textHash;
+        }
 
-	public function getAllowedParams() {
-		return [
-			'title' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'section' => [
-				ParamValidator::PARAM_TYPE => 'string',
-			],
-			'sectiontitle' => [
-				ParamValidator::PARAM_TYPE => 'string'
-			],
-			'text' => [
-				ParamValidator::PARAM_TYPE => 'text',
-				ParamValidator::PARAM_DEFAULT => null
-			],
-			'stashedtexthash' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_DEFAULT => null
-			],
-			'summary' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_DEFAULT => ''
-			],
-			'contentmodel' => [
-				ParamValidator::PARAM_TYPE => $this->contentHandlerFactory->getContentModels(),
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'contentformat' => [
-				ParamValidator::PARAM_TYPE => $this->contentHandlerFactory->getAllContentFormats(),
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'baserevid' => [
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => true
-			]
-		];
-	}
+        $this->getResult()->addValue(null, $this->getModuleName(), $ret);
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'title'           => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'section'         => [
+                ParamValidator::PARAM_TYPE => 'string',
+            ],
+            'sectiontitle'    => [
+                ParamValidator::PARAM_TYPE => 'string'
+            ],
+            'text'            => [
+                ParamValidator::PARAM_TYPE    => 'text',
+                ParamValidator::PARAM_DEFAULT => null
+            ],
+            'stashedtexthash' => [
+                ParamValidator::PARAM_TYPE    => 'string',
+                ParamValidator::PARAM_DEFAULT => null
+            ],
+            'summary'         => [
+                ParamValidator::PARAM_TYPE    => 'string',
+                ParamValidator::PARAM_DEFAULT => ''
+            ],
+            'contentmodel'    => [
+                ParamValidator::PARAM_TYPE     => $this->contentHandlerFactory->getContentModels(),
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'contentformat'   => [
+                ParamValidator::PARAM_TYPE     => $this->contentHandlerFactory->getAllContentFormats(),
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'baserevid'       => [
+                ParamValidator::PARAM_TYPE     => 'integer',
+                ParamValidator::PARAM_REQUIRED => true
+            ]
+        ];
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function isInternal() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
+
+    public function isInternal()
+    {
+        return true;
+    }
 }

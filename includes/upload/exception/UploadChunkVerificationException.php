@@ -24,12 +24,14 @@
 /**
  * @newable
  */
-class UploadChunkVerificationException extends MWException {
-	public $msg;
+class UploadChunkVerificationException extends MWException
+{
+    public $msg;
 
-	public function __construct( array $res ) {
-		$this->msg = wfMessage( ...$res );
-		parent::__construct( wfMessage( ...$res )
-			->inLanguage( 'en' )->useDatabase( false )->text() );
-	}
+    public function __construct(array $res)
+    {
+        $this->msg = wfMessage(...$res);
+        parent::__construct(wfMessage(...$res)
+            ->inLanguage('en')->useDatabase(false)->text());
+    }
 }

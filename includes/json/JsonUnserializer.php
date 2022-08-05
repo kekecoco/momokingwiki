@@ -30,29 +30,30 @@ use InvalidArgumentException;
  * @since 1.36
  * @package MediaWiki\Json
  */
-interface JsonUnserializer {
+interface JsonUnserializer
+{
 
-	/**
-	 * Restore an instance of simple type or JsonUnserializable subclass
-	 * from the JSON serialization. It supports passing array/object to
-	 * allow manual decoding of the JSON string if needed.
-	 *
-	 * @note JSON objects are unconditionally unserialized as PHP associative
-	 * arrays and not as instances of \stdClass.
-	 *
-	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
-	 * @param array|string|object $json
-	 * @param string|null $expectedClass What class to expect in unserialization.
-	 *   If null, no expectation. Must be a descendant of JsonUnserializable.
-	 * @throws InvalidArgumentException if the passed $json can't be unserialized.
-	 * @return mixed
-	 */
-	public function unserialize( $json, string $expectedClass = null );
+    /**
+     * Restore an instance of simple type or JsonUnserializable subclass
+     * from the JSON serialization. It supports passing array/object to
+     * allow manual decoding of the JSON string if needed.
+     *
+     * @note JSON objects are unconditionally unserialized as PHP associative
+     * arrays and not as instances of \stdClass.
+     *
+     * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
+     * @param array|string|object $json
+     * @param string|null $expectedClass What class to expect in unserialization.
+     *   If null, no expectation. Must be a descendant of JsonUnserializable.
+     * @return mixed
+     * @throws InvalidArgumentException if the passed $json can't be unserialized.
+     */
+    public function unserialize($json, string $expectedClass = null);
 
-	/**
-	 * Helper to unserialize an array of JsonUnserializable instances or simple types.
-	 * @param array $array
-	 * @return array
-	 */
-	public function unserializeArray( array $array ): array;
+    /**
+     * Helper to unserialize an array of JsonUnserializable instances or simple types.
+     * @param array $array
+     * @return array
+     */
+    public function unserializeArray(array $array): array;
 }

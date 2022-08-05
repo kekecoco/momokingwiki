@@ -28,16 +28,18 @@ use MediaWiki\MediaWikiServices;
  * @since 1.18
  * @ingroup Exception
  */
-class ReadOnlyError extends ErrorPageError {
+class ReadOnlyError extends ErrorPageError
+{
 
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		parent::__construct(
-			'readonly',
-			'readonlytext',
-			MediaWikiServices::getInstance()->getReadOnlyMode()->getReason() ?: []
-		);
-	}
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        parent::__construct(
+            'readonly',
+            'readonlytext',
+            MediaWikiServices::getInstance()->getReadOnlyMode()->getReason() ?: []
+        );
+    }
 }

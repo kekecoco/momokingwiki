@@ -22,5 +22,6 @@
 /**
  * @newable
  */
-class ExtensionJsonValidationError extends Exception {
+class ExtensionJsonValidationError extends Exception
+{
 }

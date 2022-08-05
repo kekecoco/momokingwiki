@@ -32,26 +32,29 @@
  * @internal
  * @ingroup DifferenceEngine
  */
-class DiffOpCopy extends DiffOp {
-	/** @inheritDoc */
-	public $type = 'copy';
+class DiffOpCopy extends DiffOp
+{
+    /** @inheritDoc */
+    public $type = 'copy';
 
-	/**
-	 * @param string[] $orig
-	 * @param string[]|false $closing Should either be identical to $orig, or not given
-	 */
-	public function __construct( $orig, $closing = false ) {
-		if ( !is_array( $closing ) ) {
-			$closing = $orig;
-		}
-		$this->orig = $orig;
-		$this->closing = $closing;
-	}
+    /**
+     * @param string[] $orig
+     * @param string[]|false $closing Should either be identical to $orig, or not given
+     */
+    public function __construct($orig, $closing = false)
+    {
+        if (!is_array($closing)) {
+            $closing = $orig;
+        }
+        $this->orig = $orig;
+        $this->closing = $closing;
+    }
 
-	/**
-	 * @return DiffOpCopy
-	 */
-	public function reverse() {
-		return new DiffOpCopy( $this->closing, $this->orig );
-	}
+    /**
+     * @return DiffOpCopy
+     */
+    public function reverse()
+    {
+        return new DiffOpCopy($this->closing, $this->orig);
+    }
 }

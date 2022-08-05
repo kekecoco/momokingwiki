@@ -26,5 +26,6 @@
  * @newable
  * @since 1.23
  */
-class ConfigException extends LogicException {
+class ConfigException extends LogicException
+{
 }

@@ -28,59 +28,63 @@ use MediaWiki\Revision\RevisionRenderer;
  *
  * @internal
  */
-class PoolWorkArticleViewOld extends PoolWorkArticleView {
+class PoolWorkArticleViewOld extends PoolWorkArticleView
+{
 
-	/** @var RevisionOutputCache */
-	private $cache;
+    /** @var RevisionOutputCache */
+    private $cache;
 
-	/**
-	 * @param string $workKey PoolCounter key.
-	 * @param RevisionOutputCache $cache The cache to store ParserOutput in.
-	 * @param RevisionRecord $revision Revision to render
-	 * @param ParserOptions $parserOptions ParserOptions to use for the parse
-	 * @param RevisionRenderer $revisionRenderer
-	 * @param LoggerSpi $loggerSpi
-	 */
-	public function __construct(
-		string $workKey,
-		RevisionOutputCache $cache,
-		RevisionRecord $revision,
-		ParserOptions $parserOptions,
-		RevisionRenderer $revisionRenderer,
-		LoggerSpi $loggerSpi
-	) {
-		parent::__construct( $workKey, $revision, $parserOptions, $revisionRenderer, $loggerSpi );
+    /**
+     * @param string $workKey PoolCounter key.
+     * @param RevisionOutputCache $cache The cache to store ParserOutput in.
+     * @param RevisionRecord $revision Revision to render
+     * @param ParserOptions $parserOptions ParserOptions to use for the parse
+     * @param RevisionRenderer $revisionRenderer
+     * @param LoggerSpi $loggerSpi
+     */
+    public function __construct(
+        string $workKey,
+        RevisionOutputCache $cache,
+        RevisionRecord $revision,
+        ParserOptions $parserOptions,
+        RevisionRenderer $revisionRenderer,
+        LoggerSpi $loggerSpi
+    )
+    {
+        parent::__construct($workKey, $revision, $parserOptions, $revisionRenderer, $loggerSpi);
 
-		$this->cache = $cache;
+        $this->cache = $cache;
 
-		$this->cacheable = true;
-	}
+        $this->cacheable = true;
+    }
 
-	/**
-	 * @return Status
-	 */
-	public function doWork() {
-		// Reduce effects of race conditions for slow parses (T48014)
-		$cacheTime = wfTimestampNow();
+    /**
+     * @return Status
+     */
+    public function doWork()
+    {
+        // Reduce effects of race conditions for slow parses (T48014)
+        $cacheTime = wfTimestampNow();
 
-		$status = $this->renderRevision();
-		/** @var ParserOutput|null $output */
-		$output = $status->getValue();
+        $status = $this->renderRevision();
+        /** @var ParserOutput|null $output */
+        $output = $status->getValue();
 
-		if ( $output && $output->isCacheable() ) {
-			$this->cache->save( $output, $this->revision, $this->parserOptions, $cacheTime );
-		}
+        if ($output && $output->isCacheable()) {
+            $this->cache->save($output, $this->revision, $this->parserOptions, $cacheTime);
+        }
 
-		return $status;
-	}
+        return $status;
+    }
 
-	/**
-	 * @return Status|false
-	 */
-	public function getCachedWork() {
-		$parserOutput = $this->cache->get( $this->revision, $this->parserOptions );
+    /**
+     * @return Status|false
+     */
+    public function getCachedWork()
+    {
+        $parserOutput = $this->cache->get($this->revision, $this->parserOptions);
 
-		return $parserOutput ? Status::newGood( $parserOutput ) : false;
-	}
+        return $parserOutput ? Status::newGood($parserOutput) : false;
+    }
 
 }

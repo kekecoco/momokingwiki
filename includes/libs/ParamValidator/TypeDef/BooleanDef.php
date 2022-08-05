@@ -20,48 +20,53 @@ use Wikimedia\ParamValidator\TypeDef;
  * @since 1.34
  * @unstable
  */
-class BooleanDef extends TypeDef {
+class BooleanDef extends TypeDef
+{
 
-	public static $TRUEVALS = [ 'true', 't', 'yes', 'y', 'on', '1' ];
-	public static $FALSEVALS = [ 'false', 'f', 'no', 'n', 'off', '0' ];
+    public static $TRUEVALS = ['true', 't', 'yes', 'y', 'on', '1'];
+    public static $FALSEVALS = ['false', 'f', 'no', 'n', 'off', '0'];
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		$value = strtolower( $value );
-		if ( in_array( $value, self::$TRUEVALS, true ) ) {
-			return true;
-		}
-		if ( $value === '' || in_array( $value, self::$FALSEVALS, true ) ) {
-			return false;
-		}
+    public function validate($name, $value, array $settings, array $options)
+    {
+        $value = strtolower($value);
+        if (in_array($value, self::$TRUEVALS, true)) {
+            return true;
+        }
+        if ($value === '' || in_array($value, self::$FALSEVALS, true)) {
+            return false;
+        }
 
-		$this->failure(
-			$this->failureMessage( 'badbool' )
-				->textListParams( array_map( [ $this, 'quoteVal' ], self::$TRUEVALS ) )
-				->numParams( count( self::$TRUEVALS ) )
-				->textListParams( array_merge(
-					array_map( [ $this, 'quoteVal' ], self::$FALSEVALS ),
-					[ MessageValue::new( 'paramvalidator-emptystring' ) ]
-				) )
-				->numParams( count( self::$FALSEVALS ) + 1 ),
-			$name, $value, $settings, $options
-		);
-	}
+        $this->failure(
+            $this->failureMessage('badbool')
+                ->textListParams(array_map([$this, 'quoteVal'], self::$TRUEVALS))
+                ->numParams(count(self::$TRUEVALS))
+                ->textListParams(array_merge(
+                    array_map([$this, 'quoteVal'], self::$FALSEVALS),
+                    [MessageValue::new('paramvalidator-emptystring')]
+                ))
+                ->numParams(count(self::$FALSEVALS) + 1),
+            $name, $value, $settings, $options
+        );
+    }
 
-	private function quoteVal( $v ) {
-		return new ScalarParam( ParamType::TEXT, "\"$v\"" );
-	}
+    private function quoteVal($v)
+    {
+        return new ScalarParam(ParamType::TEXT, "\"$v\"");
+    }
 
-	public function stringifyValue( $name, $value, array $settings, array $options ) {
-		return $value ? self::$TRUEVALS[0] : self::$FALSEVALS[0];
-	}
+    public function stringifyValue($name, $value, array $settings, array $options)
+    {
+        return $value ? self::$TRUEVALS[0] : self::$FALSEVALS[0];
+    }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new( 'paramvalidator-help-type-boolean' )
-			->params( empty( $settings[ParamValidator::PARAM_ISMULTI] ) ? 1 : 2 );
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new('paramvalidator-help-type-boolean')
+            ->params(empty($settings[ParamValidator::PARAM_ISMULTI]) ? 1 : 2);
 
-		return $info;
-	}
+        return $info;
+    }
 
 }

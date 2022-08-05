@@ -6,23 +6,23 @@
  * @constructor
  */
 function UploadSelectFileParamWidget() {
-	UploadSelectFileParamWidget.parent.call( this );
+    UploadSelectFileParamWidget.parent.call(this);
 }
 
-OO.inheritClass( UploadSelectFileParamWidget, OO.ui.SelectFileWidget );
+OO.inheritClass(UploadSelectFileParamWidget, OO.ui.SelectFileWidget);
 
 /**
  * @return {string}
  */
 UploadSelectFileParamWidget.prototype.getApiValueForDisplay = function () {
-	return '...';
+    return '...';
 };
 
 /**
  * @return {Mixed}
  */
 UploadSelectFileParamWidget.prototype.getApiValue = function () {
-	return this.getValue();
+    return this.getValue();
 };
 
 /**
@@ -30,18 +30,18 @@ UploadSelectFileParamWidget.prototype.getApiValue = function () {
  * `no-unused-vars` eslint rule failing
  */
 UploadSelectFileParamWidget.prototype.setApiValue = function () {
-	// No-op
+    // No-op
 };
 
 /**
  * @param {boolean} shouldSuppressErrors
  * @return {jQuery.Promise}
  */
-UploadSelectFileParamWidget.prototype.apiCheckValid = function ( shouldSuppressErrors ) {
-	var ok = this.getValue() !== null && this.getValue() !== undefined || shouldSuppressErrors;
-	this.info.setIcon( ok ? null : 'alert' );
-	this.setTitle( ok ? '' : mw.message( 'apisandbox-alert-field' ).plain() );
-	return $.Deferred().resolve( ok ).promise();
+UploadSelectFileParamWidget.prototype.apiCheckValid = function (shouldSuppressErrors) {
+    var ok = this.getValue() !== null && this.getValue() !== undefined || shouldSuppressErrors;
+    this.info.setIcon(ok ? null : 'alert');
+    this.setTitle(ok ? '' : mw.message('apisandbox-alert-field').plain());
+    return $.Deferred().resolve(ok).promise();
 };
 
 module.exports = UploadSelectFileParamWidget;

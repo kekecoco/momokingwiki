@@ -25,24 +25,27 @@
 /**
  * Iterator for listing regular files
  */
-class SwiftFileBackendFileList extends SwiftFileBackendList {
-	/**
-	 * @see Iterator::current()
-	 * @return string|bool String (relative path) or false
-	 */
-	#[\ReturnTypeWillChange]
-	public function current() {
-		list( $path, $stat ) = current( $this->bufferIter );
-		$relPath = substr( $path, $this->suffixStart );
-		if ( is_array( $stat ) ) {
-			$storageDir = rtrim( $this->params['dir'], '/' );
-			$this->backend->loadListingStatInternal( "$storageDir/$relPath", $stat );
-		}
+class SwiftFileBackendFileList extends SwiftFileBackendList
+{
+    /**
+     * @return string|bool String (relative path) or false
+     * @see Iterator::current()
+     */
+    #[\ReturnTypeWillChange]
+    public function current()
+    {
+        [$path, $stat] = current($this->bufferIter);
+        $relPath = substr($path, $this->suffixStart);
+        if (is_array($stat)) {
+            $storageDir = rtrim($this->params['dir'], '/');
+            $this->backend->loadListingStatInternal("$storageDir/$relPath", $stat);
+        }
 
-		return $relPath;
-	}
+        return $relPath;
+    }
 
-	protected function pageFromList( $container, $dir, &$after, $limit, array $params ) {
-		return $this->backend->getFileListPageInternal( $container, $dir, $after, $limit, $params );
-	}
+    protected function pageFromList($container, $dir, &$after, $limit, array $params)
+    {
+        return $this->backend->getFileListPageInternal($container, $dir, $after, $limit, $params);
+    }
 }

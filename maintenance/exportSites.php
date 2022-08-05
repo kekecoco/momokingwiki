@@ -10,43 +10,46 @@ require_once __DIR__ . '/Maintenance.php';
  * @license GPL-2.0-or-later
  * @author Daniel Kinzler
  */
-class ExportSites extends Maintenance {
+class ExportSites extends Maintenance
+{
 
-	public function __construct() {
-		$this->addDescription( 'Exports site definitions the sites table to XML file' );
+    public function __construct()
+    {
+        $this->addDescription('Exports site definitions the sites table to XML file');
 
-		$this->addArg( 'file', 'A file to write the XML to (see docs/sitelist.md). ' .
-			'Use "php://stdout" to write to stdout.', true
-		);
+        $this->addArg('file', 'A file to write the XML to (see docs/sitelist.md). ' .
+            'Use "php://stdout" to write to stdout.', true
+        );
 
-		parent::__construct();
-	}
+        parent::__construct();
+    }
 
-	/**
-	 * Do the actual work. All child classes will need to implement this
-	 */
-	public function execute() {
-		$file = $this->getArg( 0 );
+    /**
+     * Do the actual work. All child classes will need to implement this
+     */
+    public function execute()
+    {
+        $file = $this->getArg(0);
 
-		if ( $file === 'php://output' || $file === 'php://stdout' ) {
-			$this->mQuiet = true;
-		}
+        if ($file === 'php://output' || $file === 'php://stdout') {
+            $this->mQuiet = true;
+        }
 
-		$handle = fopen( $file, 'w' );
+        $handle = fopen($file, 'w');
 
-		if ( !$handle ) {
-			$this->fatalError( "Failed to open $file for writing.\n" );
-		}
+        if (!$handle) {
+            $this->fatalError("Failed to open $file for writing.\n");
+        }
 
-		$exporter = new SiteExporter( $handle );
+        $exporter = new SiteExporter($handle);
 
-		$siteLookup = \MediaWiki\MediaWikiServices::getInstance()->getSiteLookup();
-		$exporter->exportSites( $siteLookup->getSites() );
+        $siteLookup = \MediaWiki\MediaWikiServices::getInstance()->getSiteLookup();
+        $exporter->exportSites($siteLookup->getSites());
 
-		fclose( $handle );
+        fclose($handle);
 
-		$this->output( "Exported sites to " . realpath( $file ) . ".\n" );
-	}
+        $this->output("Exported sites to " . realpath($file) . ".\n");
+    }
 
 }
 

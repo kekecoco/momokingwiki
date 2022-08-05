@@ -27,57 +27,61 @@
  *
  * @ingroup Media
  */
-class BmpHandler extends BitmapHandler {
-	/**
-	 * @param File $file
-	 * @return bool
-	 */
-	public function mustRender( $file ) {
-		return true;
-	}
+class BmpHandler extends BitmapHandler
+{
+    /**
+     * @param File $file
+     * @return bool
+     */
+    public function mustRender($file)
+    {
+        return true;
+    }
 
-	/**
-	 * Render files as PNG
-	 *
-	 * @param string $ext
-	 * @param string $mime
-	 * @param array|null $params
-	 * @return array
-	 */
-	public function getThumbType( $ext, $mime, $params = null ) {
-		return [ 'png', 'image/png' ];
-	}
+    /**
+     * Render files as PNG
+     *
+     * @param string $ext
+     * @param string $mime
+     * @param array|null $params
+     * @return array
+     */
+    public function getThumbType($ext, $mime, $params = null)
+    {
+        return ['png', 'image/png'];
+    }
 
-	/**
-	 * Get width and height from the bmp header.
-	 *
-	 * @param MediaHandlerState $state
-	 * @param string $filename
-	 * @return array
-	 */
-	public function getSizeAndMetadata( $state, $filename ) {
-		$f = fopen( $filename, 'rb' );
-		if ( !$f ) {
-			return [];
-		}
-		$header = fread( $f, 54 );
-		fclose( $f );
+    /**
+     * Get width and height from the bmp header.
+     *
+     * @param MediaHandlerState $state
+     * @param string $filename
+     * @return array
+     */
+    public function getSizeAndMetadata($state, $filename)
+    {
+        $f = fopen($filename, 'rb');
+        if (!$f) {
+            return [];
+        }
+        $header = fread($f, 54);
+        fclose($f);
 
-		// Extract binary form of width and height from the header
-		$w = substr( $header, 18, 4 );
-		$h = substr( $header, 22, 4 );
+        // Extract binary form of width and height from the header
+        $w = substr($header, 18, 4);
+        $h = substr($header, 22, 4);
 
-		// Convert the unsigned long 32 bits (little endian):
-		try {
-			$w = wfUnpack( 'V', $w, 4 );
-			$h = wfUnpack( 'V', $h, 4 );
-		} catch ( MWException $e ) {
-			return [];
-		}
+        // Convert the unsigned long 32 bits (little endian):
+        try {
+            $w = wfUnpack('V', $w, 4);
+            $h = wfUnpack('V', $h, 4);
+        } catch (MWException $e) {
+            return [];
+        }
 
-		return [
-			'width' => $w[1],
-			'height' => $h[1]
-		];
-	}
+        return [
+            'width'  => $w[1],
+            'height' => $h[1]
+        ];
+    }
 }

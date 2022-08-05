@@ -4,236 +4,247 @@
  * @group HashRing
  * @covers HashRing
  */
-class HashRingTest extends PHPUnit\Framework\TestCase {
+class HashRingTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	public function testHashRingSerialize() {
-		$map = [ 's1' => 3, 's2' => 10, 's3' => 2, 's4' => 10, 's5' => 2, 's6' => 3 ];
-		$ring = new HashRing( $map, 'md5' );
+    public function testHashRingSerialize()
+    {
+        $map = ['s1' => 3, 's2' => 10, 's3' => 2, 's4' => 10, 's5' => 2, 's6' => 3];
+        $ring = new HashRing($map, 'md5');
 
-		$serialized = serialize( $ring );
-		$ringRemade = unserialize( $serialized );
+        $serialized = serialize($ring);
+        $ringRemade = unserialize($serialized);
 
-		for ( $i = 0; $i < 100; $i++ ) {
-			$this->assertEquals(
-				$ring->getLocation( "hello$i" ),
-				$ringRemade->getLocation( "hello$i" ),
-				'Items placed at proper locations'
-			);
-		}
-	}
+        for ($i = 0; $i < 100; $i++) {
+            $this->assertEquals(
+                $ring->getLocation("hello$i"),
+                $ringRemade->getLocation("hello$i"),
+                'Items placed at proper locations'
+            );
+        }
+    }
 
-	public function testHashRingSingleLocation() {
-		// SHA-1 based and weighted
-		$ring = new HashRing( [ 's1' => 1 ], 'sha1' );
+    public function testHashRingSingleLocation()
+    {
+        // SHA-1 based and weighted
+        $ring = new HashRing(['s1' => 1], 'sha1');
 
-		$this->assertEquals(
-			[ 's1' => 1 ],
-			$ring->getLocationWeights(),
-			'Normalized location weights'
-		);
+        $this->assertEquals(
+            ['s1' => 1],
+            $ring->getLocationWeights(),
+            'Normalized location weights'
+        );
 
-		for ( $i = 0; $i < 5; $i++ ) {
-			$this->assertEquals(
-				's1',
-				$ring->getLocation( "hello$i" ),
-				'Items placed at proper locations'
-			);
-			$this->assertEquals(
-				[ 's1' ],
-				$ring->getLocations( "hello$i", 2 ),
-				'Items placed at proper locations'
-			);
-		}
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertEquals(
+                's1',
+                $ring->getLocation("hello$i"),
+                'Items placed at proper locations'
+            );
+            $this->assertEquals(
+                ['s1'],
+                $ring->getLocations("hello$i", 2),
+                'Items placed at proper locations'
+            );
+        }
 
-		$this->assertEquals( [], $ring->getLocations( "helloX", 0 ), "Limit of 0" );
-	}
+        $this->assertEquals([], $ring->getLocations("helloX", 0), "Limit of 0");
+    }
 
-	public function testHashRingMapping() {
-		// SHA-1 based and weighted
-		$ring = new HashRing(
-			[ 's1' => 1, 's2' => 1, 's3' => 2, 's4' => 2, 's5' => 2, 's6' => 3, 's7' => 0 ],
-			'sha1'
-		);
+    public function testHashRingMapping()
+    {
+        // SHA-1 based and weighted
+        $ring = new HashRing(
+            ['s1' => 1, 's2' => 1, 's3' => 2, 's4' => 2, 's5' => 2, 's6' => 3, 's7' => 0],
+            'sha1'
+        );
 
-		$this->assertEquals(
-			[ 's1' => 1, 's2' => 1, 's3' => 2, 's4' => 2, 's5' => 2, 's6' => 3 ],
-			$ring->getLocationWeights(),
-			'Normalized location weights'
-		);
+        $this->assertEquals(
+            ['s1' => 1, 's2' => 1, 's3' => 2, 's4' => 2, 's5' => 2, 's6' => 3],
+            $ring->getLocationWeights(),
+            'Normalized location weights'
+        );
 
-		$locations = [];
-		for ( $i = 0; $i < 25; $i++ ) {
-			$locations[ "hello$i"] = $ring->getLocation( "hello$i" );
-		}
-		$expectedLocations = [
-			"hello0" => "s4",
-			"hello1" => "s6",
-			"hello2" => "s3",
-			"hello3" => "s6",
-			"hello4" => "s6",
-			"hello5" => "s4",
-			"hello6" => "s3",
-			"hello7" => "s4",
-			"hello8" => "s3",
-			"hello9" => "s3",
-			"hello10" => "s3",
-			"hello11" => "s5",
-			"hello12" => "s4",
-			"hello13" => "s5",
-			"hello14" => "s2",
-			"hello15" => "s5",
-			"hello16" => "s6",
-			"hello17" => "s5",
-			"hello18" => "s1",
-			"hello19" => "s1",
-			"hello20" => "s6",
-			"hello21" => "s5",
-			"hello22" => "s3",
-			"hello23" => "s4",
-			"hello24" => "s1"
-		];
-		$this->assertEquals( $expectedLocations, $locations, 'Items placed at proper locations' );
+        $locations = [];
+        for ($i = 0; $i < 25; $i++) {
+            $locations["hello$i"] = $ring->getLocation("hello$i");
+        }
+        $expectedLocations = [
+            "hello0"  => "s4",
+            "hello1"  => "s6",
+            "hello2"  => "s3",
+            "hello3"  => "s6",
+            "hello4"  => "s6",
+            "hello5"  => "s4",
+            "hello6"  => "s3",
+            "hello7"  => "s4",
+            "hello8"  => "s3",
+            "hello9"  => "s3",
+            "hello10" => "s3",
+            "hello11" => "s5",
+            "hello12" => "s4",
+            "hello13" => "s5",
+            "hello14" => "s2",
+            "hello15" => "s5",
+            "hello16" => "s6",
+            "hello17" => "s5",
+            "hello18" => "s1",
+            "hello19" => "s1",
+            "hello20" => "s6",
+            "hello21" => "s5",
+            "hello22" => "s3",
+            "hello23" => "s4",
+            "hello24" => "s1"
+        ];
+        $this->assertEquals($expectedLocations, $locations, 'Items placed at proper locations');
 
-		$locations = [];
-		for ( $i = 0; $i < 5; $i++ ) {
-			$locations[ "hello$i"] = $ring->getLocations( "hello$i", 2 );
-		}
+        $locations = [];
+        for ($i = 0; $i < 5; $i++) {
+            $locations["hello$i"] = $ring->getLocations("hello$i", 2);
+        }
 
-		$expectedLocations = [
-			"hello0" => [ "s4", "s5" ],
-			"hello1" => [ "s6", "s5" ],
-			"hello2" => [ "s3", "s1" ],
-			"hello3" => [ "s6", "s5" ],
-			"hello4" => [ "s6", "s3" ],
-		];
-		$this->assertEquals( $expectedLocations, $locations, 'Items placed at proper locations' );
-	}
+        $expectedLocations = [
+            "hello0" => ["s4", "s5"],
+            "hello1" => ["s6", "s5"],
+            "hello2" => ["s3", "s1"],
+            "hello3" => ["s6", "s5"],
+            "hello4" => ["s6", "s3"],
+        ];
+        $this->assertEquals($expectedLocations, $locations, 'Items placed at proper locations');
+    }
 
-	/**
-	 * @dataProvider providor_getHashLocationWeights
-	 */
-	public function testHashRingRatios( $locations, $expectedHits ) {
-		$ring = new HashRing( $locations, 'whirlpool' );
+    /**
+     * @dataProvider providor_getHashLocationWeights
+     */
+    public function testHashRingRatios($locations, $expectedHits)
+    {
+        $ring = new HashRing($locations, 'whirlpool');
 
-		$locationStats = array_fill_keys( array_keys( $locations ), 0 );
-		for ( $i = 0; $i < 10000; ++$i ) {
-			++$locationStats[$ring->getLocation( "key-$i" )];
-		}
-		$this->assertEquals( $expectedHits, $locationStats );
-	}
+        $locationStats = array_fill_keys(array_keys($locations), 0);
+        for ($i = 0; $i < 10000; ++$i) {
+            ++$locationStats[$ring->getLocation("key-$i")];
+        }
+        $this->assertEquals($expectedHits, $locationStats);
+    }
 
-	public static function providor_getHashLocationWeights() {
-		return [
-			[
-				[ 'big' => 10, 'medium' => 5, 'small' => 1 ],
-				[ 'big' => 6037, 'medium' => 3314, 'small' => 649 ]
-			]
-		];
-	}
+    public static function providor_getHashLocationWeights()
+    {
+        return [
+            [
+                ['big' => 10, 'medium' => 5, 'small' => 1],
+                ['big' => 6037, 'medium' => 3314, 'small' => 649]
+            ]
+        ];
+    }
 
-	/**
-	 * @dataProvider providor_getHashLocationWeights2
-	 */
-	public function testHashRingRatios2( $locations, $expected ) {
-		$ring = new HashRing( $locations, 'sha1' );
-		$locationStats = array_fill_keys( array_keys( $locations ), 0 );
-		for ( $i = 0; $i < 1000; ++$i ) {
-			foreach ( $ring->getLocations( "key-$i", 3 ) as $location ) {
-				++$locationStats[$location];
-			}
-		}
-		$this->assertEquals( $expected, $locationStats );
-	}
+    /**
+     * @dataProvider providor_getHashLocationWeights2
+     */
+    public function testHashRingRatios2($locations, $expected)
+    {
+        $ring = new HashRing($locations, 'sha1');
+        $locationStats = array_fill_keys(array_keys($locations), 0);
+        for ($i = 0; $i < 1000; ++$i) {
+            foreach ($ring->getLocations("key-$i", 3) as $location) {
+                ++$locationStats[$location];
+            }
+        }
+        $this->assertEquals($expected, $locationStats);
+    }
 
-	public static function providor_getHashLocationWeights2() {
-		return [
-			[
-				[ 'big1' => 10, 'big2' => 10, 'big3' => 10, 'small1' => 1, 'small2' => 1 ],
-				[ 'big1' => 929, 'big2' => 899, 'big3' => 887, 'small1' => 143, 'small2' => 142 ]
-			]
-		];
-	}
+    public static function providor_getHashLocationWeights2()
+    {
+        return [
+            [
+                ['big1' => 10, 'big2' => 10, 'big3' => 10, 'small1' => 1, 'small2' => 1],
+                ['big1' => 929, 'big2' => 899, 'big3' => 887, 'small1' => 143, 'small2' => 142]
+            ]
+        ];
+    }
 
-	public function testHashRingEjection() {
-		$map = [ 's1' => 5, 's2' => 5, 's3' => 10, 's4' => 10, 's5' => 5, 's6' => 5 ];
-		$ring = new HashRing( $map, 'md5' );
+    public function testHashRingEjection()
+    {
+        $map = ['s1' => 5, 's2' => 5, 's3' => 10, 's4' => 10, 's5' => 5, 's6' => 5];
+        $ring = new HashRing($map, 'md5');
 
-		$ring->ejectFromLiveRing( 's3', 30 );
-		$ring->ejectFromLiveRing( 's6', 15 );
+        $ring->ejectFromLiveRing('s3', 30);
+        $ring->ejectFromLiveRing('s6', 15);
 
-		$this->assertEquals(
-			[ 's1' => 5, 's2' => 5, 's4' => 10, 's5' => 5 ],
-			$ring->getLiveLocationWeights(),
-			'Live location weights'
-		);
+        $this->assertEquals(
+            ['s1' => 5, 's2' => 5, 's4' => 10, 's5' => 5],
+            $ring->getLiveLocationWeights(),
+            'Live location weights'
+        );
 
-		for ( $i = 0; $i < 100; ++$i ) {
-			$key = "key-$i";
+        for ($i = 0; $i < 100; ++$i) {
+            $key = "key-$i";
 
-			$this->assertNotEquals( 's3', $ring->getLiveLocation( $key ), 'ejected' );
-			$this->assertNotEquals( 's6', $ring->getLiveLocation( $key ), 'ejected' );
+            $this->assertNotEquals('s3', $ring->getLiveLocation($key), 'ejected');
+            $this->assertNotEquals('s6', $ring->getLiveLocation($key), 'ejected');
 
-			if ( !in_array( $ring->getLocation( $key ), [ 's3', 's6' ], true ) ) {
-				$this->assertEquals(
-					$ring->getLocation( $key ),
-					$ring->getLiveLocation( $key ),
-					"Live ring otherwise matches (#$i)"
-				);
-				$this->assertEquals(
-					$ring->getLocations( $key, 1 ),
-					$ring->getLiveLocations( $key, 1 ),
-					"Live ring otherwise matches (#$i)"
-				);
-			}
-		}
-	}
+            if (!in_array($ring->getLocation($key), ['s3', 's6'], true)) {
+                $this->assertEquals(
+                    $ring->getLocation($key),
+                    $ring->getLiveLocation($key),
+                    "Live ring otherwise matches (#$i)"
+                );
+                $this->assertEquals(
+                    $ring->getLocations($key, 1),
+                    $ring->getLiveLocations($key, 1),
+                    "Live ring otherwise matches (#$i)"
+                );
+            }
+        }
+    }
 
-	public function testHashRingCollision() {
-		$ring1 = new HashRing( [ 0 => 1, 6497 => 1 ] );
-		$ring2 = new HashRing( [ 6497 => 1, 0 => 1 ] );
+    public function testHashRingCollision()
+    {
+        $ring1 = new HashRing([0 => 1, 6497 => 1]);
+        $ring2 = new HashRing([6497 => 1, 0 => 1]);
 
-		for ( $i = 0; $i < 100; ++$i ) {
-			$this->assertEquals( $ring1->getLocation( $i ), $ring2->getLocation( $i ) );
-		}
-	}
+        for ($i = 0; $i < 100; ++$i) {
+            $this->assertEquals($ring1->getLocation($i), $ring2->getLocation($i));
+        }
+    }
 
-	public function testHashRingKetamaMode() {
-		// Same as https://github.com/RJ/ketama/blob/master/ketama.servers
-		$map = [
-			'10.0.1.1:11211' => 600,
-			'10.0.1.2:11211' => 300,
-			'10.0.1.3:11211' => 200,
-			'10.0.1.4:11211' => 350,
-			'10.0.1.5:11211' => 1000,
-			'10.0.1.6:11211' => 800,
-			'10.0.1.7:11211' => 950,
-			'10.0.1.8:11211' => 100
-		];
-		$ring = new HashRing( $map, 'md5' );
-		$wrapper = \Wikimedia\TestingAccessWrapper::newFromObject( $ring );
+    public function testHashRingKetamaMode()
+    {
+        // Same as https://github.com/RJ/ketama/blob/master/ketama.servers
+        $map = [
+            '10.0.1.1:11211' => 600,
+            '10.0.1.2:11211' => 300,
+            '10.0.1.3:11211' => 200,
+            '10.0.1.4:11211' => 350,
+            '10.0.1.5:11211' => 1000,
+            '10.0.1.6:11211' => 800,
+            '10.0.1.7:11211' => 950,
+            '10.0.1.8:11211' => 100
+        ];
+        $ring = new HashRing($map, 'md5');
+        $wrapper = \Wikimedia\TestingAccessWrapper::newFromObject($ring);
 
-		$ketama_test = static function ( $count ) use ( $wrapper ) {
-			$baseRing = $wrapper->baseRing;
+        $ketama_test = static function ($count) use ($wrapper) {
+            $baseRing = $wrapper->baseRing;
 
-			$lines = [];
-			for ( $key = 0; $key < $count; ++$key ) {
-				$location = $wrapper->getLocation( $key );
+            $lines = [];
+            for ($key = 0; $key < $count; ++$key) {
+                $location = $wrapper->getLocation($key);
 
-				$itemPos = $wrapper->getItemPosition( $key );
-				$nodeIndex = $wrapper->findNodeIndexForPosition( $itemPos, $baseRing );
-				$nodePos = $baseRing[$nodeIndex][HashRing::KEY_POS];
+                $itemPos = $wrapper->getItemPosition($key);
+                $nodeIndex = $wrapper->findNodeIndexForPosition($itemPos, $baseRing);
+                $nodePos = $baseRing[$nodeIndex][HashRing::KEY_POS];
 
-				$lines[] = sprintf( "%u %u %s\n", $itemPos, $nodePos, $location );
-			}
+                $lines[] = sprintf("%u %u %s\n", $itemPos, $nodePos, $location);
+            }
 
-			return "\n" . implode( '', $lines );
-		};
+            return "\n" . implode('', $lines);
+        };
 
-		// Known correct values generated from C code:
-		// https://github.com/RJ/ketama/blob/master/libketama/ketama_test.c
-		$expected = <<<EOT
+        // Known correct values generated from C code:
+        // https://github.com/RJ/ketama/blob/master/libketama/ketama_test.c
+        $expected = <<<EOT
 
 2216742351 2217271743 10.0.1.1:11211
 943901380 949045552 10.0.1.5:11211
@@ -338,16 +349,16 @@ class HashRingTest extends PHPUnit\Framework\TestCase {
 
 EOT;
 
-		$this->assertEquals( $expected, $ketama_test( 100 ), 'Ketama mode (diff check)' );
+        $this->assertEquals($expected, $ketama_test(100), 'Ketama mode (diff check)');
 
-		// Hash of known correct values from C code
-		$this->assertEquals(
-			'd1a4912a80e4654ec2e4e462c8b911c6',
-			md5( $ketama_test( 1e3 ) ),
-			'Ketama mode (large, MD5 check)'
-		);
+        // Hash of known correct values from C code
+        $this->assertEquals(
+            'd1a4912a80e4654ec2e4e462c8b911c6',
+            md5($ketama_test(1e3)),
+            'Ketama mode (large, MD5 check)'
+        );
 
-		// Slower, full upstream MD5 check, manually verified 3/21/2018
-		// $this->assertEquals( '5672b131391f5aa2b280936aec1eea74', md5( $ketama_test( 1e6 ) ) );
-	}
+        // Slower, full upstream MD5 check, manually verified 3/21/2018
+        // $this->assertEquals( '5672b131391f5aa2b280936aec1eea74', md5( $ketama_test( 1e6 ) ) );
+    }
 }

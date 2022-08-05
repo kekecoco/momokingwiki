@@ -24,34 +24,38 @@
  * @since 1.38
  */
 
-declare( strict_types=1 );
+declare(strict_types=1);
 
 namespace Wikimedia\Metrics;
 
-class Sample {
+class Sample
+{
 
-	/** @var string[] */
-	private $labels;
+    /** @var string[] */
+    private $labels;
 
-	/** @var float */
-	private $value;
+    /** @var float */
+    private $value;
 
-	/** @param array $data associative array:
-	 *  - labels: (string[]) Array of label values associated with the metric
-	 *  - value: (numeric) The metric value
-	 */
-	public function __construct( array $data ) {
-		$this->labels = $data[ 'labels' ];
-		$this->value = $data[ 'value' ];
-	}
+    /** @param array $data associative array:
+     *  - labels: (string[]) Array of label values associated with the metric
+     *  - value: (numeric) The metric value
+     */
+    public function __construct(array $data)
+    {
+        $this->labels = $data['labels'];
+        $this->value = $data['value'];
+    }
 
-	/** @return string[] */
-	public function getLabels(): array {
-		return $this->labels;
-	}
+    /** @return string[] */
+    public function getLabels(): array
+    {
+        return $this->labels;
+    }
 
-	/** @return float */
-	public function getValue(): float {
-		return (float)$this->value;
-	}
+    /** @return float */
+    public function getValue(): float
+    {
+        return (float)$this->value;
+    }
 }

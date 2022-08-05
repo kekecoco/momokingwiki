@@ -5,26 +5,28 @@
  *
  * @since 1.28
  */
-class DummySearchIndexFieldDefinition extends SearchIndexFieldDefinition {
+class DummySearchIndexFieldDefinition extends SearchIndexFieldDefinition
+{
 
-	/**
-	 * @param SearchEngine $engine
-	 *
-	 * @return array
-	 */
-	public function getMapping( SearchEngine $engine ) {
-		$mapping = [
-			'name' => $this->name,
-			'type' => $this->type,
-			'flags' => $this->flags,
-			'subfields' => []
-		];
+    /**
+     * @param SearchEngine $engine
+     *
+     * @return array
+     */
+    public function getMapping(SearchEngine $engine)
+    {
+        $mapping = [
+            'name'      => $this->name,
+            'type'      => $this->type,
+            'flags'     => $this->flags,
+            'subfields' => []
+        ];
 
-		foreach ( $this->subfields as $subfield ) {
-			$mapping['subfields'][] = $subfield->getMapping( $engine );
-		}
+        foreach ($this->subfields as $subfield) {
+            $mapping['subfields'][] = $subfield->getMapping($engine);
+        }
 
-		return $mapping;
-	}
+        return $mapping;
+    }
 
 }

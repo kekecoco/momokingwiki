@@ -41,77 +41,83 @@ use function is_object;
  *
  * @since 1.38
  */
-class AbstractSchemaValidator {
-	/**
-	 * @var callable(string):void
-	 */
-	private $missingDepCallback;
+class AbstractSchemaValidator
+{
+    /**
+     * @var callable(string):void
+     */
+    private $missingDepCallback;
 
-	/**
-	 * @param callable(string):void $missingDepCallback
-	 */
-	public function __construct( callable $missingDepCallback ) {
-		$this->missingDepCallback = $missingDepCallback;
-	}
+    /**
+     * @param callable(string):void $missingDepCallback
+     */
+    public function __construct(callable $missingDepCallback)
+    {
+        $this->missingDepCallback = $missingDepCallback;
+    }
 
-	/**
-	 * @codeCoverageIgnore
-	 * @return bool
-	 */
-	public function checkDependencies(): bool {
-		if ( !class_exists( Validator::class ) ) {
-			( $this->missingDepCallback )(
-				'The JsonSchema library cannot be found, please install it through composer.'
-			);
-			return false;
-		}
+    /**
+     * @codeCoverageIgnore
+     * @return bool
+     */
+    public function checkDependencies(): bool
+    {
+        if (!class_exists(Validator::class)) {
+            ($this->missingDepCallback)(
+                'The JsonSchema library cannot be found, please install it through composer.'
+            );
 
-		if ( !class_exists( JsonParser::class ) ) {
-			( $this->missingDepCallback )(
-				'The JSON lint library cannot be found, please install it through composer.'
-			);
-			return false;
-		}
+            return false;
+        }
 
-		return true;
-	}
+        if (!class_exists(JsonParser::class)) {
+            ($this->missingDepCallback)(
+                'The JSON lint library cannot be found, please install it through composer.'
+            );
 
-	/**
-	 * @param string $path file to validate
-	 * @return bool true if passes validation
-	 * @throws AbstractSchemaValidationError on any failure
-	 */
-	public function validate( string $path ): bool {
-		$contents = file_get_contents( $path );
-		$jsonParser = new JsonParser();
-		try {
-			$data = $jsonParser->parse( $contents, JsonParser::DETECT_KEY_CONFLICTS );
-		} catch ( DuplicateKeyException $e ) {
-			throw new AbstractSchemaValidationError( $e->getMessage(), $e->getCode(), $e );
-		} catch ( ParsingException $e ) {
-			throw new AbstractSchemaValidationError( "$path is not valid JSON", $e->getCode(), $e );
-		}
+            return false;
+        }
 
-		// Regular schema's are arrays, schema changes are objects.
-		if ( is_array( $data ) ) {
-			$schemaPath = __DIR__ . '/../../docs/abstract-schema.schema.json';
-		} elseif ( is_object( $data ) ) {
-			$schemaPath = __DIR__ . '/../../docs/abstract-schema-changes.schema.json';
-		} else {
-			throw new AbstractSchemaValidationError( "$path is not a supported JSON object" );
-		}
+        return true;
+    }
 
-		$validator = new Validator;
-		$validator->check( $data, (object)[ '$ref' => 'file://' . $schemaPath ] );
-		if ( $validator->isValid() ) {
-			// All good.
-			return true;
-		}
+    /**
+     * @param string $path file to validate
+     * @return bool true if passes validation
+     * @throws AbstractSchemaValidationError on any failure
+     */
+    public function validate(string $path): bool
+    {
+        $contents = file_get_contents($path);
+        $jsonParser = new JsonParser();
+        try {
+            $data = $jsonParser->parse($contents, JsonParser::DETECT_KEY_CONFLICTS);
+        } catch (DuplicateKeyException $e) {
+            throw new AbstractSchemaValidationError($e->getMessage(), $e->getCode(), $e);
+        } catch (ParsingException $e) {
+            throw new AbstractSchemaValidationError("$path is not valid JSON", $e->getCode(), $e);
+        }
 
-		$out = "$path did not pass validation.\n";
-		foreach ( $validator->getErrors() as $error ) {
-			$out .= "[{$error['property']}] {$error['message']}\n";
-		}
-		throw new AbstractSchemaValidationError( $out );
-	}
+        // Regular schema's are arrays, schema changes are objects.
+        if (is_array($data)) {
+            $schemaPath = __DIR__ . '/../../docs/abstract-schema.schema.json';
+        } elseif (is_object($data)) {
+            $schemaPath = __DIR__ . '/../../docs/abstract-schema-changes.schema.json';
+        } else {
+            throw new AbstractSchemaValidationError("$path is not a supported JSON object");
+        }
+
+        $validator = new Validator;
+        $validator->check($data, (object)['$ref' => 'file://' . $schemaPath]);
+        if ($validator->isValid()) {
+            // All good.
+            return true;
+        }
+
+        $out = "$path did not pass validation.\n";
+        foreach ($validator->getErrors() as $error) {
+            $out .= "[{$error['property']}] {$error['message']}\n";
+        }
+        throw new AbstractSchemaValidationError($out);
+    }
 }

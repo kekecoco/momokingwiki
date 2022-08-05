@@ -10,16 +10,19 @@ use ArrayIterator;
  *
  * @since 1.38
  */
-class StringCommentIterator extends ArrayIterator {
-	/**
-	 * @internal Use CommentBatch::strings()
-	 * @param string[] $strings
-	 */
-	public function __construct( $strings ) {
-		parent::__construct( $strings );
-	}
+class StringCommentIterator extends ArrayIterator
+{
+    /**
+     * @param string[] $strings
+     * @internal Use CommentBatch::strings()
+     */
+    public function __construct($strings)
+    {
+        parent::__construct($strings);
+    }
 
-	public function current(): CommentItem {
-		return new CommentItem( parent::current() );
-	}
+    public function current(): CommentItem
+    {
+        return new CommentItem(parent::current());
+    }
 }

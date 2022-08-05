@@ -29,5 +29,6 @@ namespace Wikimedia\Metrics\Exceptions;
 
 use InvalidArgumentException;
 
-class InvalidConfigurationException extends InvalidArgumentException {
+class InvalidConfigurationException extends InvalidArgumentException
+{
 }

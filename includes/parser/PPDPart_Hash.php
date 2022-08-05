@@ -28,17 +28,19 @@
  * @property string[] $out
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPDPart_Hash {
-	/**
-	 * @var string[] Output accumulator
-	 */
-	public $out;
+class PPDPart_Hash
+{
+    /**
+     * @var string[] Output accumulator
+     */
+    public $out;
 
-	public function __construct( $out = '' ) {
-		$this->out = [];
+    public function __construct($out = '')
+    {
+        $this->out = [];
 
-		if ( $out !== '' ) {
-			$this->out[] = $out;
-		}
-	}
+        if ($out !== '') {
+            $this->out[] = $out;
+        }
+    }
 }

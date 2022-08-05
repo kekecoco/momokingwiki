@@ -30,47 +30,51 @@ use Wikimedia\Assert\Assert;
  * @ingroup JobQueue
  * @since 1.33
  */
-class JobQueueEnqueueUpdate implements DeferrableUpdate, MergeableUpdate {
-	/** @var IJobSpecification[][] */
-	private $jobsByDomain;
+class JobQueueEnqueueUpdate implements DeferrableUpdate, MergeableUpdate
+{
+    /** @var IJobSpecification[][] */
+    private $jobsByDomain;
 
-	/** @var JobQueueGroupFactory */
-	private $jobQueueGroupFactory;
+    /** @var JobQueueGroupFactory */
+    private $jobQueueGroupFactory;
 
-	/**
-	 * @param string $domain DB domain ID
-	 * @param IJobSpecification[] $jobs
-	 */
-	public function __construct( string $domain, array $jobs ) {
-		$this->jobsByDomain[$domain] = $jobs;
-		// TODO Inject services, when DeferredUpdates supports DI
-		$this->jobQueueGroupFactory = MediaWikiServices::getInstance()->getJobQueueGroupFactory();
-	}
+    /**
+     * @param string $domain DB domain ID
+     * @param IJobSpecification[] $jobs
+     */
+    public function __construct(string $domain, array $jobs)
+    {
+        $this->jobsByDomain[$domain] = $jobs;
+        // TODO Inject services, when DeferredUpdates supports DI
+        $this->jobQueueGroupFactory = MediaWikiServices::getInstance()->getJobQueueGroupFactory();
+    }
 
-	/** @inheritDoc */
-	public function merge( MergeableUpdate $update ) {
-		/** @var self $update */
-		Assert::parameterType( __CLASS__, $update, '$update' );
-		'@phan-var self $update';
+    /** @inheritDoc */
+    public function merge(MergeableUpdate $update)
+    {
+        /** @var self $update */
+        Assert::parameterType(__CLASS__, $update, '$update');
+        '@phan-var self $update';
 
-		foreach ( $update->jobsByDomain as $domain => $jobs ) {
-			$this->jobsByDomain[$domain] = array_merge(
-				$this->jobsByDomain[$domain] ?? [],
-				$jobs
-			);
-		}
-	}
+        foreach ($update->jobsByDomain as $domain => $jobs) {
+            $this->jobsByDomain[$domain] = array_merge(
+                $this->jobsByDomain[$domain] ?? [],
+                $jobs
+            );
+        }
+    }
 
-	/** @inheritDoc */
-	public function doUpdate() {
-		foreach ( $this->jobsByDomain as $domain => $jobs ) {
-			$group = $this->jobQueueGroupFactory->makeJobQueueGroup( $domain );
-			try {
-				$group->push( $jobs );
-			} catch ( Throwable $e ) {
-				// Get in as many jobs as possible and let other post-send updates happen
-				MWExceptionHandler::logException( $e );
-			}
-		}
-	}
+    /** @inheritDoc */
+    public function doUpdate()
+    {
+        foreach ($this->jobsByDomain as $domain => $jobs) {
+            $group = $this->jobQueueGroupFactory->makeJobQueueGroup($domain);
+            try {
+                $group->push($jobs);
+            } catch (Throwable $e) {
+                // Get in as many jobs as possible and let other post-send updates happen
+                MWExceptionHandler::logException($e);
+            }
+        }
+    }
 }

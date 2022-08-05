@@ -31,241 +31,254 @@ use MediaWiki\User\UserRigorOptions;
 /**
  * @ingroup Actions
  */
-class CreditsAction extends FormlessAction {
+class CreditsAction extends FormlessAction
+{
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
+    /** @var LinkRenderer */
+    private $linkRenderer;
 
-	/** @var UserFactory */
-	private $userFactory;
+    /** @var UserFactory */
+    private $userFactory;
 
-	/**
-	 * @param Page $page
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param UserFactory $userFactory
-	 */
-	public function __construct(
-		Page $page,
-		IContextSource $context,
-		LinkRenderer $linkRenderer,
-		UserFactory $userFactory
-	) {
-		parent::__construct( $page, $context );
-		$this->linkRenderer = $linkRenderer;
-		$this->userFactory = $userFactory;
-	}
+    /**
+     * @param Page $page
+     * @param IContextSource $context
+     * @param LinkRenderer $linkRenderer
+     * @param UserFactory $userFactory
+     */
+    public function __construct(
+        Page $page,
+        IContextSource $context,
+        LinkRenderer $linkRenderer,
+        UserFactory $userFactory
+    )
+    {
+        parent::__construct($page, $context);
+        $this->linkRenderer = $linkRenderer;
+        $this->userFactory = $userFactory;
+    }
 
-	public function getName() {
-		return 'credits';
-	}
+    public function getName()
+    {
+        return 'credits';
+    }
 
-	protected function getDescription() {
-		return $this->msg( 'creditspage' )->escaped();
-	}
+    protected function getDescription()
+    {
+        return $this->msg('creditspage')->escaped();
+    }
 
-	/**
-	 * This is largely cadged from PageHistory::history
-	 *
-	 * @return string HTML
-	 */
-	public function onView() {
-		$this->getOutput()->addModuleStyles( [
-			'mediawiki.action.styles',
-		] );
+    /**
+     * This is largely cadged from PageHistory::history
+     *
+     * @return string HTML
+     */
+    public function onView()
+    {
+        $this->getOutput()->addModuleStyles([
+            'mediawiki.action.styles',
+        ]);
 
-		if ( $this->getWikiPage()->getId() === 0 ) {
-			$s = $this->msg( 'nocredits' )->parse();
-		} else {
-			$s = $this->getCredits( -1 );
-		}
+        if ($this->getWikiPage()->getId() === 0) {
+            $s = $this->msg('nocredits')->parse();
+        } else {
+            $s = $this->getCredits(-1);
+        }
 
-		return Html::rawElement( 'div', [ 'id' => 'mw-credits' ], $s );
-	}
+        return Html::rawElement('div', ['id' => 'mw-credits'], $s);
+    }
 
-	/**
-	 * Get a list of contributors
-	 *
-	 * @param int $cnt Maximum list of contributors to show
-	 * @param bool $showIfMax Whether to contributors if there more than $cnt
-	 * @return string Html
-	 */
-	public function getCredits( $cnt, $showIfMax = true ) {
-		$s = '';
+    /**
+     * Get a list of contributors
+     *
+     * @param int $cnt Maximum list of contributors to show
+     * @param bool $showIfMax Whether to contributors if there more than $cnt
+     * @return string Html
+     */
+    public function getCredits($cnt, $showIfMax = true)
+    {
+        $s = '';
 
-		if ( $cnt !== 0 ) {
-			$s = $this->getAuthor();
-			if ( $cnt > 1 || $cnt < 0 ) {
-				$s .= ' ' . $this->getContributors( $cnt - 1, $showIfMax );
-			}
-		}
+        if ($cnt !== 0) {
+            $s = $this->getAuthor();
+            if ($cnt > 1 || $cnt < 0) {
+                $s .= ' ' . $this->getContributors($cnt - 1, $showIfMax);
+            }
+        }
 
-		return $s;
-	}
+        return $s;
+    }
 
-	/**
-	 * Get the last author with the last modification time
-	 *
-	 * @return string HTML
-	 */
-	private function getAuthor() {
-		$page = $this->getWikiPage();
-		$user = $this->userFactory->newFromName( $page->getUserText(), UserRigorOptions::RIGOR_NONE );
+    /**
+     * Get the last author with the last modification time
+     *
+     * @return string HTML
+     */
+    private function getAuthor()
+    {
+        $page = $this->getWikiPage();
+        $user = $this->userFactory->newFromName($page->getUserText(), UserRigorOptions::RIGOR_NONE);
 
-		$timestamp = $page->getTimestamp();
-		if ( $timestamp ) {
-			$lang = $this->getLanguage();
-			$d = $lang->date( $page->getTimestamp(), true );
-			$t = $lang->time( $page->getTimestamp(), true );
-		} else {
-			$d = '';
-			$t = '';
-		}
+        $timestamp = $page->getTimestamp();
+        if ($timestamp) {
+            $lang = $this->getLanguage();
+            $d = $lang->date($page->getTimestamp(), true);
+            $t = $lang->time($page->getTimestamp(), true);
+        } else {
+            $d = '';
+            $t = '';
+        }
 
-		return $this->msg( 'lastmodifiedatby', $d, $t )->rawParams(
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable RIGOR_NONE never returns null
-			$this->userLink( $user ) )->params( $user->getName() )->escaped();
-	}
+        return $this->msg('lastmodifiedatby', $d, $t)->rawParams(
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable RIGOR_NONE never returns null
+            $this->userLink($user))->params($user->getName())->escaped();
+    }
 
-	/**
-	 * Whether we can display the user's real name (not a hidden pref)
-	 *
-	 * @since 1.24
-	 * @return bool
-	 */
-	protected function canShowRealUserName() {
-		$hiddenPrefs = $this->context->getConfig()->get( MainConfigNames::HiddenPrefs );
-		return !in_array( 'realname', $hiddenPrefs );
-	}
+    /**
+     * Whether we can display the user's real name (not a hidden pref)
+     *
+     * @return bool
+     * @since 1.24
+     */
+    protected function canShowRealUserName()
+    {
+        $hiddenPrefs = $this->context->getConfig()->get(MainConfigNames::HiddenPrefs);
 
-	/**
-	 * Get a list of contributors of $article
-	 * @param int $cnt Maximum list of contributors to show
-	 * @param bool $showIfMax Whether to contributors if there more than $cnt
-	 * @return string Html
-	 */
-	protected function getContributors( $cnt, $showIfMax ) {
-		$contributors = $this->getWikiPage()->getContributors();
+        return !in_array('realname', $hiddenPrefs);
+    }
 
-		$others_link = false;
+    /**
+     * Get a list of contributors of $article
+     * @param int $cnt Maximum list of contributors to show
+     * @param bool $showIfMax Whether to contributors if there more than $cnt
+     * @return string Html
+     */
+    protected function getContributors($cnt, $showIfMax)
+    {
+        $contributors = $this->getWikiPage()->getContributors();
 
-		# Hmm... too many to fit!
-		if ( $cnt > 0 && $contributors->count() > $cnt ) {
-			$others_link = $this->othersLink();
-			if ( !$showIfMax ) {
-				return $this->msg( 'othercontribs' )->rawParams(
-					$others_link )->params( $contributors->count() )->escaped();
-			}
-		}
+        $others_link = false;
 
-		$real_names = [];
-		$user_names = [];
-		$anon_ips = [];
+        # Hmm... too many to fit!
+        if ($cnt > 0 && $contributors->count() > $cnt) {
+            $others_link = $this->othersLink();
+            if (!$showIfMax) {
+                return $this->msg('othercontribs')->rawParams(
+                    $others_link)->params($contributors->count())->escaped();
+            }
+        }
 
-		# Sift for real versus user names
-		/** @var User $user */
-		foreach ( $contributors as $user ) {
-			$cnt--;
-			if ( $user->isRegistered() ) {
-				$link = $this->link( $user );
-				if ( $this->canShowRealUserName() && $user->getRealName() ) {
-					$real_names[] = $link;
-				} else {
-					$user_names[] = $link;
-				}
-			} else {
-				$anon_ips[] = $this->link( $user );
-			}
+        $real_names = [];
+        $user_names = [];
+        $anon_ips = [];
 
-			if ( $cnt === 0 ) {
-				break;
-			}
-		}
+        # Sift for real versus user names
+        /** @var User $user */
+        foreach ($contributors as $user) {
+            $cnt--;
+            if ($user->isRegistered()) {
+                $link = $this->link($user);
+                if ($this->canShowRealUserName() && $user->getRealName()) {
+                    $real_names[] = $link;
+                } else {
+                    $user_names[] = $link;
+                }
+            } else {
+                $anon_ips[] = $this->link($user);
+            }
 
-		$lang = $this->getLanguage();
+            if ($cnt === 0) {
+                break;
+            }
+        }
 
-		if ( count( $real_names ) ) {
-			$real = $lang->listToText( $real_names );
-		} else {
-			$real = false;
-		}
+        $lang = $this->getLanguage();
 
-		# "ThisSite user(s) A, B and C"
-		if ( count( $user_names ) ) {
-			$user = $this->msg( 'siteusers' )->rawParams( $lang->listToText( $user_names ) )->params(
-				count( $user_names ) )->escaped();
-		} else {
-			$user = false;
-		}
+        if (count($real_names)) {
+            $real = $lang->listToText($real_names);
+        } else {
+            $real = false;
+        }
 
-		if ( count( $anon_ips ) ) {
-			$anon = $this->msg( 'anonusers' )->rawParams( $lang->listToText( $anon_ips ) )->params(
-				count( $anon_ips ) )->escaped();
-		} else {
-			$anon = false;
-		}
+        # "ThisSite user(s) A, B and C"
+        if (count($user_names)) {
+            $user = $this->msg('siteusers')->rawParams($lang->listToText($user_names))->params(
+                count($user_names))->escaped();
+        } else {
+            $user = false;
+        }
 
-		# This is the big list, all mooshed together. We sift for blank strings
-		$fullList = [];
-		foreach ( [ $real, $user, $anon, $others_link ] as $s ) {
-			if ( $s !== false ) {
-				$fullList[] = $s;
-			}
-		}
+        if (count($anon_ips)) {
+            $anon = $this->msg('anonusers')->rawParams($lang->listToText($anon_ips))->params(
+                count($anon_ips))->escaped();
+        } else {
+            $anon = false;
+        }
 
-		$count = count( $fullList );
+        # This is the big list, all mooshed together. We sift for blank strings
+        $fullList = [];
+        foreach ([$real, $user, $anon, $others_link] as $s) {
+            if ($s !== false) {
+                $fullList[] = $s;
+            }
+        }
 
-		# "Based on work by ..."
-		return $count
-			? $this->msg( 'othercontribs' )->rawParams(
-				$lang->listToText( $fullList ) )->params( $count )->escaped()
-			: '';
-	}
+        $count = count($fullList);
 
-	/**
-	 * Get a link to $user's user page
-	 * @param User $user
-	 * @return string Html
-	 */
-	protected function link( User $user ) {
-		if ( $this->canShowRealUserName() && !$user->isAnon() ) {
-			$real = $user->getRealName();
-			if ( $real === '' ) {
-				$real = $user->getName();
-			}
-		} else {
-			$real = $user->getName();
-		}
+        # "Based on work by ..."
+        return $count
+            ? $this->msg('othercontribs')->rawParams(
+                $lang->listToText($fullList))->params($count)->escaped()
+            : '';
+    }
 
-		return Linker::userLink( $user->getId(), $user->getName(), $real );
-	}
+    /**
+     * Get a link to $user's user page
+     * @param User $user
+     * @return string Html
+     */
+    protected function link(User $user)
+    {
+        if ($this->canShowRealUserName() && !$user->isAnon()) {
+            $real = $user->getRealName();
+            if ($real === '') {
+                $real = $user->getName();
+            }
+        } else {
+            $real = $user->getName();
+        }
 
-	/**
-	 * Get a link to $user's user page
-	 * @param User $user
-	 * @return string Html
-	 */
-	protected function userLink( User $user ) {
-		$link = $this->link( $user );
-		if ( $user->isAnon() ) {
-			return $this->msg( 'anonuser' )->rawParams( $link )->parse();
-		} elseif ( $this->canShowRealUserName() && $user->getRealName() ) {
-			return $link;
-		} else {
-			return $this->msg( 'siteuser' )->rawParams( $link )->params( $user->getName() )->escaped();
-		}
-	}
+        return Linker::userLink($user->getId(), $user->getName(), $real);
+    }
 
-	/**
-	 * Get a link to action=credits of $article page
-	 * @return string HTML link
-	 */
-	protected function othersLink() {
-		return $this->linkRenderer->makeKnownLink(
-			$this->getTitle(),
-			$this->msg( 'others' )->text(),
-			[],
-			[ 'action' => 'credits' ]
-		);
-	}
+    /**
+     * Get a link to $user's user page
+     * @param User $user
+     * @return string Html
+     */
+    protected function userLink(User $user)
+    {
+        $link = $this->link($user);
+        if ($user->isAnon()) {
+            return $this->msg('anonuser')->rawParams($link)->parse();
+        } elseif ($this->canShowRealUserName() && $user->getRealName()) {
+            return $link;
+        } else {
+            return $this->msg('siteuser')->rawParams($link)->params($user->getName())->escaped();
+        }
+    }
+
+    /**
+     * Get a link to action=credits of $article page
+     * @return string HTML link
+     */
+    protected function othersLink()
+    {
+        return $this->linkRenderer->makeKnownLink(
+            $this->getTitle(),
+            $this->msg('others')->text(),
+            [],
+            ['action' => 'credits']
+        );
+    }
 }

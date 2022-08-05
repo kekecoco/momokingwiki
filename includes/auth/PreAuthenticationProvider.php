@@ -41,108 +41,109 @@ use User;
  * @since 1.27
  * @see https://www.mediawiki.org/wiki/Manual:SessionManager_and_AuthManager
  */
-interface PreAuthenticationProvider extends AuthenticationProvider {
+interface PreAuthenticationProvider extends AuthenticationProvider
+{
 
-	/**
-	 * Determine whether an authentication may begin
-	 *
-	 * Called from AuthManager::beginAuthentication()
-	 *
-	 * @param AuthenticationRequest[] $reqs
-	 * @return StatusValue
-	 */
-	public function testForAuthentication( array $reqs );
+    /**
+     * Determine whether an authentication may begin
+     *
+     * Called from AuthManager::beginAuthentication()
+     *
+     * @param AuthenticationRequest[] $reqs
+     * @return StatusValue
+     */
+    public function testForAuthentication(array $reqs);
 
-	/**
-	 * Post-login callback
-	 *
-	 * This will be called at the end of a login attempt. It will not be called for unfinished
-	 * login attempts that fail by the session timing out.
-	 *
-	 * @note Under certain circumstances, this can be called even when testForAuthentication
-	 *   was not; see AuthenticationRequest::$loginRequest.
-	 * @param User|null $user User that was attempted to be logged in, if known.
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @param AuthenticationResponse $response Authentication response that will be returned
-	 *   (PASS or FAIL)
-	 */
-	public function postAuthentication( $user, AuthenticationResponse $response );
+    /**
+     * Post-login callback
+     *
+     * This will be called at the end of a login attempt. It will not be called for unfinished
+     * login attempts that fail by the session timing out.
+     *
+     * @note Under certain circumstances, this can be called even when testForAuthentication
+     *   was not; see AuthenticationRequest::$loginRequest.
+     * @param User|null $user User that was attempted to be logged in, if known.
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @param AuthenticationResponse $response Authentication response that will be returned
+     *   (PASS or FAIL)
+     */
+    public function postAuthentication($user, AuthenticationResponse $response);
 
-	/**
-	 * Determine whether an account creation may begin
-	 *
-	 * Called from AuthManager::beginAccountCreation()
-	 *
-	 * @note No need to test if the account exists, AuthManager checks that
-	 * @param User $user User being created (not added to the database yet).
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @param User $creator User doing the creation. This may become a
-	 *   "UserValue" in the future, or User may be refactored into such.
-	 * @param AuthenticationRequest[] $reqs
-	 * @return StatusValue
-	 */
-	public function testForAccountCreation( $user, $creator, array $reqs );
+    /**
+     * Determine whether an account creation may begin
+     *
+     * Called from AuthManager::beginAccountCreation()
+     *
+     * @note No need to test if the account exists, AuthManager checks that
+     * @param User $user User being created (not added to the database yet).
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @param User $creator User doing the creation. This may become a
+     *   "UserValue" in the future, or User may be refactored into such.
+     * @param AuthenticationRequest[] $reqs
+     * @return StatusValue
+     */
+    public function testForAccountCreation($user, $creator, array $reqs);
 
-	/**
-	 * Determine whether an account may be created
-	 *
-	 * @param User $user User being created (not added to the database yet).
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @param bool|string $autocreate False if this is not an auto-creation, or
-	 *  the source of the auto-creation passed to AuthManager::autoCreateUser().
-	 * @param array $options
-	 *  - flags: (int) Bitfield of User:READ_* constants, default User::READ_NORMAL
-	 *  - creating: (bool) If false (or missing), this call is only testing if
-	 *    a user could be created. If set, this (non-autocreation) is for
-	 *    actually creating an account and will be followed by a call to
-	 *    testForAccountCreation(). In this case, the provider might return
-	 *    StatusValue::newGood() here and let the later call to
-	 *    testForAccountCreation() do a more thorough test.
-	 * @return StatusValue
-	 */
-	public function testUserForCreation( $user, $autocreate, array $options = [] );
+    /**
+     * Determine whether an account may be created
+     *
+     * @param User $user User being created (not added to the database yet).
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @param bool|string $autocreate False if this is not an auto-creation, or
+     *  the source of the auto-creation passed to AuthManager::autoCreateUser().
+     * @param array $options
+     *  - flags: (int) Bitfield of User:READ_* constants, default User::READ_NORMAL
+     *  - creating: (bool) If false (or missing), this call is only testing if
+     *    a user could be created. If set, this (non-autocreation) is for
+     *    actually creating an account and will be followed by a call to
+     *    testForAccountCreation(). In this case, the provider might return
+     *    StatusValue::newGood() here and let the later call to
+     *    testForAccountCreation() do a more thorough test.
+     * @return StatusValue
+     */
+    public function testUserForCreation($user, $autocreate, array $options = []);
 
-	/**
-	 * Post-creation callback
-	 *
-	 * This will be called at the end of an account creation attempt. It will not be called if
-	 * the account creation process results in a session timeout (possibly after a successful
-	 * user creation, while a secondary provider is waiting for a response).
-	 *
-	 * @param User $user User that was attempted to be created.
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @param User $creator User doing the creation. This may become a
-	 *   "UserValue" in the future, or User may be refactored into such.
-	 * @param AuthenticationResponse $response Authentication response that will be returned
-	 *   (PASS or FAIL)
-	 */
-	public function postAccountCreation( $user, $creator, AuthenticationResponse $response );
+    /**
+     * Post-creation callback
+     *
+     * This will be called at the end of an account creation attempt. It will not be called if
+     * the account creation process results in a session timeout (possibly after a successful
+     * user creation, while a secondary provider is waiting for a response).
+     *
+     * @param User $user User that was attempted to be created.
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @param User $creator User doing the creation. This may become a
+     *   "UserValue" in the future, or User may be refactored into such.
+     * @param AuthenticationResponse $response Authentication response that will be returned
+     *   (PASS or FAIL)
+     */
+    public function postAccountCreation($user, $creator, AuthenticationResponse $response);
 
-	/**
-	 * Determine whether an account may linked to another authentication method
-	 *
-	 * @param User $user User being linked.
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @return StatusValue
-	 */
-	public function testForAccountLink( $user );
+    /**
+     * Determine whether an account may linked to another authentication method
+     *
+     * @param User $user User being linked.
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @return StatusValue
+     */
+    public function testForAccountLink($user);
 
-	/**
-	 * Post-link callback
-	 *
-	 * This will be called at the end of an account linking attempt.
-	 *
-	 * @param User $user User that was attempted to be linked.
-	 *   This may become a "UserValue" in the future, or User may be refactored
-	 *   into such.
-	 * @param AuthenticationResponse $response Authentication response that will be returned
-	 *   (PASS or FAIL)
-	 */
-	public function postAccountLink( $user, AuthenticationResponse $response );
+    /**
+     * Post-link callback
+     *
+     * This will be called at the end of an account linking attempt.
+     *
+     * @param User $user User that was attempted to be linked.
+     *   This may become a "UserValue" in the future, or User may be refactored
+     *   into such.
+     * @param AuthenticationResponse $response Authentication response that will be returned
+     *   (PASS or FAIL)
+     */
+    public function postAccountLink($user, AuthenticationResponse $response);
 
 }

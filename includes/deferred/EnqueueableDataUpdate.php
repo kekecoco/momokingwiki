@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Interface that marks a DataUpdate as enqueuable via the JobQueue
  *
@@ -9,9 +10,10 @@
  *
  * @since 1.27
  */
-interface EnqueueableDataUpdate {
-	/**
-	 * @return array (domain => DB domain ID, job => IJobSpecification)
-	 */
-	public function getAsJobSpecification();
+interface EnqueueableDataUpdate
+{
+    /**
+     * @return array (domain => DB domain ID, job => IJobSpecification)
+     */
+    public function getAsJobSpecification();
 }

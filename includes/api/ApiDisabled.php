@@ -30,24 +30,29 @@
  *
  * @ingroup API
  */
-class ApiDisabled extends ApiBase {
+class ApiDisabled extends ApiBase
+{
 
-	public function execute() {
-		$this->dieWithError( [ 'apierror-moduledisabled', $this->getModuleName() ] );
-	}
+    public function execute()
+    {
+        $this->dieWithError(['apierror-moduledisabled', $this->getModuleName()]);
+    }
 
-	public function isReadMode() {
-		return false;
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	protected function getSummaryMessage() {
-		return 'apihelp-disabled-summary';
-	}
+    protected function getSummaryMessage()
+    {
+        return 'apihelp-disabled-summary';
+    }
 
-	protected function getExtendedDescription() {
-		return [ [
-			'apihelp-disabled-extended-description',
-			'api-help-no-extended-description',
-		] ];
-	}
+    protected function getExtendedDescription()
+    {
+        return [[
+            'apihelp-disabled-extended-description',
+            'api-help-no-extended-description',
+        ]];
+    }
 }

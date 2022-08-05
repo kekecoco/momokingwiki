@@ -28,100 +28,108 @@ use Wikimedia\Rdbms\LBFactory;
 /**
  * List for archive table items, i.e. revisions deleted via action=delete
  */
-class RevDelArchiveList extends RevDelRevisionList {
+class RevDelArchiveList extends RevDelRevisionList
+{
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/**
-	 * @param IContextSource $context
-	 * @param PageIdentity $page
-	 * @param array $ids
-	 * @param LBFactory $lbFactory
-	 * @param HookContainer $hookContainer
-	 * @param HtmlCacheUpdater $htmlCacheUpdater
-	 * @param RevisionStore $revisionStore
-	 * @param WANObjectCache $wanObjectCache
-	 */
-	public function __construct(
-		IContextSource $context,
-		PageIdentity $page,
-		array $ids,
-		LBFactory $lbFactory,
-		HookContainer $hookContainer,
-		HtmlCacheUpdater $htmlCacheUpdater,
-		RevisionStore $revisionStore,
-		WANObjectCache $wanObjectCache
-	) {
-		parent::__construct(
-			$context,
-			$page,
-			$ids,
-			$lbFactory,
-			$hookContainer,
-			$htmlCacheUpdater,
-			$revisionStore,
-			$wanObjectCache
-		);
-		$this->revisionStore = $revisionStore;
-	}
+    /**
+     * @param IContextSource $context
+     * @param PageIdentity $page
+     * @param array $ids
+     * @param LBFactory $lbFactory
+     * @param HookContainer $hookContainer
+     * @param HtmlCacheUpdater $htmlCacheUpdater
+     * @param RevisionStore $revisionStore
+     * @param WANObjectCache $wanObjectCache
+     */
+    public function __construct(
+        IContextSource $context,
+        PageIdentity $page,
+        array $ids,
+        LBFactory $lbFactory,
+        HookContainer $hookContainer,
+        HtmlCacheUpdater $htmlCacheUpdater,
+        RevisionStore $revisionStore,
+        WANObjectCache $wanObjectCache
+    )
+    {
+        parent::__construct(
+            $context,
+            $page,
+            $ids,
+            $lbFactory,
+            $hookContainer,
+            $htmlCacheUpdater,
+            $revisionStore,
+            $wanObjectCache
+        );
+        $this->revisionStore = $revisionStore;
+    }
 
-	public function getType() {
-		return 'archive';
-	}
+    public function getType()
+    {
+        return 'archive';
+    }
 
-	public static function getRelationType() {
-		return 'ar_timestamp';
-	}
+    public static function getRelationType()
+    {
+        return 'ar_timestamp';
+    }
 
-	/**
-	 * @param IDatabase $db
-	 * @return mixed
-	 */
-	public function doQuery( $db ) {
-		$timestamps = [];
-		foreach ( $this->ids as $id ) {
-			$timestamps[] = $db->timestamp( $id );
-		}
+    /**
+     * @param IDatabase $db
+     * @return mixed
+     */
+    public function doQuery($db)
+    {
+        $timestamps = [];
+        foreach ($this->ids as $id) {
+            $timestamps[] = $db->timestamp($id);
+        }
 
-		$arQuery = $this->revisionStore->getArchiveQueryInfo();
-		$tables = $arQuery['tables'];
-		$fields = $arQuery['fields'];
-		$conds = [
-			'ar_namespace' => $this->getPage()->getNamespace(),
-			'ar_title' => $this->getPage()->getDBkey(),
-			'ar_timestamp' => $timestamps,
-		];
-		$join_conds = $arQuery['joins'];
-		$options = [ 'ORDER BY' => 'ar_timestamp DESC' ];
+        $arQuery = $this->revisionStore->getArchiveQueryInfo();
+        $tables = $arQuery['tables'];
+        $fields = $arQuery['fields'];
+        $conds = [
+            'ar_namespace' => $this->getPage()->getNamespace(),
+            'ar_title'     => $this->getPage()->getDBkey(),
+            'ar_timestamp' => $timestamps,
+        ];
+        $join_conds = $arQuery['joins'];
+        $options = ['ORDER BY' => 'ar_timestamp DESC'];
 
-		ChangeTags::modifyDisplayQuery(
-			$tables,
-			$fields,
-			$conds,
-			$join_conds,
-			$options,
-			''
-		);
+        ChangeTags::modifyDisplayQuery(
+            $tables,
+            $fields,
+            $conds,
+            $join_conds,
+            $options,
+            ''
+        );
 
-		return $db->select( $tables,
-			$fields,
-			$conds,
-			__METHOD__,
-			$options,
-			$join_conds
-		);
-	}
+        return $db->select($tables,
+            $fields,
+            $conds,
+            __METHOD__,
+            $options,
+            $join_conds
+        );
+    }
 
-	public function newItem( $row ) {
-		return new RevDelArchiveItem( $this, $row );
-	}
+    public function newItem($row)
+    {
+        return new RevDelArchiveItem($this, $row);
+    }
 
-	public function doPreCommitUpdates() {
-		return Status::newGood();
-	}
+    public function doPreCommitUpdates()
+    {
+        return Status::newGood();
+    }
 
-	public function doPostCommitUpdates( array $visibilityChangeMap ) {
-		return Status::newGood();
-	}
+    public function doPostCommitUpdates(array $visibilityChangeMap)
+    {
+        return Status::newGood();
+    }
 }

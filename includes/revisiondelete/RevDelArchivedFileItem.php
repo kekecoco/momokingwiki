@@ -28,129 +28,143 @@ use MediaWiki\Revision\RevisionRecord;
  * @property ArchivedFile $file
  * @property RevDelArchivedFileList $list
  */
-class RevDelArchivedFileItem extends RevDelFileItem {
-	/** @var LocalFile */
-	protected $lockFile;
+class RevDelArchivedFileItem extends RevDelFileItem
+{
+    /** @var LocalFile */
+    protected $lockFile;
 
-	public function __construct( RevisionListBase $list, $row ) {
-		parent::__construct( $list, $row );
-		$this->lockFile = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
-			->newFile( $row->fa_name );
-	}
+    public function __construct(RevisionListBase $list, $row)
+    {
+        parent::__construct($list, $row);
+        $this->lockFile = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
+            ->newFile($row->fa_name);
+    }
 
-	protected static function initFile( $list, $row ) {
-		return ArchivedFile::newFromRow( $row );
-	}
+    protected static function initFile($list, $row)
+    {
+        return ArchivedFile::newFromRow($row);
+    }
 
-	public function getIdField() {
-		return 'fa_id';
-	}
+    public function getIdField()
+    {
+        return 'fa_id';
+    }
 
-	public function getTimestampField() {
-		return 'fa_timestamp';
-	}
+    public function getTimestampField()
+    {
+        return 'fa_timestamp';
+    }
 
-	public function getAuthorIdField() {
-		return 'fa_user';
-	}
+    public function getAuthorIdField()
+    {
+        return 'fa_user';
+    }
 
-	public function getAuthorNameField() {
-		return 'fa_user_text';
-	}
+    public function getAuthorNameField()
+    {
+        return 'fa_user_text';
+    }
 
-	public function getAuthorActorField() {
-		return 'fa_actor';
-	}
+    public function getAuthorActorField()
+    {
+        return 'fa_actor';
+    }
 
-	public function getId() {
-		return $this->row->fa_id;
-	}
+    public function getId()
+    {
+        return $this->row->fa_id;
+    }
 
-	public function setBits( $bits ) {
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->update( 'filearchive',
-			[ 'fa_deleted' => $bits ],
-			[
-				'fa_id' => $this->row->fa_id,
-				'fa_deleted' => $this->getBits(),
-			],
-			__METHOD__
-		);
+    public function setBits($bits)
+    {
+        $dbw = wfGetDB(DB_PRIMARY);
+        $dbw->update('filearchive',
+            ['fa_deleted' => $bits],
+            [
+                'fa_id'      => $this->row->fa_id,
+                'fa_deleted' => $this->getBits(),
+            ],
+            __METHOD__
+        );
 
-		return (bool)$dbw->affectedRows();
-	}
+        return (bool)$dbw->affectedRows();
+    }
 
-	protected function getLink() {
-		$date = $this->list->getLanguage()->userTimeAndDate(
-			$this->file->getTimestamp(), $this->list->getUser() );
+    protected function getLink()
+    {
+        $date = $this->list->getLanguage()->userTimeAndDate(
+            $this->file->getTimestamp(), $this->list->getUser());
 
-		# Hidden files...
-		if ( !$this->canViewContent() ) {
-			$link = htmlspecialchars( $date );
-		} else {
-			$undelete = SpecialPage::getTitleFor( 'Undelete' );
-			$key = $this->file->getKey();
-			$link = $this->getLinkRenderer()->makeLink( $undelete, $date, [],
-				[
-					'target' => $this->list->getPageName(),
-					'file' => $key,
-					'token' => $this->list->getUser()->getEditToken( $key )
-				]
-			);
-		}
-		if ( $this->isDeleted() ) {
-			$link = '<span class="history-deleted">' . $link . '</span>';
-		}
+        # Hidden files...
+        if (!$this->canViewContent()) {
+            $link = htmlspecialchars($date);
+        } else {
+            $undelete = SpecialPage::getTitleFor('Undelete');
+            $key = $this->file->getKey();
+            $link = $this->getLinkRenderer()->makeLink($undelete, $date, [],
+                [
+                    'target' => $this->list->getPageName(),
+                    'file'   => $key,
+                    'token'  => $this->list->getUser()->getEditToken($key)
+                ]
+            );
+        }
+        if ($this->isDeleted()) {
+            $link = '<span class="history-deleted">' . $link . '</span>';
+        }
 
-		return $link;
-	}
+        return $link;
+    }
 
-	public function getApiData( ApiResult $result ) {
-		$file = $this->file;
-		$user = $this->list->getUser();
-		$ret = [
-			'title' => $this->list->getPageName(),
-			'timestamp' => wfTimestamp( TS_ISO_8601, $file->getTimestamp() ),
-			'width' => $file->getWidth(),
-			'height' => $file->getHeight(),
-			'size' => $file->getSize(),
-			'userhidden' => (bool)$file->isDeleted( RevisionRecord::DELETED_USER ),
-			'commenthidden' => (bool)$file->isDeleted( RevisionRecord::DELETED_COMMENT ),
-			'contenthidden' => (bool)$this->isDeleted(),
-		];
-		if ( $this->canViewContent() ) {
-			$ret += [
-				'url' => SpecialPage::getTitleFor( 'Revisiondelete' )->getLinkURL(
-					[
-						'target' => $this->list->getPageName(),
-						'file' => $file->getKey(),
-						'token' => $user->getEditToken( $file->getKey() )
-					]
-				),
-			];
-		}
-		$uploader = $file->getUploader( ArchivedFile::FOR_THIS_USER, $user );
-		if ( $uploader ) {
-			$ret += [
-				'userid' => $uploader->getId(),
-				'user' => $uploader->getName(),
-			];
-		}
-		$comment = $file->getDescription( ArchivedFile::FOR_THIS_USER, $user );
-		if ( $comment !== '' ) {
-			$ret += [
-				'comment' => $comment,
-			];
-		}
+    public function getApiData(ApiResult $result)
+    {
+        $file = $this->file;
+        $user = $this->list->getUser();
+        $ret = [
+            'title'         => $this->list->getPageName(),
+            'timestamp'     => wfTimestamp(TS_ISO_8601, $file->getTimestamp()),
+            'width'         => $file->getWidth(),
+            'height'        => $file->getHeight(),
+            'size'          => $file->getSize(),
+            'userhidden'    => (bool)$file->isDeleted(RevisionRecord::DELETED_USER),
+            'commenthidden' => (bool)$file->isDeleted(RevisionRecord::DELETED_COMMENT),
+            'contenthidden' => (bool)$this->isDeleted(),
+        ];
+        if ($this->canViewContent()) {
+            $ret += [
+                'url' => SpecialPage::getTitleFor('Revisiondelete')->getLinkURL(
+                    [
+                        'target' => $this->list->getPageName(),
+                        'file'   => $file->getKey(),
+                        'token'  => $user->getEditToken($file->getKey())
+                    ]
+                ),
+            ];
+        }
+        $uploader = $file->getUploader(ArchivedFile::FOR_THIS_USER, $user);
+        if ($uploader) {
+            $ret += [
+                'userid' => $uploader->getId(),
+                'user'   => $uploader->getName(),
+            ];
+        }
+        $comment = $file->getDescription(ArchivedFile::FOR_THIS_USER, $user);
+        if ($comment !== '') {
+            $ret += [
+                'comment' => $comment,
+            ];
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	public function lock() {
-		return $this->lockFile->acquireFileLock();
-	}
+    public function lock()
+    {
+        return $this->lockFile->acquireFileLock();
+    }
 
-	public function unlock() {
-		return $this->lockFile->releaseFileLock();
-	}
+    public function unlock()
+    {
+        return $this->lockFile->releaseFileLock();
+    }
 }

@@ -4,45 +4,48 @@
  * @group Language
  * @covers ShiConverter
  */
-class ShiConverterTest extends MediaWikiIntegrationTestCase {
+class ShiConverterTest extends MediaWikiIntegrationTestCase
+{
 
-	use LanguageConverterTestTrait;
+    use LanguageConverterTestTrait;
 
-	/**
-	 * @dataProvider provideAutoConvertToAllVariants
-	 * @covers ShiConverter::autoConvertToAllVariants
-	 */
-	public function testAutoConvertToAllVariants( $result, $value ) {
-		$this->assertEquals( $result,
-			$this->getLanguageConverter()->autoConvertToAllVariants( $value ) );
-	}
+    /**
+     * @dataProvider provideAutoConvertToAllVariants
+     * @covers       ShiConverter::autoConvertToAllVariants
+     */
+    public function testAutoConvertToAllVariants($result, $value)
+    {
+        $this->assertEquals($result,
+            $this->getLanguageConverter()->autoConvertToAllVariants($value));
+    }
 
-	public static function provideAutoConvertToAllVariants() {
-		return [
-			[
-				[
-					'shi'      => 'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV',
-					'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ ⵓⴱⴼ',
-					'shi-latn' => 'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV',
-				],
-				'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV'
-			],
-			[
-				[
-					'shi'      => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv',
-					'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ ⵓⴱⴼ',
-					'shi-latn' => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv',
-				],
-				'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv'
-			],
-			[
-				[
-					'shi'      => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ',
-					'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ',
-					'shi-latn' => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ',
-				],
-				'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ'
-			],
-		];
-	}
+    public static function provideAutoConvertToAllVariants()
+    {
+        return [
+            [
+                [
+                    'shi'      => 'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV',
+                    'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ ⵓⴱⴼ',
+                    'shi-latn' => 'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV',
+                ],
+                'ABGGʷDḌEFKKʷ HḤƐXQIJLMN URṚƔSṢCTṬW YZẒ OPV'
+            ],
+            [
+                [
+                    'shi'      => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv',
+                    'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ ⵓⴱⴼ',
+                    'shi-latn' => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv',
+                ],
+                'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ opv'
+            ],
+            [
+                [
+                    'shi'      => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ',
+                    'shi-tfng' => 'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ',
+                    'shi-latn' => 'abggʷdḍefkkʷ hḥɛxqijlmn urṛɣsṣctṭw yzẓ',
+                ],
+                'ⴰⴱⴳⴳⵯⴷⴹⴻⴼⴽⴽⵯ ⵀⵃⵄⵅⵇⵉⵊⵍⵎⵏ ⵓⵔⵕⵖⵙⵚⵛⵜⵟⵡ ⵢⵣⵥ'
+            ],
+        ];
+    }
 }

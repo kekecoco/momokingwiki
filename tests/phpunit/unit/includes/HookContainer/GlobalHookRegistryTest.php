@@ -26,22 +26,24 @@ use MediaWiki\HookContainer\GlobalHookRegistry;
  *
  * @covers \MediaWiki\HookContainer\GlobalHookRegistry
  */
-class GlobalHookRegistryTest extends MediaWikiUnitTestCase {
+class GlobalHookRegistryTest extends MediaWikiUnitTestCase
+{
 
-	public function testGlobalHookRegistry() {
-		global $wgHooks;
+    public function testGlobalHookRegistry()
+    {
+        global $wgHooks;
 
-		$deprecatedHooks = new DeprecatedHooks();
-		$extensionHooks = [ 'extension hooks' ]; // Format doesn't matter for now
+        $deprecatedHooks = new DeprecatedHooks();
+        $extensionHooks = ['extension hooks']; // Format doesn't matter for now
 
-		$extensionRegistry = $this->createMock( ExtensionRegistry::class );
-		$extensionRegistry->method( 'getAttribute' )->willReturn( $extensionHooks );
+        $extensionRegistry = $this->createMock(ExtensionRegistry::class);
+        $extensionRegistry->method('getAttribute')->willReturn($extensionHooks);
 
-		$globalHookRegistery = new GlobalHookRegistry( $extensionRegistry, $deprecatedHooks );
+        $globalHookRegistery = new GlobalHookRegistry($extensionRegistry, $deprecatedHooks);
 
-		$this->assertEquals( $wgHooks, $globalHookRegistery->getGlobalHooks() );
-		$this->assertEquals( $extensionHooks, $globalHookRegistery->getExtensionHooks() );
-		$this->assertSame( $deprecatedHooks, $globalHookRegistery->getDeprecatedHooks() );
-	}
+        $this->assertEquals($wgHooks, $globalHookRegistery->getGlobalHooks());
+        $this->assertEquals($extensionHooks, $globalHookRegistery->getExtensionHooks());
+        $this->assertSame($deprecatedHooks, $globalHookRegistery->getDeprecatedHooks());
+    }
 
 }

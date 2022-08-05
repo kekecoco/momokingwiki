@@ -30,52 +30,57 @@ use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
  *
  * @covers \MediaWiki\EditPage\Constraint\ImageRedirectConstraint
  */
-class ImageRedirectConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
-	use MockAuthorityTrait;
+class ImageRedirectConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
+    use MockAuthorityTrait;
 
-	/**
-	 * @param Authority $performer
-	 * @return ImageRedirectConstraint
-	 */
-	private function getConstraint( Authority $performer ) {
-		$content = $this->createMock( Content::class );
-		$content->method( 'isRedirect' )->willReturn( true );
+    /**
+     * @param Authority $performer
+     * @return ImageRedirectConstraint
+     */
+    private function getConstraint(Authority $performer)
+    {
+        $content = $this->createMock(Content::class);
+        $content->method('isRedirect')->willReturn(true);
 
-		$title = $this->createMock( Title::class );
-		$title->method( 'getNamespace' )->willReturn( NS_FILE );
+        $title = $this->createMock(Title::class);
+        $title->method('getNamespace')->willReturn(NS_FILE);
 
-		return new ImageRedirectConstraint(
-			$content,
-			$title,
-			$performer
-		);
-	}
+        return new ImageRedirectConstraint(
+            $content,
+            $title,
+            $performer
+        );
+    }
 
-	public function testPass() {
-		$constraint = $this->getConstraint( $this->mockRegisteredUltimateAuthority() );
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testPass()
+    {
+        $constraint = $this->getConstraint($this->mockRegisteredUltimateAuthority());
+        $this->assertConstraintPassed($constraint);
+    }
 
-	/**
-	 * @dataProvider provideTestFailure
-	 * @param Authority $performer
-	 * @param int $expectedValue
-	 */
-	public function testFailure( Authority $performer, int $expectedValue ) {
-		$constraint = $this->getConstraint( $performer );
-		$this->assertConstraintFailed( $constraint, $expectedValue );
-	}
+    /**
+     * @dataProvider provideTestFailure
+     * @param Authority $performer
+     * @param int $expectedValue
+     */
+    public function testFailure(Authority $performer, int $expectedValue)
+    {
+        $constraint = $this->getConstraint($performer);
+        $this->assertConstraintFailed($constraint, $expectedValue);
+    }
 
-	public function provideTestFailure() {
-		yield 'Anonymous user' => [
-			'performer' => $this->mockAnonAuthorityWithoutPermissions( [ 'upload' ] ),
-			'expectedValue' => IEditConstraint::AS_IMAGE_REDIRECT_ANON
-		];
-		yield 'Registered user' => [
-			'performer' => $this->mockRegisteredAuthorityWithoutPermissions( [ 'upload' ] ),
-			'expectedValue' => IEditConstraint::AS_IMAGE_REDIRECT_LOGGED
-		];
-	}
+    public function provideTestFailure()
+    {
+        yield 'Anonymous user' => [
+            'performer'     => $this->mockAnonAuthorityWithoutPermissions(['upload']),
+            'expectedValue' => IEditConstraint::AS_IMAGE_REDIRECT_ANON
+        ];
+        yield 'Registered user' => [
+            'performer'     => $this->mockRegisteredAuthorityWithoutPermissions(['upload']),
+            'expectedValue' => IEditConstraint::AS_IMAGE_REDIRECT_LOGGED
+        ];
+    }
 
 }

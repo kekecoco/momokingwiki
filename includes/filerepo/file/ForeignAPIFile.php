@@ -28,404 +28,438 @@ use MediaWiki\User\UserIdentityValue;
  *
  * @ingroup FileAbstraction
  */
-class ForeignAPIFile extends File {
-	/** @var bool */
-	private $mExists;
-	/** @var array */
-	private $mInfo;
+class ForeignAPIFile extends File
+{
+    /** @var bool */
+    private $mExists;
+    /** @var array */
+    private $mInfo;
 
-	protected $repoClass = ForeignAPIRepo::class;
+    protected $repoClass = ForeignAPIRepo::class;
 
-	/**
-	 * @param Title|string|bool $title
-	 * @param ForeignApiRepo $repo
-	 * @param array $info
-	 * @param bool $exists
-	 */
-	public function __construct( $title, $repo, $info, $exists = false ) {
-		parent::__construct( $title, $repo );
+    /**
+     * @param Title|string|bool $title
+     * @param ForeignApiRepo $repo
+     * @param array $info
+     * @param bool $exists
+     */
+    public function __construct($title, $repo, $info, $exists = false)
+    {
+        parent::__construct($title, $repo);
 
-		$this->mInfo = $info;
-		$this->mExists = $exists;
+        $this->mInfo = $info;
+        $this->mExists = $exists;
 
-		$this->assertRepoDefined();
-	}
+        $this->assertRepoDefined();
+    }
 
-	/**
-	 * @param Title $title
-	 * @param ForeignApiRepo $repo
-	 * @return ForeignAPIFile|null
-	 */
-	public static function newFromTitle( Title $title, $repo ) {
-		$data = $repo->fetchImageQuery( [
-			'titles' => 'File:' . $title->getDBkey(),
-			'iiprop' => self::getProps(),
-			'prop' => 'imageinfo',
-			'iimetadataversion' => MediaHandler::getMetadataVersion(),
-			// extmetadata is language-dependent, accessing the current language here
-			// would be problematic, so we just get them all
-			'iiextmetadatamultilang' => 1,
-		] );
+    /**
+     * @param Title $title
+     * @param ForeignApiRepo $repo
+     * @return ForeignAPIFile|null
+     */
+    public static function newFromTitle(Title $title, $repo)
+    {
+        $data = $repo->fetchImageQuery([
+            'titles'                 => 'File:' . $title->getDBkey(),
+            'iiprop'                 => self::getProps(),
+            'prop'                   => 'imageinfo',
+            'iimetadataversion'      => MediaHandler::getMetadataVersion(),
+            // extmetadata is language-dependent, accessing the current language here
+            // would be problematic, so we just get them all
+            'iiextmetadatamultilang' => 1,
+        ]);
 
-		$info = $repo->getImageInfo( $data );
+        $info = $repo->getImageInfo($data);
 
-		if ( $info ) {
-			$lastRedirect = count( $data['query']['redirects'] ?? [] ) - 1;
-			if ( $lastRedirect >= 0 ) {
-				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
-				$newtitle = Title::newFromText( $data['query']['redirects'][$lastRedirect]['to'] );
-				$img = new self( $newtitle, $repo, $info, true );
-				$img->redirectedFrom( $title->getDBkey() );
-			} else {
-				$img = new self( $title, $repo, $info, true );
-			}
+        if ($info) {
+            $lastRedirect = count($data['query']['redirects'] ?? []) - 1;
+            if ($lastRedirect >= 0) {
+                // @phan-suppress-next-line PhanTypeArraySuspiciousNullable
+                $newtitle = Title::newFromText($data['query']['redirects'][$lastRedirect]['to']);
+                $img = new self($newtitle, $repo, $info, true);
+                $img->redirectedFrom($title->getDBkey());
+            } else {
+                $img = new self($title, $repo, $info, true);
+            }
 
-			return $img;
-		} else {
-			return null;
-		}
-	}
+            return $img;
+        } else {
+            return null;
+        }
+    }
 
-	/**
-	 * Get the property string for iiprop and aiprop
-	 * @return string
-	 */
-	public static function getProps() {
-		return 'timestamp|user|comment|url|size|sha1|metadata|mime|mediatype|extmetadata';
-	}
+    /**
+     * Get the property string for iiprop and aiprop
+     * @return string
+     */
+    public static function getProps()
+    {
+        return 'timestamp|user|comment|url|size|sha1|metadata|mime|mediatype|extmetadata';
+    }
 
-	/**
-	 * @return ForeignAPIRepo|bool
-	 */
-	public function getRepo() {
-		return $this->repo;
-	}
+    /**
+     * @return ForeignAPIRepo|bool
+     */
+    public function getRepo()
+    {
+        return $this->repo;
+    }
 
-	// Dummy functions...
+    // Dummy functions...
 
-	/**
-	 * @return bool
-	 */
-	public function exists() {
-		return $this->mExists;
-	}
+    /**
+     * @return bool
+     */
+    public function exists()
+    {
+        return $this->mExists;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function getPath() {
-		return false;
-	}
+    /**
+     * @return bool
+     */
+    public function getPath()
+    {
+        return false;
+    }
 
-	/**
-	 * @param array $params
-	 * @param int $flags
-	 * @return bool|MediaTransformOutput
-	 */
-	public function transform( $params, $flags = 0 ) {
-		if ( !$this->canRender() ) {
-			// show icon
-			return parent::transform( $params, $flags );
-		}
+    /**
+     * @param array $params
+     * @param int $flags
+     * @return bool|MediaTransformOutput
+     */
+    public function transform($params, $flags = 0)
+    {
+        if (!$this->canRender()) {
+            // show icon
+            return parent::transform($params, $flags);
+        }
 
-		// Note, the this->canRender() check above implies
-		// that we have a handler, and it can do makeParamString.
-		$otherParams = $this->handler->makeParamString( $params );
-		$width = $params['width'] ?? -1;
-		$height = $params['height'] ?? -1;
-		$thumbUrl = false;
+        // Note, the this->canRender() check above implies
+        // that we have a handler, and it can do makeParamString.
+        $otherParams = $this->handler->makeParamString($params);
+        $width = $params['width'] ?? -1;
+        $height = $params['height'] ?? -1;
+        $thumbUrl = false;
 
-		if ( $width > 0 || $height > 0 ) {
-			// Only query the remote if there are dimensions
-			$thumbUrl = $this->repo->getThumbUrlFromCache(
-				$this->getName(),
-				$width,
-				$height,
-				$otherParams
-			);
-		} elseif ( $this->getMediaType() === MEDIATYPE_AUDIO ) {
-			// This has no dimensions, but we still need to pass a value to getTransform()
-			$thumbUrl = '/';
-		}
-		if ( $thumbUrl === false ) {
-			global $wgLang;
+        if ($width > 0 || $height > 0) {
+            // Only query the remote if there are dimensions
+            $thumbUrl = $this->repo->getThumbUrlFromCache(
+                $this->getName(),
+                $width,
+                $height,
+                $otherParams
+            );
+        } elseif ($this->getMediaType() === MEDIATYPE_AUDIO) {
+            // This has no dimensions, but we still need to pass a value to getTransform()
+            $thumbUrl = '/';
+        }
+        if ($thumbUrl === false) {
+            global $wgLang;
 
-			return $this->repo->getThumbError(
-				$this->getName(),
-				$width,
-				$height,
-				$otherParams,
-				$wgLang->getCode()
-			);
-		}
+            return $this->repo->getThumbError(
+                $this->getName(),
+                $width,
+                $height,
+                $otherParams,
+                $wgLang->getCode()
+            );
+        }
 
-		return $this->handler->getTransform( $this, 'bogus', $thumbUrl, $params );
-	}
+        return $this->handler->getTransform($this, 'bogus', $thumbUrl, $params);
+    }
 
-	// Info we can get from API...
+    // Info we can get from API...
 
-	/**
-	 * @param int $page
-	 * @return int
-	 */
-	public function getWidth( $page = 1 ) {
-		return (int)( $this->mInfo['width'] ?? 0 );
-	}
+    /**
+     * @param int $page
+     * @return int
+     */
+    public function getWidth($page = 1)
+    {
+        return (int)($this->mInfo['width'] ?? 0);
+    }
 
-	/**
-	 * @param int $page
-	 * @return int
-	 */
-	public function getHeight( $page = 1 ) {
-		return (int)( $this->mInfo['height'] ?? 0 );
-	}
+    /**
+     * @param int $page
+     * @return int
+     */
+    public function getHeight($page = 1)
+    {
+        return (int)($this->mInfo['height'] ?? 0);
+    }
 
-	/**
-	 * @return string|false
-	 */
-	public function getMetadata() {
-		if ( isset( $this->mInfo['metadata'] ) ) {
-			return serialize( self::parseMetadata( $this->mInfo['metadata'] ) );
-		}
+    /**
+     * @return string|false
+     */
+    public function getMetadata()
+    {
+        if (isset($this->mInfo['metadata'])) {
+            return serialize(self::parseMetadata($this->mInfo['metadata']));
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getMetadataArray(): array {
-		if ( isset( $this->mInfo['metadata'] ) ) {
-			return self::parseMetadata( $this->mInfo['metadata'] );
-		}
+    /**
+     * @return array
+     */
+    public function getMetadataArray(): array
+    {
+        if (isset($this->mInfo['metadata'])) {
+            return self::parseMetadata($this->mInfo['metadata']);
+        }
 
-		return [];
-	}
+        return [];
+    }
 
-	/**
-	 * @return array|null Extended metadata (see imageinfo API for format) or
-	 *   null on error
-	 */
-	public function getExtendedMetadata() {
-		return $this->mInfo['extmetadata'] ?? null;
-	}
+    /**
+     * @return array|null Extended metadata (see imageinfo API for format) or
+     *   null on error
+     */
+    public function getExtendedMetadata()
+    {
+        return $this->mInfo['extmetadata'] ?? null;
+    }
 
-	/**
-	 * @param mixed $metadata
-	 * @return array
-	 */
-	public static function parseMetadata( $metadata ) {
-		if ( !is_array( $metadata ) ) {
-			return [ '_error' => $metadata ];
-		}
-		'@phan-var array[] $metadata';
-		$ret = [];
-		foreach ( $metadata as $meta ) {
-			$ret[$meta['name']] = self::parseMetadataValue( $meta['value'] );
-		}
+    /**
+     * @param mixed $metadata
+     * @return array
+     */
+    public static function parseMetadata($metadata)
+    {
+        if (!is_array($metadata)) {
+            return ['_error' => $metadata];
+        }
+        '@phan-var array[] $metadata';
+        $ret = [];
+        foreach ($metadata as $meta) {
+            $ret[$meta['name']] = self::parseMetadataValue($meta['value']);
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	/**
-	 * @param mixed $metadata
-	 * @return mixed
-	 */
-	private static function parseMetadataValue( $metadata ) {
-		if ( !is_array( $metadata ) ) {
-			return $metadata;
-		}
-		'@phan-var array[] $metadata';
-		$ret = [];
-		foreach ( $metadata as $meta ) {
-			$ret[$meta['name']] = self::parseMetadataValue( $meta['value'] );
-		}
+    /**
+     * @param mixed $metadata
+     * @return mixed
+     */
+    private static function parseMetadataValue($metadata)
+    {
+        if (!is_array($metadata)) {
+            return $metadata;
+        }
+        '@phan-var array[] $metadata';
+        $ret = [];
+        foreach ($metadata as $meta) {
+            $ret[$meta['name']] = self::parseMetadataValue($meta['value']);
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	/**
-	 * @return bool|int|null
-	 */
-	public function getSize() {
-		return isset( $this->mInfo['size'] ) ? intval( $this->mInfo['size'] ) : null;
-	}
+    /**
+     * @return bool|int|null
+     */
+    public function getSize()
+    {
+        return isset($this->mInfo['size']) ? intval($this->mInfo['size']) : null;
+    }
 
-	/**
-	 * @return null|string
-	 */
-	public function getUrl() {
-		return isset( $this->mInfo['url'] ) ? strval( $this->mInfo['url'] ) : null;
-	}
+    /**
+     * @return null|string
+     */
+    public function getUrl()
+    {
+        return isset($this->mInfo['url']) ? strval($this->mInfo['url']) : null;
+    }
 
-	/**
-	 * Get short description URL for a file based on the foreign API response,
-	 * or if unavailable, the short URL is constructed from the foreign page ID.
-	 *
-	 * @return null|string
-	 * @since 1.27
-	 */
-	public function getDescriptionShortUrl() {
-		if ( isset( $this->mInfo['descriptionshorturl'] ) ) {
-			return $this->mInfo['descriptionshorturl'];
-		} elseif ( isset( $this->mInfo['pageid'] ) ) {
-			$url = $this->repo->makeUrl( [ 'curid' => $this->mInfo['pageid'] ] );
-			if ( $url !== false ) {
-				return $url;
-			}
-		}
-		return null;
-	}
+    /**
+     * Get short description URL for a file based on the foreign API response,
+     * or if unavailable, the short URL is constructed from the foreign page ID.
+     *
+     * @return null|string
+     * @since 1.27
+     */
+    public function getDescriptionShortUrl()
+    {
+        if (isset($this->mInfo['descriptionshorturl'])) {
+            return $this->mInfo['descriptionshorturl'];
+        } elseif (isset($this->mInfo['pageid'])) {
+            $url = $this->repo->makeUrl(['curid' => $this->mInfo['pageid']]);
+            if ($url !== false) {
+                return $url;
+            }
+        }
 
-	public function getUploader( int $audience = self::FOR_PUBLIC, Authority $performer = null ): ?UserIdentity {
-		if ( isset( $this->mInfo['user'] ) ) {
-			// We don't know if the foreign repo will have a real interwiki prefix,
-			// treat this user as a foreign imported user. Maybe we can do better?
-			return UserIdentityValue::newExternal( $this->getRepoName(), $this->mInfo['user'] );
-		}
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * @param int $audience
-	 * @param Authority|null $performer
-	 * @return null|string
-	 */
-	public function getDescription( $audience = self::FOR_PUBLIC, Authority $performer = null ) {
-		return isset( $this->mInfo['comment'] ) ? strval( $this->mInfo['comment'] ) : null;
-	}
+    public function getUploader(int $audience = self::FOR_PUBLIC, Authority $performer = null): ?UserIdentity
+    {
+        if (isset($this->mInfo['user'])) {
+            // We don't know if the foreign repo will have a real interwiki prefix,
+            // treat this user as a foreign imported user. Maybe we can do better?
+            return UserIdentityValue::newExternal($this->getRepoName(), $this->mInfo['user']);
+        }
 
-	/**
-	 * @return null|string
-	 */
-	public function getSha1() {
-		return isset( $this->mInfo['sha1'] )
-			? Wikimedia\base_convert( strval( $this->mInfo['sha1'] ), 16, 36, 31 )
-			: null;
-	}
+        return null;
+    }
 
-	/**
-	 * @return bool|string
-	 */
-	public function getTimestamp() {
-		return wfTimestamp( TS_MW,
-			isset( $this->mInfo['timestamp'] )
-				? strval( $this->mInfo['timestamp'] )
-				: null
-		);
-	}
+    /**
+     * @param int $audience
+     * @param Authority|null $performer
+     * @return null|string
+     */
+    public function getDescription($audience = self::FOR_PUBLIC, Authority $performer = null)
+    {
+        return isset($this->mInfo['comment']) ? strval($this->mInfo['comment']) : null;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getMimeType() {
-		if ( !isset( $this->mInfo['mime'] ) ) {
-			$magic = MediaWikiServices::getInstance()->getMimeAnalyzer();
-			$this->mInfo['mime'] = $magic->getMimeTypeFromExtensionOrNull( $this->getExtension() );
-		}
+    /**
+     * @return null|string
+     */
+    public function getSha1()
+    {
+        return isset($this->mInfo['sha1'])
+            ? Wikimedia\base_convert(strval($this->mInfo['sha1']), 16, 36, 31)
+            : null;
+    }
 
-		return $this->mInfo['mime'];
-	}
+    /**
+     * @return bool|string
+     */
+    public function getTimestamp()
+    {
+        return wfTimestamp(TS_MW,
+            isset($this->mInfo['timestamp'])
+                ? strval($this->mInfo['timestamp'])
+                : null
+        );
+    }
 
-	/**
-	 * @return int|string
-	 */
-	public function getMediaType() {
-		if ( isset( $this->mInfo['mediatype'] ) ) {
-			return $this->mInfo['mediatype'];
-		}
-		$magic = MediaWikiServices::getInstance()->getMimeAnalyzer();
+    /**
+     * @return string
+     */
+    public function getMimeType()
+    {
+        if (!isset($this->mInfo['mime'])) {
+            $magic = MediaWikiServices::getInstance()->getMimeAnalyzer();
+            $this->mInfo['mime'] = $magic->getMimeTypeFromExtensionOrNull($this->getExtension());
+        }
 
-		return $magic->getMediaType( null, $this->getMimeType() );
-	}
+        return $this->mInfo['mime'];
+    }
 
-	/**
-	 * @return bool|string
-	 */
-	public function getDescriptionUrl() {
-		return $this->mInfo['descriptionurl'] ?? false;
-	}
+    /**
+     * @return int|string
+     */
+    public function getMediaType()
+    {
+        if (isset($this->mInfo['mediatype'])) {
+            return $this->mInfo['mediatype'];
+        }
+        $magic = MediaWikiServices::getInstance()->getMimeAnalyzer();
 
-	/**
-	 * Only useful if we're locally caching thumbs anyway...
-	 * @param string $suffix
-	 * @return null|string
-	 */
-	public function getThumbPath( $suffix = '' ) {
-		if ( !$this->repo->canCacheThumbs() ) {
-			return null;
-		}
+        return $magic->getMediaType(null, $this->getMimeType());
+    }
 
-		$path = $this->repo->getZonePath( 'thumb' ) . '/' . $this->getHashPath();
-		if ( $suffix ) {
-			$path .= $suffix . '/';
-		}
-		return $path;
-	}
+    /**
+     * @return bool|string
+     */
+    public function getDescriptionUrl()
+    {
+        return $this->mInfo['descriptionurl'] ?? false;
+    }
 
-	/**
-	 * @return string[]
-	 */
-	protected function getThumbnails() {
-		$dir = $this->getThumbPath( $this->getName() );
-		$iter = $this->repo->getBackend()->getFileList( [ 'dir' => $dir ] );
+    /**
+     * Only useful if we're locally caching thumbs anyway...
+     * @param string $suffix
+     * @return null|string
+     */
+    public function getThumbPath($suffix = '')
+    {
+        if (!$this->repo->canCacheThumbs()) {
+            return null;
+        }
 
-		$files = [];
-		if ( $iter ) {
-			foreach ( $iter as $file ) {
-				$files[] = $file;
-			}
-		}
+        $path = $this->repo->getZonePath('thumb') . '/' . $this->getHashPath();
+        if ($suffix) {
+            $path .= $suffix . '/';
+        }
 
-		return $files;
-	}
+        return $path;
+    }
 
-	public function purgeCache( $options = [] ) {
-		$this->purgeThumbnails( $options );
-		$this->purgeDescriptionPage();
-	}
+    /**
+     * @return string[]
+     */
+    protected function getThumbnails()
+    {
+        $dir = $this->getThumbPath($this->getName());
+        $iter = $this->repo->getBackend()->getFileList(['dir' => $dir]);
 
-	private function purgeDescriptionPage() {
-		$services = MediaWikiServices::getInstance();
-		$langCode = $services->getContentLanguage()->getCode();
+        $files = [];
+        if ($iter) {
+            foreach ($iter as $file) {
+                $files[] = $file;
+            }
+        }
 
-		// Key must match File::getDescriptionText
-		$key = $this->repo->getLocalCacheKey( 'file-remote-description', $langCode, md5( $this->getName() ) );
-		$services->getMainWANObjectCache()->delete( $key );
-	}
+        return $files;
+    }
 
-	/**
-	 * @param array $options
-	 */
-	public function purgeThumbnails( $options = [] ) {
-		$key = $this->repo->getLocalCacheKey( 'file-thumb-url', sha1( $this->getName() ) );
-		MediaWikiServices::getInstance()->getMainWANObjectCache()->delete( $key );
+    public function purgeCache($options = [])
+    {
+        $this->purgeThumbnails($options);
+        $this->purgeDescriptionPage();
+    }
 
-		$files = $this->getThumbnails();
-		// Give media handler a chance to filter the purge list
-		$handler = $this->getHandler();
-		if ( $handler ) {
-			$handler->filterThumbnailPurgeList( $files, $options );
-		}
+    private function purgeDescriptionPage()
+    {
+        $services = MediaWikiServices::getInstance();
+        $langCode = $services->getContentLanguage()->getCode();
 
-		$dir = $this->getThumbPath( $this->getName() );
-		$purgeList = [];
-		foreach ( $files as $file ) {
-			$purgeList[] = "{$dir}{$file}";
-		}
+        // Key must match File::getDescriptionText
+        $key = $this->repo->getLocalCacheKey('file-remote-description', $langCode, md5($this->getName()));
+        $services->getMainWANObjectCache()->delete($key);
+    }
 
-		# Delete the thumbnails
-		$this->repo->quickPurgeBatch( $purgeList );
-		# Clear out the thumbnail directory if empty
-		$this->repo->quickCleanDir( $dir );
-	}
+    /**
+     * @param array $options
+     */
+    public function purgeThumbnails($options = [])
+    {
+        $key = $this->repo->getLocalCacheKey('file-thumb-url', sha1($this->getName()));
+        MediaWikiServices::getInstance()->getMainWANObjectCache()->delete($key);
 
-	/**
-	 * The thumbnail is created on the foreign server and fetched over internet
-	 * @since 1.25
-	 * @return bool
-	 */
-	public function isTransformedLocally() {
-		return false;
-	}
+        $files = $this->getThumbnails();
+        // Give media handler a chance to filter the purge list
+        $handler = $this->getHandler();
+        if ($handler) {
+            $handler->filterThumbnailPurgeList($files, $options);
+        }
+
+        $dir = $this->getThumbPath($this->getName());
+        $purgeList = [];
+        foreach ($files as $file) {
+            $purgeList[] = "{$dir}{$file}";
+        }
+
+        # Delete the thumbnails
+        $this->repo->quickPurgeBatch($purgeList);
+        # Clear out the thumbnail directory if empty
+        $this->repo->quickCleanDir($dir);
+    }
+
+    /**
+     * The thumbnail is created on the foreign server and fetched over internet
+     * @return bool
+     * @since 1.25
+     */
+    public function isTransformedLocally()
+    {
+        return false;
+    }
 }

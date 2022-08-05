@@ -32,32 +32,32 @@ use MediaWiki\Settings\SettingsBuilder;
 require_once __DIR__ . '/includes/MaintenanceRunner.php';
 require_once __DIR__ . '/includes/MaintenanceParameters.php';
 
-if ( !defined( 'RUN_MAINTENANCE_IF_MAIN' ) ) {
-	echo "This file must be included after Maintenance.php\n";
-	exit( 1 );
+if (!defined('RUN_MAINTENANCE_IF_MAIN')) {
+    echo "This file must be included after Maintenance.php\n";
+    exit(1);
 }
 
 // Wasn't included from the file scope, halt execution (probably wanted the class)
 // If a class is using CommandLineInc (old school maintenance), they definitely
 // cannot be included and will proceed with execution
 // @phan-suppress-next-line PhanSuspiciousValueComparisonInGlobalScope
-if ( !MaintenanceRunner::shouldExecute() && $maintClass != CommandLineInc::class ) {
-	return;
+if (!MaintenanceRunner::shouldExecute() && $maintClass != CommandLineInc::class) {
+    return;
 }
 
 // @phan-suppress-next-line PhanImpossibleConditionInGlobalScope
-if ( !$maintClass || !class_exists( $maintClass ) ) {
-	echo "\$maintClass is not set or is set to a non-existent class.\n";
-	exit( 1 );
+if (!$maintClass || !class_exists($maintClass)) {
+    echo "\$maintClass is not set or is set to a non-existent class.\n";
+    exit(1);
 }
 
 // Define the MediaWiki entrypoint
-define( 'MEDIAWIKI', true );
+define('MEDIAWIKI', true);
 
 $IP = wfDetectInstallPath();
 
 $runner = new MaintenanceRunner();
-$runner->init( $maintClass );
+$runner->init($maintClass);
 
 // We used to call this variable $self, but it was moved
 // to $maintenance->mSelf. Keep that here for b/c
@@ -66,16 +66,17 @@ $self = $runner->getName();
 $runner->defineSettings();
 
 // Custom setup for Maintenance entry point
-if ( !defined( 'MW_SETUP_CALLBACK' ) ) {
+if (!defined('MW_SETUP_CALLBACK')) {
 
-	// Define a function, since we can't put a closure or object
-	// reference into MW_SETUP_CALLBACK.
-	function wfMaintenanceSetup( SettingsBuilder $settingsBuilder ) {
-		global $runner;
-		$runner->overrideConfig( $settingsBuilder );
-	}
+    // Define a function, since we can't put a closure or object
+    // reference into MW_SETUP_CALLBACK.
+    function wfMaintenanceSetup(SettingsBuilder $settingsBuilder)
+    {
+        global $runner;
+        $runner->overrideConfig($settingsBuilder);
+    }
 
-	define( 'MW_SETUP_CALLBACK', 'wfMaintenanceSetup' );
+    define('MW_SETUP_CALLBACK', 'wfMaintenanceSetup');
 }
 
 // Initialize MediaWiki (load settings, initialized session,
@@ -85,6 +86,6 @@ require_once "$IP/includes/Setup.php";
 $success = $runner->run();
 
 // Exit with an error status if execute() returned false
-if ( !$success ) {
-	exit( 1 );
+if (!$success) {
+    exit(1);
 }

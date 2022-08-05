@@ -86,53 +86,57 @@
  *
  * @ingroup SpecialPage
  */
-abstract class RedirectSpecialArticle extends RedirectSpecialPage {
+abstract class RedirectSpecialArticle extends RedirectSpecialPage
+{
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $name
-	 */
-	public function __construct( $name ) {
-		parent::__construct( $name );
-		$redirectParams = [
-			'action',
-			'redirect', 'rdfrom',
-			# Options for preloaded edits
-			'preload', 'preloadparams', 'editintro', 'preloadtitle', 'summary', 'nosummary',
-			# Options for overriding user settings
-			'preview', 'minor', 'watchthis',
-			# Options for history/diffs
-			'section', 'oldid', 'diff', 'dir',
-			'limit', 'offset', 'feed',
-			# Misc options
-			'redlink',
-			# Options for action=raw; missing ctype can break JS or CSS in some browsers
-			'ctype', 'maxage', 'smaxage',
-		];
+    /**
+     * @stable to call
+     *
+     * @param string $name
+     */
+    public function __construct($name)
+    {
+        parent::__construct($name);
+        $redirectParams = [
+            'action',
+            'redirect', 'rdfrom',
+            # Options for preloaded edits
+            'preload', 'preloadparams', 'editintro', 'preloadtitle', 'summary', 'nosummary',
+            # Options for overriding user settings
+            'preview', 'minor', 'watchthis',
+            # Options for history/diffs
+            'section', 'oldid', 'diff', 'dir',
+            'limit', 'offset', 'feed',
+            # Misc options
+            'redlink',
+            # Options for action=raw; missing ctype can break JS or CSS in some browsers
+            'ctype', 'maxage', 'smaxage',
+        ];
 
-		$this->getHookRunner()->onRedirectSpecialArticleRedirectParams( $redirectParams );
-		$this->mAllowedRedirectParams = $redirectParams;
-	}
+        $this->getHookRunner()->onRedirectSpecialArticleRedirectParams($redirectParams);
+        $this->mAllowedRedirectParams = $redirectParams;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getRedirectQuery( $subpage ) {
-		$query = parent::getRedirectQuery( $subpage );
-		$title = $this->getRedirect( $subpage );
-		// Avoid double redirect for action=edit&redlink=1 for existing pages
-		// (compare to the check in EditPage::edit)
-		if (
-			$query && isset( $query['action'] ) && isset( $query['redlink'] ) &&
-			( $query['action'] === 'edit' || $query['action'] === 'submit' ) &&
-			(bool)$query['redlink'] &&
-			$title instanceof Title &&
-			$title->exists()
-		) {
-			return false;
-		}
-		return $query;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getRedirectQuery($subpage)
+    {
+        $query = parent::getRedirectQuery($subpage);
+        $title = $this->getRedirect($subpage);
+        // Avoid double redirect for action=edit&redlink=1 for existing pages
+        // (compare to the check in EditPage::edit)
+        if (
+            $query && isset($query['action']) && isset($query['redlink']) &&
+            ($query['action'] === 'edit' || $query['action'] === 'submit') &&
+            (bool)$query['redlink'] &&
+            $title instanceof Title &&
+            $title->exists()
+        ) {
+            return false;
+        }
+
+        return $query;
+    }
 
 }

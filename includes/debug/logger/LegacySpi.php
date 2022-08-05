@@ -36,36 +36,41 @@ use Psr\Log\LoggerInterface;
  * @since 1.25
  * @copyright © 2014 Wikimedia Foundation and contributors
  */
-class LegacySpi implements Spi {
+class LegacySpi implements Spi
+{
 
-	/**
-	 * @var array
-	 */
-	protected $singletons = [];
+    /**
+     * @var array
+     */
+    protected $singletons = [];
 
-	/**
-	 * Get a logger instance.
-	 *
-	 * @param string $channel Logging channel
-	 * @return \Psr\Log\LoggerInterface Logger instance
-	 */
-	public function getLogger( $channel ) {
-		if ( !isset( $this->singletons[$channel] ) ) {
-			$this->singletons[$channel] = new LegacyLogger( $channel );
-		}
-		return $this->singletons[$channel];
-	}
+    /**
+     * Get a logger instance.
+     *
+     * @param string $channel Logging channel
+     * @return \Psr\Log\LoggerInterface Logger instance
+     */
+    public function getLogger($channel)
+    {
+        if (!isset($this->singletons[$channel])) {
+            $this->singletons[$channel] = new LegacyLogger($channel);
+        }
 
-	/**
-	 * @internal For use by MediaWikiIntegrationTestCase
-	 * @param string $channel
-	 * @param LoggerInterface|null $logger
-	 * @return LoggerInterface|null
-	 */
-	public function setLoggerForTest( $channel, LoggerInterface $logger = null ) {
-		$ret = $this->singletons[$channel] ?? null;
-		$this->singletons[$channel] = $logger;
-		return $ret;
-	}
+        return $this->singletons[$channel];
+    }
+
+    /**
+     * @param string $channel
+     * @param LoggerInterface|null $logger
+     * @return LoggerInterface|null
+     * @internal For use by MediaWikiIntegrationTestCase
+     */
+    public function setLoggerForTest($channel, LoggerInterface $logger = null)
+    {
+        $ret = $this->singletons[$channel] ?? null;
+        $this->singletons[$channel] = $logger;
+
+        return $ret;
+    }
 
 }

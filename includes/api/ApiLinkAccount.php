@@ -28,114 +28,127 @@ use MediaWiki\Auth\AuthManager;
  *
  * @ingroup API
  */
-class ApiLinkAccount extends ApiBase {
+class ApiLinkAccount extends ApiBase
+{
 
-	/** @var AuthManager */
-	private $authManager;
+    /** @var AuthManager */
+    private $authManager;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param AuthManager $authManager
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		AuthManager $authManager
-	) {
-		parent::__construct( $main, $action, 'link' );
-		$this->authManager = $authManager;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param AuthManager $authManager
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        AuthManager $authManager
+    )
+    {
+        parent::__construct($main, $action, 'link');
+        $this->authManager = $authManager;
+    }
 
-	public function getFinalDescription() {
-		// A bit of a hack to append 'api-help-authmanager-general-usage'
-		$msgs = parent::getFinalDescription();
-		$msgs[] = ApiBase::makeMessage( 'api-help-authmanager-general-usage', $this->getContext(), [
-			$this->getModulePrefix(),
-			$this->getModuleName(),
-			$this->getModulePath(),
-			AuthManager::ACTION_LINK,
-			self::needsToken(),
-		] );
-		return $msgs;
-	}
+    public function getFinalDescription()
+    {
+        // A bit of a hack to append 'api-help-authmanager-general-usage'
+        $msgs = parent::getFinalDescription();
+        $msgs[] = ApiBase::makeMessage('api-help-authmanager-general-usage', $this->getContext(), [
+            $this->getModulePrefix(),
+            $this->getModuleName(),
+            $this->getModulePath(),
+            AuthManager::ACTION_LINK,
+            self::needsToken(),
+        ]);
 
-	public function execute() {
-		if ( !$this->getUser()->isRegistered() ) {
-			$this->dieWithError( 'apierror-mustbeloggedin-linkaccounts', 'notloggedin' );
-		}
+        return $msgs;
+    }
 
-		$params = $this->extractRequestParams();
+    public function execute()
+    {
+        if (!$this->getUser()->isRegistered()) {
+            $this->dieWithError('apierror-mustbeloggedin-linkaccounts', 'notloggedin');
+        }
 
-		$this->requireAtLeastOneParameter( $params, 'continue', 'returnurl' );
+        $params = $this->extractRequestParams();
 
-		if ( $params['returnurl'] !== null ) {
-			$bits = wfParseUrl( $params['returnurl'] );
-			if ( !$bits || $bits['scheme'] === '' ) {
-				$encParamName = $this->encodeParamName( 'returnurl' );
-				$this->dieWithError(
-					[ 'apierror-badurl', $encParamName, wfEscapeWikiText( $params['returnurl'] ) ],
-					"badurl_{$encParamName}"
-				);
-			}
-		}
+        $this->requireAtLeastOneParameter($params, 'continue', 'returnurl');
 
-		$helper = new ApiAuthManagerHelper( $this, $this->authManager );
+        if ($params['returnurl'] !== null) {
+            $bits = wfParseUrl($params['returnurl']);
+            if (!$bits || $bits['scheme'] === '') {
+                $encParamName = $this->encodeParamName('returnurl');
+                $this->dieWithError(
+                    ['apierror-badurl', $encParamName, wfEscapeWikiText($params['returnurl'])],
+                    "badurl_{$encParamName}"
+                );
+            }
+        }
 
-		// Check security-sensitive operation status
-		$helper->securitySensitiveOperation( 'LinkAccounts' );
+        $helper = new ApiAuthManagerHelper($this, $this->authManager);
 
-		// Make sure it's possible to link accounts
-		if ( !$this->authManager->canLinkAccounts() ) {
-			$this->getResult()->addValue( null, 'linkaccount', $helper->formatAuthenticationResponse(
-				AuthenticationResponse::newFail( $this->msg( 'userlogin-cannot-' . AuthManager::ACTION_LINK ) )
-			) );
-			return;
-		}
+        // Check security-sensitive operation status
+        $helper->securitySensitiveOperation('LinkAccounts');
 
-		// Perform the link step
-		if ( $params['continue'] ) {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_LINK_CONTINUE );
-			$res = $this->authManager->continueAccountLink( $reqs );
-		} else {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_LINK );
-			$res = $this->authManager->beginAccountLink( $this->getUser(), $reqs, $params['returnurl'] );
-		}
+        // Make sure it's possible to link accounts
+        if (!$this->authManager->canLinkAccounts()) {
+            $this->getResult()->addValue(null, 'linkaccount', $helper->formatAuthenticationResponse(
+                AuthenticationResponse::newFail($this->msg('userlogin-cannot-' . AuthManager::ACTION_LINK))
+            ));
 
-		$this->getResult()->addValue( null, 'linkaccount',
-			$helper->formatAuthenticationResponse( $res ) );
-	}
+            return;
+        }
 
-	public function isReadMode() {
-		return false;
-	}
+        // Perform the link step
+        if ($params['continue']) {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_LINK_CONTINUE);
+            $res = $this->authManager->continueAccountLink($reqs);
+        } else {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_LINK);
+            $res = $this->authManager->beginAccountLink($this->getUser(), $reqs, $params['returnurl']);
+        }
 
-	public function isWriteMode() {
-		return true;
-	}
+        $this->getResult()->addValue(null, 'linkaccount',
+            $helper->formatAuthenticationResponse($res));
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	public function getAllowedParams() {
-		return ApiAuthManagerHelper::getStandardParams( AuthManager::ACTION_LINK,
-			'requests', 'messageformat', 'mergerequestfields', 'returnurl', 'continue'
-		);
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function dynamicParameterDocumentation() {
-		return [ 'api-help-authmanagerhelper-additional-params', AuthManager::ACTION_LINK ];
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=linkaccount&provider=Example&linkreturnurl=http://example.org/&linktoken=123ABC'
-				=> 'apihelp-linkaccount-example-link',
-		];
-	}
+    public function getAllowedParams()
+    {
+        return ApiAuthManagerHelper::getStandardParams(AuthManager::ACTION_LINK,
+            'requests', 'messageformat', 'mergerequestfields', 'returnurl', 'continue'
+        );
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Linkaccount';
-	}
+    public function dynamicParameterDocumentation()
+    {
+        return ['api-help-authmanagerhelper-additional-params', AuthManager::ACTION_LINK];
+    }
+
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=linkaccount&provider=Example&linkreturnurl=http://example.org/&linktoken=123ABC'
+            => 'apihelp-linkaccount-example-link',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Linkaccount';
+    }
 }

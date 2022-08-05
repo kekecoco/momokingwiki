@@ -31,38 +31,42 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class DeleteArchivedRevisions extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			"Deletes all archived revisions\nThese revisions will no longer be restorable" );
-		$this->addOption( 'delete', 'Performs the deletion' );
-	}
+class DeleteArchivedRevisions extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            "Deletes all archived revisions\nThese revisions will no longer be restorable");
+        $this->addOption('delete', 'Performs the deletion');
+    }
 
-	public function execute() {
-		$dbw = $this->getDB( DB_PRIMARY );
+    public function execute()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		if ( !$this->hasOption( 'delete' ) ) {
-			$count = $dbw->newSelectQueryBuilder()
-				->select( 'COUNT(*)' )
-				->from( 'archive' )
-				->caller( __METHOD__ )
-				->fetchField();
-			$this->output( "Found $count revisions to delete.\n" );
-			$this->output( "Please run the script again with the --delete option "
-				. "to really delete the revisions.\n" );
-			return;
-		}
+        if (!$this->hasOption('delete')) {
+            $count = $dbw->newSelectQueryBuilder()
+                ->select('COUNT(*)')
+                ->from('archive')
+                ->caller(__METHOD__)
+                ->fetchField();
+            $this->output("Found $count revisions to delete.\n");
+            $this->output("Please run the script again with the --delete option "
+                . "to really delete the revisions.\n");
 
-		$this->output( "Deleting archived revisions..." );
-		$dbw->delete( 'archive', '*', __METHOD__ );
-		$count = $dbw->affectedRows();
-		$this->output( "done. $count revisions deleted.\n" );
+            return;
+        }
 
-		if ( $count ) {
-			$this->purgeRedundantText( true );
-		}
-	}
+        $this->output("Deleting archived revisions...");
+        $dbw->delete('archive', '*', __METHOD__);
+        $count = $dbw->affectedRows();
+        $this->output("done. $count revisions deleted.\n");
+
+        if ($count) {
+            $this->purgeRedundantText(true);
+        }
+    }
 }
 
 $maintClass = DeleteArchivedRevisions::class;

@@ -24,8 +24,8 @@
 
 // NO_AUTOLOAD -- file-scope code
 
-if ( PHP_SAPI != 'cli' ) {
-	die( "This script can only be run from the command line.\n" );
+if (PHP_SAPI != 'cli') {
+    die("This script can only be run from the command line.\n");
 }
 
 $CREDITS = 'CREDITS';
@@ -38,47 +38,47 @@ $header = [];
 $contributors = [];
 $footer = [];
 
-if ( !file_exists( $CREDITS ) ) {
-	exit( 'No CREDITS file found. Are you running this script in the right directory?' );
+if (!file_exists($CREDITS)) {
+    exit('No CREDITS file found. Are you running this script in the right directory?');
 }
 
-$lines = explode( "\n", file_get_contents( $CREDITS ) );
-foreach ( $lines as $line ) {
-	if ( $inHeader ) {
-		$header[] = $line;
-		$inHeader = $line !== $START_CONTRIBUTORS;
-	} elseif ( $inFooter ) {
-		$footer[] = $line;
-	} elseif ( $line == $END_CONTRIBUTORS ) {
-		$inFooter = true;
-		$footer[] = $line;
-	} else {
-		$name = substr( $line, 2 );
-		$contributors[$name] = true;
-	}
+$lines = explode("\n", file_get_contents($CREDITS));
+foreach ($lines as $line) {
+    if ($inHeader) {
+        $header[] = $line;
+        $inHeader = $line !== $START_CONTRIBUTORS;
+    } elseif ($inFooter) {
+        $footer[] = $line;
+    } elseif ($line == $END_CONTRIBUTORS) {
+        $inFooter = true;
+        $footer[] = $line;
+    } else {
+        $name = substr($line, 2);
+        $contributors[$name] = true;
+    }
 }
-unset( $lines );
+unset($lines);
 
-$lines = explode( "\n", (string)shell_exec( 'git log --format="%aN"' ) );
-foreach ( $lines as $line ) {
-	if ( empty( $line ) ) {
-		continue;
-	}
-	if ( substr( $line, 0, 5 ) === '[BOT]' ) {
-		continue;
-	}
-	$contributors[$line] = true;
+$lines = explode("\n", (string)shell_exec('git log --format="%aN"'));
+foreach ($lines as $line) {
+    if (empty($line)) {
+        continue;
+    }
+    if (substr($line, 0, 5) === '[BOT]') {
+        continue;
+    }
+    $contributors[$line] = true;
 }
 
-$contributors = array_keys( $contributors );
-$collator = Collator::create( 'root' );
-$collator->setAttribute( Collator::NUMERIC_COLLATION, Collator::ON );
-$collator->sort( $contributors );
-array_walk( $contributors, static function ( &$v, $k ) {
-	$v = "* {$v}";
-} );
+$contributors = array_keys($contributors);
+$collator = Collator::create('root');
+$collator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+$collator->sort($contributors);
+array_walk($contributors, static function (&$v, $k) {
+    $v = "* {$v}";
+});
 
 file_put_contents(
-	$CREDITS,
-	implode( "\n", array_merge( $header, $contributors, $footer ) )
+    $CREDITS,
+    implode("\n", array_merge($header, $contributors, $footer))
 );

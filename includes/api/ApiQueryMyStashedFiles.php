@@ -29,125 +29,131 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  *
  * @ingroup API
  */
-class ApiQueryMyStashedFiles extends ApiQueryBase {
+class ApiQueryMyStashedFiles extends ApiQueryBase
+{
 
-	public function __construct( ApiQuery $query, $moduleName ) {
-		parent::__construct( $query, $moduleName, 'msf' );
-	}
+    public function __construct(ApiQuery $query, $moduleName)
+    {
+        parent::__construct($query, $moduleName, 'msf');
+    }
 
-	public function execute() {
-		$user = $this->getUser();
+    public function execute()
+    {
+        $user = $this->getUser();
 
-		if ( !$user->isRegistered() ) {
-			$this->dieWithError( 'apierror-mustbeloggedin-uploadstash', 'stashnotloggedin' );
-		}
+        if (!$user->isRegistered()) {
+            $this->dieWithError('apierror-mustbeloggedin-uploadstash', 'stashnotloggedin');
+        }
 
-		// Note: If user is logged in but cannot upload, they can still see
-		// the list of stashed uploads...but it will probably be empty.
+        // Note: If user is logged in but cannot upload, they can still see
+        // the list of stashed uploads...but it will probably be empty.
 
-		$params = $this->extractRequestParams();
+        $params = $this->extractRequestParams();
 
-		$this->addTables( 'uploadstash' );
+        $this->addTables('uploadstash');
 
-		$this->addFields( [ 'us_id', 'us_key', 'us_status' ] );
+        $this->addFields(['us_id', 'us_key', 'us_status']);
 
-		$this->addWhere( [ 'us_user' => $user->getId() ] );
+        $this->addWhere(['us_user' => $user->getId()]);
 
-		if ( $params['continue'] !== null ) {
-			$cont = explode( '|', $params['continue'] );
-			$this->dieContinueUsageIf( count( $cont ) != 1 );
-			$cont_from = (int)$cont[0];
-			$this->dieContinueUsageIf( strval( $cont_from ) !== $cont[0] );
-			$this->addWhere( "us_id >= $cont_from" );
-		}
+        if ($params['continue'] !== null) {
+            $cont = explode('|', $params['continue']);
+            $this->dieContinueUsageIf(count($cont) != 1);
+            $cont_from = (int)$cont[0];
+            $this->dieContinueUsageIf(strval($cont_from) !== $cont[0]);
+            $this->addWhere("us_id >= $cont_from");
+        }
 
-		$this->addOption( 'LIMIT', $params['limit'] + 1 );
-		$this->addOption( 'ORDER BY', 'us_id' );
+        $this->addOption('LIMIT', $params['limit'] + 1);
+        $this->addOption('ORDER BY', 'us_id');
 
-		$prop = array_fill_keys( $params['prop'], true );
-		$this->addFieldsIf(
-			[
-				'us_size',
-				'us_image_width',
-				'us_image_height',
-				'us_image_bits'
-			],
+        $prop = array_fill_keys($params['prop'], true);
+        $this->addFieldsIf(
+            [
+                'us_size',
+                'us_image_width',
+                'us_image_height',
+                'us_image_bits'
+            ],
 
-			isset( $prop['size'] )
-		);
-		$this->addFieldsIf( [ 'us_mime', 'us_media_type' ], isset( $prop['type'] ) );
+            isset($prop['size'])
+        );
+        $this->addFieldsIf(['us_mime', 'us_media_type'], isset($prop['type']));
 
-		$res = $this->select( __METHOD__ );
-		$result = $this->getResult();
-		$count = 0;
+        $res = $this->select(__METHOD__);
+        $result = $this->getResult();
+        $count = 0;
 
-		foreach ( $res as $row ) {
-			if ( ++$count > $params['limit'] ) {
-				// We've reached the one extra which shows that there are
-				// additional files to be had. Stop here...
-				$this->setContinueEnumParameter( 'continue', $row->us_id );
-				break;
-			}
+        foreach ($res as $row) {
+            if (++$count > $params['limit']) {
+                // We've reached the one extra which shows that there are
+                // additional files to be had. Stop here...
+                $this->setContinueEnumParameter('continue', $row->us_id);
+                break;
+            }
 
-			$item = [
-				'filekey' => $row->us_key,
-				'status' => $row->us_status,
-			];
+            $item = [
+                'filekey' => $row->us_key,
+                'status'  => $row->us_status,
+            ];
 
-			if ( isset( $prop['size'] ) ) {
-				$item['size'] = (int)$row->us_size;
-				$item['width'] = (int)$row->us_image_width;
-				$item['height'] = (int)$row->us_image_height;
-				$item['bits'] = (int)$row->us_image_bits;
-			}
+            if (isset($prop['size'])) {
+                $item['size'] = (int)$row->us_size;
+                $item['width'] = (int)$row->us_image_width;
+                $item['height'] = (int)$row->us_image_height;
+                $item['bits'] = (int)$row->us_image_bits;
+            }
 
-			if ( isset( $prop['type'] ) ) {
-				$item['mimetype'] = $row->us_mime;
-				$item['mediatype'] = $row->us_media_type;
-			}
+            if (isset($prop['type'])) {
+                $item['mimetype'] = $row->us_mime;
+                $item['mediatype'] = $row->us_media_type;
+            }
 
-			$fit = $result->addValue( [ 'query', $this->getModuleName() ], null, $item );
+            $fit = $result->addValue(['query', $this->getModuleName()], null, $item);
 
-			if ( !$fit ) {
-				$this->setContinueEnumParameter( 'continue', $row->us_id );
-				break;
-			}
-		}
+            if (!$fit) {
+                $this->setContinueEnumParameter('continue', $row->us_id);
+                break;
+            }
+        }
 
-		$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'file' );
-	}
+        $result->addIndexedTagName(['query', $this->getModuleName()], 'file');
+    }
 
-	public function getAllowedParams() {
-		return [
-			'prop' => [
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_DEFAULT => '',
-				ParamValidator::PARAM_TYPE => [ 'size', 'type' ],
-				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
-			],
+    public function getAllowedParams()
+    {
+        return [
+            'prop' => [
+                ParamValidator::PARAM_ISMULTI     => true,
+                ParamValidator::PARAM_DEFAULT     => '',
+                ParamValidator::PARAM_TYPE        => ['size', 'type'],
+                ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+            ],
 
-			'limit' => [
-				ParamValidator::PARAM_TYPE => 'limit',
-				ParamValidator::PARAM_DEFAULT => 10,
-				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
-				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2,
-			],
+            'limit' => [
+                ParamValidator::PARAM_TYPE    => 'limit',
+                ParamValidator::PARAM_DEFAULT => 10,
+                IntegerDef::PARAM_MIN         => 1,
+                IntegerDef::PARAM_MAX         => ApiBase::LIMIT_BIG1,
+                IntegerDef::PARAM_MAX2        => ApiBase::LIMIT_BIG2,
+            ],
 
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-		];
-	}
+            'continue' => [
+                ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+            ],
+        ];
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&list=mystashedfiles&msfprop=size'
-				=> 'apihelp-query+mystashedfiles-example-simple',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&list=mystashedfiles&msfprop=size'
+            => 'apihelp-query+mystashedfiles-example-simple',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:mystashedfiles';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:mystashedfiles';
+    }
 }

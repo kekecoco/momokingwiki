@@ -10,20 +10,23 @@ use MediaWiki\Languages\LanguageFactory;
  *
  * @since 1.39
  */
-class LocalizedNumericSerialMapping implements SerialMapping {
-	/** @var Language */
-	private $language;
+class LocalizedNumericSerialMapping implements SerialMapping
+{
+    /** @var Language */
+    private $language;
 
-	/**
-	 * @param array $config
-	 *   - language: The language code
-	 * @param LanguageFactory $languageFactory
-	 */
-	public function __construct( $config, LanguageFactory $languageFactory ) {
-		$this->language = $languageFactory->getLanguage( $config['language'] ?? 'en' );
-	}
+    /**
+     * @param array $config
+     *   - language: The language code
+     * @param LanguageFactory $languageFactory
+     */
+    public function __construct($config, LanguageFactory $languageFactory)
+    {
+        $this->language = $languageFactory->getLanguage($config['language'] ?? 'en');
+    }
 
-	public function getSerialIdForIndex( int $index ): string {
-		return $this->language->formatNum( $index );
-	}
+    public function getSerialIdForIndex(int $index): string
+    {
+        return $this->language->formatNum($index);
+    }
 }

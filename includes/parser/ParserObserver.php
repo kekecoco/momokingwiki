@@ -42,81 +42,85 @@ use Title;
  * @internal
  * @package MediaWiki\Parser
  */
-class ParserObserver {
-	/**
-	 * @var LoggerInterface
-	 */
-	private $logger;
+class ParserObserver
+{
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
-	/**
-	 * @var array
-	 */
-	private $previousParseStackTraces;
+    /**
+     * @var array
+     */
+    private $previousParseStackTraces;
 
-	/**
-	 * @param LoggerInterface $logger
-	 */
-	public function __construct( LoggerInterface $logger ) {
-		$this->logger = $logger;
-		$this->previousParseStackTraces = [];
-	}
+    /**
+     * @param LoggerInterface $logger
+     */
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+        $this->previousParseStackTraces = [];
+    }
 
-	/**
-	 * @param PageReference $page
-	 * @param int|null $revId
-	 * @param ParserOptions $options
-	 * @param Content $content
-	 * @param ParserOutput $output
-	 */
-	public function notifyParse(
-		PageReference $page, ?int $revId, ParserOptions $options, Content $content, ParserOutput $output
-	) {
-		$pageKey = CacheKeyHelper::getKeyForPage( $page );
+    /**
+     * @param PageReference $page
+     * @param int|null $revId
+     * @param ParserOptions $options
+     * @param Content $content
+     * @param ParserOutput $output
+     */
+    public function notifyParse(
+        PageReference $page, ?int $revId, ParserOptions $options, Content $content, ParserOutput $output
+    )
+    {
+        $pageKey = CacheKeyHelper::getKeyForPage($page);
 
-		$optionsHash = $options->optionsHash(
-			$output->getUsedOptions(),
-			Title::castFromPageReference( $page )
-		);
+        $optionsHash = $options->optionsHash(
+            $output->getUsedOptions(),
+            Title::castFromPageReference($page)
+        );
 
-		$contentStr = $content->isValid() ? $content->serialize() : null;
-		// $contentStr may be null if the content could not be serialized
-		$contentSha1 = $contentStr ? sha1( $contentStr ) : 'INVALID';
+        $contentStr = $content->isValid() ? $content->serialize() : null;
+        // $contentStr may be null if the content could not be serialized
+        $contentSha1 = $contentStr ? sha1($contentStr) : 'INVALID';
 
-		$index = $this->getParseId( $pageKey, $revId, $optionsHash, $contentSha1 );
+        $index = $this->getParseId($pageKey, $revId, $optionsHash, $contentSha1);
 
-		$stackTrace = ( new RuntimeException() )->getTraceAsString();
-		if ( array_key_exists( $index, $this->previousParseStackTraces ) ) {
+        $stackTrace = (new RuntimeException())->getTraceAsString();
+        if (array_key_exists($index, $this->previousParseStackTraces)) {
 
-			// NOTE: there may be legitimate changes to re-parse the same WikiText content,
-			// e.g. if predicted revision ID for the REVISIONID magic word mismatched.
-			// But that should be rare.
-			$this->logger->debug(
-				__METHOD__ . ': Possibly redundant parse!',
-				[
-					'page' => $pageKey,
-					'rev' => $revId,
-					'options-hash' => $optionsHash,
-					'contentSha1' => $contentSha1,
-					'trace' => $stackTrace,
-					'previous-trace' => $this->previousParseStackTraces[$index],
-				]
-			);
-		}
-		$this->previousParseStackTraces[$index] = $stackTrace;
-	}
+            // NOTE: there may be legitimate changes to re-parse the same WikiText content,
+            // e.g. if predicted revision ID for the REVISIONID magic word mismatched.
+            // But that should be rare.
+            $this->logger->debug(
+                __METHOD__ . ': Possibly redundant parse!',
+                [
+                    'page'           => $pageKey,
+                    'rev'            => $revId,
+                    'options-hash'   => $optionsHash,
+                    'contentSha1'    => $contentSha1,
+                    'trace'          => $stackTrace,
+                    'previous-trace' => $this->previousParseStackTraces[$index],
+                ]
+            );
+        }
+        $this->previousParseStackTraces[$index] = $stackTrace;
+    }
 
-	/**
-	 * @param string $titleStr
-	 * @param int|null $revId
-	 * @param string $optionsHash
-	 * @param string $contentSha1
-	 * @return string
-	 */
-	private function getParseId( string $titleStr, ?int $revId, string $optionsHash, string $contentSha1 ): string {
-		// $revId may be null when previewing a new page
-		$revIdStr = $revId ?? "";
+    /**
+     * @param string $titleStr
+     * @param int|null $revId
+     * @param string $optionsHash
+     * @param string $contentSha1
+     * @return string
+     */
+    private function getParseId(string $titleStr, ?int $revId, string $optionsHash, string $contentSha1): string
+    {
+        // $revId may be null when previewing a new page
+        $revIdStr = $revId ?? "";
 
-		return "$titleStr.$revIdStr.$optionsHash.$contentSha1";
-	}
+        return "$titleStr.$revIdStr.$optionsHash.$contentSha1";
+    }
 
 }

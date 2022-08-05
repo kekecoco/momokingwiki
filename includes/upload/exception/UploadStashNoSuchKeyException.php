@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashNoSuchKeyException extends UploadStashException {
+class UploadStashNoSuchKeyException extends UploadStashException
+{
 }

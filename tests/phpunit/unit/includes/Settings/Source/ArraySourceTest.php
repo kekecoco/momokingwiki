@@ -8,15 +8,17 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \MediaWiki\Settings\Source\ArraySource
  */
-class ArraySourceTest extends TestCase {
-	public function testLoad() {
-		$source = new ArraySource(
-			[ 'config' => [ 'MySettings' => 'BlaBla' ] ]
-		);
+class ArraySourceTest extends TestCase
+{
+    public function testLoad()
+    {
+        $source = new ArraySource(
+            ['config' => ['MySettings' => 'BlaBla']]
+        );
 
-		$this->assertSame(
-			[ 'config' => [ 'MySettings' => 'BlaBla' ] ],
-			$source->load()
-		);
-	}
+        $this->assertSame(
+            ['config' => ['MySettings' => 'BlaBla']],
+            $source->load()
+        );
+    }
 }

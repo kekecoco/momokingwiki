@@ -33,111 +33,120 @@ use Wikimedia\Minify\CSSMin;
  * @since 1.21
  * @ingroup Content
  */
-class CssContentHandler extends CodeContentHandler {
+class CssContentHandler extends CodeContentHandler
+{
 
-	/**
-	 * @param string $modelId
-	 */
-	public function __construct( $modelId = CONTENT_MODEL_CSS ) {
-		parent::__construct( $modelId, [ CONTENT_FORMAT_CSS ] );
-	}
+    /**
+     * @param string $modelId
+     */
+    public function __construct($modelId = CONTENT_MODEL_CSS)
+    {
+        parent::__construct($modelId, [CONTENT_FORMAT_CSS]);
+    }
 
-	protected function getContentClass() {
-		return CssContent::class;
-	}
+    protected function getContentClass()
+    {
+        return CssContent::class;
+    }
 
-	public function supportsRedirects() {
-		return true;
-	}
+    public function supportsRedirects()
+    {
+        return true;
+    }
 
-	/**
-	 * Create a redirect that is also valid CSS
-	 *
-	 * @param Title $destination
-	 * @param string $text ignored
-	 * @return CssContent
-	 */
-	public function makeRedirectContent( Title $destination, $text = '' ) {
-		// The parameters are passed as a string so the / is not url-encoded by wfArrayToCgi
-		$url = $destination->getFullURL( 'action=raw&ctype=text/css', false, PROTO_RELATIVE );
-		$class = $this->getContentClass();
-		return new $class( '/* #REDIRECT */@import ' . CSSMin::buildUrlValue( $url ) . ';' );
-	}
+    /**
+     * Create a redirect that is also valid CSS
+     *
+     * @param Title $destination
+     * @param string $text ignored
+     * @return CssContent
+     */
+    public function makeRedirectContent(Title $destination, $text = '')
+    {
+        // The parameters are passed as a string so the / is not url-encoded by wfArrayToCgi
+        $url = $destination->getFullURL('action=raw&ctype=text/css', false, PROTO_RELATIVE);
+        $class = $this->getContentClass();
 
-	public function preSaveTransform(
-		Content $content,
-		PreSaveTransformParams $pstParams
-	): Content {
-		$shouldCallDeprecatedMethod = $this->shouldCallDeprecatedContentTransformMethod(
-			$content,
-			$pstParams
-		);
+        return new $class('/* #REDIRECT */@import ' . CSSMin::buildUrlValue($url) . ';');
+    }
 
-		if ( $shouldCallDeprecatedMethod ) {
-			return $this->callDeprecatedContentPST(
-				$content,
-				$pstParams
-			);
-		}
+    public function preSaveTransform(
+        Content $content,
+        PreSaveTransformParams $pstParams
+    ): Content
+    {
+        $shouldCallDeprecatedMethod = $this->shouldCallDeprecatedContentTransformMethod(
+            $content,
+            $pstParams
+        );
 
-		'@phan-var CssContent $content';
+        if ($shouldCallDeprecatedMethod) {
+            return $this->callDeprecatedContentPST(
+                $content,
+                $pstParams
+            );
+        }
 
-		// @todo Make pre-save transformation optional for script pages (T34858)
-		$services = MediaWikiServices::getInstance();
-		if ( !$services->getUserOptionsLookup()->getBoolOption( $pstParams->getUser(), 'pst-cssjs' ) ) {
-			// Allow bot users to disable the pre-save transform for CSS/JS (T236828).
-			$popts = clone $pstParams->getParserOptions();
-			$popts->setPreSaveTransform( false );
-		}
+        '@phan-var CssContent $content';
 
-		$text = $content->getText();
-		$pst = $services->getParserFactory()->getInstance()->preSaveTransform(
-			$text,
-			$pstParams->getPage(),
-			$pstParams->getUser(),
-			$pstParams->getParserOptions()
-		);
+        // @todo Make pre-save transformation optional for script pages (T34858)
+        $services = MediaWikiServices::getInstance();
+        if (!$services->getUserOptionsLookup()->getBoolOption($pstParams->getUser(), 'pst-cssjs')) {
+            // Allow bot users to disable the pre-save transform for CSS/JS (T236828).
+            $popts = clone $pstParams->getParserOptions();
+            $popts->setPreSaveTransform(false);
+        }
 
-		$class = $this->getContentClass();
-		return new $class( $pst );
-	}
+        $text = $content->getText();
+        $pst = $services->getParserFactory()->getInstance()->preSaveTransform(
+            $text,
+            $pstParams->getPage(),
+            $pstParams->getUser(),
+            $pstParams->getParserOptions()
+        );
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function fillParserOutput(
-		Content $content,
-		ContentParseParams $cpoParams,
-		ParserOutput &$output
-	) {
-		$textModelsToParse = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::TextModelsToParse );
-		'@phan-var CssContent $content';
-		if ( in_array( $content->getModel(), $textModelsToParse ) ) {
-			// parse just to get links etc into the database, HTML is replaced below.
-			$output = MediaWikiServices::getInstance()->getParserFactory()->getInstance()
-				->parse(
-					$content->getText(),
-					$cpoParams->getPage(),
-					$cpoParams->getParserOptions(),
-					true,
-					true,
-					$cpoParams->getRevId()
-				);
-		}
+        $class = $this->getContentClass();
 
-		if ( $cpoParams->getGenerateHtml() ) {
-			// Return CSS wrapped in a <pre> tag.
-			$html = Html::element(
-				'pre',
-				[ 'class' => 'mw-code mw-css', 'dir' => 'ltr' ],
-				"\n" . $content->getText() . "\n"
-			) . "\n";
-		} else {
-			$html = null;
-		}
+        return new $class($pst);
+    }
 
-		$output->clearWrapperDivClass();
-		$output->setText( $html );
-	}
+    /**
+     * @inheritDoc
+     */
+    protected function fillParserOutput(
+        Content $content,
+        ContentParseParams $cpoParams,
+        ParserOutput &$output
+    )
+    {
+        $textModelsToParse = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::TextModelsToParse);
+        '@phan-var CssContent $content';
+        if (in_array($content->getModel(), $textModelsToParse)) {
+            // parse just to get links etc into the database, HTML is replaced below.
+            $output = MediaWikiServices::getInstance()->getParserFactory()->getInstance()
+                ->parse(
+                    $content->getText(),
+                    $cpoParams->getPage(),
+                    $cpoParams->getParserOptions(),
+                    true,
+                    true,
+                    $cpoParams->getRevId()
+                );
+        }
+
+        if ($cpoParams->getGenerateHtml()) {
+            // Return CSS wrapped in a <pre> tag.
+            $html = Html::element(
+                    'pre',
+                    ['class' => 'mw-code mw-css', 'dir' => 'ltr'],
+                    "\n" . $content->getText() . "\n"
+                ) . "\n";
+        } else {
+            $html = null;
+        }
+
+        $output->clearWrapperDivClass();
+        $output->setText($html);
+    }
 }

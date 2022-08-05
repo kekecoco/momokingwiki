@@ -26,5 +26,6 @@
  * Exception thrown when an actor can't be created.
  * @newable
  */
-class CannotCreateActorException extends RuntimeException {
+class CannotCreateActorException extends RuntimeException
+{
 }

@@ -26,28 +26,31 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Languages
  */
-class LanguageHu extends Language {
+class LanguageHu extends Language
+{
 
-	/**
-	 * @param string $word
-	 * @param string $case
-	 * @return string
-	 */
-	public function convertGrammar( $word, $case ) {
-		$grammarForms = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::GrammarForms );
-		if ( isset( $grammarForms[$this->getCode()][$case][$word] ) ) {
-			return $grammarForms[$this->getCode()][$case][$word];
-		}
+    /**
+     * @param string $word
+     * @param string $case
+     * @return string
+     */
+    public function convertGrammar($word, $case)
+    {
+        $grammarForms = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::GrammarForms);
+        if (isset($grammarForms[$this->getCode()][$case][$word])) {
+            return $grammarForms[$this->getCode()][$case][$word];
+        }
 
-		switch ( $case ) {
-			case 'rol':
-				return $word . 'ról';
-			case 'ba':
-				return $word . 'ba';
-			case 'k':
-				return $word . 'k';
-		}
-		return '';
-	}
+        switch ($case) {
+            case 'rol':
+                return $word . 'ról';
+            case 'ba':
+                return $word . 'ba';
+            case 'k':
+                return $word . 'k';
+        }
+
+        return '';
+    }
 }

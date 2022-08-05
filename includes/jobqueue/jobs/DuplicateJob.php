@@ -26,33 +26,37 @@
  *
  * @ingroup JobQueue
  */
-final class DuplicateJob extends Job implements GenericParameterJob {
-	/**
-	 * Callers should use DuplicateJob::newFromJob() instead
-	 *
-	 * @param array $params Job parameters
-	 */
-	public function __construct( array $params ) {
-		parent::__construct( 'duplicate', $params );
-	}
+final class DuplicateJob extends Job implements GenericParameterJob
+{
+    /**
+     * Callers should use DuplicateJob::newFromJob() instead
+     *
+     * @param array $params Job parameters
+     */
+    public function __construct(array $params)
+    {
+        parent::__construct('duplicate', $params);
+    }
 
-	/**
-	 * Get a duplicate no-op version of a job
-	 *
-	 * @param RunnableJob $job
-	 * @return Job
-	 */
-	public static function newFromJob( RunnableJob $job ) {
-		$djob = new self( $job->getParams() );
-		$djob->command = $job->getType();
-		$djob->params = is_array( $djob->params ) ? $djob->params : [];
-		$djob->params = [ 'isDuplicate' => true ] + $djob->params;
-		$djob->metadata = $job->getMetadata();
+    /**
+     * Get a duplicate no-op version of a job
+     *
+     * @param RunnableJob $job
+     * @return Job
+     */
+    public static function newFromJob(RunnableJob $job)
+    {
+        $djob = new self($job->getParams());
+        $djob->command = $job->getType();
+        $djob->params = is_array($djob->params) ? $djob->params : [];
+        $djob->params = ['isDuplicate' => true] + $djob->params;
+        $djob->metadata = $job->getMetadata();
 
-		return $djob;
-	}
+        return $djob;
+    }
 
-	public function run() {
-		return true;
-	}
+    public function run()
+    {
+        return true;
+    }
 }

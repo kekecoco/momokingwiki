@@ -33,69 +33,74 @@ use Wikimedia\Rdbms\IDatabase;
  *
  * @ingroup Maintenance
  */
-class DeleteOrphanedRevisions extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Maintenance script to delete revisions which refer to a nonexisting page' );
-		$this->addOption( 'report', 'Prints out a count of affected revisions but doesn\'t delete them' );
-	}
+class DeleteOrphanedRevisions extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Maintenance script to delete revisions which refer to a nonexisting page');
+        $this->addOption('report', 'Prints out a count of affected revisions but doesn\'t delete them');
+    }
 
-	public function execute() {
-		$this->output( "Delete Orphaned Revisions\n" );
+    public function execute()
+    {
+        $this->output("Delete Orphaned Revisions\n");
 
-		$report = $this->hasOption( 'report' );
+        $report = $this->hasOption('report');
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		$this->beginTransaction( $dbw, __METHOD__ );
+        $dbw = $this->getDB(DB_PRIMARY);
+        $this->beginTransaction($dbw, __METHOD__);
 
-		# Find all the orphaned revisions
-		$this->output( "Checking for orphaned revisions..." );
-		$res = $dbw->newSelectQueryBuilder()
-			->select( 'rev_id' )
-			->from( 'revision' )
-			->leftJoin( 'page', null, 'rev_page = page_id' )
-			->where( [ 'page_namespace' => null ] )
-			->caller( 'deleteOrphanedRevisions' )
-			->fetchResultSet();
+        # Find all the orphaned revisions
+        $this->output("Checking for orphaned revisions...");
+        $res = $dbw->newSelectQueryBuilder()
+            ->select('rev_id')
+            ->from('revision')
+            ->leftJoin('page', null, 'rev_page = page_id')
+            ->where(['page_namespace' => null])
+            ->caller('deleteOrphanedRevisions')
+            ->fetchResultSet();
 
-		# Stash 'em all up for deletion (if needed)
-		$revisions = [];
-		foreach ( $res as $row ) {
-			$revisions[] = $row->rev_id;
-		}
-		$count = count( $revisions );
-		$this->output( "found {$count}.\n" );
+        # Stash 'em all up for deletion (if needed)
+        $revisions = [];
+        foreach ($res as $row) {
+            $revisions[] = $row->rev_id;
+        }
+        $count = count($revisions);
+        $this->output("found {$count}.\n");
 
-		# Nothing to do?
-		if ( $report || $count == 0 ) {
-			$this->commitTransaction( $dbw, __METHOD__ );
-			return;
-		}
+        # Nothing to do?
+        if ($report || $count == 0) {
+            $this->commitTransaction($dbw, __METHOD__);
 
-		# Delete each revision
-		$this->output( "Deleting..." );
-		$this->deleteRevs( $revisions, $dbw );
-		$this->output( "done.\n" );
+            return;
+        }
 
-		# Close the transaction and call the script to purge unused text records
-		$this->commitTransaction( $dbw, __METHOD__ );
-		$this->purgeRedundantText( true );
-	}
+        # Delete each revision
+        $this->output("Deleting...");
+        $this->deleteRevs($revisions, $dbw);
+        $this->output("done.\n");
 
-	/**
-	 * Delete one or more revisions from the database
-	 * Do this inside a transaction
-	 *
-	 * @param int[] $id Array of revision id values
-	 * @param IDatabase $dbw Primary DB handle
-	 */
-	private function deleteRevs( array $id, $dbw ) {
-		$dbw->delete( 'revision', [ 'rev_id' => $id ], __METHOD__ );
+        # Close the transaction and call the script to purge unused text records
+        $this->commitTransaction($dbw, __METHOD__);
+        $this->purgeRedundantText(true);
+    }
 
-		// Delete from ip_changes should a record exist.
-		$dbw->delete( 'ip_changes', [ 'ipc_rev_id' => $id ], __METHOD__ );
-	}
+    /**
+     * Delete one or more revisions from the database
+     * Do this inside a transaction
+     *
+     * @param int[] $id Array of revision id values
+     * @param IDatabase $dbw Primary DB handle
+     */
+    private function deleteRevs(array $id, $dbw)
+    {
+        $dbw->delete('revision', ['rev_id' => $id], __METHOD__);
+
+        // Delete from ip_changes should a record exist.
+        $dbw->delete('ip_changes', ['ipc_rev_id' => $id], __METHOD__);
+    }
 }
 
 $maintClass = DeleteOrphanedRevisions::class;

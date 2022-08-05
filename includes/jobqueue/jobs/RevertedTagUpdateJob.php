@@ -35,62 +35,67 @@ use MediaWiki\Storage\RevertedTagUpdate;
  *
  * @ingroup JobQueue
  */
-class RevertedTagUpdateJob extends Job implements GenericParameterJob {
+class RevertedTagUpdateJob extends Job implements GenericParameterJob
+{
 
-	/**
-	 * Returns a JobSpecification for this job.
-	 *
-	 * @param int $revertRevisionId
-	 * @param EditResult $editResult
-	 *
-	 * @return JobSpecification
-	 */
-	public static function newSpec(
-		int $revertRevisionId,
-		EditResult $editResult
-	): JobSpecification {
-		return new JobSpecification(
-			'revertedTagUpdate',
-			[
-				'revertId' => $revertRevisionId,
-				'editResult' => $editResult->jsonSerialize()
-			]
-		);
-	}
+    /**
+     * Returns a JobSpecification for this job.
+     *
+     * @param int $revertRevisionId
+     * @param EditResult $editResult
+     *
+     * @return JobSpecification
+     */
+    public static function newSpec(
+        int $revertRevisionId,
+        EditResult $editResult
+    ): JobSpecification
+    {
+        return new JobSpecification(
+            'revertedTagUpdate',
+            [
+                'revertId'   => $revertRevisionId,
+                'editResult' => $editResult->jsonSerialize()
+            ]
+        );
+    }
 
-	/**
-	 * @param array $params
-	 * @phan-param array{revertId:int,editResult:array} $params
-	 */
-	public function __construct( array $params ) {
-		parent::__construct( 'revertedTagUpdate', $params );
-	}
+    /**
+     * @param array $params
+     * @phan-param array{revertId:int,editResult:array} $params
+     */
+    public function __construct(array $params)
+    {
+        parent::__construct('revertedTagUpdate', $params);
+    }
 
-	/**
-	 * Unpacks the job arguments and runs the update.
-	 *
-	 * @return bool
-	 */
-	public function run() {
-		$services = MediaWikiServices::getInstance();
-		$editResult = EditResult::newFromArray(
-			$this->params['editResult']
-		);
+    /**
+     * Unpacks the job arguments and runs the update.
+     *
+     * @return bool
+     */
+    public function run()
+    {
+        $services = MediaWikiServices::getInstance();
+        $editResult = EditResult::newFromArray(
+            $this->params['editResult']
+        );
 
-		$update = new RevertedTagUpdate(
-			$services->getRevisionStore(),
-			LoggerFactory::getInstance( 'RevertedTagUpdate' ),
-			ChangeTags::getSoftwareTags(),
-			$services->getDBLoadBalancer(),
-			new ServiceOptions(
-				RevertedTagUpdate::CONSTRUCTOR_OPTIONS,
-				$services->getMainConfig()
-			),
-			$this->params['revertId'],
-			$editResult
-		);
+        $update = new RevertedTagUpdate(
+            $services->getRevisionStore(),
+            LoggerFactory::getInstance('RevertedTagUpdate'),
+            ChangeTags::getSoftwareTags(),
+            $services->getDBLoadBalancer(),
+            new ServiceOptions(
+                RevertedTagUpdate::CONSTRUCTOR_OPTIONS,
+                $services->getMainConfig()
+            ),
+            $this->params['revertId'],
+            $editResult
+        );
 
-		$update->doUpdate();
-		return true;
-	}
+        $update->doUpdate();
+
+        return true;
+    }
 }

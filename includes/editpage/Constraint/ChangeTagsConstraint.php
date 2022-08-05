@@ -31,60 +31,68 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class ChangeTagsConstraint implements IEditConstraint {
+class ChangeTagsConstraint implements IEditConstraint
+{
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var array */
-	private $tags;
+    /** @var array */
+    private $tags;
 
-	/** @var StatusValue|string */
-	private $result;
+    /** @var StatusValue|string */
+    private $result;
 
-	/**
-	 * @param Authority $performer
-	 * @param string[] $tags
-	 */
-	public function __construct(
-		Authority $performer,
-		array $tags
-	) {
-		$this->performer = $performer;
-		$this->tags = $tags;
-	}
+    /**
+     * @param Authority $performer
+     * @param string[] $tags
+     */
+    public function __construct(
+        Authority $performer,
+        array $tags
+    )
+    {
+        $this->performer = $performer;
+        $this->tags = $tags;
+    }
 
-	public function checkConstraint(): string {
-		if ( !$this->tags ) {
-			$this->result = self::CONSTRAINT_PASSED;
-			return self::CONSTRAINT_PASSED;
-		}
+    public function checkConstraint(): string
+    {
+        if (!$this->tags) {
+            $this->result = self::CONSTRAINT_PASSED;
 
-		// TODO inject a service once canAddTagsAccompanyingChange is moved to a
-		// service as part of T245964
-		$changeTagStatus = ChangeTags::canAddTagsAccompanyingChange(
-			$this->tags,
-			$this->performer,
-			false
-		);
+            return self::CONSTRAINT_PASSED;
+        }
 
-		if ( $changeTagStatus->isOK() ) {
-			$this->result = self::CONSTRAINT_PASSED;
-			return self::CONSTRAINT_PASSED;
-		}
+        // TODO inject a service once canAddTagsAccompanyingChange is moved to a
+        // service as part of T245964
+        $changeTagStatus = ChangeTags::canAddTagsAccompanyingChange(
+            $this->tags,
+            $this->performer,
+            false
+        );
 
-		$this->result = $changeTagStatus; // The same status object is returned
-		return self::CONSTRAINT_FAILED;
-	}
+        if ($changeTagStatus->isOK()) {
+            $this->result = self::CONSTRAINT_PASSED;
 
-	public function getLegacyStatus(): StatusValue {
-		if ( $this->result === self::CONSTRAINT_PASSED ) {
-			$statusValue = StatusValue::newGood();
-		} else {
-			$statusValue = $this->result;
-			$statusValue->value = self::AS_CHANGE_TAG_ERROR;
-		}
-		return $statusValue;
-	}
+            return self::CONSTRAINT_PASSED;
+        }
+
+        $this->result = $changeTagStatus; // The same status object is returned
+
+        return self::CONSTRAINT_FAILED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        if ($this->result === self::CONSTRAINT_PASSED) {
+            $statusValue = StatusValue::newGood();
+        } else {
+            $statusValue = $this->result;
+            $statusValue->value = self::AS_CHANGE_TAG_ERROR;
+        }
+
+        return $statusValue;
+    }
 
 }

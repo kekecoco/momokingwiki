@@ -9,30 +9,30 @@
  * @param {mw.rcfilters.dm.ChangesListViewModel} model Changes list view model
  * @param {Object} [config] Configuration object
  */
-var MarkSeenButtonWidget = function MwRcfiltersUiMarkSeenButtonWidget( controller, model, config ) {
-	config = config || {};
+var MarkSeenButtonWidget = function MwRcfiltersUiMarkSeenButtonWidget(controller, model, config) {
+    config = config || {};
 
-	// Parent
-	MarkSeenButtonWidget.parent.call( this, $.extend( {
-		label: mw.msg( 'rcfilters-watchlist-markseen-button' ),
-		icon: 'checkAll'
-	}, config ) );
+    // Parent
+    MarkSeenButtonWidget.parent.call(this, $.extend({
+        label: mw.msg('rcfilters-watchlist-markseen-button'),
+        icon: 'checkAll'
+    }, config));
 
-	this.controller = controller;
-	this.model = model;
+    this.controller = controller;
+    this.model = model;
 
-	// Events
-	this.connect( this, { click: 'onClick' } );
-	this.model.connect( this, { update: 'onModelUpdate' } );
+    // Events
+    this.connect(this, {click: 'onClick'});
+    this.model.connect(this, {update: 'onModelUpdate'});
 
-	this.$element.addClass( 'mw-rcfilters-ui-markSeenButtonWidget' );
+    this.$element.addClass('mw-rcfilters-ui-markSeenButtonWidget');
 
-	this.onModelUpdate();
+    this.onModelUpdate();
 };
 
 /* Initialization */
 
-OO.inheritClass( MarkSeenButtonWidget, OO.ui.ButtonWidget );
+OO.inheritClass(MarkSeenButtonWidget, OO.ui.ButtonWidget);
 
 /* Methods */
 
@@ -40,16 +40,16 @@ OO.inheritClass( MarkSeenButtonWidget, OO.ui.ButtonWidget );
  * Respond to the button being clicked
  */
 MarkSeenButtonWidget.prototype.onClick = function () {
-	this.controller.markAllChangesAsSeen();
-	// assume there's no more unseen changes until the next model update
-	this.setDisabled( true );
+    this.controller.markAllChangesAsSeen();
+    // assume there's no more unseen changes until the next model update
+    this.setDisabled(true);
 };
 
 /**
  * Respond to the model being updated with new changes
  */
 MarkSeenButtonWidget.prototype.onModelUpdate = function () {
-	this.setDisabled( !this.model.hasUnseenWatchedChanges() );
+    this.setDisabled(!this.model.hasUnseenWatchedChanges());
 };
 
 module.exports = MarkSeenButtonWidget;

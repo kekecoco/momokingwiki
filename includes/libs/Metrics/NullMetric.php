@@ -26,21 +26,23 @@
  * @since 1.38
  */
 
-declare( strict_types=1 );
+declare(strict_types=1);
 
 namespace Wikimedia\Metrics;
 
-class NullMetric {
+class NullMetric
+{
 
-	/**
-	 * Silently suppress all undefined method calls.
-	 *
-	 * @param $method_name string
-	 * @param $args array
-	 * @return null
-	 */
-	public function __call( string $method_name, array $args ) {
-		return null;
-	}
+    /**
+     * Silently suppress all undefined method calls.
+     *
+     * @param $method_name string
+     * @param $args array
+     * @return null
+     */
+    public function __call(string $method_name, array $args)
+    {
+        return null;
+    }
 
 }

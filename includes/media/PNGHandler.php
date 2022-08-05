@@ -28,173 +28,184 @@ use Wikimedia\RequestTimeout\TimeoutException;
  *
  * @ingroup Media
  */
-class PNGHandler extends BitmapHandler {
-	private const BROKEN_FILE = '0';
+class PNGHandler extends BitmapHandler
+{
+    private const BROKEN_FILE = '0';
 
-	/**
-	 * @param MediaHandlerState $state
-	 * @param string $filename
-	 * @return array
-	 */
-	public function getSizeAndMetadata( $state, $filename ) {
-		try {
-			$metadata = BitmapMetadataHandler::PNG( $filename );
-		} catch ( TimeoutException $e ) {
-			throw $e;
-		} catch ( Exception $e ) {
-			// Broken file?
-			wfDebug( __METHOD__ . ': ' . $e->getMessage() );
+    /**
+     * @param MediaHandlerState $state
+     * @param string $filename
+     * @return array
+     */
+    public function getSizeAndMetadata($state, $filename)
+    {
+        try {
+            $metadata = BitmapMetadataHandler::PNG($filename);
+        } catch (TimeoutException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            // Broken file?
+            wfDebug(__METHOD__ . ': ' . $e->getMessage());
 
-			return [ 'metadata' => [ '_error' => self::BROKEN_FILE ] ];
-		}
+            return ['metadata' => ['_error' => self::BROKEN_FILE]];
+        }
 
-		return [
-			'width' => $metadata['width'],
-			'height' => $metadata['height'],
-			'bits' => $metadata['bitDepth'],
-			'metadata' => array_diff_key(
-				$metadata,
-				[ 'width' => true, 'height' => true, 'bits' => true ]
-			)
-		];
-	}
+        return [
+            'width'    => $metadata['width'],
+            'height'   => $metadata['height'],
+            'bits'     => $metadata['bitDepth'],
+            'metadata' => array_diff_key(
+                $metadata,
+                ['width' => true, 'height' => true, 'bits' => true]
+            )
+        ];
+    }
 
-	/**
-	 * @param File $image
-	 * @param IContextSource|false $context
-	 * @return array[]|false
-	 */
-	public function formatMetadata( $image, $context = false ) {
-		$meta = $this->getCommonMetaArray( $image );
-		if ( !$meta ) {
-			return false;
-		}
+    /**
+     * @param File $image
+     * @param IContextSource|false $context
+     * @return array[]|false
+     */
+    public function formatMetadata($image, $context = false)
+    {
+        $meta = $this->getCommonMetaArray($image);
+        if (!$meta) {
+            return false;
+        }
 
-		return $this->formatMetadataHelper( $meta, $context );
-	}
+        return $this->formatMetadataHelper($meta, $context);
+    }
 
-	/**
-	 * Get a file type independent array of metadata.
-	 *
-	 * @param File $image
-	 * @return array The metadata array
-	 */
-	public function getCommonMetaArray( File $image ) {
-		$meta = $image->getMetadataArray();
+    /**
+     * Get a file type independent array of metadata.
+     *
+     * @param File $image
+     * @return array The metadata array
+     */
+    public function getCommonMetaArray(File $image)
+    {
+        $meta = $image->getMetadataArray();
 
-		if ( !isset( $meta['metadata'] ) ) {
-			return [];
-		}
-		unset( $meta['metadata']['_MW_PNG_VERSION'] );
+        if (!isset($meta['metadata'])) {
+            return [];
+        }
+        unset($meta['metadata']['_MW_PNG_VERSION']);
 
-		return $meta['metadata'];
-	}
+        return $meta['metadata'];
+    }
 
-	/**
-	 * @param File $image
-	 * @return bool
-	 */
-	public function isAnimatedImage( $image ) {
-		$metadata = $image->getMetadataArray();
-		if ( isset( $metadata['frameCount'] ) && $metadata['frameCount'] > 1 ) {
-			return true;
-		}
+    /**
+     * @param File $image
+     * @return bool
+     */
+    public function isAnimatedImage($image)
+    {
+        $metadata = $image->getMetadataArray();
+        if (isset($metadata['frameCount']) && $metadata['frameCount'] > 1) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	/**
-	 * We do not support making APNG thumbnails, so always false
-	 * @param File $image
-	 * @return bool False
-	 */
-	public function canAnimateThumbnail( $image ) {
-		return false;
-	}
+    /**
+     * We do not support making APNG thumbnails, so always false
+     * @param File $image
+     * @return bool False
+     */
+    public function canAnimateThumbnail($image)
+    {
+        return false;
+    }
 
-	public function getMetadataType( $image ) {
-		return 'parsed-png';
-	}
+    public function getMetadataType($image)
+    {
+        return 'parsed-png';
+    }
 
-	public function isFileMetadataValid( $image ) {
-		$data = $image->getMetadataArray();
-		if ( $data === [ '_error' => self::BROKEN_FILE ] ) {
-			// Do not repetitively regenerate metadata on broken file.
-			return self::METADATA_GOOD;
-		}
+    public function isFileMetadataValid($image)
+    {
+        $data = $image->getMetadataArray();
+        if ($data === ['_error' => self::BROKEN_FILE]) {
+            // Do not repetitively regenerate metadata on broken file.
+            return self::METADATA_GOOD;
+        }
 
-		if ( !$data || isset( $data['_error'] ) ) {
-			wfDebug( __METHOD__ . " invalid png metadata" );
+        if (!$data || isset($data['_error'])) {
+            wfDebug(__METHOD__ . " invalid png metadata");
 
-			return self::METADATA_BAD;
-		}
+            return self::METADATA_BAD;
+        }
 
-		if ( !isset( $data['metadata']['_MW_PNG_VERSION'] )
-			|| $data['metadata']['_MW_PNG_VERSION'] != PNGMetadataExtractor::VERSION
-		) {
-			wfDebug( __METHOD__ . " old but compatible png metadata" );
+        if (!isset($data['metadata']['_MW_PNG_VERSION'])
+            || $data['metadata']['_MW_PNG_VERSION'] != PNGMetadataExtractor::VERSION
+        ) {
+            wfDebug(__METHOD__ . " old but compatible png metadata");
 
-			return self::METADATA_COMPATIBLE;
-		}
+            return self::METADATA_COMPATIBLE;
+        }
 
-		return self::METADATA_GOOD;
-	}
+        return self::METADATA_GOOD;
+    }
 
-	/**
-	 * @param File $image
-	 * @return string
-	 */
-	public function getLongDesc( $image ) {
-		global $wgLang;
-		$original = parent::getLongDesc( $image );
+    /**
+     * @param File $image
+     * @return string
+     */
+    public function getLongDesc($image)
+    {
+        global $wgLang;
+        $original = parent::getLongDesc($image);
 
-		$metadata = $image->getMetadataArray();
+        $metadata = $image->getMetadataArray();
 
-		if ( !$metadata || isset( $metadata['_error'] ) || $metadata['frameCount'] <= 0 ) {
-			return $original;
-		}
+        if (!$metadata || isset($metadata['_error']) || $metadata['frameCount'] <= 0) {
+            return $original;
+        }
 
-		$info = [];
-		$info[] = $original;
+        $info = [];
+        $info[] = $original;
 
-		if ( $metadata['loopCount'] == 0 ) {
-			$info[] = wfMessage( 'file-info-png-looped' )->parse();
-		} elseif ( $metadata['loopCount'] > 1 ) {
-			$info[] = wfMessage( 'file-info-png-repeat' )->numParams( $metadata['loopCount'] )->parse();
-		}
+        if ($metadata['loopCount'] == 0) {
+            $info[] = wfMessage('file-info-png-looped')->parse();
+        } elseif ($metadata['loopCount'] > 1) {
+            $info[] = wfMessage('file-info-png-repeat')->numParams($metadata['loopCount'])->parse();
+        }
 
-		if ( $metadata['frameCount'] > 0 ) {
-			$info[] = wfMessage( 'file-info-png-frames' )->numParams( $metadata['frameCount'] )->parse();
-		}
+        if ($metadata['frameCount'] > 0) {
+            $info[] = wfMessage('file-info-png-frames')->numParams($metadata['frameCount'])->parse();
+        }
 
-		if ( $metadata['duration'] ) {
-			$info[] = $wgLang->formatTimePeriod( $metadata['duration'] );
-		}
+        if ($metadata['duration']) {
+            $info[] = $wgLang->formatTimePeriod($metadata['duration']);
+        }
 
-		return $wgLang->commaList( $info );
-	}
+        return $wgLang->commaList($info);
+    }
 
-	/**
-	 * Return the duration of an APNG file.
-	 *
-	 * Shown in the &query=imageinfo&iiprop=size api query.
-	 *
-	 * @param File $file
-	 * @return float The duration of the file.
-	 */
-	public function getLength( $file ) {
-		$metadata = $file->getMetadataArray();
+    /**
+     * Return the duration of an APNG file.
+     *
+     * Shown in the &query=imageinfo&iiprop=size api query.
+     *
+     * @param File $file
+     * @return float The duration of the file.
+     */
+    public function getLength($file)
+    {
+        $metadata = $file->getMetadataArray();
 
-		if ( !$metadata || !isset( $metadata['duration'] ) || !$metadata['duration'] ) {
-			return 0.0;
-		} else {
-			return (float)$metadata['duration'];
-		}
-	}
+        if (!$metadata || !isset($metadata['duration']) || !$metadata['duration']) {
+            return 0.0;
+        } else {
+            return (float)$metadata['duration'];
+        }
+    }
 
-	// PNGs should be easy to support, but it will need some sharpening applied
-	// and another user test to check if the perceived quality change is noticeable
-	public function supportsBucketing() {
-		return false;
-	}
+    // PNGs should be easy to support, but it will need some sharpening applied
+    // and another user test to check if the perceived quality change is noticeable
+    public function supportsBucketing()
+    {
+        return false;
+    }
 }

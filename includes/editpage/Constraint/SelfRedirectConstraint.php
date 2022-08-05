@@ -32,64 +32,71 @@ use StatusValue;
  * @since 1.36
  * @internal
  */
-class SelfRedirectConstraint implements IEditConstraint {
+class SelfRedirectConstraint implements IEditConstraint
+{
 
-	/** @var bool */
-	private $allowSelfRedirect;
+    /** @var bool */
+    private $allowSelfRedirect;
 
-	/** @var Content */
-	private $newContent;
+    /** @var Content */
+    private $newContent;
 
-	/** @var Content */
-	private $originalContent;
+    /** @var Content */
+    private $originalContent;
 
-	/** @var LinkTarget */
-	private $title;
+    /** @var LinkTarget */
+    private $title;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param bool $allowSelfRedirect
-	 * @param Content $newContent
-	 * @param Content $originalContent
-	 * @param LinkTarget $title
-	 */
-	public function __construct(
-		bool $allowSelfRedirect,
-		Content $newContent,
-		Content $originalContent,
-		LinkTarget $title
-	) {
-		$this->allowSelfRedirect = $allowSelfRedirect;
-		$this->newContent = $newContent;
-		$this->originalContent = $originalContent;
-		$this->title = $title;
-	}
+    /**
+     * @param bool $allowSelfRedirect
+     * @param Content $newContent
+     * @param Content $originalContent
+     * @param LinkTarget $title
+     */
+    public function __construct(
+        bool $allowSelfRedirect,
+        Content $newContent,
+        Content $originalContent,
+        LinkTarget $title
+    )
+    {
+        $this->allowSelfRedirect = $allowSelfRedirect;
+        $this->newContent = $newContent;
+        $this->originalContent = $originalContent;
+        $this->title = $title;
+    }
 
-	public function checkConstraint(): string {
-		if ( !$this->allowSelfRedirect
-			&& $this->newContent->isRedirect()
-			&& $this->newContent->getRedirectTarget()->equals( $this->title )
-		) {
-			// T29683 If the page already redirects to itself, don't warn.
-			$currentTarget = $this->originalContent->getRedirectTarget();
-			if ( !$currentTarget || !$currentTarget->equals( $this->title ) ) {
-				$this->result = self::CONSTRAINT_FAILED;
-				return self::CONSTRAINT_FAILED;
-			}
-		}
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+    public function checkConstraint(): string
+    {
+        if (!$this->allowSelfRedirect
+            && $this->newContent->isRedirect()
+            && $this->newContent->getRedirectTarget()->equals($this->title)
+        ) {
+            // T29683 If the page already redirects to itself, don't warn.
+            $currentTarget = $this->originalContent->getRedirectTarget();
+            if (!$currentTarget || !$currentTarget->equals($this->title)) {
+                $this->result = self::CONSTRAINT_FAILED;
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->fatal( 'selfredirect' );
-			$statusValue->value = self::AS_SELF_REDIRECT;
-		}
-		return $statusValue;
-	}
+                return self::CONSTRAINT_FAILED;
+            }
+        }
+        $this->result = self::CONSTRAINT_PASSED;
+
+        return self::CONSTRAINT_PASSED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->fatal('selfredirect');
+            $statusValue->value = self::AS_SELF_REDIRECT;
+        }
+
+        return $statusValue;
+    }
 
 }

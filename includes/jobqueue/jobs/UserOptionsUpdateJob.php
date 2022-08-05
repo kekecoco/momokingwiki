@@ -32,31 +32,34 @@ use MediaWiki\MediaWikiServices;
  *
  * @since 1.33
  */
-class UserOptionsUpdateJob extends Job implements GenericParameterJob {
-	public function __construct( array $params ) {
-		parent::__construct( 'userOptionsUpdate', $params );
-		$this->removeDuplicates = true;
-	}
+class UserOptionsUpdateJob extends Job implements GenericParameterJob
+{
+    public function __construct(array $params)
+    {
+        parent::__construct('userOptionsUpdate', $params);
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		if ( !$this->params['options'] ) {
-			return true; // nothing to do
-		}
+    public function run()
+    {
+        if (!$this->params['options']) {
+            return true; // nothing to do
+        }
 
-		$user = User::newFromId( $this->params['userId'] );
-		$user->load( $user::READ_EXCLUSIVE );
-		if ( !$user->isRegistered() ) {
-			return true;
-		}
+        $user = User::newFromId($this->params['userId']);
+        $user->load($user::READ_EXCLUSIVE);
+        if (!$user->isRegistered()) {
+            return true;
+        }
 
-		$userOptionsManager = MediaWikiServices::getInstance()
-			->getUserOptionsManager();
-		foreach ( $this->params['options'] as $name => $value ) {
-			$userOptionsManager->setOption( $user, $name, $value );
-		}
+        $userOptionsManager = MediaWikiServices::getInstance()
+            ->getUserOptionsManager();
+        foreach ($this->params['options'] as $name => $value) {
+            $userOptionsManager->setOption($user, $name, $value);
+        }
 
-		$user->saveSettings();
+        $user->saveSettings();
 
-		return true;
-	}
+        return true;
+    }
 }

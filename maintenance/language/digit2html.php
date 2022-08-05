@@ -28,43 +28,46 @@ require_once __DIR__ . '/../Maintenance.php';
  *
  * @ingroup MaintenanceLanguage
  */
-class Digit2Html extends Maintenance {
+class Digit2Html extends Maintenance
+{
 
-	/**
-	 * @var string[] A list of unicode numerals is available at:
-	 * https://www.fileformat.info/info/unicode/category/Nd/list.htm
-	 */
-	private $mLangs = [
-		'Ar', 'As', 'Bh', 'Bo', 'Dz',
-		'Fa', 'Gu', 'Hi', 'Km', 'Kn',
-		'Ks', 'Lo', 'Ml', 'Mr', 'Ne',
-		'New', 'Or', 'Pa', 'Pi', 'Sa'
-	];
+    /**
+     * @var string[] A list of unicode numerals is available at:
+     * https://www.fileformat.info/info/unicode/category/Nd/list.htm
+     */
+    private $mLangs = [
+        'Ar', 'As', 'Bh', 'Bo', 'Dz',
+        'Fa', 'Gu', 'Hi', 'Km', 'Kn',
+        'Ks', 'Lo', 'Ml', 'Mr', 'Ne',
+        'New', 'Or', 'Pa', 'Pi', 'Sa'
+    ];
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Check digit transformation' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Check digit transformation');
+    }
 
-	public function execute() {
-		foreach ( $this->mLangs as $code ) {
-			$filename = Language::getMessagesFileName( $code );
-			$this->output( "Loading language [$code] ..." );
-			unset( $digitTransformTable );
-			require_once $filename;
-			if ( !isset( $digitTransformTable ) ) {
-				$this->error( "\$digitTransformTable not found for lang: $code" );
-				continue;
-			}
+    public function execute()
+    {
+        foreach ($this->mLangs as $code) {
+            $filename = Language::getMessagesFileName($code);
+            $this->output("Loading language [$code] ...");
+            unset($digitTransformTable);
+            require_once $filename;
+            if (!isset($digitTransformTable)) {
+                $this->error("\$digitTransformTable not found for lang: $code");
+                continue;
+            }
 
-			$this->output( "OK\n\$digitTransformTable = [\n" );
-			foreach ( $digitTransformTable as $latin => $translation ) {
-				$htmlent = bin2hex( $translation );
-				$this->output( "'$latin' => '$translation', # &#x$htmlent;\n" );
-			}
-			$this->output( "];\n" );
-		}
-	}
+            $this->output("OK\n\$digitTransformTable = [\n");
+            foreach ($digitTransformTable as $latin => $translation) {
+                $htmlent = bin2hex($translation);
+                $this->output("'$latin' => '$translation', # &#x$htmlent;\n");
+            }
+            $this->output("];\n");
+        }
+    }
 }
 
 $maintClass = Digit2Html::class;

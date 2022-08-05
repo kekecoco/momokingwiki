@@ -2,5 +2,6 @@
 
 namespace MediaWiki\Rest\HeaderParser;
 
-class HeaderParserError extends \RuntimeException {
+class HeaderParserError extends \RuntimeException
+{
 }

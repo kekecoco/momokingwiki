@@ -32,163 +32,174 @@ use Wikimedia\AtEase\AtEase;
  * Imports a XML dump from a file (either from file upload, files on disk, or HTTP)
  * @ingroup SpecialPage
  */
-class ImportStreamSource implements ImportSource {
-	/** @var resource */
-	private $mHandle;
+class ImportStreamSource implements ImportSource
+{
+    /** @var resource */
+    private $mHandle;
 
-	/**
-	 * @param resource $handle
-	 */
-	public function __construct( $handle ) {
-		$this->mHandle = $handle;
-	}
+    /**
+     * @param resource $handle
+     */
+    public function __construct($handle)
+    {
+        $this->mHandle = $handle;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function atEnd() {
-		return feof( $this->mHandle );
-	}
+    /**
+     * @return bool
+     */
+    public function atEnd()
+    {
+        return feof($this->mHandle);
+    }
 
-	/**
-	 * @return string
-	 */
-	public function readChunk() {
-		return fread( $this->mHandle, 32768 );
-	}
+    /**
+     * @return string
+     */
+    public function readChunk()
+    {
+        return fread($this->mHandle, 32768);
+    }
 
-	/**
-	 * @param string $filename
-	 * @return Status
-	 */
-	public static function newFromFile( $filename ) {
-		AtEase::suppressWarnings();
-		$file = fopen( $filename, 'rt' );
-		AtEase::restoreWarnings();
-		if ( !$file ) {
-			return Status::newFatal( "importcantopen" );
-		}
-		return Status::newGood( new ImportStreamSource( $file ) );
-	}
+    /**
+     * @param string $filename
+     * @return Status
+     */
+    public static function newFromFile($filename)
+    {
+        AtEase::suppressWarnings();
+        $file = fopen($filename, 'rt');
+        AtEase::restoreWarnings();
+        if (!$file) {
+            return Status::newFatal("importcantopen");
+        }
 
-	/**
-	 * @param string $fieldname
-	 * @return Status
-	 */
-	public static function newFromUpload( $fieldname = "xmlimport" ) {
-		$upload =& $_FILES[$fieldname];
+        return Status::newGood(new ImportStreamSource($file));
+    }
 
-		if ( $upload === null || !$upload['name'] ) {
-			return Status::newFatal( 'importnofile' );
-		}
-		if ( !empty( $upload['error'] ) ) {
-			switch ( $upload['error'] ) {
-				case UPLOAD_ERR_INI_SIZE:
-					// The uploaded file exceeds the upload_max_filesize directive in php.ini.
-					return Status::newFatal( 'importuploaderrorsize' );
-				case UPLOAD_ERR_FORM_SIZE:
-					// The uploaded file exceeds the MAX_FILE_SIZE directive that
-					// was specified in the HTML form.
-					// FIXME This is probably never used since that directive was removed in 8e91c520?
-					return Status::newFatal( 'importuploaderrorsize' );
-				case UPLOAD_ERR_PARTIAL:
-					// The uploaded file was only partially uploaded
-					return Status::newFatal( 'importuploaderrorpartial' );
-				case UPLOAD_ERR_NO_TMP_DIR:
-					// Missing a temporary folder.
-					return Status::newFatal( 'importuploaderrortemp' );
-				// Other error codes get the generic 'importnofile' error message below
-			}
+    /**
+     * @param string $fieldname
+     * @return Status
+     */
+    public static function newFromUpload($fieldname = "xmlimport")
+    {
+        $upload =& $_FILES[$fieldname];
 
-		}
-		$fname = $upload['tmp_name'];
-		if ( is_uploaded_file( $fname ) ) {
-			return self::newFromFile( $fname );
-		} else {
-			return Status::newFatal( 'importnofile' );
-		}
-	}
+        if ($upload === null || !$upload['name']) {
+            return Status::newFatal('importnofile');
+        }
+        if (!empty($upload['error'])) {
+            switch ($upload['error']) {
+                case UPLOAD_ERR_INI_SIZE:
+                    // The uploaded file exceeds the upload_max_filesize directive in php.ini.
+                    return Status::newFatal('importuploaderrorsize');
+                case UPLOAD_ERR_FORM_SIZE:
+                    // The uploaded file exceeds the MAX_FILE_SIZE directive that
+                    // was specified in the HTML form.
+                    // FIXME This is probably never used since that directive was removed in 8e91c520?
+                    return Status::newFatal('importuploaderrorsize');
+                case UPLOAD_ERR_PARTIAL:
+                    // The uploaded file was only partially uploaded
+                    return Status::newFatal('importuploaderrorpartial');
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    // Missing a temporary folder.
+                    return Status::newFatal('importuploaderrortemp');
+                // Other error codes get the generic 'importnofile' error message below
+            }
 
-	/**
-	 * @param string $url
-	 * @param string $method
-	 * @return Status
-	 */
-	public static function newFromURL( $url, $method = 'GET' ) {
-		$httpImportTimeout = MediaWikiServices::getInstance()->getMainConfig()->get(
-			MainConfigNames::HTTPImportTimeout );
-		wfDebug( __METHOD__ . ": opening $url" );
-		# Use the standard HTTP fetch function; it times out
-		# quicker and sorts out user-agent problems which might
-		# otherwise prevent importing from large sites, such
-		# as the Wikimedia cluster, etc.
-		$data = MediaWikiServices::getInstance()->getHttpRequestFactory()->request(
-			$method,
-			$url,
-			[
-				'followRedirects' => true,
-				'timeout' => $httpImportTimeout
-			],
-			__METHOD__
-		);
-		if ( $data !== false ) {
-			$file = tmpfile();
-			fwrite( $file, $data );
-			fflush( $file );
-			fseek( $file, 0 );
-			return Status::newGood( new ImportStreamSource( $file ) );
-		} else {
-			return Status::newFatal( 'importcantopen' );
-		}
-	}
+        }
+        $fname = $upload['tmp_name'];
+        if (is_uploaded_file($fname)) {
+            return self::newFromFile($fname);
+        } else {
+            return Status::newFatal('importnofile');
+        }
+    }
 
-	/**
-	 * @param string $interwiki
-	 * @param string $page
-	 * @param bool $history
-	 * @param bool $templates
-	 * @param int $pageLinkDepth
-	 * @return Status
-	 */
-	public static function newFromInterwiki( $interwiki, $page, $history = false,
-		$templates = false, $pageLinkDepth = 0
-	) {
-		if ( $page == '' ) {
-			return Status::newFatal( 'import-noarticle' );
-		}
+    /**
+     * @param string $url
+     * @param string $method
+     * @return Status
+     */
+    public static function newFromURL($url, $method = 'GET')
+    {
+        $httpImportTimeout = MediaWikiServices::getInstance()->getMainConfig()->get(
+            MainConfigNames::HTTPImportTimeout);
+        wfDebug(__METHOD__ . ": opening $url");
+        # Use the standard HTTP fetch function; it times out
+        # quicker and sorts out user-agent problems which might
+        # otherwise prevent importing from large sites, such
+        # as the Wikimedia cluster, etc.
+        $data = MediaWikiServices::getInstance()->getHttpRequestFactory()->request(
+            $method,
+            $url,
+            [
+                'followRedirects' => true,
+                'timeout'         => $httpImportTimeout
+            ],
+            __METHOD__
+        );
+        if ($data !== false) {
+            $file = tmpfile();
+            fwrite($file, $data);
+            fflush($file);
+            fseek($file, 0);
 
-		# Look up the first interwiki prefix, and let the foreign site handle
-		# subsequent interwiki prefixes
-		$firstIwPrefix = strtok( $interwiki, ':' );
-		$interwikiLookup = MediaWikiServices::getInstance()->getInterwikiLookup();
-		$firstIw = $interwikiLookup->fetch( $firstIwPrefix );
-		if ( !$firstIw ) {
-			return Status::newFatal( 'importbadinterwiki' );
-		}
+            return Status::newGood(new ImportStreamSource($file));
+        } else {
+            return Status::newFatal('importcantopen');
+        }
+    }
 
-		$additionalIwPrefixes = strtok( '' );
-		if ( $additionalIwPrefixes ) {
-			$additionalIwPrefixes .= ':';
-		}
-		# Have to do a DB-key replacement ourselves; otherwise spaces get
-		# URL-encoded to +, which is wrong in this case. Similar to logic in
-		# Title::getLocalURL
-		$link = $firstIw->getURL( strtr( "${additionalIwPrefixes}Special:Export/$page",
-			' ', '_' ) );
+    /**
+     * @param string $interwiki
+     * @param string $page
+     * @param bool $history
+     * @param bool $templates
+     * @param int $pageLinkDepth
+     * @return Status
+     */
+    public static function newFromInterwiki($interwiki, $page, $history = false,
+                                            $templates = false, $pageLinkDepth = 0
+    )
+    {
+        if ($page == '') {
+            return Status::newFatal('import-noarticle');
+        }
 
-		$params = [];
-		if ( $history ) {
-			$params['history'] = 1;
-		}
-		if ( $templates ) {
-			$params['templates'] = 1;
-		}
-		if ( $pageLinkDepth ) {
-			$params['pagelink-depth'] = $pageLinkDepth;
-		}
+        # Look up the first interwiki prefix, and let the foreign site handle
+        # subsequent interwiki prefixes
+        $firstIwPrefix = strtok($interwiki, ':');
+        $interwikiLookup = MediaWikiServices::getInstance()->getInterwikiLookup();
+        $firstIw = $interwikiLookup->fetch($firstIwPrefix);
+        if (!$firstIw) {
+            return Status::newFatal('importbadinterwiki');
+        }
 
-		$url = wfAppendQuery( $link, $params );
-		# For interwikis, use POST to avoid redirects.
-		return self::newFromURL( $url, "POST" );
-	}
+        $additionalIwPrefixes = strtok('');
+        if ($additionalIwPrefixes) {
+            $additionalIwPrefixes .= ':';
+        }
+        # Have to do a DB-key replacement ourselves; otherwise spaces get
+        # URL-encoded to +, which is wrong in this case. Similar to logic in
+        # Title::getLocalURL
+        $link = $firstIw->getURL(strtr("${additionalIwPrefixes}Special:Export/$page",
+            ' ', '_'));
+
+        $params = [];
+        if ($history) {
+            $params['history'] = 1;
+        }
+        if ($templates) {
+            $params['templates'] = 1;
+        }
+        if ($pageLinkDepth) {
+            $params['pagelink-depth'] = $pageLinkDepth;
+        }
+
+        $url = wfAppendQuery($link, $params);
+
+        # For interwikis, use POST to avoid redirects.
+        return self::newFromURL($url, "POST");
+    }
 }

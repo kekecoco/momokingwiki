@@ -7,9 +7,10 @@
  *
  * @since 1.28
  */
-interface DeferrableCallback {
-	/**
-	 * @return string Originating method name
-	 */
-	public function getOrigin();
+interface DeferrableCallback
+{
+    /**
+     * @return string Originating method name
+     */
+    public function getOrigin();
 }

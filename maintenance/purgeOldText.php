@@ -29,16 +29,19 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class PurgeOldText extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Purge old text records from the database' );
-		$this->addOption( 'purge', 'Performs the deletion' );
-	}
+class PurgeOldText extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Purge old text records from the database');
+        $this->addOption('purge', 'Performs the deletion');
+    }
 
-	public function execute() {
-		$this->purgeRedundantText( $this->hasOption( 'purge' ) );
-	}
+    public function execute()
+    {
+        $this->purgeRedundantText($this->hasOption('purge'));
+    }
 }
 
 $maintClass = PurgeOldText::class;

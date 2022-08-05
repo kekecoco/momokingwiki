@@ -23,6 +23,7 @@
  *
  * @file
  */
+
 use Wikimedia\ObjectFactory\ObjectFactory;
 
 /**
@@ -48,181 +49,196 @@ use Wikimedia\ObjectFactory\ObjectFactory;
  *
  * @newable
  */
-class StubObject {
-	/** @var null|string */
-	protected $global;
+class StubObject
+{
+    /** @var null|string */
+    protected $global;
 
-	/** @var null|string */
-	protected $class;
+    /** @var null|string */
+    protected $class;
 
-	/** @var null|callable */
-	protected $factory;
+    /** @var null|callable */
+    protected $factory;
 
-	/** @var array */
-	protected $params;
+    /** @var array */
+    protected $params;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string|null $global Name of the global variable.
-	 * @param string|callable|null $class Name of the class of the real object
-	 *                               or a factory function to call
-	 * @param array $params Parameters to pass to constructor of the real object.
-	 */
-	public function __construct( $global = null, $class = null, $params = [] ) {
-		$this->global = $global;
-		if ( is_callable( $class ) ) {
-			$this->factory = $class;
-		} else {
-			$this->class = $class;
-		}
-		$this->params = $params;
-	}
+    /**
+     * @stable to call
+     *
+     * @param string|null $global Name of the global variable.
+     * @param string|callable|null $class Name of the class of the real object
+     *                               or a factory function to call
+     * @param array $params Parameters to pass to constructor of the real object.
+     */
+    public function __construct($global = null, $class = null, $params = [])
+    {
+        $this->global = $global;
+        if (is_callable($class)) {
+            $this->factory = $class;
+        } else {
+            $this->class = $class;
+        }
+        $this->params = $params;
+    }
 
-	/**
-	 * Returns a bool value whenever $obj is a stub object. Can be used to break
-	 * a infinite loop when unstubbing an object.
-	 *
-	 * @param object $obj Object to check.
-	 * @return bool True if $obj is not an instance of StubObject class.
-	 */
-	public static function isRealObject( $obj ) {
-		return is_object( $obj ) && !$obj instanceof self;
-	}
+    /**
+     * Returns a bool value whenever $obj is a stub object. Can be used to break
+     * a infinite loop when unstubbing an object.
+     *
+     * @param object $obj Object to check.
+     * @return bool True if $obj is not an instance of StubObject class.
+     */
+    public static function isRealObject($obj)
+    {
+        return is_object($obj) && !$obj instanceof self;
+    }
 
-	/**
-	 * Unstubs an object, if it is a stub object. Can be used to break a
-	 * infinite loop when unstubbing an object or to avoid reference parameter
-	 * breakage.
-	 *
-	 * @param object &$obj Object to check.
-	 * @return void
-	 */
-	public static function unstub( &$obj ) {
-		if ( $obj instanceof self ) {
-			$obj = $obj->_unstub( 'unstub', 3 );
-		}
-	}
+    /**
+     * Unstubs an object, if it is a stub object. Can be used to break a
+     * infinite loop when unstubbing an object or to avoid reference parameter
+     * breakage.
+     *
+     * @param object &$obj Object to check.
+     * @return void
+     */
+    public static function unstub(&$obj)
+    {
+        if ($obj instanceof self) {
+            $obj = $obj->_unstub('unstub', 3);
+        }
+    }
 
-	/**
-	 * Function called if any function exists with that name in this object.
-	 * It is used to unstub the object. Only used internally, PHP will call
-	 * self::__call() function and that function will call this function.
-	 * This function will also call the function with the same name in the real
-	 * object.
-	 *
-	 * @param string $name Name of the function called
-	 * @param array $args Arguments
-	 * @return mixed
-	 */
-	public function _call( $name, $args ) {
-		$this->_unstub( $name, 5 );
-		return call_user_func_array( [ $GLOBALS[$this->global], $name ], $args );
-	}
+    /**
+     * Function called if any function exists with that name in this object.
+     * It is used to unstub the object. Only used internally, PHP will call
+     * self::__call() function and that function will call this function.
+     * This function will also call the function with the same name in the real
+     * object.
+     *
+     * @param string $name Name of the function called
+     * @param array $args Arguments
+     * @return mixed
+     */
+    public function _call($name, $args)
+    {
+        $this->_unstub($name, 5);
 
-	/**
-	 * Create a new object to replace this stub object.
-	 * @return object
-	 */
-	public function _newObject() {
-		$params = $this->factory
-			? [ 'factory' => $this->factory ]
-			: [ 'class' => $this->class ];
+        return call_user_func_array([$GLOBALS[$this->global], $name], $args);
+    }
 
-		// ObjectFactory::getObjectFromSpec accepts an array, not just a callable (phan bug)
-		// @phan-suppress-next-line PhanTypeInvalidCallableArraySize
-		return ObjectFactory::getObjectFromSpec( $params + [
-			'args' => $this->params,
-			'closure_expansion' => false,
-		] );
-	}
+    /**
+     * Create a new object to replace this stub object.
+     * @return object
+     */
+    public function _newObject()
+    {
+        $params = $this->factory
+            ? ['factory' => $this->factory]
+            : ['class' => $this->class];
 
-	/**
-	 * Function called by PHP if no function with that name exists in this
-	 * object.
-	 *
-	 * @param string $name Name of the function called
-	 * @param array $args Arguments
-	 * @return mixed
-	 */
-	public function __call( $name, $args ) {
-		return $this->_call( $name, $args );
-	}
+        // ObjectFactory::getObjectFromSpec accepts an array, not just a callable (phan bug)
+        // @phan-suppress-next-line PhanTypeInvalidCallableArraySize
+        return ObjectFactory::getObjectFromSpec($params + [
+                'args'              => $this->params,
+                'closure_expansion' => false,
+            ]);
+    }
 
-	/**
-	 * Wrapper for __get(), similar to _call() above
-	 *
-	 * @param string $name Name of the property to get
-	 * @return mixed
-	 */
-	public function _get( $name ) {
-		$this->_unstub( "__get($name)", 5 );
-		return $GLOBALS[$this->global]->$name;
-	}
+    /**
+     * Function called by PHP if no function with that name exists in this
+     * object.
+     *
+     * @param string $name Name of the function called
+     * @param array $args Arguments
+     * @return mixed
+     */
+    public function __call($name, $args)
+    {
+        return $this->_call($name, $args);
+    }
 
-	/**
-	 * Function called by PHP if no property with that name exists in this
-	 * object.
-	 *
-	 * @param string $name Name of the property to get
-	 * @return mixed
-	 */
-	public function __get( $name ) {
-		return $this->_get( $name );
-	}
+    /**
+     * Wrapper for __get(), similar to _call() above
+     *
+     * @param string $name Name of the property to get
+     * @return mixed
+     */
+    public function _get($name)
+    {
+        $this->_unstub("__get($name)", 5);
 
-	/**
-	 * Wrapper for __set(), similar to _call() above
-	 *
-	 * @param string $name Name of the property to set
-	 * @param mixed $value New property value
-	 */
-	public function _set( $name, $value ) {
-		$this->_unstub( "__set($name)", 5 );
-		$GLOBALS[$this->global]->$name = $value;
-	}
+        return $GLOBALS[$this->global]->$name;
+    }
 
-	/**
-	 * Function called by PHP if no property with that name exists in this
-	 * object.
-	 *
-	 * @param string $name Name of the property to set
-	 * @param mixed $value New property value
-	 */
-	public function __set( $name, $value ) {
-		$this->_set( $name, $value );
-	}
+    /**
+     * Function called by PHP if no property with that name exists in this
+     * object.
+     *
+     * @param string $name Name of the property to get
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return $this->_get($name);
+    }
 
-	/**
-	 * This function creates a new object of the real class and replace it in
-	 * the global variable.
-	 * This is public, for the convenience of external callers wishing to access
-	 * properties, e.g. eval.php
-	 *
-	 * @param string $name Name of the method called in this object.
-	 * @param int $level Level to go in the stack trace to get the function
-	 *   who called this function.
-	 * @return object The unstubbed version of itself
-	 * @throws MWException
-	 */
-	public function _unstub( $name = '_unstub', $level = 2 ) {
-		static $recursionLevel = 0;
+    /**
+     * Wrapper for __set(), similar to _call() above
+     *
+     * @param string $name Name of the property to set
+     * @param mixed $value New property value
+     */
+    public function _set($name, $value)
+    {
+        $this->_unstub("__set($name)", 5);
+        $GLOBALS[$this->global]->$name = $value;
+    }
 
-		if ( !$GLOBALS[$this->global] instanceof self ) {
-			return $GLOBALS[$this->global]; // already unstubbed.
-		}
+    /**
+     * Function called by PHP if no property with that name exists in this
+     * object.
+     *
+     * @param string $name Name of the property to set
+     * @param mixed $value New property value
+     */
+    public function __set($name, $value)
+    {
+        $this->_set($name, $value);
+    }
 
-		if ( get_class( $GLOBALS[$this->global] ) != $this->class ) {
-			$caller = wfGetCaller( $level );
-			if ( ++$recursionLevel > 2 ) {
-				throw new MWException( "Unstub loop detected on call of "
-					. "\${$this->global}->$name from $caller\n" );
-			}
-			wfDebug( "Unstubbing \${$this->global} on call of "
-				. "\${$this->global}::$name from $caller" );
-			$GLOBALS[$this->global] = $this->_newObject();
-			--$recursionLevel;
-			return $GLOBALS[$this->global];
-		}
-	}
+    /**
+     * This function creates a new object of the real class and replace it in
+     * the global variable.
+     * This is public, for the convenience of external callers wishing to access
+     * properties, e.g. eval.php
+     *
+     * @param string $name Name of the method called in this object.
+     * @param int $level Level to go in the stack trace to get the function
+     *   who called this function.
+     * @return object The unstubbed version of itself
+     * @throws MWException
+     */
+    public function _unstub($name = '_unstub', $level = 2)
+    {
+        static $recursionLevel = 0;
+
+        if (!$GLOBALS[$this->global] instanceof self) {
+            return $GLOBALS[$this->global]; // already unstubbed.
+        }
+
+        if (get_class($GLOBALS[$this->global]) != $this->class) {
+            $caller = wfGetCaller($level);
+            if (++$recursionLevel > 2) {
+                throw new MWException("Unstub loop detected on call of "
+                    . "\${$this->global}->$name from $caller\n");
+            }
+            wfDebug("Unstubbing \${$this->global} on call of "
+                . "\${$this->global}::$name from $caller");
+            $GLOBALS[$this->global] = $this->_newObject();
+            --$recursionLevel;
+
+            return $GLOBALS[$this->global];
+        }
+    }
 }

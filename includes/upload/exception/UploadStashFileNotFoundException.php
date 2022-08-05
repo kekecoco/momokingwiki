@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashFileNotFoundException extends UploadStashException {
+class UploadStashFileNotFoundException extends UploadStashException
+{
 }

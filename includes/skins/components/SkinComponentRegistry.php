@@ -25,97 +25,105 @@ use SpecialPage;
  * @internal for use inside Skin and SkinTemplate classes only
  * @unstable
  */
-class SkinComponentRegistry {
-	/** @var SkinComponent[]|null null if not initialized. */
-	private $components = null;
+class SkinComponentRegistry
+{
+    /** @var SkinComponent[]|null null if not initialized. */
+    private $components = null;
 
-	/** @var SkinComponentRegistryContext */
-	private $skinContext;
+    /** @var SkinComponentRegistryContext */
+    private $skinContext;
 
-	/**
-	 * @param SkinComponentRegistryContext $skinContext
-	 */
-	public function __construct( SkinComponentRegistryContext $skinContext ) {
-		$this->skinContext = $skinContext;
-	}
+    /**
+     * @param SkinComponentRegistryContext $skinContext
+     */
+    public function __construct(SkinComponentRegistryContext $skinContext)
+    {
+        $this->skinContext = $skinContext;
+    }
 
-	/**
-	 * Get a component. This method has side effects in that
-	 * if registered components have been not initialized they
-	 * will be registered as part of this method.
-	 *
-	 * @param string $name
-	 * @throws RuntimeException with unknown name
-	 * @return SkinComponent
-	 */
-	public function getComponent( string $name ): SkinComponent {
-		if ( $this->components === null ) {
-			$this->registerComponents();
-		}
-		$component = $this->components[$name] ?? null;
-		if ( !$component ) {
-			throw new RuntimeException( 'Unknown component: ' . $name );
-		}
-		return $component;
-	}
+    /**
+     * Get a component. This method has side effects in that
+     * if registered components have been not initialized they
+     * will be registered as part of this method.
+     *
+     * @param string $name
+     * @return SkinComponent
+     * @throws RuntimeException with unknown name
+     */
+    public function getComponent(string $name): SkinComponent
+    {
+        if ($this->components === null) {
+            $this->registerComponents();
+        }
+        $component = $this->components[$name] ?? null;
+        if (!$component) {
+            throw new RuntimeException('Unknown component: ' . $name);
+        }
 
-	/**
-	 * Return all registered components.
-	 *
-	 * @since 1.38
-	 * @return SkinComponent[]
-	 */
-	public function getComponents() {
-		if ( $this->components === null ) {
-			$this->registerComponents();
-		}
-		return $this->components;
-	}
+        return $component;
+    }
 
-	/**
-	 * Registers a component for use with the skin.
-	 * Private for now, but in future we may consider making this a
-	 * public method to allow skins to extend component definitions.
-	 *
-	 * @param string $name
-	 * @throws RuntimeException if given an unknown name
-	 */
-	private function registerComponent( string $name ) {
-		$skin = $this->skinContext;
-		$user = $skin->getUser();
-		switch ( $name ) {
-			case 'logos':
-				$component = new SkinComponentLogo(
-					$skin->getConfig(),
-					$skin->getLanguage()
-				);
-				break;
-			case 'search-box':
-				$component = new SkinComponentSearch(
-					$skin->getConfig(),
-					$user,
-					$skin->getMessageLocalizer(),
-					SpecialPage::newSearchPage( $user ),
-					$skin->getRelevantTitle()
-				);
-				break;
-			case 'toc':
-				$component = new SkinComponentTableOfContents(
-					$skin->getOutput()
-				);
-				break;
-			default:
-				throw new RuntimeException( 'Unknown component: ' . $name );
-		}
-		$this->components[$name] = $component;
-	}
+    /**
+     * Return all registered components.
+     *
+     * @return SkinComponent[]
+     * @since 1.38
+     */
+    public function getComponents()
+    {
+        if ($this->components === null) {
+            $this->registerComponents();
+        }
 
-	/**
-	 * Registers components used by skin.
-	 */
-	private function registerComponents() {
-		$this->registerComponent( 'logos' );
-		$this->registerComponent( 'toc' );
-		$this->registerComponent( 'search-box' );
-	}
+        return $this->components;
+    }
+
+    /**
+     * Registers a component for use with the skin.
+     * Private for now, but in future we may consider making this a
+     * public method to allow skins to extend component definitions.
+     *
+     * @param string $name
+     * @throws RuntimeException if given an unknown name
+     */
+    private function registerComponent(string $name)
+    {
+        $skin = $this->skinContext;
+        $user = $skin->getUser();
+        switch ($name) {
+            case 'logos':
+                $component = new SkinComponentLogo(
+                    $skin->getConfig(),
+                    $skin->getLanguage()
+                );
+                break;
+            case 'search-box':
+                $component = new SkinComponentSearch(
+                    $skin->getConfig(),
+                    $user,
+                    $skin->getMessageLocalizer(),
+                    SpecialPage::newSearchPage($user),
+                    $skin->getRelevantTitle()
+                );
+                break;
+            case 'toc':
+                $component = new SkinComponentTableOfContents(
+                    $skin->getOutput()
+                );
+                break;
+            default:
+                throw new RuntimeException('Unknown component: ' . $name);
+        }
+        $this->components[$name] = $component;
+    }
+
+    /**
+     * Registers components used by skin.
+     */
+    private function registerComponents()
+    {
+        $this->registerComponent('logos');
+        $this->registerComponent('toc');
+        $this->registerComponent('search-box');
+    }
 }

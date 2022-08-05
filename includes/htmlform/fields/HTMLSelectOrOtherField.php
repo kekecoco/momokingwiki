@@ -8,172 +8,182 @@
  *
  * @stable to extend
  */
-class HTMLSelectOrOtherField extends HTMLTextField {
-	private const FIELD_CLASS = 'mw-htmlform-select-or-other';
+class HTMLSelectOrOtherField extends HTMLTextField
+{
+    private const FIELD_CLASS = 'mw-htmlform-select-or-other';
 
-	/**
-	 * @stable to call
-	 * @inheritDoc
-	 */
-	public function __construct( $params ) {
-		parent::__construct( $params );
-		$this->getOptions();
-		if ( !in_array( 'other', $this->mOptions, true ) ) {
-			$msg =
-				$params['other'] ?? wfMessage( 'htmlform-selectorother-other' )->text();
-			// Have 'other' always as first element
-			$this->mOptions = [ $msg => 'other' ] + $this->mOptions;
-		}
-	}
+    /**
+     * @stable to call
+     * @inheritDoc
+     */
+    public function __construct($params)
+    {
+        parent::__construct($params);
+        $this->getOptions();
+        if (!in_array('other', $this->mOptions, true)) {
+            $msg =
+                $params['other'] ?? wfMessage('htmlform-selectorother-other')->text();
+            // Have 'other' always as first element
+            $this->mOptions = [$msg => 'other'] + $this->mOptions;
+        }
+    }
 
-	public function getInputHTML( $value ) {
-		$valInSelect = false;
+    public function getInputHTML($value)
+    {
+        $valInSelect = false;
 
-		if ( $value !== false ) {
-			$value = strval( $value );
-			$valInSelect = in_array(
-				$value, HTMLFormField::flattenOptions( $this->getOptions() ), true
-			);
-		}
+        if ($value !== false) {
+            $value = strval($value);
+            $valInSelect = in_array(
+                $value, HTMLFormField::flattenOptions($this->getOptions()), true
+            );
+        }
 
-		$selected = $valInSelect ? $value : 'other';
+        $selected = $valInSelect ? $value : 'other';
 
-		$select = new XmlSelect( $this->mName, false, $selected );
-		$select->addOptions( $this->getOptions() );
+        $select = new XmlSelect($this->mName, false, $selected);
+        $select->addOptions($this->getOptions());
 
-		$tbAttribs = [ 'size' => $this->getSize() ];
+        $tbAttribs = ['size' => $this->getSize()];
 
-		if ( !empty( $this->mParams['disabled'] ) ) {
-			$select->setAttribute( 'disabled', 'disabled' );
-			$tbAttribs['disabled'] = 'disabled';
-		}
+        if (!empty($this->mParams['disabled'])) {
+            $select->setAttribute('disabled', 'disabled');
+            $tbAttribs['disabled'] = 'disabled';
+        }
 
-		if ( isset( $this->mParams['tabindex'] ) ) {
-			$select->setAttribute( 'tabindex', $this->mParams['tabindex'] );
-			$tbAttribs['tabindex'] = $this->mParams['tabindex'];
-		}
+        if (isset($this->mParams['tabindex'])) {
+            $select->setAttribute('tabindex', $this->mParams['tabindex']);
+            $tbAttribs['tabindex'] = $this->mParams['tabindex'];
+        }
 
-		$select = $select->getHTML();
+        $select = $select->getHTML();
 
-		if ( isset( $this->mParams['maxlength'] ) ) {
-			$tbAttribs['maxlength'] = $this->mParams['maxlength'];
-		}
+        if (isset($this->mParams['maxlength'])) {
+            $tbAttribs['maxlength'] = $this->mParams['maxlength'];
+        }
 
-		$textbox = Html::input( $this->mName . '-other', $valInSelect ? '' : $value, 'text', $tbAttribs );
+        $textbox = Html::input($this->mName . '-other', $valInSelect ? '' : $value, 'text', $tbAttribs);
 
-		$wrapperAttribs = [
-			'id' => $this->mID,
-			'class' => self::FIELD_CLASS
-		];
-		if ( $this->mClass !== '' ) {
-			$wrapperAttribs['class'] .= ' ' . $this->mClass;
-		}
-		return Html::rawElement(
-			'div',
-			$wrapperAttribs,
-			"$select<br />\n$textbox"
-		);
-	}
+        $wrapperAttribs = [
+            'id'    => $this->mID,
+            'class' => self::FIELD_CLASS
+        ];
+        if ($this->mClass !== '') {
+            $wrapperAttribs['class'] .= ' ' . $this->mClass;
+        }
 
-	protected function shouldInfuseOOUI() {
-		return true;
-	}
+        return Html::rawElement(
+            'div',
+            $wrapperAttribs,
+            "$select<br />\n$textbox"
+        );
+    }
 
-	protected function getOOUIModules() {
-		return [ 'mediawiki.widgets.SelectWithInputWidget' ];
-	}
+    protected function shouldInfuseOOUI()
+    {
+        return true;
+    }
 
-	public function getInputOOUI( $value ) {
-		$this->mParent->getOutput()->addModuleStyles( 'mediawiki.widgets.SelectWithInputWidget.styles' );
+    protected function getOOUIModules()
+    {
+        return ['mediawiki.widgets.SelectWithInputWidget'];
+    }
 
-		$valInSelect = false;
-		if ( $value !== false ) {
-			$value = strval( $value );
-			$valInSelect = in_array(
-				$value, HTMLFormField::flattenOptions( $this->getOptions() ), true
-			);
-		}
+    public function getInputOOUI($value)
+    {
+        $this->mParent->getOutput()->addModuleStyles('mediawiki.widgets.SelectWithInputWidget.styles');
 
-		# DropdownInput
-		$dropdownAttribs = [
-			'name' => $this->mName,
-			'options' => $this->getOptionsOOUI(),
-			'value' => $valInSelect ? $value : 'other',
-		];
+        $valInSelect = false;
+        if ($value !== false) {
+            $value = strval($value);
+            $valInSelect = in_array(
+                $value, HTMLFormField::flattenOptions($this->getOptions()), true
+            );
+        }
 
-		$allowedParams = [
-			'disabled',
-			'tabindex',
-		];
+        # DropdownInput
+        $dropdownAttribs = [
+            'name'    => $this->mName,
+            'options' => $this->getOptionsOOUI(),
+            'value'   => $valInSelect ? $value : 'other',
+        ];
 
-		$dropdownAttribs += OOUI\Element::configFromHtmlAttributes(
-			$this->getAttributes( $allowedParams )
-		);
+        $allowedParams = [
+            'disabled',
+            'tabindex',
+        ];
 
-		# TextInput
-		$textAttribs = [
-			'name' => $this->mName . '-other',
-			'size' => $this->getSize(),
-			'value' => $valInSelect ? '' : $value,
-		];
+        $dropdownAttribs += OOUI\Element::configFromHtmlAttributes(
+            $this->getAttributes($allowedParams)
+        );
 
-		$allowedParams = [
-			'required',
-			'autofocus',
-			'multiple',
-			'disabled',
-			'tabindex',
-			'maxlength',
-		];
+        # TextInput
+        $textAttribs = [
+            'name'  => $this->mName . '-other',
+            'size'  => $this->getSize(),
+            'value' => $valInSelect ? '' : $value,
+        ];
 
-		$textAttribs += OOUI\Element::configFromHtmlAttributes(
-			$this->getAttributes( $allowedParams )
-		);
+        $allowedParams = [
+            'required',
+            'autofocus',
+            'multiple',
+            'disabled',
+            'tabindex',
+            'maxlength',
+        ];
 
-		if ( $this->mPlaceholder !== '' ) {
-			$textAttribs['placeholder'] = $this->mPlaceholder;
-		}
+        $textAttribs += OOUI\Element::configFromHtmlAttributes(
+            $this->getAttributes($allowedParams)
+        );
 
-		$disabled = false;
-		if ( isset( $this->mParams[ 'disabled' ] ) && $this->mParams[ 'disabled' ] ) {
-			$disabled = true;
-		}
+        if ($this->mPlaceholder !== '') {
+            $textAttribs['placeholder'] = $this->mPlaceholder;
+        }
 
-		$inputClasses = [ self::FIELD_CLASS ];
-		if ( $this->mClass !== '' ) {
-			$inputClasses = array_merge( $inputClasses, explode( ' ', $this->mClass ) );
-		}
-		return $this->getInputWidget( [
-			'id' => $this->mID,
-			'classes' => $inputClasses,
-			'disabled' => $disabled,
-			'textinput' => $textAttribs,
-			'dropdowninput' => $dropdownAttribs,
-			'required' => $this->mParams[ 'required' ] ?? false,
-			'or' => true,
-		] );
-	}
+        $disabled = false;
+        if (isset($this->mParams['disabled']) && $this->mParams['disabled']) {
+            $disabled = true;
+        }
 
-	public function getInputWidget( $params ) {
-		return new MediaWiki\Widget\SelectWithInputWidget( $params );
-	}
+        $inputClasses = [self::FIELD_CLASS];
+        if ($this->mClass !== '') {
+            $inputClasses = array_merge($inputClasses, explode(' ', $this->mClass));
+        }
 
-	/**
-	 * @param WebRequest $request
-	 *
-	 * @return string
-	 */
-	public function loadDataFromRequest( $request ) {
-		if ( $request->getCheck( $this->mName ) ) {
-			$val = $request->getText( $this->mName );
+        return $this->getInputWidget([
+            'id'            => $this->mID,
+            'classes'       => $inputClasses,
+            'disabled'      => $disabled,
+            'textinput'     => $textAttribs,
+            'dropdowninput' => $dropdownAttribs,
+            'required'      => $this->mParams['required'] ?? false,
+            'or'            => true,
+        ]);
+    }
 
-			if ( $val === 'other' ) {
-				$val = $request->getText( $this->mName . '-other' );
-			}
+    public function getInputWidget($params)
+    {
+        return new MediaWiki\Widget\SelectWithInputWidget($params);
+    }
 
-			return $val;
-		} else {
-			return $this->getDefault();
-		}
-	}
+    /**
+     * @param WebRequest $request
+     *
+     * @return string
+     */
+    public function loadDataFromRequest($request)
+    {
+        if ($request->getCheck($this->mName)) {
+            $val = $request->getText($this->mName);
+
+            if ($val === 'other') {
+                $val = $request->getText($this->mName . '-other');
+            }
+
+            return $val;
+        } else {
+            return $this->getDefault();
+        }
+    }
 }

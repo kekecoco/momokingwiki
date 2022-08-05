@@ -32,30 +32,31 @@ use Wikimedia\Assert\PreconditionException;
  *
  * @since 1.36
  */
-interface WikiAwareEntity {
+interface WikiAwareEntity
+{
 
-	/**
-	 * @var bool Wiki ID value to use with instances that are
-	 *      defined relative to the local wiki.
-	 */
-	public const LOCAL = false;
+    /**
+     * @var bool Wiki ID value to use with instances that are
+     *      defined relative to the local wiki.
+     */
+    public const LOCAL = false;
 
-	/**
-	 * Throws if $wikiId is different from the return value of getWikiId().
-	 *
-	 * @param string|false $wikiId The wiki ID expected by the caller.
-	 *        Use self::LOCAL for the local wiki.
-	 *
-	 * @throws PreconditionException If $wikiId is not the ID of the wiki this entity
-	 *         belongs to.
-	 */
-	public function assertWiki( $wikiId );
+    /**
+     * Throws if $wikiId is different from the return value of getWikiId().
+     *
+     * @param string|false $wikiId The wiki ID expected by the caller.
+     *        Use self::LOCAL for the local wiki.
+     *
+     * @throws PreconditionException If $wikiId is not the ID of the wiki this entity
+     *         belongs to.
+     */
+    public function assertWiki($wikiId);
 
-	/**
-	 * Get the ID of the wiki this page belongs to.
-	 *
-	 * @return string|false The wiki's logical name,
-	 *         or self::LOCAL to indicate the local wiki.
-	 */
-	public function getWikiId();
+    /**
+     * Get the ID of the wiki this page belongs to.
+     *
+     * @return string|false The wiki's logical name,
+     *         or self::LOCAL to indicate the local wiki.
+     */
+    public function getWikiId();
 }

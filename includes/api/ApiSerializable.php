@@ -34,14 +34,15 @@
  * @ingroup API
  * @since 1.25
  */
-interface ApiSerializable {
-	/**
-	 * Return the value to be added to ApiResult in place of this object.
-	 *
-	 * The returned value must not be an object, and must pass
-	 * all checks done by ApiResult::validateValue().
-	 *
-	 * @return mixed
-	 */
-	public function serializeForApiResult();
+interface ApiSerializable
+{
+    /**
+     * Return the value to be added to ApiResult in place of this object.
+     *
+     * The returned value must not be an object, and must pass
+     * all checks done by ApiResult::validateValue().
+     *
+     * @return mixed
+     */
+    public function serializeForApiResult();
 }

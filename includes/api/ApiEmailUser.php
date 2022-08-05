@@ -26,101 +26,109 @@ use Wikimedia\ParamValidator\ParamValidator;
  * API Module to facilitate sending of emails to users
  * @ingroup API
  */
-class ApiEmailUser extends ApiBase {
+class ApiEmailUser extends ApiBase
+{
 
-	public function execute() {
-		$params = $this->extractRequestParams();
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
 
-		// Validate target
-		$targetUser = SpecialEmailUser::getTarget( $params['target'], $this->getUser() );
-		if ( !( $targetUser instanceof User ) ) {
-			switch ( $targetUser ) {
-				case 'notarget':
-					$this->dieWithError( 'apierror-notarget' );
-					// dieWithError prevents continuation
+        // Validate target
+        $targetUser = SpecialEmailUser::getTarget($params['target'], $this->getUser());
+        if (!($targetUser instanceof User)) {
+            switch ($targetUser) {
+                case 'notarget':
+                    $this->dieWithError('apierror-notarget');
+                // dieWithError prevents continuation
 
-				case 'noemail':
-					$this->dieWithError( [ 'noemail', $params['target'] ] );
-					// dieWithError prevents continuation
+                case 'noemail':
+                    $this->dieWithError(['noemail', $params['target']]);
+                // dieWithError prevents continuation
 
-				case 'nowikiemail':
-					$this->dieWithError( 'nowikiemailtext', 'nowikiemail' );
-					// dieWithError prevents continuation
+                case 'nowikiemail':
+                    $this->dieWithError('nowikiemailtext', 'nowikiemail');
+                // dieWithError prevents continuation
 
-				default:
-					$this->dieWithError( [ 'apierror-unknownerror', $targetUser ] );
-			}
-		}
+                default:
+                    $this->dieWithError(['apierror-unknownerror', $targetUser]);
+            }
+        }
 
-		// Check permissions and errors
-		$error = SpecialEmailUser::getPermissionsError(
-			$this->getUser(),
-			$params['token'],
-			$this->getConfig()
-		);
-		if ( $error ) {
-			$this->dieWithError( $error );
-		}
+        // Check permissions and errors
+        $error = SpecialEmailUser::getPermissionsError(
+            $this->getUser(),
+            $params['token'],
+            $this->getConfig()
+        );
+        if ($error) {
+            $this->dieWithError($error);
+        }
 
-		$data = [
-			'Target' => $targetUser->getName(),
-			'Text' => $params['text'],
-			'Subject' => $params['subject'],
-			'CCMe' => $params['ccme'],
-		];
-		$retval = SpecialEmailUser::submit( $data, $this->getContext() );
-		if ( !$retval instanceof Status ) {
-			// This is probably the reason
-			$retval = Status::newFatal( 'hookaborted' );
-		}
+        $data = [
+            'Target'  => $targetUser->getName(),
+            'Text'    => $params['text'],
+            'Subject' => $params['subject'],
+            'CCMe'    => $params['ccme'],
+        ];
+        $retval = SpecialEmailUser::submit($data, $this->getContext());
+        if (!$retval instanceof Status) {
+            // This is probably the reason
+            $retval = Status::newFatal('hookaborted');
+        }
 
-		$result = array_filter( [
-			'result' => $retval->isGood() ? 'Success' : ( $retval->isOK() ? 'Warnings' : 'Failure' ),
-			'warnings' => $this->getErrorFormatter()->arrayFromStatus( $retval, 'warning' ),
-			'errors' => $this->getErrorFormatter()->arrayFromStatus( $retval, 'error' ),
-		] );
+        $result = array_filter([
+            'result'   => $retval->isGood() ? 'Success' : ($retval->isOK() ? 'Warnings' : 'Failure'),
+            'warnings' => $this->getErrorFormatter()->arrayFromStatus($retval, 'warning'),
+            'errors'   => $this->getErrorFormatter()->arrayFromStatus($retval, 'error'),
+        ]);
 
-		$this->getResult()->addValue( null, $this->getModuleName(), $result );
-	}
+        $this->getResult()->addValue(null, $this->getModuleName(), $result);
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'target' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'subject' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'text' => [
-				ParamValidator::PARAM_TYPE => 'text',
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'ccme' => false,
-		];
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'target'  => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'subject' => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'text'    => [
+                ParamValidator::PARAM_TYPE     => 'text',
+                ParamValidator::PARAM_REQUIRED => true
+            ],
+            'ccme'    => false,
+        ];
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=emailuser&target=WikiSysop&text=Content&token=123ABC'
-				=> 'apihelp-emailuser-example-email',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=emailuser&target=WikiSysop&text=Content&token=123ABC'
+            => 'apihelp-emailuser-example-email',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Email';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Email';
+    }
 }

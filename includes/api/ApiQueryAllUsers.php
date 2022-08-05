@@ -33,405 +33,414 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  *
  * @ingroup API
  */
-class ApiQueryAllUsers extends ApiQueryBase {
-	use ApiQueryBlockInfoTrait;
+class ApiQueryAllUsers extends ApiQueryBase
+{
+    use ApiQueryBlockInfoTrait;
 
-	/** @var UserFactory */
-	private $userFactory;
+    /** @var UserFactory */
+    private $userFactory;
 
-	/** @var UserGroupManager */
-	private $userGroupManager;
+    /** @var UserGroupManager */
+    private $userGroupManager;
 
-	/** @var GroupPermissionsLookup */
-	private $groupPermissionsLookup;
+    /** @var GroupPermissionsLookup */
+    private $groupPermissionsLookup;
 
-	/** @var Language */
-	private $contentLanguage;
+    /** @var Language */
+    private $contentLanguage;
 
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param UserFactory $userFactory
-	 * @param UserGroupManager $userGroupManager
-	 * @param GroupPermissionsLookup $groupPermissionsLookup
-	 * @param Language $contentLanguage
-	 */
-	public function __construct(
-		ApiQuery $query,
-		$moduleName,
-		UserFactory $userFactory,
-		UserGroupManager $userGroupManager,
-		GroupPermissionsLookup $groupPermissionsLookup,
-		Language $contentLanguage
-	) {
-		parent::__construct( $query, $moduleName, 'au' );
-		$this->userFactory = $userFactory;
-		$this->userGroupManager = $userGroupManager;
-		$this->groupPermissionsLookup = $groupPermissionsLookup;
-		$this->contentLanguage = $contentLanguage;
-	}
+    /**
+     * @param ApiQuery $query
+     * @param string $moduleName
+     * @param UserFactory $userFactory
+     * @param UserGroupManager $userGroupManager
+     * @param GroupPermissionsLookup $groupPermissionsLookup
+     * @param Language $contentLanguage
+     */
+    public function __construct(
+        ApiQuery $query,
+        $moduleName,
+        UserFactory $userFactory,
+        UserGroupManager $userGroupManager,
+        GroupPermissionsLookup $groupPermissionsLookup,
+        Language $contentLanguage
+    )
+    {
+        parent::__construct($query, $moduleName, 'au');
+        $this->userFactory = $userFactory;
+        $this->userGroupManager = $userGroupManager;
+        $this->groupPermissionsLookup = $groupPermissionsLookup;
+        $this->contentLanguage = $contentLanguage;
+    }
 
-	/**
-	 * This function converts the user name to a canonical form
-	 * which is stored in the database.
-	 * @param string $name
-	 * @return string
-	 */
-	private function getCanonicalUserName( $name ) {
-		$name = $this->contentLanguage->ucfirst( $name );
-		return strtr( $name, '_', ' ' );
-	}
+    /**
+     * This function converts the user name to a canonical form
+     * which is stored in the database.
+     * @param string $name
+     * @return string
+     */
+    private function getCanonicalUserName($name)
+    {
+        $name = $this->contentLanguage->ucfirst($name);
 
-	public function execute() {
-		$params = $this->extractRequestParams();
-		$activeUserDays = $this->getConfig()->get( MainConfigNames::ActiveUserDays );
+        return strtr($name, '_', ' ');
+    }
 
-		$db = $this->getDB();
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
+        $activeUserDays = $this->getConfig()->get(MainConfigNames::ActiveUserDays);
 
-		$prop = $params['prop'];
-		if ( $prop !== null ) {
-			$prop = array_fill_keys( $prop, true );
-			$fld_blockinfo = isset( $prop['blockinfo'] );
-			$fld_editcount = isset( $prop['editcount'] );
-			$fld_groups = isset( $prop['groups'] );
-			$fld_rights = isset( $prop['rights'] );
-			$fld_registration = isset( $prop['registration'] );
-			$fld_implicitgroups = isset( $prop['implicitgroups'] );
-			$fld_centralids = isset( $prop['centralids'] );
-		} else {
-			$fld_blockinfo = $fld_editcount = $fld_groups = $fld_registration =
-				$fld_rights = $fld_implicitgroups = $fld_centralids = false;
-		}
+        $db = $this->getDB();
 
-		$limit = $params['limit'];
+        $prop = $params['prop'];
+        if ($prop !== null) {
+            $prop = array_fill_keys($prop, true);
+            $fld_blockinfo = isset($prop['blockinfo']);
+            $fld_editcount = isset($prop['editcount']);
+            $fld_groups = isset($prop['groups']);
+            $fld_rights = isset($prop['rights']);
+            $fld_registration = isset($prop['registration']);
+            $fld_implicitgroups = isset($prop['implicitgroups']);
+            $fld_centralids = isset($prop['centralids']);
+        } else {
+            $fld_blockinfo = $fld_editcount = $fld_groups = $fld_registration =
+            $fld_rights = $fld_implicitgroups = $fld_centralids = false;
+        }
 
-		$this->addTables( 'user' );
+        $limit = $params['limit'];
 
-		$dir = ( $params['dir'] == 'descending' ? 'older' : 'newer' );
-		$from = $params['from'] === null ? null : $this->getCanonicalUserName( $params['from'] );
-		$to = $params['to'] === null ? null : $this->getCanonicalUserName( $params['to'] );
+        $this->addTables('user');
 
-		# MySQL can't figure out that 'user_name' and 'qcc_title' are the same
-		# despite the JOIN condition, so manually sort on the correct one.
-		$userFieldToSort = $params['activeusers'] ? 'qcc_title' : 'user_name';
+        $dir = ($params['dir'] == 'descending' ? 'older' : 'newer');
+        $from = $params['from'] === null ? null : $this->getCanonicalUserName($params['from']);
+        $to = $params['to'] === null ? null : $this->getCanonicalUserName($params['to']);
 
-		# Some of these subtable joins are going to give us duplicate rows, so
-		# calculate the maximum number of duplicates we might see.
-		$maxDuplicateRows = 1;
+        # MySQL can't figure out that 'user_name' and 'qcc_title' are the same
+        # despite the JOIN condition, so manually sort on the correct one.
+        $userFieldToSort = $params['activeusers'] ? 'qcc_title' : 'user_name';
 
-		$this->addWhereRange( $userFieldToSort, $dir, $from, $to );
+        # Some of these subtable joins are going to give us duplicate rows, so
+        # calculate the maximum number of duplicates we might see.
+        $maxDuplicateRows = 1;
 
-		if ( $params['prefix'] !== null ) {
-			$this->addWhere( $userFieldToSort .
-				$db->buildLike( $this->getCanonicalUserName( $params['prefix'] ), $db->anyString() ) );
-		}
+        $this->addWhereRange($userFieldToSort, $dir, $from, $to);
 
-		if ( $params['rights'] !== null && count( $params['rights'] ) ) {
-			$groups = [];
-			foreach ( $params['rights'] as $r ) {
-				$groups = array_merge( $groups, $this->groupPermissionsLookup->getGroupsWithPermission( $r ) );
-			}
+        if ($params['prefix'] !== null) {
+            $this->addWhere($userFieldToSort .
+                $db->buildLike($this->getCanonicalUserName($params['prefix']), $db->anyString()));
+        }
 
-			// no group with the given right(s) exists, no need for a query
-			if ( $groups === [] ) {
-				$this->getResult()->addIndexedTagName( [ 'query', $this->getModuleName() ], '' );
+        if ($params['rights'] !== null && count($params['rights'])) {
+            $groups = [];
+            foreach ($params['rights'] as $r) {
+                $groups = array_merge($groups, $this->groupPermissionsLookup->getGroupsWithPermission($r));
+            }
 
-				return;
-			}
+            // no group with the given right(s) exists, no need for a query
+            if ($groups === []) {
+                $this->getResult()->addIndexedTagName(['query', $this->getModuleName()], '');
 
-			$groups = array_unique( $groups );
+                return;
+            }
 
-			if ( $params['group'] === null ) {
-				$params['group'] = $groups;
-			} else {
-				$params['group'] = array_unique( array_merge( $params['group'], $groups ) );
-			}
-		}
+            $groups = array_unique($groups);
 
-		$this->requireMaxOneParameter( $params, 'group', 'excludegroup' );
+            if ($params['group'] === null) {
+                $params['group'] = $groups;
+            } else {
+                $params['group'] = array_unique(array_merge($params['group'], $groups));
+            }
+        }
 
-		if ( $params['group'] !== null && count( $params['group'] ) ) {
-			// Filter only users that belong to a given group. This might
-			// produce as many rows-per-user as there are groups being checked.
-			$this->addTables( 'user_groups', 'ug1' );
-			$this->addJoinConds( [
-				'ug1' => [
-					'JOIN',
-					[
-						'ug1.ug_user=user_id',
-						'ug1.ug_group' => $params['group'],
-						'ug1.ug_expiry IS NULL OR ug1.ug_expiry >= ' . $db->addQuotes( $db->timestamp() )
-					]
-				]
-			] );
-			$maxDuplicateRows *= count( $params['group'] );
-		}
+        $this->requireMaxOneParameter($params, 'group', 'excludegroup');
 
-		if ( $params['excludegroup'] !== null && count( $params['excludegroup'] ) ) {
-			// Filter only users don't belong to a given group. This can only
-			// produce one row-per-user, because we only keep on "no match".
-			$this->addTables( 'user_groups', 'ug1' );
+        if ($params['group'] !== null && count($params['group'])) {
+            // Filter only users that belong to a given group. This might
+            // produce as many rows-per-user as there are groups being checked.
+            $this->addTables('user_groups', 'ug1');
+            $this->addJoinConds([
+                'ug1' => [
+                    'JOIN',
+                    [
+                        'ug1.ug_user=user_id',
+                        'ug1.ug_group' => $params['group'],
+                        'ug1.ug_expiry IS NULL OR ug1.ug_expiry >= ' . $db->addQuotes($db->timestamp())
+                    ]
+                ]
+            ]);
+            $maxDuplicateRows *= count($params['group']);
+        }
 
-			if ( count( $params['excludegroup'] ) == 1 ) {
-				$exclude = [ 'ug1.ug_group' => $params['excludegroup'][0] ];
-			} else {
-				$exclude = [ $db->makeList(
-					[ 'ug1.ug_group' => $params['excludegroup'] ],
-					LIST_OR
-				) ];
-			}
-			$this->addJoinConds( [ 'ug1' => [ 'LEFT JOIN',
-				array_merge( [
-					'ug1.ug_user=user_id',
-					'ug1.ug_expiry IS NULL OR ug1.ug_expiry >= ' . $db->addQuotes( $db->timestamp() )
-				], $exclude )
-			] ] );
-			$this->addWhere( 'ug1.ug_user IS NULL' );
-		}
+        if ($params['excludegroup'] !== null && count($params['excludegroup'])) {
+            // Filter only users don't belong to a given group. This can only
+            // produce one row-per-user, because we only keep on "no match".
+            $this->addTables('user_groups', 'ug1');
 
-		if ( $params['witheditsonly'] ) {
-			$this->addWhere( 'user_editcount > 0' );
-		}
+            if (count($params['excludegroup']) == 1) {
+                $exclude = ['ug1.ug_group' => $params['excludegroup'][0]];
+            } else {
+                $exclude = [$db->makeList(
+                    ['ug1.ug_group' => $params['excludegroup']],
+                    LIST_OR
+                )];
+            }
+            $this->addJoinConds(['ug1' => ['LEFT JOIN',
+                array_merge([
+                    'ug1.ug_user=user_id',
+                    'ug1.ug_expiry IS NULL OR ug1.ug_expiry >= ' . $db->addQuotes($db->timestamp())
+                ], $exclude)
+            ]]);
+            $this->addWhere('ug1.ug_user IS NULL');
+        }
 
-		$this->addBlockInfoToQuery( $fld_blockinfo );
+        if ($params['witheditsonly']) {
+            $this->addWhere('user_editcount > 0');
+        }
 
-		if ( $fld_groups || $fld_rights ) {
-			$this->addFields( [ 'groups' =>
-				$db->buildGroupConcatField( '|', 'user_groups', 'ug_group', [
-					'ug_user=user_id',
-					'ug_expiry IS NULL OR ug_expiry >= ' . $db->addQuotes( $db->timestamp() )
-				] )
-			] );
-		}
+        $this->addBlockInfoToQuery($fld_blockinfo);
 
-		if ( $params['activeusers'] ) {
-			$activeUserSeconds = $activeUserDays * 86400;
+        if ($fld_groups || $fld_rights) {
+            $this->addFields(['groups' =>
+                                  $db->buildGroupConcatField('|', 'user_groups', 'ug_group', [
+                                      'ug_user=user_id',
+                                      'ug_expiry IS NULL OR ug_expiry >= ' . $db->addQuotes($db->timestamp())
+                                  ])
+            ]);
+        }
 
-			// Filter query to only include users in the active users cache.
-			// There shouldn't be any duplicate rows in querycachetwo here.
-			$this->addTables( 'querycachetwo' );
-			$this->addJoinConds( [ 'querycachetwo' => [
-				'JOIN', [
-					'qcc_type' => 'activeusers',
-					'qcc_namespace' => NS_USER,
-					'qcc_title=user_name',
-				],
-			] ] );
+        if ($params['activeusers']) {
+            $activeUserSeconds = $activeUserDays * 86400;
 
-			// Actually count the actions using a subquery (T66505 and T66507)
-			$tables = [ 'recentchanges', 'actor' ];
-			$joins = [
-				'actor' => [ 'JOIN', 'rc_actor = actor_id' ],
-			];
-			$timestamp = $db->timestamp( (int)wfTimestamp( TS_UNIX ) - $activeUserSeconds );
-			$this->addFields( [
-				'recentactions' => '(' . $db->selectSQLText(
-					$tables,
-					'COUNT(*)',
-					[
-						'actor_user = user_id',
-						'rc_type != ' . $db->addQuotes( RC_EXTERNAL ), // no wikidata
-						'rc_log_type IS NULL OR rc_log_type != ' . $db->addQuotes( 'newusers' ),
-						'rc_timestamp >= ' . $db->addQuotes( $timestamp ),
-					],
-					__METHOD__,
-					[],
-					$joins
-				) . ')'
-			] );
-		}
+            // Filter query to only include users in the active users cache.
+            // There shouldn't be any duplicate rows in querycachetwo here.
+            $this->addTables('querycachetwo');
+            $this->addJoinConds(['querycachetwo' => [
+                'JOIN', [
+                    'qcc_type'      => 'activeusers',
+                    'qcc_namespace' => NS_USER,
+                    'qcc_title=user_name',
+                ],
+            ]]);
 
-		$sqlLimit = $limit + $maxDuplicateRows;
-		$this->addOption( 'LIMIT', $sqlLimit );
+            // Actually count the actions using a subquery (T66505 and T66507)
+            $tables = ['recentchanges', 'actor'];
+            $joins = [
+                'actor' => ['JOIN', 'rc_actor = actor_id'],
+            ];
+            $timestamp = $db->timestamp((int)wfTimestamp(TS_UNIX) - $activeUserSeconds);
+            $this->addFields([
+                'recentactions' => '(' . $db->selectSQLText(
+                        $tables,
+                        'COUNT(*)',
+                        [
+                            'actor_user = user_id',
+                            'rc_type != ' . $db->addQuotes(RC_EXTERNAL), // no wikidata
+                            'rc_log_type IS NULL OR rc_log_type != ' . $db->addQuotes('newusers'),
+                            'rc_timestamp >= ' . $db->addQuotes($timestamp),
+                        ],
+                        __METHOD__,
+                        [],
+                        $joins
+                    ) . ')'
+            ]);
+        }
 
-		$this->addFields( [
-			'user_name',
-			'user_id'
-		] );
-		$this->addFieldsIf( 'user_editcount', $fld_editcount );
-		$this->addFieldsIf( 'user_registration', $fld_registration );
+        $sqlLimit = $limit + $maxDuplicateRows;
+        $this->addOption('LIMIT', $sqlLimit);
 
-		$res = $this->select( __METHOD__ );
-		$count = 0;
-		$countDuplicates = 0;
-		$lastUser = false;
-		$result = $this->getResult();
-		foreach ( $res as $row ) {
-			$count++;
+        $this->addFields([
+            'user_name',
+            'user_id'
+        ]);
+        $this->addFieldsIf('user_editcount', $fld_editcount);
+        $this->addFieldsIf('user_registration', $fld_registration);
 
-			if ( $lastUser === $row->user_name ) {
-				// Duplicate row due to one of the needed subtable joins.
-				// Ignore it, but count the number of them to sensibly handle
-				// miscalculation of $maxDuplicateRows.
-				$countDuplicates++;
-				if ( $countDuplicates == $maxDuplicateRows ) {
-					ApiBase::dieDebug( __METHOD__, 'Saw more duplicate rows than expected' );
-				}
-				continue;
-			}
+        $res = $this->select(__METHOD__);
+        $count = 0;
+        $countDuplicates = 0;
+        $lastUser = false;
+        $result = $this->getResult();
+        foreach ($res as $row) {
+            $count++;
 
-			$countDuplicates = 0;
-			$lastUser = $row->user_name;
+            if ($lastUser === $row->user_name) {
+                // Duplicate row due to one of the needed subtable joins.
+                // Ignore it, but count the number of them to sensibly handle
+                // miscalculation of $maxDuplicateRows.
+                $countDuplicates++;
+                if ($countDuplicates == $maxDuplicateRows) {
+                    ApiBase::dieDebug(__METHOD__, 'Saw more duplicate rows than expected');
+                }
+                continue;
+            }
 
-			if ( $count > $limit ) {
-				// We've reached the one extra which shows that there are
-				// additional pages to be had. Stop here...
-				$this->setContinueEnumParameter( 'from', $row->user_name );
-				break;
-			}
+            $countDuplicates = 0;
+            $lastUser = $row->user_name;
 
-			if ( $count == $sqlLimit ) {
-				// Should never hit this (either the $countDuplicates check or
-				// the $count > $limit check should hit first), but check it
-				// anyway just in case.
-				ApiBase::dieDebug( __METHOD__, 'Saw more duplicate rows than expected' );
-			}
+            if ($count > $limit) {
+                // We've reached the one extra which shows that there are
+                // additional pages to be had. Stop here...
+                $this->setContinueEnumParameter('from', $row->user_name);
+                break;
+            }
 
-			if ( $params['activeusers'] && (int)$row->recentactions === 0 ) {
-				// activeusers cache was out of date
-				continue;
-			}
+            if ($count == $sqlLimit) {
+                // Should never hit this (either the $countDuplicates check or
+                // the $count > $limit check should hit first), but check it
+                // anyway just in case.
+                ApiBase::dieDebug(__METHOD__, 'Saw more duplicate rows than expected');
+            }
 
-			$data = [
-				'userid' => (int)$row->user_id,
-				'name' => $row->user_name,
-			];
+            if ($params['activeusers'] && (int)$row->recentactions === 0) {
+                // activeusers cache was out of date
+                continue;
+            }
 
-			if ( $fld_centralids ) {
-				$data += ApiQueryUserInfo::getCentralUserInfo(
-					$this->getConfig(), $this->userFactory->newFromId( (int)$row->user_id ), $params['attachedwiki']
-				);
-			}
+            $data = [
+                'userid' => (int)$row->user_id,
+                'name'   => $row->user_name,
+            ];
 
-			if ( $fld_blockinfo && $row->ipb_id !== null ) {
-				$data += $this->getBlockDetails( DatabaseBlock::newFromRow( $row ) );
-			}
-			if ( $row->ipb_deleted ) {
-				$data['hidden'] = true;
-			}
-			if ( $fld_editcount ) {
-				$data['editcount'] = (int)$row->user_editcount;
-			}
-			if ( $params['activeusers'] ) {
-				$data['recentactions'] = (int)$row->recentactions;
-			}
-			if ( $fld_registration ) {
-				$data['registration'] = $row->user_registration ?
-					wfTimestamp( TS_ISO_8601, $row->user_registration ) : '';
-			}
+            if ($fld_centralids) {
+                $data += ApiQueryUserInfo::getCentralUserInfo(
+                    $this->getConfig(), $this->userFactory->newFromId((int)$row->user_id), $params['attachedwiki']
+                );
+            }
 
-			if ( $fld_implicitgroups || $fld_groups || $fld_rights ) {
-				$implicitGroups = $this->userGroupManager
-					->getUserImplicitGroups( $this->userFactory->newFromId( (int)$row->user_id ) );
-				if ( isset( $row->groups ) && $row->groups !== '' ) {
-					$groups = array_merge( $implicitGroups, explode( '|', $row->groups ) );
-				} else {
-					$groups = $implicitGroups;
-				}
+            if ($fld_blockinfo && $row->ipb_id !== null) {
+                $data += $this->getBlockDetails(DatabaseBlock::newFromRow($row));
+            }
+            if ($row->ipb_deleted) {
+                $data['hidden'] = true;
+            }
+            if ($fld_editcount) {
+                $data['editcount'] = (int)$row->user_editcount;
+            }
+            if ($params['activeusers']) {
+                $data['recentactions'] = (int)$row->recentactions;
+            }
+            if ($fld_registration) {
+                $data['registration'] = $row->user_registration ?
+                    wfTimestamp(TS_ISO_8601, $row->user_registration) : '';
+            }
 
-				if ( $fld_groups ) {
-					$data['groups'] = $groups;
-					ApiResult::setIndexedTagName( $data['groups'], 'g' );
-					ApiResult::setArrayType( $data['groups'], 'array' );
-				}
+            if ($fld_implicitgroups || $fld_groups || $fld_rights) {
+                $implicitGroups = $this->userGroupManager
+                    ->getUserImplicitGroups($this->userFactory->newFromId((int)$row->user_id));
+                if (isset($row->groups) && $row->groups !== '') {
+                    $groups = array_merge($implicitGroups, explode('|', $row->groups));
+                } else {
+                    $groups = $implicitGroups;
+                }
 
-				if ( $fld_implicitgroups ) {
-					$data['implicitgroups'] = $implicitGroups;
-					ApiResult::setIndexedTagName( $data['implicitgroups'], 'g' );
-					ApiResult::setArrayType( $data['implicitgroups'], 'array' );
-				}
+                if ($fld_groups) {
+                    $data['groups'] = $groups;
+                    ApiResult::setIndexedTagName($data['groups'], 'g');
+                    ApiResult::setArrayType($data['groups'], 'array');
+                }
 
-				if ( $fld_rights ) {
-					$data['rights'] = $this->groupPermissionsLookup->getGroupPermissions( $groups );
-					ApiResult::setIndexedTagName( $data['rights'], 'r' );
-					ApiResult::setArrayType( $data['rights'], 'array' );
-				}
-			}
+                if ($fld_implicitgroups) {
+                    $data['implicitgroups'] = $implicitGroups;
+                    ApiResult::setIndexedTagName($data['implicitgroups'], 'g');
+                    ApiResult::setArrayType($data['implicitgroups'], 'array');
+                }
 
-			$fit = $result->addValue( [ 'query', $this->getModuleName() ], null, $data );
-			if ( !$fit ) {
-				$this->setContinueEnumParameter( 'from', $data['name'] );
-				break;
-			}
-		}
+                if ($fld_rights) {
+                    $data['rights'] = $this->groupPermissionsLookup->getGroupPermissions($groups);
+                    ApiResult::setIndexedTagName($data['rights'], 'r');
+                    ApiResult::setArrayType($data['rights'], 'array');
+                }
+            }
 
-		$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'u' );
-	}
+            $fit = $result->addValue(['query', $this->getModuleName()], null, $data);
+            if (!$fit) {
+                $this->setContinueEnumParameter('from', $data['name']);
+                break;
+            }
+        }
 
-	public function getCacheMode( $params ) {
-		return 'anon-public-user-private';
-	}
+        $result->addIndexedTagName(['query', $this->getModuleName()], 'u');
+    }
 
-	public function getAllowedParams( $flags = 0 ) {
-		$userGroups = $this->userGroupManager->listAllGroups();
+    public function getCacheMode($params)
+    {
+        return 'anon-public-user-private';
+    }
 
-		if ( $flags & ApiBase::GET_VALUES_FOR_HELP ) {
-			sort( $userGroups );
-		}
+    public function getAllowedParams($flags = 0)
+    {
+        $userGroups = $this->userGroupManager->listAllGroups();
 
-		return [
-			'from' => null,
-			'to' => null,
-			'prefix' => null,
-			'dir' => [
-				ParamValidator::PARAM_DEFAULT => 'ascending',
-				ParamValidator::PARAM_TYPE => [
-					'ascending',
-					'descending'
-				],
-			],
-			'group' => [
-				ParamValidator::PARAM_TYPE => $userGroups,
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'excludegroup' => [
-				ParamValidator::PARAM_TYPE => $userGroups,
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'rights' => [
-				ParamValidator::PARAM_TYPE => $this->getPermissionManager()->getAllPermissions(),
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'prop' => [
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_TYPE => [
-					'blockinfo',
-					'groups',
-					'implicitgroups',
-					'rights',
-					'editcount',
-					'registration',
-					'centralids',
-				],
-				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
-			],
-			'limit' => [
-				ParamValidator::PARAM_DEFAULT => 10,
-				ParamValidator::PARAM_TYPE => 'limit',
-				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
-				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2
-			],
-			'witheditsonly' => false,
-			'activeusers' => [
-				ParamValidator::PARAM_DEFAULT => false,
-				ApiBase::PARAM_HELP_MSG => [
-					'apihelp-query+allusers-param-activeusers',
-					$this->getConfig()->get( MainConfigNames::ActiveUserDays )
-				],
-			],
-			'attachedwiki' => null,
-		];
-	}
+        if ($flags & ApiBase::GET_VALUES_FOR_HELP) {
+            sort($userGroups);
+        }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&list=allusers&aufrom=Y'
-				=> 'apihelp-query+allusers-example-y',
-		];
-	}
+        return [
+            'from'          => null,
+            'to'            => null,
+            'prefix'        => null,
+            'dir'           => [
+                ParamValidator::PARAM_DEFAULT => 'ascending',
+                ParamValidator::PARAM_TYPE    => [
+                    'ascending',
+                    'descending'
+                ],
+            ],
+            'group'         => [
+                ParamValidator::PARAM_TYPE    => $userGroups,
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'excludegroup'  => [
+                ParamValidator::PARAM_TYPE    => $userGroups,
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'rights'        => [
+                ParamValidator::PARAM_TYPE    => $this->getPermissionManager()->getAllPermissions(),
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'prop'          => [
+                ParamValidator::PARAM_ISMULTI     => true,
+                ParamValidator::PARAM_TYPE        => [
+                    'blockinfo',
+                    'groups',
+                    'implicitgroups',
+                    'rights',
+                    'editcount',
+                    'registration',
+                    'centralids',
+                ],
+                ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+            ],
+            'limit'         => [
+                ParamValidator::PARAM_DEFAULT => 10,
+                ParamValidator::PARAM_TYPE    => 'limit',
+                IntegerDef::PARAM_MIN         => 1,
+                IntegerDef::PARAM_MAX         => ApiBase::LIMIT_BIG1,
+                IntegerDef::PARAM_MAX2        => ApiBase::LIMIT_BIG2
+            ],
+            'witheditsonly' => false,
+            'activeusers'   => [
+                ParamValidator::PARAM_DEFAULT => false,
+                ApiBase::PARAM_HELP_MSG       => [
+                    'apihelp-query+allusers-param-activeusers',
+                    $this->getConfig()->get(MainConfigNames::ActiveUserDays)
+                ],
+            ],
+            'attachedwiki'  => null,
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Allusers';
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&list=allusers&aufrom=Y'
+            => 'apihelp-query+allusers-example-y',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Allusers';
+    }
 }

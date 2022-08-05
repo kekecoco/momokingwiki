@@ -10,107 +10,119 @@ use MediaWiki\MainConfigNames;
  *
  * To interact with this page, account providers need to register themselves with AuthManager.
  */
-class SpecialLinkAccounts extends AuthManagerSpecialPage {
-	protected static $allowedActions = [
-		AuthManager::ACTION_LINK, AuthManager::ACTION_LINK_CONTINUE,
-	];
+class SpecialLinkAccounts extends AuthManagerSpecialPage
+{
+    protected static $allowedActions = [
+        AuthManager::ACTION_LINK, AuthManager::ACTION_LINK_CONTINUE,
+    ];
 
-	/**
-	 * @param AuthManager $authManager
-	 */
-	public function __construct( AuthManager $authManager ) {
-		parent::__construct( 'LinkAccounts' );
-		$this->setAuthManager( $authManager );
-	}
+    /**
+     * @param AuthManager $authManager
+     */
+    public function __construct(AuthManager $authManager)
+    {
+        parent::__construct('LinkAccounts');
+        $this->setAuthManager($authManager);
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 
-	public function isListed() {
-		return $this->getAuthManager()->canLinkAccounts();
-	}
+    public function isListed()
+    {
+        return $this->getAuthManager()->canLinkAccounts();
+    }
 
-	protected function getRequestBlacklist() {
-		return $this->getConfig()->get( MainConfigNames::ChangeCredentialsBlacklist );
-	}
+    protected function getRequestBlacklist()
+    {
+        return $this->getConfig()->get(MainConfigNames::ChangeCredentialsBlacklist);
+    }
 
-	/**
-	 * @param null|string $subPage
-	 * @throws ErrorPageError
-	 * @throws LogicException
-	 */
-	public function execute( $subPage ) {
-		$this->setHeaders();
-		$this->loadAuth( $subPage );
+    /**
+     * @param null|string $subPage
+     * @throws ErrorPageError
+     * @throws LogicException
+     */
+    public function execute($subPage)
+    {
+        $this->setHeaders();
+        $this->loadAuth($subPage);
 
-		if ( !$this->isActionAllowed( $this->authAction ) ) {
-			if ( $this->authAction === AuthManager::ACTION_LINK ) {
-				// looks like no linking provider is installed or willing to take this user
-				$titleMessage = $this->msg( 'cannotlink-no-provider-title' );
-				$errorMessage = $this->msg( 'cannotlink-no-provider' );
-				throw new ErrorPageError( $titleMessage, $errorMessage );
-			} else {
-				// user probably back-button-navigated into an auth session that no longer exists
-				// FIXME would be nice to show a message
-				$this->getOutput()->redirect( $this->getPageTitle()->getFullURL( '', false,
-					PROTO_HTTPS ) );
-				return;
-			}
-		}
+        if (!$this->isActionAllowed($this->authAction)) {
+            if ($this->authAction === AuthManager::ACTION_LINK) {
+                // looks like no linking provider is installed or willing to take this user
+                $titleMessage = $this->msg('cannotlink-no-provider-title');
+                $errorMessage = $this->msg('cannotlink-no-provider');
+                throw new ErrorPageError($titleMessage, $errorMessage);
+            } else {
+                // user probably back-button-navigated into an auth session that no longer exists
+                // FIXME would be nice to show a message
+                $this->getOutput()->redirect($this->getPageTitle()->getFullURL('', false,
+                    PROTO_HTTPS));
 
-		$this->outputHeader();
+                return;
+            }
+        }
 
-		$status = $this->trySubmit();
+        $this->outputHeader();
 
-		if ( $status === false || !$status->isOK() ) {
-			$this->displayForm( $status );
-			return;
-		}
+        $status = $this->trySubmit();
 
-		$response = $status->getValue();
+        if ($status === false || !$status->isOK()) {
+            $this->displayForm($status);
 
-		switch ( $response->status ) {
-			case AuthenticationResponse::PASS:
-				$this->success();
-				break;
-			case AuthenticationResponse::FAIL:
-				$this->loadAuth( '', AuthManager::ACTION_LINK, true );
-				$this->displayForm( StatusValue::newFatal( $response->message ) );
-				break;
-			case AuthenticationResponse::REDIRECT:
-				$this->getOutput()->redirect( $response->redirectTarget );
-				break;
-			case AuthenticationResponse::UI:
-				$this->authAction = AuthManager::ACTION_LINK_CONTINUE;
-				$this->authRequests = $response->neededRequests;
-				$this->displayForm( StatusValue::newFatal( $response->message ) );
-				break;
-			default:
-				throw new LogicException( 'invalid AuthenticationResponse' );
-		}
-	}
+            return;
+        }
 
-	protected function getDefaultAction( $subPage ) {
-		return AuthManager::ACTION_LINK;
-	}
+        $response = $status->getValue();
 
-	/**
-	 * @param AuthenticationRequest[] $requests
-	 * @param string $action AuthManager action name, should be ACTION_LINK or ACTION_LINK_CONTINUE
-	 * @return HTMLForm
-	 */
-	protected function getAuthForm( array $requests, $action ) {
-		$form = parent::getAuthForm( $requests, $action );
-		$form->setSubmitTextMsg( 'linkaccounts-submit' );
-		return $form;
-	}
+        switch ($response->status) {
+            case AuthenticationResponse::PASS:
+                $this->success();
+                break;
+            case AuthenticationResponse::FAIL:
+                $this->loadAuth('', AuthManager::ACTION_LINK, true);
+                $this->displayForm(StatusValue::newFatal($response->message));
+                break;
+            case AuthenticationResponse::REDIRECT:
+                $this->getOutput()->redirect($response->redirectTarget);
+                break;
+            case AuthenticationResponse::UI:
+                $this->authAction = AuthManager::ACTION_LINK_CONTINUE;
+                $this->authRequests = $response->neededRequests;
+                $this->displayForm(StatusValue::newFatal($response->message));
+                break;
+            default:
+                throw new LogicException('invalid AuthenticationResponse');
+        }
+    }
 
-	/**
-	 * Show a success message.
-	 */
-	protected function success() {
-		$this->loadAuth( '', AuthManager::ACTION_LINK, true );
-		$this->displayForm( StatusValue::newFatal( $this->msg( 'linkaccounts-success-text' ) ) );
-	}
+    protected function getDefaultAction($subPage)
+    {
+        return AuthManager::ACTION_LINK;
+    }
+
+    /**
+     * @param AuthenticationRequest[] $requests
+     * @param string $action AuthManager action name, should be ACTION_LINK or ACTION_LINK_CONTINUE
+     * @return HTMLForm
+     */
+    protected function getAuthForm(array $requests, $action)
+    {
+        $form = parent::getAuthForm($requests, $action);
+        $form->setSubmitTextMsg('linkaccounts-submit');
+
+        return $form;
+    }
+
+    /**
+     * Show a success message.
+     */
+    protected function success()
+    {
+        $this->loadAuth('', AuthManager::ACTION_LINK, true);
+        $this->displayForm(StatusValue::newFatal($this->msg('linkaccounts-success-text')));
+    }
 }

@@ -32,269 +32,281 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class MigrateComments extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Migrates comments from pre-1.30 columns to the \'comment\' table' );
-		$this->setBatchSize( 100 );
-	}
+class MigrateComments extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Migrates comments from pre-1.30 columns to the \'comment\' table');
+        $this->setBatchSize(100);
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function updateSkippedMessage() {
-		return 'comments already migrated.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'comments already migrated.';
+    }
 
-	protected function doDBUpdates() {
-		$this->migrateToTemp(
-			'revision', 'rev_id', 'rev_comment', 'revcomment_rev', 'revcomment_comment_id'
-		);
-		$this->migrate( 'archive', 'ar_id', 'ar_comment' );
-		$this->migrate( 'ipblocks', 'ipb_id', 'ipb_reason' );
-		$this->migrate( 'image', 'img_name', 'img_description' );
-		$this->migrate( 'oldimage', [ 'oi_name', 'oi_timestamp' ], 'oi_description' );
-		$this->migrate( 'filearchive', 'fa_id', 'fa_deleted_reason' );
-		$this->migrate( 'filearchive', 'fa_id', 'fa_description' );
-		$this->migrate( 'recentchanges', 'rc_id', 'rc_comment' );
-		$this->migrate( 'logging', 'log_id', 'log_comment' );
-		$this->migrate( 'protected_titles', [ 'pt_namespace', 'pt_title' ], 'pt_reason' );
-		return true;
-	}
+    protected function doDBUpdates()
+    {
+        $this->migrateToTemp(
+            'revision', 'rev_id', 'rev_comment', 'revcomment_rev', 'revcomment_comment_id'
+        );
+        $this->migrate('archive', 'ar_id', 'ar_comment');
+        $this->migrate('ipblocks', 'ipb_id', 'ipb_reason');
+        $this->migrate('image', 'img_name', 'img_description');
+        $this->migrate('oldimage', ['oi_name', 'oi_timestamp'], 'oi_description');
+        $this->migrate('filearchive', 'fa_id', 'fa_deleted_reason');
+        $this->migrate('filearchive', 'fa_id', 'fa_description');
+        $this->migrate('recentchanges', 'rc_id', 'rc_comment');
+        $this->migrate('logging', 'log_id', 'log_comment');
+        $this->migrate('protected_titles', ['pt_namespace', 'pt_title'], 'pt_reason');
 
-	/**
-	 * Fetch comment IDs for a set of comments
-	 * @param IDatabase $dbw
-	 * @param array &$comments Keys are comment names, values will be set to IDs.
-	 * @return int Count of added comments
-	 */
-	private function loadCommentIDs( IDatabase $dbw, array &$comments ) {
-		$count = 0;
-		$needComments = $comments;
+        return true;
+    }
 
-		while ( true ) {
-			$where = [];
-			foreach ( $needComments as $need => $dummy ) {
-				$need = (string)$need; // T268887
-				$where[] = $dbw->makeList(
-					[
-						'comment_hash' => CommentStore::hash( $need, null ),
-						'comment_text' => $need,
-					],
-					LIST_AND
-				);
-			}
+    /**
+     * Fetch comment IDs for a set of comments
+     * @param IDatabase $dbw
+     * @param array &$comments Keys are comment names, values will be set to IDs.
+     * @return int Count of added comments
+     */
+    private function loadCommentIDs(IDatabase $dbw, array &$comments)
+    {
+        $count = 0;
+        $needComments = $comments;
 
-			$res = $dbw->select(
-				'comment',
-				[ 'comment_id', 'comment_text' ],
-				[
-					$dbw->makeList( $where, LIST_OR ),
-					'comment_data' => null,
-				],
-				__METHOD__
-			);
-			foreach ( $res as $row ) {
-				$comments[$row->comment_text] = $row->comment_id;
-				unset( $needComments[$row->comment_text] );
-			}
+        while (true) {
+            $where = [];
+            foreach ($needComments as $need => $dummy) {
+                $need = (string)$need; // T268887
+                $where[] = $dbw->makeList(
+                    [
+                        'comment_hash' => CommentStore::hash($need, null),
+                        'comment_text' => $need,
+                    ],
+                    LIST_AND
+                );
+            }
 
-			if ( !$needComments ) {
-				break;
-			}
+            $res = $dbw->select(
+                'comment',
+                ['comment_id', 'comment_text'],
+                [
+                    $dbw->makeList($where, LIST_OR),
+                    'comment_data' => null,
+                ],
+                __METHOD__
+            );
+            foreach ($res as $row) {
+                $comments[$row->comment_text] = $row->comment_id;
+                unset($needComments[$row->comment_text]);
+            }
 
-			$dbw->insert(
-				'comment',
-				array_map( static function ( $v ) {
-					return [
-						'comment_hash' => CommentStore::hash( $v, null ),
-						'comment_text' => $v,
-					];
-				}, array_keys( $needComments ) ),
-				__METHOD__
-			);
-			$count += $dbw->affectedRows();
-		}
-		return $count;
-	}
+            if (!$needComments) {
+                break;
+            }
 
-	/**
-	 * Migrate comments in a table.
-	 *
-	 * Assumes any row with the ID field non-zero have already been migrated.
-	 * Assumes the new field name is the same as the old with '_id' appended.
-	 * Blanks the old fields while migrating.
-	 *
-	 * @param string $table Table to migrate
-	 * @param string|string[] $primaryKey Primary key of the table.
-	 * @param string $oldField Old comment field name
-	 */
-	protected function migrate( $table, $primaryKey, $oldField ) {
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbw->fieldExists( $table, $oldField, __METHOD__ ) ) {
-			$this->output( "No need to migrate $table.$oldField, field does not exist\n" );
-			return;
-		}
+            $dbw->insert(
+                'comment',
+                array_map(static function ($v) {
+                    return [
+                        'comment_hash' => CommentStore::hash($v, null),
+                        'comment_text' => $v,
+                    ];
+                }, array_keys($needComments)),
+                __METHOD__
+            );
+            $count += $dbw->affectedRows();
+        }
 
-		$newField = $oldField . '_id';
-		$primaryKey = (array)$primaryKey;
-		$pkFilter = array_fill_keys( $primaryKey, true );
-		$this->output( "Beginning migration of $table.$oldField to $table.$newField\n" );
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$lbFactory->waitForReplication();
+        return $count;
+    }
 
-		$next = '1=1';
-		$countUpdated = 0;
-		$countComments = 0;
-		while ( true ) {
-			// Fetch the rows needing update
-			$res = $dbw->select(
-				$table,
-				array_merge( $primaryKey, [ $oldField ] ),
-				[
-					$newField => 0,
-					$next,
-				],
-				__METHOD__,
-				[
-					'ORDER BY' => $primaryKey,
-					'LIMIT' => $this->getBatchSize(),
-				]
-			);
-			if ( !$res->numRows() ) {
-				break;
-			}
+    /**
+     * Migrate comments in a table.
+     *
+     * Assumes any row with the ID field non-zero have already been migrated.
+     * Assumes the new field name is the same as the old with '_id' appended.
+     * Blanks the old fields while migrating.
+     *
+     * @param string $table Table to migrate
+     * @param string|string[] $primaryKey Primary key of the table.
+     * @param string $oldField Old comment field name
+     */
+    protected function migrate($table, $primaryKey, $oldField)
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbw->fieldExists($table, $oldField, __METHOD__)) {
+            $this->output("No need to migrate $table.$oldField, field does not exist\n");
 
-			// Collect the distinct comments from those rows
-			$comments = [];
-			foreach ( $res as $row ) {
-				$comments[$row->$oldField] = 0;
-			}
-			$countComments += $this->loadCommentIDs( $dbw, $comments );
+            return;
+        }
 
-			// Update the existing rows
-			foreach ( $res as $row ) {
-				$dbw->update(
-					$table,
-					[
-						$newField => $comments[$row->$oldField],
-						$oldField => '',
-					],
-					array_intersect_key( (array)$row, $pkFilter ) + [
-						$newField => 0
-					],
-					__METHOD__
-				);
-				$countUpdated += $dbw->affectedRows();
-			}
+        $newField = $oldField . '_id';
+        $primaryKey = (array)$primaryKey;
+        $pkFilter = array_fill_keys($primaryKey, true);
+        $this->output("Beginning migration of $table.$oldField to $table.$newField\n");
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $lbFactory->waitForReplication();
 
-			// Calculate the "next" condition
-			$next = '';
-			$prompt = [];
-			for ( $i = count( $primaryKey ) - 1; $i >= 0; $i-- ) {
-				$field = $primaryKey[$i];
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
-				$prompt[] = $row->$field;
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
-				$value = $dbw->addQuotes( $row->$field );
-				if ( $next === '' ) {
-					$next = "$field > $value";
-				} else {
-					$next = "$field > $value OR $field = $value AND ($next)";
-				}
-			}
-			$prompt = implode( ' ', array_reverse( $prompt ) );
-			$this->output( "... $prompt\n" );
-			$lbFactory->waitForReplication();
-		}
+        $next = '1=1';
+        $countUpdated = 0;
+        $countComments = 0;
+        while (true) {
+            // Fetch the rows needing update
+            $res = $dbw->select(
+                $table,
+                array_merge($primaryKey, [$oldField]),
+                [
+                    $newField => 0,
+                    $next,
+                ],
+                __METHOD__,
+                [
+                    'ORDER BY' => $primaryKey,
+                    'LIMIT'    => $this->getBatchSize(),
+                ]
+            );
+            if (!$res->numRows()) {
+                break;
+            }
 
-		$this->output(
-			"Completed migration, updated $countUpdated row(s) with $countComments new comment(s)\n"
-		);
-	}
+            // Collect the distinct comments from those rows
+            $comments = [];
+            foreach ($res as $row) {
+                $comments[$row->$oldField] = 0;
+            }
+            $countComments += $this->loadCommentIDs($dbw, $comments);
 
-	/**
-	 * Migrate comments in a table to a temporary table.
-	 *
-	 * Assumes any row with the ID field non-zero have already been migrated.
-	 * Assumes the new table is named "{$table}_comment_temp", and it has two
-	 * columns, in order, being the primary key of the original table and the
-	 * comment ID field.
-	 * Blanks the old fields while migrating.
-	 *
-	 * @param string $table Table to migrate
-	 * @param string $primaryKey Primary key of the table.
-	 * @param string $oldField Old comment field name
-	 * @param string $newPrimaryKey Primary key of the new table.
-	 * @param string $newField New comment field name
-	 */
-	protected function migrateToTemp( $table, $primaryKey, $oldField, $newPrimaryKey, $newField ) {
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbw->fieldExists( $table, $oldField, __METHOD__ ) ) {
-			$this->output( "No need to migrate $table.$oldField, field does not exist\n" );
-			return;
-		}
+            // Update the existing rows
+            foreach ($res as $row) {
+                $dbw->update(
+                    $table,
+                    [
+                        $newField => $comments[$row->$oldField],
+                        $oldField => '',
+                    ],
+                    array_intersect_key((array)$row, $pkFilter) + [
+                        $newField => 0
+                    ],
+                    __METHOD__
+                );
+                $countUpdated += $dbw->affectedRows();
+            }
 
-		$newTable = $table . '_comment_temp';
-		$this->output( "Beginning migration of $table.$oldField to $newTable.$newField\n" );
-		MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->waitForReplication();
+            // Calculate the "next" condition
+            $next = '';
+            $prompt = [];
+            for ($i = count($primaryKey) - 1; $i >= 0; $i--) {
+                $field = $primaryKey[$i];
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
+                $prompt[] = $row->$field;
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
+                $value = $dbw->addQuotes($row->$field);
+                if ($next === '') {
+                    $next = "$field > $value";
+                } else {
+                    $next = "$field > $value OR $field = $value AND ($next)";
+                }
+            }
+            $prompt = implode(' ', array_reverse($prompt));
+            $this->output("... $prompt\n");
+            $lbFactory->waitForReplication();
+        }
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		$next = [];
-		$countUpdated = 0;
-		$countComments = 0;
-		while ( true ) {
-			// Fetch the rows needing update
-			$res = $dbw->select(
-				[ $table, $newTable ],
-				[ $primaryKey, $oldField ],
-				[ $newPrimaryKey => null ] + $next,
-				__METHOD__,
-				[
-					'ORDER BY' => $primaryKey,
-					'LIMIT' => $this->getBatchSize(),
-				],
-				[ $newTable => [ 'LEFT JOIN', "{$primaryKey}={$newPrimaryKey}" ] ]
-			);
-			if ( !$res->numRows() ) {
-				break;
-			}
+        $this->output(
+            "Completed migration, updated $countUpdated row(s) with $countComments new comment(s)\n"
+        );
+    }
 
-			// Collect the distinct comments from those rows
-			$comments = [];
-			foreach ( $res as $row ) {
-				$comments[$row->$oldField] = 0;
-			}
-			$countComments += $this->loadCommentIDs( $dbw, $comments );
+    /**
+     * Migrate comments in a table to a temporary table.
+     *
+     * Assumes any row with the ID field non-zero have already been migrated.
+     * Assumes the new table is named "{$table}_comment_temp", and it has two
+     * columns, in order, being the primary key of the original table and the
+     * comment ID field.
+     * Blanks the old fields while migrating.
+     *
+     * @param string $table Table to migrate
+     * @param string $primaryKey Primary key of the table.
+     * @param string $oldField Old comment field name
+     * @param string $newPrimaryKey Primary key of the new table.
+     * @param string $newField New comment field name
+     */
+    protected function migrateToTemp($table, $primaryKey, $oldField, $newPrimaryKey, $newField)
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbw->fieldExists($table, $oldField, __METHOD__)) {
+            $this->output("No need to migrate $table.$oldField, field does not exist\n");
 
-			// Update rows
-			$inserts = [];
-			$updates = [];
-			foreach ( $res as $row ) {
-				$inserts[] = [
-					$newPrimaryKey => $row->$primaryKey,
-					$newField => $comments[$row->$oldField]
-				];
-				$updates[] = $row->$primaryKey;
-			}
-			$this->beginTransaction( $dbw, __METHOD__ );
-			$dbw->insert( $newTable, $inserts, __METHOD__ );
-			$dbw->update( $table, [ $oldField => '' ], [ $primaryKey => $updates ], __METHOD__ );
-			$countUpdated += $dbw->affectedRows();
-			$this->commitTransaction( $dbw, __METHOD__ );
+            return;
+        }
 
-			// Calculate the "next" condition
-			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
-			$next = [ $primaryKey . ' > ' . $dbw->addQuotes( $row->$primaryKey ) ];
-			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
-			$this->output( "... {$row->$primaryKey}\n" );
-		}
+        $newTable = $table . '_comment_temp';
+        $this->output("Beginning migration of $table.$oldField to $newTable.$newField\n");
+        MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->waitForReplication();
 
-		$this->output(
-			"Completed migration, updated $countUpdated row(s) with $countComments new comment(s)\n"
-		);
-	}
+        $dbw = $this->getDB(DB_PRIMARY);
+        $next = [];
+        $countUpdated = 0;
+        $countComments = 0;
+        while (true) {
+            // Fetch the rows needing update
+            $res = $dbw->select(
+                [$table, $newTable],
+                [$primaryKey, $oldField],
+                [$newPrimaryKey => null] + $next,
+                __METHOD__,
+                [
+                    'ORDER BY' => $primaryKey,
+                    'LIMIT'    => $this->getBatchSize(),
+                ],
+                [$newTable => ['LEFT JOIN', "{$primaryKey}={$newPrimaryKey}"]]
+            );
+            if (!$res->numRows()) {
+                break;
+            }
+
+            // Collect the distinct comments from those rows
+            $comments = [];
+            foreach ($res as $row) {
+                $comments[$row->$oldField] = 0;
+            }
+            $countComments += $this->loadCommentIDs($dbw, $comments);
+
+            // Update rows
+            $inserts = [];
+            $updates = [];
+            foreach ($res as $row) {
+                $inserts[] = [
+                    $newPrimaryKey => $row->$primaryKey,
+                    $newField      => $comments[$row->$oldField]
+                ];
+                $updates[] = $row->$primaryKey;
+            }
+            $this->beginTransaction($dbw, __METHOD__);
+            $dbw->insert($newTable, $inserts, __METHOD__);
+            $dbw->update($table, [$oldField => ''], [$primaryKey => $updates], __METHOD__);
+            $countUpdated += $dbw->affectedRows();
+            $this->commitTransaction($dbw, __METHOD__);
+
+            // Calculate the "next" condition
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
+            $next = [$primaryKey . ' > ' . $dbw->addQuotes($row->$primaryKey)];
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
+            $this->output("... {$row->$primaryKey}\n");
+        }
+
+        $this->output(
+            "Completed migration, updated $countUpdated row(s) with $countComments new comment(s)\n"
+        );
+    }
 }
 
 $maintClass = MigrateComments::class;

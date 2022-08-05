@@ -32,18 +32,21 @@ use MediaWiki\Linker\LinkTarget;
  * @unstable
  * @since 1.38
  */
-class RedirectStore implements RedirectLookup {
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+class RedirectStore implements RedirectLookup
+{
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/**
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
-	public function __construct( WikiPageFactory $wikiPageFactory ) {
-		$this->wikiPageFactory = $wikiPageFactory;
-	}
+    /**
+     * @param WikiPageFactory $wikiPageFactory
+     */
+    public function __construct(WikiPageFactory $wikiPageFactory)
+    {
+        $this->wikiPageFactory = $wikiPageFactory;
+    }
 
-	public function getRedirectTarget( PageIdentity $page ): ?LinkTarget {
-		return $this->wikiPageFactory->newFromTitle( $page )->getRedirectTarget();
-	}
+    public function getRedirectTarget(PageIdentity $page): ?LinkTarget
+    {
+        return $this->wikiPageFactory->newFromTitle($page)->getRedirectTarget();
+    }
 }

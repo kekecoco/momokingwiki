@@ -23,125 +23,130 @@
 /**
  * @since 1.29
  */
-class DnsSrvDiscoverer {
-	/**
-	 * @var string
-	 */
-	private $service;
+class DnsSrvDiscoverer
+{
+    /**
+     * @var string
+     */
+    private $service;
 
-	/**
-	 * @var string
-	 */
-	private $protocol;
+    /**
+     * @var string
+     */
+    private $protocol;
 
-	/**
-	 * @var string|null
-	 */
-	private $domain;
+    /**
+     * @var string|null
+     */
+    private $domain;
 
-	/**
-	 * @var callable
-	 */
-	private $resolver;
+    /**
+     * @var callable
+     */
+    private $resolver;
 
-	/**
-	 * Construct a new discoverer for the given domain, service, and protocol.
-	 *
-	 * @param string $service Name of the service to discover.
-	 * @param string $protocol Service protocol. Defaults to 'tcp'
-	 * @param ?string $domain The hostname/domain on which to perform discovery
-	 *  of the given service and protocol. Defaults to null which effectively
-	 *  performs a query relative to the host's configured search domain.
-	 * @param ?callable $resolver Resolver function. Defaults to using
-	 *  dns_get_record. Primarily useful in testing.
-	 */
-	public function __construct(
-		string $service,
-		string $protocol = 'tcp',
-		?string $domain = null,
-		?callable $resolver = null
-	) {
-		$this->service = $service;
-		$this->protocol = $protocol;
-		$this->domain = $domain;
+    /**
+     * Construct a new discoverer for the given domain, service, and protocol.
+     *
+     * @param string $service Name of the service to discover.
+     * @param string $protocol Service protocol. Defaults to 'tcp'
+     * @param ?string $domain The hostname/domain on which to perform discovery
+     *  of the given service and protocol. Defaults to null which effectively
+     *  performs a query relative to the host's configured search domain.
+     * @param ?callable $resolver Resolver function. Defaults to using
+     *  dns_get_record. Primarily useful in testing.
+     */
+    public function __construct(
+        string $service,
+        string $protocol = 'tcp',
+        ?string $domain = null,
+        ?callable $resolver = null
+    )
+    {
+        $this->service = $service;
+        $this->protocol = $protocol;
+        $this->domain = $domain;
 
-		$this->resolver = $resolver ?? static function ( $srv ) {
-			return dns_get_record( $srv, DNS_SRV );
-		};
-	}
+        $this->resolver = $resolver ?? static function ($srv) {
+                return dns_get_record($srv, DNS_SRV);
+            };
+    }
 
-	/**
-	 * Queries the resolver for an SRV resource record matching the service,
-	 * protocol, and domain and returns all target/port/priority/weight
-	 * records.
-	 *
-	 * @return array
-	 */
-	public function getRecords() {
-		$result = [];
+    /**
+     * Queries the resolver for an SRV resource record matching the service,
+     * protocol, and domain and returns all target/port/priority/weight
+     * records.
+     *
+     * @return array
+     */
+    public function getRecords()
+    {
+        $result = [];
 
-		$records = ( $this->resolver )( $this->getSrvName() );
+        $records = ($this->resolver)($this->getSrvName());
 
-		// Respect RFC 2782 with regard to a single '.' entry denoting a valid
-		// empty response
-		if (
-			!$records
-			|| ( count( $records ) === 1 && $records[0]['target'] === '.' )
-		) {
-			return $result;
-		}
+        // Respect RFC 2782 with regard to a single '.' entry denoting a valid
+        // empty response
+        if (
+            !$records
+            || (count($records) === 1 && $records[0]['target'] === '.')
+        ) {
+            return $result;
+        }
 
-		foreach ( $records as $record ) {
-			$result[] = [
-				'target' => $record['target'],
-				'port' => (int)$record['port'],
-				'pri' => (int)$record['pri'],
-				'weight' => (int)$record['weight'],
-			];
-		}
+        foreach ($records as $record) {
+            $result[] = [
+                'target' => $record['target'],
+                'port'   => (int)$record['port'],
+                'pri'    => (int)$record['pri'],
+                'weight' => (int)$record['weight'],
+            ];
+        }
 
-		return $result;
-	}
+        return $result;
+    }
 
-	/**
-	 * Performs discovery for the domain, service, and protocol, and returns a
-	 * list of resolved server name/ip and port number pairs sorted by each
-	 * record's priority, with servers of the same priority randomly shuffled.
-	 *
-	 * @return array
-	 */
-	public function getServers() {
-		$records = $this->getRecords();
+    /**
+     * Performs discovery for the domain, service, and protocol, and returns a
+     * list of resolved server name/ip and port number pairs sorted by each
+     * record's priority, with servers of the same priority randomly shuffled.
+     *
+     * @return array
+     */
+    public function getServers()
+    {
+        $records = $this->getRecords();
 
-		usort( $records, static function ( $a, $b ) {
-			if ( $a['pri'] === $b['pri'] ) {
-				return mt_rand( 0, 1 ) ? 1 : -1;
-			}
+        usort($records, static function ($a, $b) {
+            if ($a['pri'] === $b['pri']) {
+                return mt_rand(0, 1) ? 1 : -1;
+            }
 
-			return $a['pri'] - $b['pri'];
-		} );
+            return $a['pri'] - $b['pri'];
+        });
 
-		$serversAndPorts = [];
+        $serversAndPorts = [];
 
-		foreach ( $records as $record ) {
-			$serversAndPorts[] = [ $record['target'], $record['port'] ];
-		}
+        foreach ($records as $record) {
+            $serversAndPorts[] = [$record['target'], $record['port']];
+        }
 
-		return $serversAndPorts;
-	}
+        return $serversAndPorts;
+    }
 
-	/**
-	 * Returns the SRV resource record name.
-	 *
-	 * @return string
-	 */
-	public function getSrvName(): string {
-		$srv = "_{$this->service}._{$this->protocol}";
+    /**
+     * Returns the SRV resource record name.
+     *
+     * @return string
+     */
+    public function getSrvName(): string
+    {
+        $srv = "_{$this->service}._{$this->protocol}";
 
-		if ( $this->domain === null || $this->domain === '' ) {
-			return $srv;
-		}
+        if ($this->domain === null || $this->domain === '') {
+            return $srv;
+        }
 
-		return "$srv.{$this->domain}";
-	}
+        return "$srv.{$this->domain}";
+    }
 }

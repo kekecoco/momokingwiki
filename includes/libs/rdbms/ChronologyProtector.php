@@ -133,443 +133,459 @@ use Wikimedia\WaitConditionLoop;
  *
  * @internal
  */
-class ChronologyProtector implements LoggerAwareInterface {
-	/** @var BagOStuff */
-	protected $store;
-	/** @var LoggerInterface */
-	protected $logger;
+class ChronologyProtector implements LoggerAwareInterface
+{
+    /** @var BagOStuff */
+    protected $store;
+    /** @var LoggerInterface */
+    protected $logger;
 
-	/** @var string Storage key name */
-	protected $key;
-	/** @var string Hash of client parameters */
-	protected $clientId;
-	/** @var string[] Map of client information fields for logging */
-	protected $clientLogInfo;
-	/** @var int|null Expected minimum index of the last write to the position store */
-	protected $waitForPosIndex;
+    /** @var string Storage key name */
+    protected $key;
+    /** @var string Hash of client parameters */
+    protected $clientId;
+    /** @var string[] Map of client information fields for logging */
+    protected $clientLogInfo;
+    /** @var int|null Expected minimum index of the last write to the position store */
+    protected $waitForPosIndex;
 
-	/** @var bool Whether reading/writing session consistency replication positions is enabled */
-	protected $enabled = true;
-	/** @var bool Whether waiting on DB servers to reach replication positions is enabled */
-	protected $positionWaitsEnabled = true;
-	/** @var float|null UNIX timestamp when the client data was loaded */
-	protected $startupTimestamp;
+    /** @var bool Whether reading/writing session consistency replication positions is enabled */
+    protected $enabled = true;
+    /** @var bool Whether waiting on DB servers to reach replication positions is enabled */
+    protected $positionWaitsEnabled = true;
+    /** @var float|null UNIX timestamp when the client data was loaded */
+    protected $startupTimestamp;
 
-	/** @var array<string,DBPrimaryPos> Map of (DB primary name => position) */
-	protected $startupPositionsByMaster = [];
-	/** @var array<string,DBPrimaryPos> Map of (DB primary name => position) */
-	protected $shutdownPositionsByMaster = [];
-	/** @var array<string,float> Map of (DB cluster name => UNIX timestamp) */
-	protected $startupTimestampsByCluster = [];
-	/** @var array<string,float> Map of (DB cluster name => UNIX timestamp) */
-	protected $shutdownTimestampsByCluster = [];
+    /** @var array<string,DBPrimaryPos> Map of (DB primary name => position) */
+    protected $startupPositionsByMaster = [];
+    /** @var array<string,DBPrimaryPos> Map of (DB primary name => position) */
+    protected $shutdownPositionsByMaster = [];
+    /** @var array<string,float> Map of (DB cluster name => UNIX timestamp) */
+    protected $startupTimestampsByCluster = [];
+    /** @var array<string,float> Map of (DB cluster name => UNIX timestamp) */
+    protected $shutdownTimestampsByCluster = [];
 
-	/** @var float|null */
-	private $wallClockOverride;
+    /** @var float|null */
+    private $wallClockOverride;
 
-	/** Seconds to store position write index cookies (safely less than POSITION_STORE_TTL) */
-	public const POSITION_COOKIE_TTL = 10;
-	/** Seconds to store replication positions */
-	private const POSITION_STORE_TTL = 60;
-	/** Max seconds to wait for positions write indexes to appear (e.g. replicate) in storage */
-	private const POSITION_INDEX_WAIT_TIMEOUT = 5;
+    /** Seconds to store position write index cookies (safely less than POSITION_STORE_TTL) */
+    public const POSITION_COOKIE_TTL = 10;
+    /** Seconds to store replication positions */
+    private const POSITION_STORE_TTL = 60;
+    /** Max seconds to wait for positions write indexes to appear (e.g. replicate) in storage */
+    private const POSITION_INDEX_WAIT_TIMEOUT = 5;
 
-	/** Lock timeout to use for key updates */
-	private const LOCK_TIMEOUT = 3;
-	/** Lock expiry to use for key updates */
-	private const LOCK_TTL = 6;
+    /** Lock timeout to use for key updates */
+    private const LOCK_TIMEOUT = 3;
+    /** Lock expiry to use for key updates */
+    private const LOCK_TTL = 6;
 
-	private const FLD_POSITIONS = 'positions';
-	private const FLD_TIMESTAMPS = 'timestamps';
-	private const FLD_WRITE_INDEX = 'writeIndex';
+    private const FLD_POSITIONS = 'positions';
+    private const FLD_TIMESTAMPS = 'timestamps';
+    private const FLD_WRITE_INDEX = 'writeIndex';
 
-	/**
-	 * @param BagOStuff $store
-	 * @param array $client Map of (ip: <IP>, agent: <user-agent> [, clientId: <hash>] )
-	 * @param int|null $clientPosIndex Write counter index of replication positions for this client
-	 * @param string $secret Secret string for HMAC hashing [optional]
-	 * @since 1.27
-	 */
-	public function __construct(
-		BagOStuff $store,
-		array $client,
-		?int $clientPosIndex,
-		string $secret = ''
-	) {
-		$this->store = $store;
+    /**
+     * @param BagOStuff $store
+     * @param array $client Map of (ip: <IP>, agent: <user-agent> [, clientId: <hash>] )
+     * @param int|null $clientPosIndex Write counter index of replication positions for this client
+     * @param string $secret Secret string for HMAC hashing [optional]
+     * @since 1.27
+     */
+    public function __construct(
+        BagOStuff $store,
+        array $client,
+        ?int $clientPosIndex,
+        string $secret = ''
+    )
+    {
+        $this->store = $store;
 
-		if ( isset( $client['clientId'] ) ) {
-			$this->clientId = $client['clientId'];
-		} else {
-			$this->clientId = ( $secret != '' )
-				? hash_hmac( 'md5', $client['ip'] . "\n" . $client['agent'], $secret )
-				: md5( $client['ip'] . "\n" . $client['agent'] );
-		}
-		$this->key = $store->makeGlobalKey( __CLASS__, $this->clientId, 'v2' );
-		$this->waitForPosIndex = $clientPosIndex;
+        if (isset($client['clientId'])) {
+            $this->clientId = $client['clientId'];
+        } else {
+            $this->clientId = ($secret != '')
+                ? hash_hmac('md5', $client['ip'] . "\n" . $client['agent'], $secret)
+                : md5($client['ip'] . "\n" . $client['agent']);
+        }
+        $this->key = $store->makeGlobalKey(__CLASS__, $this->clientId, 'v2');
+        $this->waitForPosIndex = $clientPosIndex;
 
-		$this->clientLogInfo = [
-			'clientIP' => $client['ip'],
-			'clientAgent' => $client['agent'],
-			'clientId' => $client['clientId'] ?? null
-		];
+        $this->clientLogInfo = [
+            'clientIP'    => $client['ip'],
+            'clientAgent' => $client['agent'],
+            'clientId'    => $client['clientId'] ?? null
+        ];
 
-		$this->logger = new NullLogger();
-	}
+        $this->logger = new NullLogger();
+    }
 
-	public function setLogger( LoggerInterface $logger ) {
-		$this->logger = $logger;
-	}
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
 
-	/**
-	 * @return string Client ID hash
-	 * @since 1.32
-	 */
-	public function getClientId() {
-		return $this->clientId;
-	}
+    /**
+     * @return string Client ID hash
+     * @since 1.32
+     */
+    public function getClientId()
+    {
+        return $this->clientId;
+    }
 
-	/**
-	 * @param bool $enabled Whether reading/writing session replication positions is enabled
-	 * @since 1.27
-	 */
-	public function setEnabled( $enabled ) {
-		$this->enabled = $enabled;
-	}
+    /**
+     * @param bool $enabled Whether reading/writing session replication positions is enabled
+     * @since 1.27
+     */
+    public function setEnabled($enabled)
+    {
+        $this->enabled = $enabled;
+    }
 
-	/**
-	 * @param bool $enabled Whether session replication position wait barriers are enable
-	 * @since 1.27
-	 */
-	public function setWaitEnabled( $enabled ) {
-		$this->positionWaitsEnabled = $enabled;
-	}
+    /**
+     * @param bool $enabled Whether session replication position wait barriers are enable
+     * @since 1.27
+     */
+    public function setWaitEnabled($enabled)
+    {
+        $this->positionWaitsEnabled = $enabled;
+    }
 
-	/**
-	 * Apply client "session consistency" replication position to a new ILoadBalancer
-	 *
-	 * If the stash has a previous primary position recorded, this will try to make
-	 * sure that the next query to a replica DB of that primary DB will see changes up
-	 * to that position by delaying execution. The delay may timeout and allow stale
-	 * data if no non-lagged replica DBs are available.
-	 *
-	 * @internal This method should only be called from LBFactory.
-	 *
-	 * @param ILoadBalancer $lb
-	 * @return void
-	 */
-	public function applySessionReplicationPosition( ILoadBalancer $lb ) {
-		if ( !$this->enabled || !$this->positionWaitsEnabled ) {
-			return;
-		}
+    /**
+     * Apply client "session consistency" replication position to a new ILoadBalancer
+     *
+     * If the stash has a previous primary position recorded, this will try to make
+     * sure that the next query to a replica DB of that primary DB will see changes up
+     * to that position by delaying execution. The delay may timeout and allow stale
+     * data if no non-lagged replica DBs are available.
+     *
+     * @param ILoadBalancer $lb
+     * @return void
+     * @internal This method should only be called from LBFactory.
+     *
+     */
+    public function applySessionReplicationPosition(ILoadBalancer $lb)
+    {
+        if (!$this->enabled || !$this->positionWaitsEnabled) {
+            return;
+        }
 
-		$cluster = $lb->getClusterName();
-		$masterName = $lb->getServerName( $lb->getWriterIndex() );
+        $cluster = $lb->getClusterName();
+        $masterName = $lb->getServerName($lb->getWriterIndex());
 
-		$pos = $this->getStartupSessionPositions()[$masterName] ?? null;
-		if ( $pos instanceof DBPrimaryPos ) {
-			$this->logger->debug( __METHOD__ . ": $cluster ($masterName) position is '$pos'" );
-			$lb->waitFor( $pos );
-		} else {
-			$this->logger->debug( __METHOD__ . ": $cluster ($masterName) has no position" );
-		}
-	}
+        $pos = $this->getStartupSessionPositions()[$masterName] ?? null;
+        if ($pos instanceof DBPrimaryPos) {
+            $this->logger->debug(__METHOD__ . ": $cluster ($masterName) position is '$pos'");
+            $lb->waitFor($pos);
+        } else {
+            $this->logger->debug(__METHOD__ . ": $cluster ($masterName) has no position");
+        }
+    }
 
-	/**
-	 * Update client "session consistency" replication position for an end-of-life ILoadBalancer
-	 *
-	 * This remarks the replication position of the primary DB if this request made writes to
-	 * it using the provided ILoadBalancer instance.
-	 *
-	 * @internal This method should only be called from LBFactory.
-	 *
-	 * @param ILoadBalancer $lb
-	 * @return void
-	 */
-	public function stageSessionReplicationPosition( ILoadBalancer $lb ) {
-		if ( !$this->enabled || !$lb->hasOrMadeRecentPrimaryChanges( INF ) ) {
-			return;
-		}
+    /**
+     * Update client "session consistency" replication position for an end-of-life ILoadBalancer
+     *
+     * This remarks the replication position of the primary DB if this request made writes to
+     * it using the provided ILoadBalancer instance.
+     *
+     * @param ILoadBalancer $lb
+     * @return void
+     * @internal This method should only be called from LBFactory.
+     *
+     */
+    public function stageSessionReplicationPosition(ILoadBalancer $lb)
+    {
+        if (!$this->enabled || !$lb->hasOrMadeRecentPrimaryChanges(INF)) {
+            return;
+        }
 
-		$cluster = $lb->getClusterName();
-		$masterName = $lb->getServerName( $lb->getWriterIndex() );
+        $cluster = $lb->getClusterName();
+        $masterName = $lb->getServerName($lb->getWriterIndex());
 
-		if ( $lb->hasStreamingReplicaServers() ) {
-			$pos = $lb->getReplicaResumePos();
-			if ( $pos ) {
-				$this->logger->debug( __METHOD__ . ": $cluster ($masterName) position now '$pos'" );
-				$this->shutdownPositionsByMaster[$masterName] = $pos;
-				$this->shutdownTimestampsByCluster[$cluster] = $pos->asOfTime();
-			} else {
-				$this->logger->debug( __METHOD__ . ": $cluster ($masterName) position unknown" );
-				$this->shutdownTimestampsByCluster[$cluster] = $this->getCurrentTime();
-			}
-		} else {
-			$this->logger->debug( __METHOD__ . ": $cluster ($masterName) has no replication" );
-			$this->shutdownTimestampsByCluster[$cluster] = $this->getCurrentTime();
-		}
-	}
+        if ($lb->hasStreamingReplicaServers()) {
+            $pos = $lb->getReplicaResumePos();
+            if ($pos) {
+                $this->logger->debug(__METHOD__ . ": $cluster ($masterName) position now '$pos'");
+                $this->shutdownPositionsByMaster[$masterName] = $pos;
+                $this->shutdownTimestampsByCluster[$cluster] = $pos->asOfTime();
+            } else {
+                $this->logger->debug(__METHOD__ . ": $cluster ($masterName) position unknown");
+                $this->shutdownTimestampsByCluster[$cluster] = $this->getCurrentTime();
+            }
+        } else {
+            $this->logger->debug(__METHOD__ . ": $cluster ($masterName) has no replication");
+            $this->shutdownTimestampsByCluster[$cluster] = $this->getCurrentTime();
+        }
+    }
 
-	/**
-	 * Persist any staged client "session consistency" replication positions
-	 *
-	 * @internal This method should only be called from LBFactory.
-	 *
-	 * @param int|null &$clientPosIndex DB position key write counter; incremented on update
-	 * @return DBPrimaryPos[] Empty on success; map of (db name => unsaved position) on failure
-	 */
-	public function persistSessionReplicationPositions( &$clientPosIndex = null ) {
-		if ( !$this->enabled ) {
-			return [];
-		}
+    /**
+     * Persist any staged client "session consistency" replication positions
+     *
+     * @param int|null &$clientPosIndex DB position key write counter; incremented on update
+     * @return DBPrimaryPos[] Empty on success; map of (db name => unsaved position) on failure
+     * @internal This method should only be called from LBFactory.
+     *
+     */
+    public function persistSessionReplicationPositions(&$clientPosIndex = null)
+    {
+        if (!$this->enabled) {
+            return [];
+        }
 
-		if ( !$this->shutdownTimestampsByCluster ) {
-			$this->logger->debug( __METHOD__ . ": no primary positions/timestamps to save" );
+        if (!$this->shutdownTimestampsByCluster) {
+            $this->logger->debug(__METHOD__ . ": no primary positions/timestamps to save");
 
-			return [];
-		}
+            return [];
+        }
 
-		$scopeLock = $this->store->getScopedLock( $this->key, self::LOCK_TIMEOUT, self::LOCK_TTL );
-		if ( $scopeLock ) {
-			$ok = $this->store->set(
-				$this->key,
-				$this->mergePositions(
-					$this->store->get( $this->key ),
-					$this->shutdownPositionsByMaster,
-					$this->shutdownTimestampsByCluster,
-					$clientPosIndex
-				),
-				self::POSITION_STORE_TTL
-			);
-			unset( $scopeLock );
-		} else {
-			$ok = false;
-		}
+        $scopeLock = $this->store->getScopedLock($this->key, self::LOCK_TIMEOUT, self::LOCK_TTL);
+        if ($scopeLock) {
+            $ok = $this->store->set(
+                $this->key,
+                $this->mergePositions(
+                    $this->store->get($this->key),
+                    $this->shutdownPositionsByMaster,
+                    $this->shutdownTimestampsByCluster,
+                    $clientPosIndex
+                ),
+                self::POSITION_STORE_TTL
+            );
+            unset($scopeLock);
+        } else {
+            $ok = false;
+        }
 
-		$clusterList = implode( ', ', array_keys( $this->shutdownTimestampsByCluster ) );
+        $clusterList = implode(', ', array_keys($this->shutdownTimestampsByCluster));
 
-		if ( $ok ) {
-			$bouncedPositions = [];
-			$this->logger->debug(
-				__METHOD__ . ": saved primary positions/timestamp for DB cluster(s) $clusterList"
-			);
+        if ($ok) {
+            $bouncedPositions = [];
+            $this->logger->debug(
+                __METHOD__ . ": saved primary positions/timestamp for DB cluster(s) $clusterList"
+            );
 
-		} else {
-			$clientPosIndex = null; // nothing saved
-			$bouncedPositions = $this->shutdownPositionsByMaster;
-			// Raced out too many times or stash is down
-			$this->logger->warning(
-				__METHOD__ . ": failed to save primary positions for DB cluster(s) $clusterList"
-			);
-		}
+        } else {
+            $clientPosIndex = null; // nothing saved
+            $bouncedPositions = $this->shutdownPositionsByMaster;
+            // Raced out too many times or stash is down
+            $this->logger->warning(
+                __METHOD__ . ": failed to save primary positions for DB cluster(s) $clusterList"
+            );
+        }
 
-		return $bouncedPositions;
-	}
+        return $bouncedPositions;
+    }
 
-	/**
-	 * Get the UNIX timestamp when the client last touched the DB, if they did so recently
-	 *
-	 * @internal This method should only be called from LBFactory.
-	 *
-	 * @param ILoadBalancer $lb
-	 * @return float|false UNIX timestamp; false if not recent or on record
-	 * @since 1.35
-	 */
-	public function getTouched( ILoadBalancer $lb ) {
-		if ( !$this->enabled ) {
-			return false;
-		}
+    /**
+     * Get the UNIX timestamp when the client last touched the DB, if they did so recently
+     *
+     * @param ILoadBalancer $lb
+     * @return float|false UNIX timestamp; false if not recent or on record
+     * @internal This method should only be called from LBFactory.
+     *
+     * @since 1.35
+     */
+    public function getTouched(ILoadBalancer $lb)
+    {
+        if (!$this->enabled) {
+            return false;
+        }
 
-		$cluster = $lb->getClusterName();
+        $cluster = $lb->getClusterName();
 
-		$timestampsByCluster = $this->getStartupSessionTimestamps();
-		$timestamp = $timestampsByCluster[$cluster] ?? null;
-		if ( $timestamp === null ) {
-			$recentTouchTimestamp = false;
-		} elseif ( ( $this->startupTimestamp - $timestamp ) > self::POSITION_COOKIE_TTL ) {
-			// If the position store is not replicated among datacenters and the cookie that
-			// sticks the client to the primary datacenter expires, then the touch timestamp
-			// will be found for requests in one datacenter but not others. For consistency,
-			// return false once the user is no longer routed to the primary datacenter.
-			$recentTouchTimestamp = false;
-			$this->logger->debug( __METHOD__ . ": old timestamp ($timestamp) for $cluster" );
-		} else {
-			$recentTouchTimestamp = $timestamp;
-			$this->logger->debug( __METHOD__ . ": recent timestamp ($timestamp) for $cluster" );
-		}
+        $timestampsByCluster = $this->getStartupSessionTimestamps();
+        $timestamp = $timestampsByCluster[$cluster] ?? null;
+        if ($timestamp === null) {
+            $recentTouchTimestamp = false;
+        } elseif (($this->startupTimestamp - $timestamp) > self::POSITION_COOKIE_TTL) {
+            // If the position store is not replicated among datacenters and the cookie that
+            // sticks the client to the primary datacenter expires, then the touch timestamp
+            // will be found for requests in one datacenter but not others. For consistency,
+            // return false once the user is no longer routed to the primary datacenter.
+            $recentTouchTimestamp = false;
+            $this->logger->debug(__METHOD__ . ": old timestamp ($timestamp) for $cluster");
+        } else {
+            $recentTouchTimestamp = $timestamp;
+            $this->logger->debug(__METHOD__ . ": recent timestamp ($timestamp) for $cluster");
+        }
 
-		return $recentTouchTimestamp;
-	}
+        return $recentTouchTimestamp;
+    }
 
-	/**
-	 * @return array<string,DBPrimaryPos>
-	 */
-	protected function getStartupSessionPositions() {
-		$this->lazyStartup();
+    /**
+     * @return array<string,DBPrimaryPos>
+     */
+    protected function getStartupSessionPositions()
+    {
+        $this->lazyStartup();
 
-		return $this->startupPositionsByMaster;
-	}
+        return $this->startupPositionsByMaster;
+    }
 
-	/**
-	 * @return array<string,float>
-	 */
-	protected function getStartupSessionTimestamps() {
-		$this->lazyStartup();
+    /**
+     * @return array<string,float>
+     */
+    protected function getStartupSessionTimestamps()
+    {
+        $this->lazyStartup();
 
-		return $this->startupTimestampsByCluster;
-	}
+        return $this->startupTimestampsByCluster;
+    }
 
-	/**
-	 * Load the stored replication positions and touch timestamps for the client
-	 *
-	 * @return void
-	 */
-	protected function lazyStartup() {
-		if ( $this->startupTimestamp !== null ) {
-			return;
-		}
+    /**
+     * Load the stored replication positions and touch timestamps for the client
+     *
+     * @return void
+     */
+    protected function lazyStartup()
+    {
+        if ($this->startupTimestamp !== null) {
+            return;
+        }
 
-		$this->startupTimestamp = $this->getCurrentTime();
-		$this->logger->debug(
-			'ChronologyProtector using store {class}',
-			[ 'class' => get_class( $this->store ) ]
-		);
-		$this->logger->debug(
-			__METHOD__ .
-			": client ID is {$this->clientId}; key is {$this->key}"
-		);
+        $this->startupTimestamp = $this->getCurrentTime();
+        $this->logger->debug(
+            'ChronologyProtector using store {class}',
+            ['class' => get_class($this->store)]
+        );
+        $this->logger->debug(
+            __METHOD__ .
+            ": client ID is {$this->clientId}; key is {$this->key}"
+        );
 
-		// If there is an expectation to see primary positions from a certain write
-		// index or higher, then block until it appears, or until a timeout is reached.
-		// Since the write index restarts each time the key is created, it is possible that
-		// a lagged store has a matching key write index. However, in that case, it should
-		// already be expired and thus treated as non-existing, maintaining correctness.
-		if ( $this->positionWaitsEnabled && $this->waitForPosIndex > 0 ) {
-			$data = null;
-			$indexReached = null; // highest index reached in the position store
-			$loop = new WaitConditionLoop(
-				function () use ( &$data, &$indexReached ) {
-					$data = $this->store->get( $this->key );
-					if ( !is_array( $data ) ) {
-						return WaitConditionLoop::CONDITION_CONTINUE; // not found yet
-					} elseif ( !isset( $data[self::FLD_WRITE_INDEX] ) ) {
-						return WaitConditionLoop::CONDITION_REACHED; // b/c
-					}
-					$indexReached = max( $data[self::FLD_WRITE_INDEX], $indexReached );
+        // If there is an expectation to see primary positions from a certain write
+        // index or higher, then block until it appears, or until a timeout is reached.
+        // Since the write index restarts each time the key is created, it is possible that
+        // a lagged store has a matching key write index. However, in that case, it should
+        // already be expired and thus treated as non-existing, maintaining correctness.
+        if ($this->positionWaitsEnabled && $this->waitForPosIndex > 0) {
+            $data = null;
+            $indexReached = null; // highest index reached in the position store
+            $loop = new WaitConditionLoop(
+                function () use (&$data, &$indexReached) {
+                    $data = $this->store->get($this->key);
+                    if (!is_array($data)) {
+                        return WaitConditionLoop::CONDITION_CONTINUE; // not found yet
+                    } elseif (!isset($data[self::FLD_WRITE_INDEX])) {
+                        return WaitConditionLoop::CONDITION_REACHED; // b/c
+                    }
+                    $indexReached = max($data[self::FLD_WRITE_INDEX], $indexReached);
 
-					return ( $data[self::FLD_WRITE_INDEX] >= $this->waitForPosIndex )
-						? WaitConditionLoop::CONDITION_REACHED
-						: WaitConditionLoop::CONDITION_CONTINUE;
-				},
-				self::POSITION_INDEX_WAIT_TIMEOUT
-			);
-			$result = $loop->invoke();
-			$waitedMs = $loop->getLastWaitTime() * 1e3;
+                    return ($data[self::FLD_WRITE_INDEX] >= $this->waitForPosIndex)
+                        ? WaitConditionLoop::CONDITION_REACHED
+                        : WaitConditionLoop::CONDITION_CONTINUE;
+                },
+                self::POSITION_INDEX_WAIT_TIMEOUT
+            );
+            $result = $loop->invoke();
+            $waitedMs = $loop->getLastWaitTime() * 1e3;
 
-			if ( $result == $loop::CONDITION_REACHED ) {
-				$this->logger->debug(
-					__METHOD__ . ": expected and found position index {cpPosIndex}.",
-					[
-						'cpPosIndex' => $this->waitForPosIndex,
-						'waitTimeMs' => $waitedMs
-					] + $this->clientLogInfo
-				);
-			} else {
-				$this->logger->warning(
-					__METHOD__ . ": expected but failed to find position index {cpPosIndex}.",
-					[
-						'cpPosIndex' => $this->waitForPosIndex,
-						'indexReached' => $indexReached,
-						'waitTimeMs' => $waitedMs
-					] + $this->clientLogInfo
-				);
-			}
-		} else {
-			$data = $this->store->get( $this->key );
-			$indexReached = $data[self::FLD_WRITE_INDEX] ?? null;
-			if ( $indexReached ) {
-				$this->logger->debug(
-					__METHOD__ . ": found position/timestamp data with index {indexReached}.",
-					[ 'indexReached' => $indexReached ] + $this->clientLogInfo
-				);
-			}
-		}
+            if ($result == $loop::CONDITION_REACHED) {
+                $this->logger->debug(
+                    __METHOD__ . ": expected and found position index {cpPosIndex}.",
+                    [
+                        'cpPosIndex' => $this->waitForPosIndex,
+                        'waitTimeMs' => $waitedMs
+                    ] + $this->clientLogInfo
+                );
+            } else {
+                $this->logger->warning(
+                    __METHOD__ . ": expected but failed to find position index {cpPosIndex}.",
+                    [
+                        'cpPosIndex'   => $this->waitForPosIndex,
+                        'indexReached' => $indexReached,
+                        'waitTimeMs'   => $waitedMs
+                    ] + $this->clientLogInfo
+                );
+            }
+        } else {
+            $data = $this->store->get($this->key);
+            $indexReached = $data[self::FLD_WRITE_INDEX] ?? null;
+            if ($indexReached) {
+                $this->logger->debug(
+                    __METHOD__ . ": found position/timestamp data with index {indexReached}.",
+                    ['indexReached' => $indexReached] + $this->clientLogInfo
+                );
+            }
+        }
 
-		$this->startupPositionsByMaster = $data ? $data[self::FLD_POSITIONS] : [];
-		$this->startupTimestampsByCluster = $data[self::FLD_TIMESTAMPS] ?? [];
-	}
+        $this->startupPositionsByMaster = $data ? $data[self::FLD_POSITIONS] : [];
+        $this->startupTimestampsByCluster = $data[self::FLD_TIMESTAMPS] ?? [];
+    }
 
-	/**
-	 * Merge the new replication positions with the currently stored ones (highest wins)
-	 *
-	 * @param array<string,mixed>|false $storedValue Current replication position data
-	 * @param array<string,DBPrimaryPos> $shutdownPositions New replication positions
-	 * @param array<string,float> $shutdownTimestamps New DB post-commit shutdown timestamps
-	 * @param int|null &$clientPosIndex New position write index
-	 * @return array<string,mixed> Combined replication position data
-	 */
-	protected function mergePositions(
-		$storedValue,
-		array $shutdownPositions,
-		array $shutdownTimestamps,
-		?int &$clientPosIndex = null
-	) {
-		/** @var array<string,DBPrimaryPos> $mergedPositions */
-		$mergedPositions = $storedValue[self::FLD_POSITIONS] ?? [];
-		// Use the newest positions for each DB primary
-		foreach ( $shutdownPositions as $masterName => $pos ) {
-			if (
-				!isset( $mergedPositions[$masterName] ) ||
-				!( $mergedPositions[$masterName] instanceof DBPrimaryPos ) ||
-				$pos->asOfTime() > $mergedPositions[$masterName]->asOfTime()
-			) {
-				$mergedPositions[$masterName] = $pos;
-			}
-		}
+    /**
+     * Merge the new replication positions with the currently stored ones (highest wins)
+     *
+     * @param array<string,mixed>|false $storedValue Current replication position data
+     * @param array<string,DBPrimaryPos> $shutdownPositions New replication positions
+     * @param array<string,float> $shutdownTimestamps New DB post-commit shutdown timestamps
+     * @param int|null &$clientPosIndex New position write index
+     * @return array<string,mixed> Combined replication position data
+     */
+    protected function mergePositions(
+        $storedValue,
+        array $shutdownPositions,
+        array $shutdownTimestamps,
+        ?int &$clientPosIndex = null
+    )
+    {
+        /** @var array<string,DBPrimaryPos> $mergedPositions */
+        $mergedPositions = $storedValue[self::FLD_POSITIONS] ?? [];
+        // Use the newest positions for each DB primary
+        foreach ($shutdownPositions as $masterName => $pos) {
+            if (
+                !isset($mergedPositions[$masterName]) ||
+                !($mergedPositions[$masterName] instanceof DBPrimaryPos) ||
+                $pos->asOfTime() > $mergedPositions[$masterName]->asOfTime()
+            ) {
+                $mergedPositions[$masterName] = $pos;
+            }
+        }
 
-		/** @var array<string,float> $mergedTimestamps */
-		$mergedTimestamps = $storedValue[self::FLD_TIMESTAMPS] ?? [];
-		// Use the newest touch timestamp for each DB primary
-		foreach ( $shutdownTimestamps as $cluster => $timestamp ) {
-			if (
-				!isset( $mergedTimestamps[$cluster] ) ||
-				$timestamp > $mergedTimestamps[$cluster]
-			) {
-				$mergedTimestamps[$cluster] = $timestamp;
-			}
-		}
+        /** @var array<string,float> $mergedTimestamps */
+        $mergedTimestamps = $storedValue[self::FLD_TIMESTAMPS] ?? [];
+        // Use the newest touch timestamp for each DB primary
+        foreach ($shutdownTimestamps as $cluster => $timestamp) {
+            if (
+                !isset($mergedTimestamps[$cluster]) ||
+                $timestamp > $mergedTimestamps[$cluster]
+            ) {
+                $mergedTimestamps[$cluster] = $timestamp;
+            }
+        }
 
-		$clientPosIndex = ( $storedValue[self::FLD_WRITE_INDEX] ?? 0 ) + 1;
+        $clientPosIndex = ($storedValue[self::FLD_WRITE_INDEX] ?? 0) + 1;
 
-		return [
-			self::FLD_POSITIONS => $mergedPositions,
-			self::FLD_TIMESTAMPS => $mergedTimestamps,
-			self::FLD_WRITE_INDEX => $clientPosIndex
-		];
-	}
+        return [
+            self::FLD_POSITIONS   => $mergedPositions,
+            self::FLD_TIMESTAMPS  => $mergedTimestamps,
+            self::FLD_WRITE_INDEX => $clientPosIndex
+        ];
+    }
 
-	/**
-	 * @internal For testing only
-	 * @return float UNIX timestamp
-	 * @codeCoverageIgnore
-	 */
-	protected function getCurrentTime() {
-		if ( $this->wallClockOverride ) {
-			return $this->wallClockOverride;
-		}
+    /**
+     * @return float UNIX timestamp
+     * @codeCoverageIgnore
+     * @internal For testing only
+     */
+    protected function getCurrentTime()
+    {
+        if ($this->wallClockOverride) {
+            return $this->wallClockOverride;
+        }
 
-		$clockTime = (float)time(); // call this first
-		// microtime() can severely drift from time() and the microtime() value of other threads.
-		// Instead of seeing the current time as being in the past, use the value of time().
-		return max( microtime( true ), $clockTime );
-	}
+        $clockTime = (float)time(); // call this first
+        // microtime() can severely drift from time() and the microtime() value of other threads.
+        // Instead of seeing the current time as being in the past, use the value of time().
+        return max(microtime(true), $clockTime);
+    }
 
-	/**
-	 * @internal For testing only
-	 * @param float|null &$time Mock UNIX timestamp
-	 * @codeCoverageIgnore
-	 */
-	public function setMockTime( &$time ) {
-		$this->wallClockOverride =& $time;
-	}
+    /**
+     * @param float|null &$time Mock UNIX timestamp
+     * @codeCoverageIgnore
+     * @internal For testing only
+     */
+    public function setMockTime(&$time)
+    {
+        $this->wallClockOverride =& $time;
+    }
 }

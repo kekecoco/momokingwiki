@@ -1,5 +1,5 @@
-var ValuePickerWidget = require( './ValuePickerWidget.js' ),
-	ChangesLimitPopupWidget;
+var ValuePickerWidget = require('./ValuePickerWidget.js'),
+    ChangesLimitPopupWidget;
 
 /**
  * Widget defining the popup to choose number of results
@@ -12,51 +12,51 @@ var ValuePickerWidget = require( './ValuePickerWidget.js' ),
  * @param {mw.rcfilters.dm.FilterItem} groupByPageItemModel Group model for 'limit'
  * @param {Object} [config] Configuration object
  */
-ChangesLimitPopupWidget = function MwRcfiltersUiChangesLimitPopupWidget( limitModel, groupByPageItemModel, config ) {
-	config = config || {};
+ChangesLimitPopupWidget = function MwRcfiltersUiChangesLimitPopupWidget(limitModel, groupByPageItemModel, config) {
+    config = config || {};
 
-	// Parent
-	ChangesLimitPopupWidget.parent.call( this, config );
+    // Parent
+    ChangesLimitPopupWidget.parent.call(this, config);
 
-	this.limitModel = limitModel;
-	this.groupByPageItemModel = groupByPageItemModel;
+    this.limitModel = limitModel;
+    this.groupByPageItemModel = groupByPageItemModel;
 
-	this.valuePicker = new ValuePickerWidget(
-		this.limitModel,
-		{
-			label: mw.msg( 'rcfilters-limit-title' )
-		}
-	);
+    this.valuePicker = new ValuePickerWidget(
+        this.limitModel,
+        {
+            label: mw.msg('rcfilters-limit-title')
+        }
+    );
 
-	this.groupByPageCheckbox = new OO.ui.CheckboxInputWidget( {
-		selected: this.groupByPageItemModel.isSelected()
-	} );
+    this.groupByPageCheckbox = new OO.ui.CheckboxInputWidget({
+        selected: this.groupByPageItemModel.isSelected()
+    });
 
-	// Events
-	this.valuePicker.connect( this, { choose: [ 'emit', 'limit' ] } );
-	this.groupByPageCheckbox.connect( this, { change: [ 'emit', 'groupByPage' ] } );
-	this.groupByPageItemModel.connect( this, { update: 'onGroupByPageModelUpdate' } );
+    // Events
+    this.valuePicker.connect(this, {choose: ['emit', 'limit']});
+    this.groupByPageCheckbox.connect(this, {change: ['emit', 'groupByPage']});
+    this.groupByPageItemModel.connect(this, {update: 'onGroupByPageModelUpdate'});
 
-	// Initialize
-	this.$element
-		.addClass( 'mw-rcfilters-ui-changesLimitPopupWidget' )
-		.append(
-			this.valuePicker.$element,
-			OO.ui.isMobile() ? undefined :
-				new OO.ui.FieldLayout(
-					this.groupByPageCheckbox,
-					{
-						align: 'inline',
-						label: mw.msg( 'rcfilters-group-results-by-page' )
-					}
-				).$element
-		);
-	this.valuePicker.selectWidget.$element.attr( 'aria-label', mw.msg( 'rcfilters-limit-title' ) );
+    // Initialize
+    this.$element
+        .addClass('mw-rcfilters-ui-changesLimitPopupWidget')
+        .append(
+            this.valuePicker.$element,
+            OO.ui.isMobile() ? undefined :
+                new OO.ui.FieldLayout(
+                    this.groupByPageCheckbox,
+                    {
+                        align: 'inline',
+                        label: mw.msg('rcfilters-group-results-by-page')
+                    }
+                ).$element
+        );
+    this.valuePicker.selectWidget.$element.attr('aria-label', mw.msg('rcfilters-limit-title'));
 };
 
 /* Initialization */
 
-OO.inheritClass( ChangesLimitPopupWidget, OO.ui.Widget );
+OO.inheritClass(ChangesLimitPopupWidget, OO.ui.Widget);
 
 /* Events */
 
@@ -78,7 +78,7 @@ OO.inheritClass( ChangesLimitPopupWidget, OO.ui.Widget );
  * Respond to group by page model update
  */
 ChangesLimitPopupWidget.prototype.onGroupByPageModelUpdate = function () {
-	this.groupByPageCheckbox.setSelected( this.groupByPageItemModel.isSelected() );
+    this.groupByPageCheckbox.setSelected(this.groupByPageItemModel.isSelected());
 };
 
 module.exports = ChangesLimitPopupWidget;

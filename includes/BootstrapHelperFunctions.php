@@ -20,36 +20,38 @@
  * must use the format described on
  * https://www.mediawiki.org/wiki/Manual:YAML_settings_file_format.
  *
- * @internal Only for use by Setup.php and Installer.
- * @since 1.38
  * @param string|null $installationPath The installation's base path,
  *        as returned by wfDetectInstallPath().
  *
  * @return string The path to the settings file
+ * @internal Only for use by Setup.php and Installer.
+ * @since 1.38
  */
-function wfDetectLocalSettingsFile( ?string $installationPath = null ): string {
-	if ( defined( 'MW_CONFIG_FILE' ) ) {
-		return MW_CONFIG_FILE;
-	}
+function wfDetectLocalSettingsFile(?string $installationPath = null): string
+{
+    if (defined('MW_CONFIG_FILE')) {
+        return MW_CONFIG_FILE;
+    }
 
-	if ( $installationPath === null ) {
-		$installationPath = wfDetectInstallPath();
-	}
+    if ($installationPath === null) {
+        $installationPath = wfDetectInstallPath();
+    }
 
-	// We could look for LocalSettings.yaml and LocalSettings.json,
-	// and use them if they exist. But having them in a web accessible
-	// place is dangerous, so better not to encourage that.
-	// In order to use LocalSettings.yaml and LocalSettings.json, they
-	// will have to be referenced explicitly by MW_CONFIG_FILE.
-	$configFile = getenv( 'MW_CONFIG_FILE' ) ?: "LocalSettings.php";
-	// Can't use str_contains because for maintenance scripts (update.php, install.php),
-	// this is called *before* Setup.php and vendor (polyfill-php80) are included.
-	if ( strpos( $configFile, '/' ) === false ) {
-		$configFile = "$installationPath/$configFile";
-	}
+    // We could look for LocalSettings.yaml and LocalSettings.json,
+    // and use them if they exist. But having them in a web accessible
+    // place is dangerous, so better not to encourage that.
+    // In order to use LocalSettings.yaml and LocalSettings.json, they
+    // will have to be referenced explicitly by MW_CONFIG_FILE.
+    $configFile = getenv('MW_CONFIG_FILE') ?: "LocalSettings.php";
+    // Can't use str_contains because for maintenance scripts (update.php, install.php),
+    // this is called *before* Setup.php and vendor (polyfill-php80) are included.
+    if (strpos($configFile, '/') === false) {
+        $configFile = "$installationPath/$configFile";
+    }
 
-	define( 'MW_CONFIG_FILE', $configFile );
-	return $configFile;
+    define('MW_CONFIG_FILE', $configFile);
+
+    return $configFile;
 }
 
 /**
@@ -61,18 +63,19 @@ function wfDetectLocalSettingsFile( ?string $installationPath = null ): string {
  * The install path is detected based on the location of this file,
  * but can be overwritten using the MW_INSTALL_PATH environment variable.
  *
- * @internal Only for use by Setup.php and Installer.
- * @since 1.39
  * @return string The path to the mediawiki installation
+ * @since 1.39
+ * @internal Only for use by Setup.php and Installer.
  */
-function wfDetectInstallPath(): string {
-	if ( !defined( 'MW_INSTALL_PATH' ) ) {
-		$IP = getenv( 'MW_INSTALL_PATH' );
-		if ( $IP === false ) {
-			$IP = dirname( __DIR__ );
-		}
-		define( 'MW_INSTALL_PATH', $IP );
-	}
+function wfDetectInstallPath(): string
+{
+    if (!defined('MW_INSTALL_PATH')) {
+        $IP = getenv('MW_INSTALL_PATH');
+        if ($IP === false) {
+            $IP = dirname(__DIR__);
+        }
+        define('MW_INSTALL_PATH', $IP);
+    }
 
-	return MW_INSTALL_PATH;
+    return MW_INSTALL_PATH;
 }

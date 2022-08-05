@@ -16,7 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 namespace MediaWiki\Parser\Parsoid;
 
@@ -31,40 +31,48 @@ use Wikimedia\Parsoid\Config\SiteConfig;
  * code has been moved from Parsoid to core; it will be removed once the
  * transition is complete.  Use MediaWikiServices instead.
  */
-class ParsoidServices {
+class ParsoidServices
+{
 
-	/** @var MediaWikiServices */
-	private $services;
+    /** @var MediaWikiServices */
+    private $services;
 
-	/**
-	 * @param MediaWikiServices $services
-	 */
-	public function __construct( MediaWikiServices $services ) {
-		$this->services = $services;
-	}
+    /**
+     * @param MediaWikiServices $services
+     */
+    public function __construct(MediaWikiServices $services)
+    {
+        $this->services = $services;
+    }
 
-	/**
-	 * @return DataAccess
-	 */
-	public function getParsoidDataAccess(): DataAccess {
-		wfDeprecated( __METHOD__, '1.39' );
-		return $this->services->getParsoidDataAccess();
-	}
+    /**
+     * @return DataAccess
+     */
+    public function getParsoidDataAccess(): DataAccess
+    {
+        wfDeprecated(__METHOD__, '1.39');
 
-	/**
-	 * @return PageConfigFactory
-	 */
-	public function getParsoidPageConfigFactory(): PageConfigFactory {
-		wfDeprecated( __METHOD__, '1.39' );
-		return $this->services->getParsoidPageConfigFactory();
-	}
+        return $this->services->getParsoidDataAccess();
+    }
 
-	/**
-	 * @return SiteConfig
-	 */
-	public function getParsoidSiteConfig(): SiteConfig {
-		wfDeprecated( __METHOD__, '1.39' );
-		return $this->services->getParsoidSiteConfig();
-	}
+    /**
+     * @return PageConfigFactory
+     */
+    public function getParsoidPageConfigFactory(): PageConfigFactory
+    {
+        wfDeprecated(__METHOD__, '1.39');
+
+        return $this->services->getParsoidPageConfigFactory();
+    }
+
+    /**
+     * @return SiteConfig
+     */
+    public function getParsoidSiteConfig(): SiteConfig
+    {
+        wfDeprecated(__METHOD__, '1.39');
+
+        return $this->services->getParsoidSiteConfig();
+    }
 
 }

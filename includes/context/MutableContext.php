@@ -25,58 +25,59 @@ use MediaWiki\Permissions\Authority;
  *
  * @since 1.26
  */
-interface MutableContext {
+interface MutableContext
+{
 
-	/**
-	 * @param Config $config
-	 */
-	public function setConfig( Config $config );
+    /**
+     * @param Config $config
+     */
+    public function setConfig(Config $config);
 
-	/**
-	 * @param WebRequest $request
-	 */
-	public function setRequest( WebRequest $request );
+    /**
+     * @param WebRequest $request
+     */
+    public function setRequest(WebRequest $request);
 
-	/**
-	 * @param Title $title
-	 */
-	public function setTitle( Title $title );
+    /**
+     * @param Title $title
+     */
+    public function setTitle(Title $title);
 
-	/**
-	 * @param WikiPage $wikiPage
-	 */
-	public function setWikiPage( WikiPage $wikiPage );
+    /**
+     * @param WikiPage $wikiPage
+     */
+    public function setWikiPage(WikiPage $wikiPage);
 
-	/**
-	 * @since 1.38
-	 * @param string $action
-	 */
-	public function setActionName( string $action ): void;
+    /**
+     * @param string $action
+     * @since 1.38
+     */
+    public function setActionName(string $action): void;
 
-	/**
-	 * @param OutputPage $output
-	 */
-	public function setOutput( OutputPage $output );
+    /**
+     * @param OutputPage $output
+     */
+    public function setOutput(OutputPage $output);
 
-	/**
-	 * @param User $user
-	 */
-	public function setUser( User $user );
+    /**
+     * @param User $user
+     */
+    public function setUser(User $user);
 
-	/**
-	 * @unstable
-	 * @param Authority $authority
-	 */
-	public function setAuthority( Authority $authority );
+    /**
+     * @unstable
+     * @param Authority $authority
+     */
+    public function setAuthority(Authority $authority);
 
-	/**
-	 * @param Language|string $language Language instance or language code
-	 */
-	public function setLanguage( $language );
+    /**
+     * @param Language|string $language Language instance or language code
+     */
+    public function setLanguage($language);
 
-	/**
-	 * @param Skin $skin
-	 */
-	public function setSkin( Skin $skin );
+    /**
+     * @param Skin $skin
+     */
+    public function setSkin(Skin $skin);
 
 }

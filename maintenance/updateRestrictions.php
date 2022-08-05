@@ -32,129 +32,135 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class UpdateRestrictions extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Updates page_restrictions table from old page_restriction column' );
-		$this->setBatchSize( 1000 );
-	}
+class UpdateRestrictions extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Updates page_restrictions table from old page_restriction column');
+        $this->setBatchSize(1000);
+    }
 
-	public function execute() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$batchSize = $this->getBatchSize();
+    public function execute()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $batchSize = $this->getBatchSize();
 
-		if ( !$dbw->tableExists( 'page_restrictions', __METHOD__ ) ) {
-			$this->fatalError( "page_restrictions table does not exist" );
-		}
+        if (!$dbw->tableExists('page_restrictions', __METHOD__)) {
+            $this->fatalError("page_restrictions table does not exist");
+        }
 
-		if ( !$dbw->fieldExists( 'page', 'page_restrictions' ) ) {
-			$this->output( "Migration is not needed.\n" );
-			return true;
-		}
+        if (!$dbw->fieldExists('page', 'page_restrictions')) {
+            $this->output("Migration is not needed.\n");
 
-		$encodedExpiry = $dbw->getInfinity();
+            return true;
+        }
 
-		$maxPageId = $dbw->selectField( 'page', 'MAX(page_id)', '', __METHOD__ );
-		$escapedEmptyBlobValue = $dbw->addQuotes( '' );
+        $encodedExpiry = $dbw->getInfinity();
 
-		$batchMinPageId = 0;
+        $maxPageId = $dbw->selectField('page', 'MAX(page_id)', '', __METHOD__);
+        $escapedEmptyBlobValue = $dbw->addQuotes('');
 
-		do {
-			$batchMaxPageId = $batchMinPageId + $batchSize;
+        $batchMinPageId = 0;
 
-			$this->output( "...processing page IDs from $batchMinPageId to $batchMaxPageId.\n" );
+        do {
+            $batchMaxPageId = $batchMinPageId + $batchSize;
 
-			$res = $dbw->select(
-				'page',
-				[ 'page_id', 'page_restrictions' ],
-				[
-					"page_restrictions != $escapedEmptyBlobValue",
-					'page_id > ' . $dbw->addQuotes( $batchMinPageId ),
-					'page_id <= ' . $dbw->addQuotes( $batchMaxPageId ),
-				],
-				__METHOD__
-			);
+            $this->output("...processing page IDs from $batchMinPageId to $batchMaxPageId.\n");
 
-			// No pages have legacy protection settings in the current batch
-			if ( !$res->numRows() ) {
-				$batchMinPageId = $batchMaxPageId;
-				continue;
-			}
+            $res = $dbw->select(
+                'page',
+                ['page_id', 'page_restrictions'],
+                [
+                    "page_restrictions != $escapedEmptyBlobValue",
+                    'page_id > ' . $dbw->addQuotes($batchMinPageId),
+                    'page_id <= ' . $dbw->addQuotes($batchMaxPageId),
+                ],
+                __METHOD__
+            );
 
-			$batch = [];
-			$pageIds = [];
+            // No pages have legacy protection settings in the current batch
+            if (!$res->numRows()) {
+                $batchMinPageId = $batchMaxPageId;
+                continue;
+            }
 
-			foreach ( $res as $row ) {
-				$pageIds[] = $row->page_id;
+            $batch = [];
+            $pageIds = [];
 
-				$restrictionsByAction = $this->mapLegacyRestrictionBlob( $row->page_restrictions );
+            foreach ($res as $row) {
+                $pageIds[] = $row->page_id;
 
-				# Update restrictions table
-				foreach ( $restrictionsByAction as $action => $restrictions ) {
-					$batch[] = [
-						'pr_page' => $row->page_id,
-						'pr_type' => $action,
-						'pr_level' => $restrictions,
-						'pr_cascade' => 0,
-						'pr_expiry' => $encodedExpiry
-					];
-				}
-			}
+                $restrictionsByAction = $this->mapLegacyRestrictionBlob($row->page_restrictions);
 
-			$this->beginTransaction( $dbw, __METHOD__ );
+                # Update restrictions table
+                foreach ($restrictionsByAction as $action => $restrictions) {
+                    $batch[] = [
+                        'pr_page'    => $row->page_id,
+                        'pr_type'    => $action,
+                        'pr_level'   => $restrictions,
+                        'pr_cascade' => 0,
+                        'pr_expiry'  => $encodedExpiry
+                    ];
+                }
+            }
 
-			// Insert new format protection settings for the pages in the current batch.
-			// Use INSERT IGNORE to ignore conflicts with new format settings that might exist for the page
-			$dbw->insert(
-				'page_restrictions',
-				$batch,
-				__METHOD__,
-				[ 'IGNORE' ]
-			);
+            $this->beginTransaction($dbw, __METHOD__);
 
-			// Clear out the legacy page.page_restrictions blob for this batch
-			$dbw->update( 'page', [ 'page_restrictions' => '' ], [ 'page_id' => $pageIds ], __METHOD__ );
+            // Insert new format protection settings for the pages in the current batch.
+            // Use INSERT IGNORE to ignore conflicts with new format settings that might exist for the page
+            $dbw->insert(
+                'page_restrictions',
+                $batch,
+                __METHOD__,
+                ['IGNORE']
+            );
 
-			$this->commitTransaction( $dbw, __METHOD__ );
+            // Clear out the legacy page.page_restrictions blob for this batch
+            $dbw->update('page', ['page_restrictions' => ''], ['page_id' => $pageIds], __METHOD__);
 
-			$batchMinPageId = $batchMaxPageId;
-		} while ( $batchMaxPageId < $maxPageId );
+            $this->commitTransaction($dbw, __METHOD__);
 
-		$this->output( "...Done!\n" );
-		return true;
-	}
+            $batchMinPageId = $batchMaxPageId;
+        } while ($batchMaxPageId < $maxPageId);
 
-	/**
-	 * Convert a legacy restriction specification from the page.page_restrictions blob to
-	 * a map of action names to restriction levels.
-	 *
-	 * @param string $legacyBlob Legacy page.page_restrictions blob,
-	 * e.g. "sysop" or "edit=sysop:move=autoconfirmed"
-	 * @return string[] array of restriction levels keyed by action names
-	 */
-	private function mapLegacyRestrictionBlob( $legacyBlob ) {
-		$oldRestrictions = [];
+        $this->output("...Done!\n");
 
-		foreach ( explode( ':', trim( $legacyBlob ) ) as $restrict ) {
-			$temp = explode( '=', trim( $restrict ) );
+        return true;
+    }
 
-			// Treat old old format without action name as edit/move restriction
-			if ( count( $temp ) == 1 ) {
-				$level = trim( $temp[0] );
+    /**
+     * Convert a legacy restriction specification from the page.page_restrictions blob to
+     * a map of action names to restriction levels.
+     *
+     * @param string $legacyBlob Legacy page.page_restrictions blob,
+     * e.g. "sysop" or "edit=sysop:move=autoconfirmed"
+     * @return string[] array of restriction levels keyed by action names
+     */
+    private function mapLegacyRestrictionBlob($legacyBlob)
+    {
+        $oldRestrictions = [];
 
-				$oldRestrictions['edit'] = $level;
-				$oldRestrictions['move'] = $level;
-			} else {
-				$restriction = trim( $temp[1] );
-				// Some old entries are empty
-				if ( $restriction != '' ) {
-					$oldRestrictions[$temp[0]] = $restriction;
-				}
-			}
-		}
+        foreach (explode(':', trim($legacyBlob)) as $restrict) {
+            $temp = explode('=', trim($restrict));
 
-		return $oldRestrictions;
-	}
+            // Treat old old format without action name as edit/move restriction
+            if (count($temp) == 1) {
+                $level = trim($temp[0]);
+
+                $oldRestrictions['edit'] = $level;
+                $oldRestrictions['move'] = $level;
+            } else {
+                $restriction = trim($temp[1]);
+                // Some old entries are empty
+                if ($restriction != '') {
+                    $oldRestrictions[$temp[0]] = $restriction;
+                }
+            }
+        }
+
+        return $oldRestrictions;
+    }
 }
 
 $maintClass = UpdateRestrictions::class;

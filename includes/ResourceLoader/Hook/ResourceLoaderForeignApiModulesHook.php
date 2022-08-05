@@ -11,18 +11,19 @@ use MediaWiki\ResourceLoader\Context;
  * @stable to implement
  * @ingroup ResourceLoaderHooks
  */
-interface ResourceLoaderForeignApiModulesHook {
-	/**
-	 * Add dependencies to the `mediawiki.ForeignApi` module when you wish
-	 * to override its behavior. See the JS docs for more information.
-	 *
-	 * This hook is called from ResourceLoaderForeignApiModule.
-	 *
-	 * @since 1.35
-	 * @param string[] &$dependencies List of modules that mediawiki.ForeignApi should
-	 *   depend on
-	 * @param Context|null $context
-	 * @return void This hook must not abort, it must return no value
-	 */
-	public function onResourceLoaderForeignApiModules( &$dependencies, $context ): void;
+interface ResourceLoaderForeignApiModulesHook
+{
+    /**
+     * Add dependencies to the `mediawiki.ForeignApi` module when you wish
+     * to override its behavior. See the JS docs for more information.
+     *
+     * This hook is called from ResourceLoaderForeignApiModule.
+     *
+     * @param string[] &$dependencies List of modules that mediawiki.ForeignApi should
+     *   depend on
+     * @param Context|null $context
+     * @return void This hook must not abort, it must return no value
+     * @since 1.35
+     */
+    public function onResourceLoaderForeignApiModules(&$dependencies, $context): void;
 }

@@ -30,86 +30,93 @@ use Wikimedia\RequestTimeout\TimeoutException;
  *
  * @ingroup Media
  */
-class TiffHandler extends ExifBitmapHandler {
-	/**
-	 * TIFF files over 10M are considered expensive to thumbnail
-	 */
-	private const EXPENSIVE_SIZE_LIMIT = 10485760;
+class TiffHandler extends ExifBitmapHandler
+{
+    /**
+     * TIFF files over 10M are considered expensive to thumbnail
+     */
+    private const EXPENSIVE_SIZE_LIMIT = 10485760;
 
-	/**
-	 * Conversion to PNG for inline display can be disabled here...
-	 * Note scaling should work with ImageMagick, but may not with GD scaling.
-	 *
-	 * Files pulled from an another MediaWiki instance via ForeignAPIRepo /
-	 * InstantCommons will have thumbnails managed from the remote instance,
-	 * so we can skip this check.
-	 *
-	 * @param File $file
-	 * @return bool
-	 */
-	public function canRender( $file ) {
-		$tiffThumbnailType = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::TiffThumbnailType );
+    /**
+     * Conversion to PNG for inline display can be disabled here...
+     * Note scaling should work with ImageMagick, but may not with GD scaling.
+     *
+     * Files pulled from an another MediaWiki instance via ForeignAPIRepo /
+     * InstantCommons will have thumbnails managed from the remote instance,
+     * so we can skip this check.
+     *
+     * @param File $file
+     * @return bool
+     */
+    public function canRender($file)
+    {
+        $tiffThumbnailType = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::TiffThumbnailType);
 
-		return (bool)$tiffThumbnailType
-			|| $file->getRepo() instanceof ForeignAPIRepo;
-	}
+        return (bool)$tiffThumbnailType
+            || $file->getRepo() instanceof ForeignAPIRepo;
+    }
 
-	/**
-	 * Browsers don't support TIFF inline generally...
-	 * For inline display, we need to convert to PNG.
-	 *
-	 * @param File $file
-	 * @return bool
-	 */
-	public function mustRender( $file ) {
-		return true;
-	}
+    /**
+     * Browsers don't support TIFF inline generally...
+     * For inline display, we need to convert to PNG.
+     *
+     * @param File $file
+     * @return bool
+     */
+    public function mustRender($file)
+    {
+        return true;
+    }
 
-	/**
-	 * @param string $ext
-	 * @param string $mime
-	 * @param array|null $params
-	 * @return array
-	 */
-	public function getThumbType( $ext, $mime, $params = null ) {
-		$tiffThumbnailType = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::TiffThumbnailType );
+    /**
+     * @param string $ext
+     * @param string $mime
+     * @param array|null $params
+     * @return array
+     */
+    public function getThumbType($ext, $mime, $params = null)
+    {
+        $tiffThumbnailType = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::TiffThumbnailType);
 
-		return $tiffThumbnailType;
-	}
+        return $tiffThumbnailType;
+    }
 
-	public function getSizeAndMetadata( $state, $filename ) {
-		$showEXIF = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::ShowEXIF );
+    public function getSizeAndMetadata($state, $filename)
+    {
+        $showEXIF = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::ShowEXIF);
 
-		try {
-			$meta = BitmapMetadataHandler::Tiff( $filename );
-			if ( !is_array( $meta ) ) {
-				// This should never happen, but doesn't hurt to be paranoid.
-				throw new MWException( 'Metadata array is not an array' );
-			}
-			$info = [
-				'width' => $meta['ImageWidth'] ?? 0,
-				'height' => $meta['ImageLength'] ?? 0,
-			];
-			$info = $this->applyExifRotation( $info, $meta );
-			if ( $showEXIF ) {
-				$meta['MEDIAWIKI_EXIF_VERSION'] = Exif::version();
-				$info['metadata'] = $meta;
-			}
-			return $info;
-		} catch ( TimeoutException $e ) {
-			throw $e;
-		} catch ( Exception $e ) {
-			// BitmapMetadataHandler throws an exception in certain exceptional
-			// cases like if file does not exist.
-			wfDebug( __METHOD__ . ': ' . $e->getMessage() );
+        try {
+            $meta = BitmapMetadataHandler::Tiff($filename);
+            if (!is_array($meta)) {
+                // This should never happen, but doesn't hurt to be paranoid.
+                throw new MWException('Metadata array is not an array');
+            }
+            $info = [
+                'width'  => $meta['ImageWidth'] ?? 0,
+                'height' => $meta['ImageLength'] ?? 0,
+            ];
+            $info = $this->applyExifRotation($info, $meta);
+            if ($showEXIF) {
+                $meta['MEDIAWIKI_EXIF_VERSION'] = Exif::version();
+                $info['metadata'] = $meta;
+            }
 
-			return [ 'metadata' => [ '_error' => ExifBitmapHandler::BROKEN_FILE ] ];
-		}
-	}
+            return $info;
+        } catch (TimeoutException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            // BitmapMetadataHandler throws an exception in certain exceptional
+            // cases like if file does not exist.
+            wfDebug(__METHOD__ . ': ' . $e->getMessage());
 
-	public function isExpensiveToThumbnail( $file ) {
-		return $file->getSize() > static::EXPENSIVE_SIZE_LIMIT;
-	}
+            return ['metadata' => ['_error' => ExifBitmapHandler::BROKEN_FILE]];
+        }
+    }
+
+    public function isExpensiveToThumbnail($file)
+    {
+        return $file->getSize() > static::EXPENSIVE_SIZE_LIMIT;
+    }
 }

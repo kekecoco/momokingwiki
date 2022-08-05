@@ -13,25 +13,26 @@ use MediaWiki\Settings\SettingsBuilderException;
  * @since 1.38
  * @stable to implement
  */
-interface SettingsIncludeLocator {
+interface SettingsIncludeLocator
+{
 
-	/**
-	 * This method defines how a relative reference to the location of
-	 * another settings source is interpreted.
-	 *
-	 * It tries to make $location absolute by interpreting it as
-	 * relative to the location of the SettingsSource it originates from.
-	 *
-	 * Implementation are "best effort". If a location cannot be made
-	 * absolute, it may be returned as-is. Implementations are also free
-	 * to throw a SettingsBuilderException to indicate that the given
-	 * include location is not supported in this context.
-	 *
-	 * @param string $location
-	 *
-	 * @return string
-	 * @throws SettingsBuilderException if the given location cannot be used
-	 *         as an include by the current source.
-	 */
-	public function locateInclude( string $location ): string;
+    /**
+     * This method defines how a relative reference to the location of
+     * another settings source is interpreted.
+     *
+     * It tries to make $location absolute by interpreting it as
+     * relative to the location of the SettingsSource it originates from.
+     *
+     * Implementation are "best effort". If a location cannot be made
+     * absolute, it may be returned as-is. Implementations are also free
+     * to throw a SettingsBuilderException to indicate that the given
+     * include location is not supported in this context.
+     *
+     * @param string $location
+     *
+     * @return string
+     * @throws SettingsBuilderException if the given location cannot be used
+     *         as an include by the current source.
+     */
+    public function locateInclude(string $location): string;
 }

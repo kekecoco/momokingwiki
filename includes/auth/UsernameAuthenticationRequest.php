@@ -27,19 +27,21 @@ namespace MediaWiki\Auth;
  * @ingroup Auth
  * @since 1.27
  */
-class UsernameAuthenticationRequest extends AuthenticationRequest {
+class UsernameAuthenticationRequest extends AuthenticationRequest
+{
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getFieldInfo() {
-		return [
-			'username' => [
-				'type' => 'string',
-				'label' => wfMessage( 'userlogin-yourname' ),
-				'help' => wfMessage( 'authmanager-username-help' ),
-			],
-		];
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getFieldInfo()
+    {
+        return [
+            'username' => [
+                'type'  => 'string',
+                'label' => wfMessage('userlogin-yourname'),
+                'help'  => wfMessage('authmanager-username-help'),
+            ],
+        ];
+    }
 }

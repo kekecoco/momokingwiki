@@ -1,4 +1,5 @@
 <?php
+
 namespace MediaWiki\Tests\Page;
 
 use LinkCache;
@@ -15,30 +16,32 @@ use Wikimedia\Rdbms\LoadBalancer;
 /**
  * @covers \MediaWiki\Page\PageStoreFactory
  */
-class PageStoreFactoryTest extends MediaWikiUnitTestCase {
+class PageStoreFactoryTest extends MediaWikiUnitTestCase
+{
 
-	public function testGetPageStore() {
-		$options = new ServiceOptions( PageStoreFactory::CONSTRUCTOR_OPTIONS, [
-			'LanguageCode' => 'fi',
-			'PageLanguageUseDB' => true,
-		] );
+    public function testGetPageStore()
+    {
+        $options = new ServiceOptions(PageStoreFactory::CONSTRUCTOR_OPTIONS, [
+            'LanguageCode'      => 'fi',
+            'PageLanguageUseDB' => true,
+        ]);
 
-		$lb = $this->createNoOpMock( LoadBalancer::class );
+        $lb = $this->createNoOpMock(LoadBalancer::class);
 
-		$lbFactory = $this->createNoOpMock( LBFactory::class, [ 'getMainLB' ] );
-		$lbFactory->method( 'getMainLB' )->willReturn( $lb );
+        $lbFactory = $this->createNoOpMock(LBFactory::class, ['getMainLB']);
+        $lbFactory->method('getMainLB')->willReturn($lb);
 
-		$factory = new PageStoreFactory(
-			$options,
-			$lbFactory,
-			$this->createNoOpMock( NamespaceInfo::class ),
-			$this->createNoOpMock( TitleParser::class ),
-			$this->createNoOpMock( LinkCache::class ),
-			$this->createNoOpMock( StatsdDataFactoryInterface::class )
-		);
+        $factory = new PageStoreFactory(
+            $options,
+            $lbFactory,
+            $this->createNoOpMock(NamespaceInfo::class),
+            $this->createNoOpMock(TitleParser::class),
+            $this->createNoOpMock(LinkCache::class),
+            $this->createNoOpMock(StatsdDataFactoryInterface::class)
+        );
 
-		// Just check that nothing explodes.
-		$this->assertInstanceOf( PageStore::class, $factory->getPageStore() );
-	}
+        // Just check that nothing explodes.
+        $this->assertInstanceOf(PageStore::class, $factory->getPageStore());
+    }
 
 }

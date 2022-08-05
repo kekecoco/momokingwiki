@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -25,27 +26,29 @@ use MediaWiki\MediaWikiServices;
  * @ingroup Profiler
  * @since 1.25
  */
-class ProfilerOutputStats extends ProfilerOutput {
+class ProfilerOutputStats extends ProfilerOutput
+{
 
-	/**
-	 * Flush profiling data to the current profiling context's stats buffer.
-	 *
-	 * @param array[] $stats
-	 */
-	public function log( array $stats ) {
-		$prefix = $this->params['prefix'] ?? '';
-		$contextStats = MediaWikiServices::getInstance()->getStatsdDataFactory();
+    /**
+     * Flush profiling data to the current profiling context's stats buffer.
+     *
+     * @param array[] $stats
+     */
+    public function log(array $stats)
+    {
+        $prefix = $this->params['prefix'] ?? '';
+        $contextStats = MediaWikiServices::getInstance()->getStatsdDataFactory();
 
-		foreach ( $stats as $stat ) {
-			$key = "{$prefix}.{$stat['name']}";
+        foreach ($stats as $stat) {
+            $key = "{$prefix}.{$stat['name']}";
 
-			// Convert fractional seconds to whole milliseconds
-			$cpu = round( $stat['cpu'] * 1000 );
-			$real = round( $stat['real'] * 1000 );
+            // Convert fractional seconds to whole milliseconds
+            $cpu = round($stat['cpu'] * 1000);
+            $real = round($stat['real'] * 1000);
 
-			$contextStats->increment( "{$key}.calls" );
-			$contextStats->timing( "{$key}.cpu", $cpu );
-			$contextStats->timing( "{$key}.real", $real );
-		}
-	}
+            $contextStats->increment("{$key}.calls");
+            $contextStats->timing("{$key}.cpu", $cpu);
+            $contextStats->timing("{$key}.real", $real);
+        }
+    }
 }

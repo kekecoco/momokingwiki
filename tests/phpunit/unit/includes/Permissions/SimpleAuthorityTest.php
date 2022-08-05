@@ -31,119 +31,129 @@ use MediaWikiUnitTestCase;
 /**
  * @covers \MediaWiki\Permissions\SimpleAuthority
  */
-class SimpleAuthorityTest extends MediaWikiUnitTestCase {
+class SimpleAuthorityTest extends MediaWikiUnitTestCase
+{
 
-	public function testGetAuthor() {
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [] );
+    public function testGetAuthor()
+    {
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, []);
 
-		$this->assertSame( $actor, $authority->getUser() );
-	}
+        $this->assertSame($actor, $authority->getUser());
+    }
 
-	public function testPermissions() {
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testPermissions()
+    {
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->assertTrue( $authority->isAllowed( 'foo' ) );
-		$this->assertTrue( $authority->isAllowed( 'bar' ) );
-		$this->assertFalse( $authority->isAllowed( 'quux' ) );
+        $this->assertTrue($authority->isAllowed('foo'));
+        $this->assertTrue($authority->isAllowed('bar'));
+        $this->assertFalse($authority->isAllowed('quux'));
 
-		$this->assertTrue( $authority->isAllowedAll( 'foo', 'bar' ) );
-		$this->assertTrue( $authority->isAllowedAny( 'bar', 'quux' ) );
+        $this->assertTrue($authority->isAllowedAll('foo', 'bar'));
+        $this->assertTrue($authority->isAllowedAny('bar', 'quux'));
 
-		$this->assertFalse( $authority->isAllowedAll( 'foo', 'quux' ) );
-		$this->assertFalse( $authority->isAllowedAny( 'xyzzy', 'quux' ) );
-	}
+        $this->assertFalse($authority->isAllowedAll('foo', 'quux'));
+        $this->assertFalse($authority->isAllowedAny('xyzzy', 'quux'));
+    }
 
-	public function testProbablyCan() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testProbablyCan()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->assertTrue( $authority->probablyCan( 'foo', $target ) );
-		$this->assertTrue( $authority->probablyCan( 'bar', $target ) );
-		$this->assertFalse( $authority->probablyCan( 'quux', $target ) );
+        $this->assertTrue($authority->probablyCan('foo', $target));
+        $this->assertTrue($authority->probablyCan('bar', $target));
+        $this->assertFalse($authority->probablyCan('quux', $target));
 
-		$status = new PermissionStatus();
-		$authority->probablyCan( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+        $status = new PermissionStatus();
+        $authority->probablyCan('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$authority->probablyCan( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $authority->probablyCan('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-	public function testDefinitlyCan() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testDefinitlyCan()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->assertTrue( $authority->definitelyCan( 'foo', $target ) );
-		$this->assertTrue( $authority->definitelyCan( 'bar', $target ) );
-		$this->assertFalse( $authority->definitelyCan( 'quux', $target ) );
+        $this->assertTrue($authority->definitelyCan('foo', $target));
+        $this->assertTrue($authority->definitelyCan('bar', $target));
+        $this->assertFalse($authority->definitelyCan('quux', $target));
 
-		$status = new PermissionStatus();
-		$authority->definitelyCan( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+        $status = new PermissionStatus();
+        $authority->definitelyCan('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$authority->definitelyCan( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $authority->definitelyCan('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-	public function testAuthorizeRead() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testAuthorizeRead()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->assertTrue( $authority->authorizeRead( 'foo', $target ) );
-		$this->assertTrue( $authority->authorizeRead( 'bar', $target ) );
-		$this->assertFalse( $authority->authorizeRead( 'quux', $target ) );
+        $this->assertTrue($authority->authorizeRead('foo', $target));
+        $this->assertTrue($authority->authorizeRead('bar', $target));
+        $this->assertFalse($authority->authorizeRead('quux', $target));
 
-		$status = new PermissionStatus();
-		$authority->authorizeRead( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+        $status = new PermissionStatus();
+        $authority->authorizeRead('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$authority->authorizeRead( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $authority->authorizeRead('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-	public function testAuthorizeWrite() {
-		$target = new PageIdentityValue( 321, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testAuthorizeWrite()
+    {
+        $target = new PageIdentityValue(321, NS_MAIN, __METHOD__, PageIdentity::LOCAL);
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->assertTrue( $authority->authorizeWrite( 'foo', $target ) );
-		$this->assertTrue( $authority->authorizeWrite( 'bar', $target ) );
-		$this->assertFalse( $authority->authorizeWrite( 'quux', $target ) );
+        $this->assertTrue($authority->authorizeWrite('foo', $target));
+        $this->assertTrue($authority->authorizeWrite('bar', $target));
+        $this->assertFalse($authority->authorizeWrite('quux', $target));
 
-		$status = new PermissionStatus();
-		$authority->authorizeWrite( 'foo', $target, $status );
-		$this->assertStatusOK( $status );
+        $status = new PermissionStatus();
+        $authority->authorizeWrite('foo', $target, $status);
+        $this->assertStatusOK($status);
 
-		$authority->authorizeWrite( 'quux', $target, $status );
-		$this->assertStatusNotOK( $status );
-	}
+        $authority->authorizeWrite('quux', $target, $status);
+        $this->assertStatusNotOK($status);
+    }
 
-	public function testIsAllowedAnyThrowsOnEmptySet() {
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testIsAllowedAnyThrowsOnEmptySet()
+    {
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->expectException( InvalidArgumentException::class );
-		$authority->isAllowedAny();
-	}
+        $this->expectException(InvalidArgumentException::class);
+        $authority->isAllowedAny();
+    }
 
-	public function testIsAllowedAllThrowsOnEmptySet() {
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [ 'foo', 'bar' ] );
+    public function testIsAllowedAllThrowsOnEmptySet()
+    {
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, ['foo', 'bar']);
 
-		$this->expectException( InvalidArgumentException::class );
-		$authority->isAllowedAll();
-	}
+        $this->expectException(InvalidArgumentException::class);
+        $authority->isAllowedAll();
+    }
 
-	public function testGetBlock() {
-		$actor = new UserIdentityValue( 12, 'Test' );
-		$authority = new SimpleAuthority( $actor, [] );
+    public function testGetBlock()
+    {
+        $actor = new UserIdentityValue(12, 'Test');
+        $authority = new SimpleAuthority($actor, []);
 
-		$this->assertNull( $authority->getBlock() );
-	}
+        $this->assertNull($authority->getBlock());
+    }
 
 }

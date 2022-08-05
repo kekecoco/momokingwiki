@@ -27,26 +27,28 @@ namespace MediaWiki\Block\Restriction;
  *
  * @since 1.37
  */
-class ActionRestriction extends AbstractRestriction {
+class ActionRestriction extends AbstractRestriction
+{
 
-	/**
-	 * @inheritDoc
-	 */
-	public const TYPE = 'action';
+    /**
+     * @inheritDoc
+     */
+    public const TYPE = 'action';
 
-	/**
-	 * @inheritDoc
-	 */
-	public const TYPE_ID = 3;
+    /**
+     * @inheritDoc
+     */
+    public const TYPE_ID = 3;
 
-	/**
-	 * @inheritDoc
-	 */
-	public function matches( \Title $title ) {
-		// Action blocks don't apply to particular titles. For example,
-		// if a block only blocked uploading, the target would still be
-		// allowed to edit any page.
-		return false;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function matches(\Title $title)
+    {
+        // Action blocks don't apply to particular titles. For example,
+        // if a block only blocked uploading, the target would still be
+        // allowed to edit any page.
+        return false;
+    }
 
 }

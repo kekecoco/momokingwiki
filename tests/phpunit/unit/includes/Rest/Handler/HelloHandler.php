@@ -8,12 +8,15 @@ use MediaWiki\Rest\Handler;
  * Example handler
  * @unstable
  */
-class HelloHandler extends Handler {
-	public function execute() {
-		return [ 'message' => "Hello!" ];
-	}
+class HelloHandler extends Handler
+{
+    public function execute()
+    {
+        return ['message' => "Hello!"];
+    }
 
-	public function needsWriteAccess() {
-		return false;
-	}
+    public function needsWriteAccess()
+    {
+        return false;
+    }
 }

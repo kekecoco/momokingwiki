@@ -5,10 +5,11 @@ namespace Wikimedia\Rdbms;
 /**
  * @deprecated since 1.39 use DBConnRef
  */
-class MaintainableDBConnRef extends DBConnRef {
+class MaintainableDBConnRef extends DBConnRef
+{
 }
 
 /**
  * @deprecated since 1.33
  */
-class_alias( MaintainableDBConnRef::class, 'MaintainableDBConnRef' );
+class_alias(MaintainableDBConnRef::class, 'MaintainableDBConnRef');

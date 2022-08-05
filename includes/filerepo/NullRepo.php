@@ -25,14 +25,17 @@
  * @internal
  * @ingroup FileRepo
  */
-class NullRepo extends FileRepo {
-	/**
-	 * @param array|null $info
-	 */
-	public function __construct( $info ) {
-	}
+class NullRepo extends FileRepo
+{
+    /**
+     * @param array|null $info
+     */
+    public function __construct($info)
+    {
+    }
 
-	protected function assertWritableRepo() {
-		throw new MWException( static::class . ': write operations are not supported.' );
-	}
+    protected function assertWritableRepo()
+    {
+        throw new MWException(static::class . ': write operations are not supported.');
+    }
 }

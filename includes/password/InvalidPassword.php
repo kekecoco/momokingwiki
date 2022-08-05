@@ -20,7 +20,7 @@
  * @file
  */
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 /**
  * Represents an invalid password hash. It is represented as the empty string (i.e.,
@@ -31,19 +31,24 @@ declare( strict_types = 1 );
  *
  * @since 1.24
  */
-class InvalidPassword extends Password {
-	public function crypt( string $plaintext ): void {
-	}
+class InvalidPassword extends Password
+{
+    public function crypt(string $plaintext): void
+    {
+    }
 
-	public function toString(): string {
-		return '';
-	}
+    public function toString(): string
+    {
+        return '';
+    }
 
-	public function verify( string $password ): bool {
-		return false;
-	}
+    public function verify(string $password): bool
+    {
+        return false;
+    }
 
-	public function needsUpdate(): bool {
-		return false;
-	}
+    public function needsUpdate(): bool
+    {
+        return false;
+    }
 }

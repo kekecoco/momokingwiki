@@ -33,108 +33,115 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class SqliteMaintenance extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Performs some operations specific to SQLite database backend' );
-		$this->addOption(
-			'vacuum',
-			'Clean up database by removing deleted pages. Decreases database file size'
-		);
-		$this->addOption( 'integrity', 'Check database for integrity' );
-		$this->addOption( 'backup-to', 'Backup database to the given file', false, true );
-		$this->addOption( 'check-syntax', 'Check SQL file(s) for syntax errors', false, true );
-	}
+class SqliteMaintenance extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Performs some operations specific to SQLite database backend');
+        $this->addOption(
+            'vacuum',
+            'Clean up database by removing deleted pages. Decreases database file size'
+        );
+        $this->addOption('integrity', 'Check database for integrity');
+        $this->addOption('backup-to', 'Backup database to the given file', false, true);
+        $this->addOption('check-syntax', 'Check SQL file(s) for syntax errors', false, true);
+    }
 
-	public function execute() {
-		// Should work even if we use a non-SQLite database
-		if ( $this->hasOption( 'check-syntax' ) ) {
-			$this->checkSyntax();
+    public function execute()
+    {
+        // Should work even if we use a non-SQLite database
+        if ($this->hasOption('check-syntax')) {
+            $this->checkSyntax();
 
-			return;
-		}
+            return;
+        }
 
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		$dbw = $lb->getConnectionRef( DB_PRIMARY );
-		if ( !( $dbw instanceof DatabaseSqlite ) ) {
-			$this->error( "This maintenance script requires a SQLite database.\n" );
+        $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
+        $dbw = $lb->getConnectionRef(DB_PRIMARY);
+        if (!($dbw instanceof DatabaseSqlite)) {
+            $this->error("This maintenance script requires a SQLite database.\n");
 
-			return;
-		}
+            return;
+        }
 
-		if ( $this->hasOption( 'vacuum' ) ) {
-			$this->vacuum( $dbw );
-		}
+        if ($this->hasOption('vacuum')) {
+            $this->vacuum($dbw);
+        }
 
-		if ( $this->hasOption( 'integrity' ) ) {
-			$this->integrityCheck( $dbw );
-		}
+        if ($this->hasOption('integrity')) {
+            $this->integrityCheck($dbw);
+        }
 
-		if ( $this->hasOption( 'backup-to' ) ) {
-			$this->backup( $dbw, $this->getOption( 'backup-to' ) );
-		}
-	}
+        if ($this->hasOption('backup-to')) {
+            $this->backup($dbw, $this->getOption('backup-to'));
+        }
+    }
 
-	private function vacuum( DatabaseSqlite $dbw ) {
-		$prevSize = filesize( $dbw->getDbFilePath() );
-		if ( $prevSize == 0 ) {
-			$this->fatalError( "Can't vacuum an empty database.\n" );
-		}
+    private function vacuum(DatabaseSqlite $dbw)
+    {
+        $prevSize = filesize($dbw->getDbFilePath());
+        if ($prevSize == 0) {
+            $this->fatalError("Can't vacuum an empty database.\n");
+        }
 
-		$this->output( 'VACUUM: ' );
-		if ( $dbw->query( 'VACUUM', __METHOD__ ) ) {
-			clearstatcache();
-			$newSize = filesize( $dbw->getDbFilePath() );
-			$this->output( sprintf( "Database size was %d, now %d (%.1f%% reduction).\n",
-				$prevSize, $newSize, ( $prevSize - $newSize ) * 100.0 / $prevSize ) );
-		} else {
-			$this->output( 'Error\n' );
-		}
-	}
+        $this->output('VACUUM: ');
+        if ($dbw->query('VACUUM', __METHOD__)) {
+            clearstatcache();
+            $newSize = filesize($dbw->getDbFilePath());
+            $this->output(sprintf("Database size was %d, now %d (%.1f%% reduction).\n",
+                $prevSize, $newSize, ($prevSize - $newSize) * 100.0 / $prevSize));
+        } else {
+            $this->output('Error\n');
+        }
+    }
 
-	private function integrityCheck( DatabaseSqlite $dbw ) {
-		$this->output( "Performing database integrity checks:\n" );
-		$res = $dbw->query( 'PRAGMA integrity_check', __METHOD__ );
+    private function integrityCheck(DatabaseSqlite $dbw)
+    {
+        $this->output("Performing database integrity checks:\n");
+        $res = $dbw->query('PRAGMA integrity_check', __METHOD__);
 
-		if ( !$res || $res->numRows() == 0 ) {
-			$this->error( "Error: integrity check query returned nothing.\n" );
+        if (!$res || $res->numRows() == 0) {
+            $this->error("Error: integrity check query returned nothing.\n");
 
-			return;
-		}
+            return;
+        }
 
-		foreach ( $res as $row ) {
-			$this->output( $row->integrity_check );
-		}
-	}
+        foreach ($res as $row) {
+            $this->output($row->integrity_check);
+        }
+    }
 
-	private function backup( DatabaseSqlite $dbw, $fileName ) {
-		$this->output( "Backing up database:\n   Locking..." );
-		$dbw->query( 'BEGIN IMMEDIATE TRANSACTION', __METHOD__ );
-		$ourFile = $dbw->getDbFilePath();
-		$this->output( "   Copying database file $ourFile to $fileName..." );
-		AtEase::suppressWarnings();
-		if ( !copy( $ourFile, $fileName ) ) {
-			$err = error_get_last();
-			$this->error( "      {$err['message']}" );
-		}
-		AtEase::restoreWarnings();
-		$this->output( "   Releasing lock...\n" );
-		$dbw->query( 'COMMIT TRANSACTION', __METHOD__ );
-	}
+    private function backup(DatabaseSqlite $dbw, $fileName)
+    {
+        $this->output("Backing up database:\n   Locking...");
+        $dbw->query('BEGIN IMMEDIATE TRANSACTION', __METHOD__);
+        $ourFile = $dbw->getDbFilePath();
+        $this->output("   Copying database file $ourFile to $fileName...");
+        AtEase::suppressWarnings();
+        if (!copy($ourFile, $fileName)) {
+            $err = error_get_last();
+            $this->error("      {$err['message']}");
+        }
+        AtEase::restoreWarnings();
+        $this->output("   Releasing lock...\n");
+        $dbw->query('COMMIT TRANSACTION', __METHOD__);
+    }
 
-	private function checkSyntax() {
-		if ( !Sqlite::isPresent() ) {
-			$this->error( "Error: SQLite support not found\n" );
-		}
-		$files = [ $this->getOption( 'check-syntax' ) ];
-		$files = array_merge( $files, $this->mArgs );
-		$result = Sqlite::checkSqlSyntax( $files );
-		if ( $result === true ) {
-			$this->output( "SQL syntax check: no errors detected.\n" );
-		} else {
-			$this->error( "Error: $result\n" );
-		}
-	}
+    private function checkSyntax()
+    {
+        if (!Sqlite::isPresent()) {
+            $this->error("Error: SQLite support not found\n");
+        }
+        $files = [$this->getOption('check-syntax')];
+        $files = array_merge($files, $this->mArgs);
+        $result = Sqlite::checkSqlSyntax($files);
+        if ($result === true) {
+            $this->output("SQL syntax check: no errors detected.\n");
+        } else {
+            $this->error("Error: $result\n");
+        }
+    }
 }
 
 $maintClass = SqliteMaintenance::class;

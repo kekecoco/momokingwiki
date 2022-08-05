@@ -40,140 +40,148 @@ use Throwable;
  * @since 1.26
  * @copyright © 2015 Wikimedia Foundation and contributors
  */
-class LineFormatter extends MonologLineFormatter {
+class LineFormatter extends MonologLineFormatter
+{
 
-	/**
-	 * @param string|null $format The format of the message
-	 * @param string|null $dateFormat The format of the timestamp: one supported by DateTime::format
-	 * @param bool $allowInlineLineBreaks Whether to allow inline line breaks in log entries
-	 * @param bool $ignoreEmptyContextAndExtra
-	 * @param bool $includeStacktraces
-	 */
-	public function __construct(
-		$format = null, $dateFormat = null, $allowInlineLineBreaks = false,
-		$ignoreEmptyContextAndExtra = false, $includeStacktraces = false
-	) {
-		parent::__construct(
-			$format, $dateFormat, $allowInlineLineBreaks,
-			$ignoreEmptyContextAndExtra
-		);
-		$this->includeStacktraces( $includeStacktraces );
-	}
+    /**
+     * @param string|null $format The format of the message
+     * @param string|null $dateFormat The format of the timestamp: one supported by DateTime::format
+     * @param bool $allowInlineLineBreaks Whether to allow inline line breaks in log entries
+     * @param bool $ignoreEmptyContextAndExtra
+     * @param bool $includeStacktraces
+     */
+    public function __construct(
+        $format = null, $dateFormat = null, $allowInlineLineBreaks = false,
+        $ignoreEmptyContextAndExtra = false, $includeStacktraces = false
+    )
+    {
+        parent::__construct(
+            $format, $dateFormat, $allowInlineLineBreaks,
+            $ignoreEmptyContextAndExtra
+        );
+        $this->includeStacktraces($includeStacktraces);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function format( array $record ): string {
-		// Drop the 'private' flag from the context
-		unset( $record['context']['private'] );
+    /**
+     * @inheritDoc
+     */
+    public function format(array $record): string
+    {
+        // Drop the 'private' flag from the context
+        unset($record['context']['private']);
 
-		// Handle throwables specially: pretty format and remove from context
-		// Will be output for a '%exception%' placeholder in format
-		$prettyException = '';
-		if ( isset( $record['context']['exception'] ) &&
-			strpos( $this->format, '%exception%' ) !== false
-		) {
-			$e = $record['context']['exception'];
-			unset( $record['context']['exception'] );
+        // Handle throwables specially: pretty format and remove from context
+        // Will be output for a '%exception%' placeholder in format
+        $prettyException = '';
+        if (isset($record['context']['exception']) &&
+            strpos($this->format, '%exception%') !== false
+        ) {
+            $e = $record['context']['exception'];
+            unset($record['context']['exception']);
 
-			if ( $e instanceof Throwable ) {
-				$prettyException = $this->normalizeException( $e );
-			} elseif ( is_array( $e ) ) {
-				$prettyException = $this->normalizeExceptionArray( $e );
-			} else {
-				$prettyException = $this->stringify( $e );
-			}
-		}
+            if ($e instanceof Throwable) {
+                $prettyException = $this->normalizeException($e);
+            } elseif (is_array($e)) {
+                $prettyException = $this->normalizeExceptionArray($e);
+            } else {
+                $prettyException = $this->stringify($e);
+            }
+        }
 
-		$output = parent::format( $record );
+        $output = parent::format($record);
 
-		if ( strpos( $output, '%exception%' ) !== false ) {
-			$output = str_replace( '%exception%', $prettyException, $output );
-		}
-		return $output;
-	}
+        if (strpos($output, '%exception%') !== false) {
+            $output = str_replace('%exception%', $prettyException, $output);
+        }
 
-	/**
-	 * Convert a Throwable to a string.
-	 *
-	 * @param Throwable $e
-	 * @param int $depth
-	 * @return string
-	 */
-	protected function normalizeException( Throwable $e, int $depth = 0 ): string {
-		// Can't use typehint. Must match Monolog\Formatter\LineFormatter::normalizeException($e)
-		return $this->normalizeExceptionArray( $this->exceptionAsArray( $e ) );
-	}
+        return $output;
+    }
 
-	/**
-	 * Convert a throwable to an array of structured data.
-	 *
-	 * @param Throwable $e
-	 * @return array
-	 */
-	protected function exceptionAsArray( Throwable $e ) {
-		$out = [
-			'class' => get_class( $e ),
-			'message' => $e->getMessage(),
-			'code' => $e->getCode(),
-			'file' => $e->getFile(),
-			'line' => $e->getLine(),
-			'trace' => MWExceptionHandler::redactTrace( $e->getTrace() ),
-		];
+    /**
+     * Convert a Throwable to a string.
+     *
+     * @param Throwable $e
+     * @param int $depth
+     * @return string
+     */
+    protected function normalizeException(Throwable $e, int $depth = 0): string
+    {
+        // Can't use typehint. Must match Monolog\Formatter\LineFormatter::normalizeException($e)
+        return $this->normalizeExceptionArray($this->exceptionAsArray($e));
+    }
 
-		$prev = $e->getPrevious();
-		if ( $prev ) {
-			$out['previous'] = $this->exceptionAsArray( $prev );
-		}
+    /**
+     * Convert a throwable to an array of structured data.
+     *
+     * @param Throwable $e
+     * @return array
+     */
+    protected function exceptionAsArray(Throwable $e)
+    {
+        $out = [
+            'class'   => get_class($e),
+            'message' => $e->getMessage(),
+            'code'    => $e->getCode(),
+            'file'    => $e->getFile(),
+            'line'    => $e->getLine(),
+            'trace'   => MWExceptionHandler::redactTrace($e->getTrace()),
+        ];
 
-		return $out;
-	}
+        $prev = $e->getPrevious();
+        if ($prev) {
+            $out['previous'] = $this->exceptionAsArray($prev);
+        }
 
-	/**
-	 * Convert an array of Throwable data to a string.
-	 *
-	 * @param array $e
-	 * @return string
-	 */
-	protected function normalizeExceptionArray( array $e ) {
-		$defaults = [
-			'class' => 'Unknown',
-			'file' => 'unknown',
-			'line' => null,
-			'message' => 'unknown',
-			'trace' => [],
-		];
-		$e = array_merge( $defaults, $e );
+        return $out;
+    }
 
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullableInternal class is always set
-		$which = is_a( $e['class'], Error::class, true ) ? 'Error' : 'Exception';
-		$str = "\n[$which {$e['class']}] (" .
-			"{$e['file']}:{$e['line']}) {$e['message']}";
+    /**
+     * Convert an array of Throwable data to a string.
+     *
+     * @param array $e
+     * @return string
+     */
+    protected function normalizeExceptionArray(array $e)
+    {
+        $defaults = [
+            'class'   => 'Unknown',
+            'file'    => 'unknown',
+            'line'    => null,
+            'message' => 'unknown',
+            'trace'   => [],
+        ];
+        $e = array_merge($defaults, $e);
 
-		if ( $this->includeStacktraces && $e['trace'] ) {
-			$str .= "\n" .
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable trace is always set
-				MWExceptionHandler::prettyPrintTrace( $e['trace'], '  ' );
-		}
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullableInternal class is always set
+        $which = is_a($e['class'], Error::class, true) ? 'Error' : 'Exception';
+        $str = "\n[$which {$e['class']}] (" .
+            "{$e['file']}:{$e['line']}) {$e['message']}";
 
-		if ( isset( $e['previous'] ) ) {
-			$prev = $e['previous'];
-			while ( $prev ) {
-				$prev = array_merge( $defaults, $prev );
-				$which = is_a( $prev['class'], Error::class, true ) ? 'Error' : 'Exception';
-				$str .= "\nCaused by: [$which {$prev['class']}] (" .
-					"{$prev['file']}:{$prev['line']}) {$prev['message']}";
+        if ($this->includeStacktraces && $e['trace']) {
+            $str .= "\n" .
+                // @phan-suppress-next-line PhanTypeMismatchArgumentNullable trace is always set
+                MWExceptionHandler::prettyPrintTrace($e['trace'], '  ');
+        }
 
-				if ( $this->includeStacktraces && $prev['trace'] ) {
-					$str .= "\n" .
-						MWExceptionHandler::prettyPrintTrace(
-							$prev['trace'], '  '
-						);
-				}
+        if (isset($e['previous'])) {
+            $prev = $e['previous'];
+            while ($prev) {
+                $prev = array_merge($defaults, $prev);
+                $which = is_a($prev['class'], Error::class, true) ? 'Error' : 'Exception';
+                $str .= "\nCaused by: [$which {$prev['class']}] (" .
+                    "{$prev['file']}:{$prev['line']}) {$prev['message']}";
 
-				$prev = $prev['previous'] ?? null;
-			}
-		}
-		return $str;
-	}
+                if ($this->includeStacktraces && $prev['trace']) {
+                    $str .= "\n" .
+                        MWExceptionHandler::prettyPrintTrace(
+                            $prev['trace'], '  '
+                        );
+                }
+
+                $prev = $prev['previous'] ?? null;
+            }
+        }
+
+        return $str;
+    }
 }

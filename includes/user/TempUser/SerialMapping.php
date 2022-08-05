@@ -7,11 +7,12 @@ namespace MediaWiki\User\TempUser;
  *
  * @since 1.39
  */
-interface SerialMapping {
-	/**
-	 * @param int $index
-	 * @return string The serial ID. This should consist of title characters
-	 *   but should not be a single asterisk.
-	 */
-	public function getSerialIdForIndex( int $index ): string;
+interface SerialMapping
+{
+    /**
+     * @param int $index
+     * @return string The serial ID. This should consist of title characters
+     *   but should not be a single asterisk.
+     */
+    public function getSerialIdForIndex(int $index): string;
 }

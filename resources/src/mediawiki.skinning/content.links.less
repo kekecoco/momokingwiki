@@ -3,59 +3,59 @@
 /* stylelint-disable selector-class-pattern */
 
 a.new {
-	color: @color-link-new;
+  color: @color-link-new;
 }
 
 /* self links */
 a.mw-selflink {
-	color: inherit;
-	font-weight: bold;
-	text-decoration: inherit;
+  color: inherit;
+  font-weight: bold;
+  text-decoration: inherit;
 }
 
 a.mw-selflink:hover {
-	cursor: inherit;
-	text-decoration: inherit;
+  cursor: inherit;
+  text-decoration: inherit;
 }
 
 a.mw-selflink:active,
 a.mw-selflink:visited {
-	color: inherit;
+  color: inherit;
 }
 
 a.new:visited {
-	color: @color-link-new--visited;
+  color: @color-link-new--visited;
 }
 
 /* Interwiki & External links */
 .mw-parser-output a.extiw,
 .mw-parser-output a.external {
-	color: @color-link-external;
+  color: @color-link-external;
 }
 
 .mw-parser-output a.extiw:visited,
 .mw-parser-output a.external:visited {
-	color: @color-link-external--visited;
+  color: @color-link-external--visited;
 }
 
 .mw-parser-output a.extiw:active,
 .mw-parser-output a.external:active {
-	color: @color-link-external--active;
+  color: @color-link-external--active;
 }
 
 /* Underline preference */
 
 .mw-underline-always a {
-	text-decoration: underline;
+  text-decoration: underline;
 }
 
 .mw-underline-never a {
-	text-decoration: none;
+  text-decoration: none;
 }
 
 /* Plainlinks - this can be used to switch
  * off special external link styling */
 .plainlinks a.external {
-	background: none !important; /* stylelint-disable-line declaration-no-important */
-	padding: 0 !important; /* stylelint-disable-line declaration-no-important */
+  background: none !important; /* stylelint-disable-line declaration-no-important */
+  padding: 0 !important; /* stylelint-disable-line declaration-no-important */
 }

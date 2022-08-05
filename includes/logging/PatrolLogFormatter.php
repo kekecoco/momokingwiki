@@ -28,61 +28,65 @@
  *
  * @since 1.19
  */
-class PatrolLogFormatter extends LogFormatter {
-	protected function getMessageKey() {
-		$params = $this->getMessageParameters();
-		if ( isset( $params[5] ) && $params[5] ) {
-			$key = 'logentry-patrol-patrol-auto';
-		} else {
-			$key = 'logentry-patrol-patrol';
-		}
+class PatrolLogFormatter extends LogFormatter
+{
+    protected function getMessageKey()
+    {
+        $params = $this->getMessageParameters();
+        if (isset($params[5]) && $params[5]) {
+            $key = 'logentry-patrol-patrol-auto';
+        } else {
+            $key = 'logentry-patrol-patrol';
+        }
 
-		return $key;
-	}
+        return $key;
+    }
 
-	protected function getMessageParameters() {
-		$params = parent::getMessageParameters();
+    protected function getMessageParameters()
+    {
+        $params = parent::getMessageParameters();
 
-		$target = $this->entry->getTarget();
-		$oldid = $params[3];
-		$revision = $this->context->getLanguage()->formatNumNoSeparators( $oldid );
+        $target = $this->entry->getTarget();
+        $oldid = $params[3];
+        $revision = $this->context->getLanguage()->formatNumNoSeparators($oldid);
 
-		if ( $this->plaintext ) {
-			$revlink = $revision;
-		} elseif ( $target->exists() ) {
-			$query = [
-				'oldid' => $oldid,
-				'diff' => 'prev'
-			];
-			$revlink = $this->getLinkRenderer()->makeLink( $target, $revision, [], $query );
-		} else {
-			$revlink = htmlspecialchars( $revision );
-		}
+        if ($this->plaintext) {
+            $revlink = $revision;
+        } elseif ($target->exists()) {
+            $query = [
+                'oldid' => $oldid,
+                'diff'  => 'prev'
+            ];
+            $revlink = $this->getLinkRenderer()->makeLink($target, $revision, [], $query);
+        } else {
+            $revlink = htmlspecialchars($revision);
+        }
 
-		$params[3] = Message::rawParam( $revlink );
+        $params[3] = Message::rawParam($revlink);
 
-		return $params;
-	}
+        return $params;
+    }
 
-	protected function getParametersForApi() {
-		$entry = $this->entry;
-		$params = $entry->getParameters();
+    protected function getParametersForApi()
+    {
+        $entry = $this->entry;
+        $params = $entry->getParameters();
 
-		static $map = [
-			'4:number:curid',
-			'5:number:previd',
-			'6:bool:auto',
-			'4::curid' => '4:number:curid',
-			'5::previd' => '5:number:previd',
-			'6::auto' => '6:bool:auto',
-		];
-		foreach ( $map as $index => $key ) {
-			if ( isset( $params[$index] ) ) {
-				$params[$key] = $params[$index];
-				unset( $params[$index] );
-			}
-		}
+        static $map = [
+            '4:number:curid',
+            '5:number:previd',
+            '6:bool:auto',
+            '4::curid'  => '4:number:curid',
+            '5::previd' => '5:number:previd',
+            '6::auto'   => '6:bool:auto',
+        ];
+        foreach ($map as $index => $key) {
+            if (isset($params[$index])) {
+                $params[$key] = $params[$index];
+                unset($params[$index]);
+            }
+        }
 
-		return $params;
-	}
+        return $params;
+    }
 }

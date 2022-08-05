@@ -21,134 +21,140 @@ use Wikimedia\ParamValidator\TypeDef;
  * @since 1.34
  * @unstable
  */
-class StringDef extends TypeDef {
+class StringDef extends TypeDef
+{
 
-	/**
-	 * (integer) Maximum length of a string in bytes.
-	 *
-	 * Failure codes:
-	 *  - 'maxbytes': The string is too long. Data:
-	 *     - 'maxbytes': The maximum number of bytes allowed, or null if no limit
-	 *     - 'maxchars': The maximum number of characters allowed, or null if no limit
-	 */
-	public const PARAM_MAX_BYTES = 'param-max-bytes';
+    /**
+     * (integer) Maximum length of a string in bytes.
+     *
+     * Failure codes:
+     *  - 'maxbytes': The string is too long. Data:
+     *     - 'maxbytes': The maximum number of bytes allowed, or null if no limit
+     *     - 'maxchars': The maximum number of characters allowed, or null if no limit
+     */
+    public const PARAM_MAX_BYTES = 'param-max-bytes';
 
-	/**
-	 * (integer) Maximum length of a string in characters (Unicode codepoints).
-	 *
-	 * The string is assumed to be encoded as UTF-8.
-	 *
-	 * Failure codes:
-	 *  - 'maxchars': The string is too long. Data:
-	 *     - 'maxbytes': The maximum number of bytes allowed, or null if no limit
-	 *     - 'maxchars': The maximum number of characters allowed, or null if no limit
-	 */
-	public const PARAM_MAX_CHARS = 'param-max-chars';
+    /**
+     * (integer) Maximum length of a string in characters (Unicode codepoints).
+     *
+     * The string is assumed to be encoded as UTF-8.
+     *
+     * Failure codes:
+     *  - 'maxchars': The string is too long. Data:
+     *     - 'maxbytes': The maximum number of bytes allowed, or null if no limit
+     *     - 'maxchars': The maximum number of characters allowed, or null if no limit
+     */
+    public const PARAM_MAX_CHARS = 'param-max-chars';
 
-	protected $allowEmptyWhenRequired = false;
+    protected $allowEmptyWhenRequired = false;
 
-	/**
-	 * @param Callbacks $callbacks
-	 * @param array $options Options:
-	 *  - allowEmptyWhenRequired: (bool) Whether to reject the empty string when PARAM_REQUIRED.
-	 *    Defaults to false.
-	 */
-	public function __construct( Callbacks $callbacks, array $options = [] ) {
-		parent::__construct( $callbacks );
+    /**
+     * @param Callbacks $callbacks
+     * @param array $options Options:
+     *  - allowEmptyWhenRequired: (bool) Whether to reject the empty string when PARAM_REQUIRED.
+     *    Defaults to false.
+     */
+    public function __construct(Callbacks $callbacks, array $options = [])
+    {
+        parent::__construct($callbacks);
 
-		$this->allowEmptyWhenRequired = !empty( $options['allowEmptyWhenRequired'] );
-	}
+        $this->allowEmptyWhenRequired = !empty($options['allowEmptyWhenRequired']);
+    }
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		if ( !$this->allowEmptyWhenRequired && $value === '' &&
-			!empty( $settings[ParamValidator::PARAM_REQUIRED] )
-		) {
-			$this->failure( 'missingparam', $name, $value, $settings, $options );
-		}
+    public function validate($name, $value, array $settings, array $options)
+    {
+        if (!$this->allowEmptyWhenRequired && $value === '' &&
+            !empty($settings[ParamValidator::PARAM_REQUIRED])
+        ) {
+            $this->failure('missingparam', $name, $value, $settings, $options);
+        }
 
-		$len = strlen( $value );
-		if ( isset( $settings[self::PARAM_MAX_BYTES] ) && $len > $settings[self::PARAM_MAX_BYTES] ) {
-			$this->failure(
-				$this->failureMessage( 'maxbytes', [
-					'maxbytes' => $settings[self::PARAM_MAX_BYTES] ?? null,
-					'maxchars' => $settings[self::PARAM_MAX_CHARS] ?? null,
-				] )->numParams( $settings[self::PARAM_MAX_BYTES], $len ),
-				$name, $value, $settings, $options
-			);
-		}
-		$len = mb_strlen( $value, 'UTF-8' );
-		if ( isset( $settings[self::PARAM_MAX_CHARS] ) && $len > $settings[self::PARAM_MAX_CHARS] ) {
-			$this->failure(
-				$this->failureMessage( 'maxchars', [
-					'maxbytes' => $settings[self::PARAM_MAX_BYTES] ?? null,
-					'maxchars' => $settings[self::PARAM_MAX_CHARS] ?? null,
-				] )->numParams( $settings[self::PARAM_MAX_CHARS], $len ),
-				$name, $value, $settings, $options
-			);
-		}
+        $len = strlen($value);
+        if (isset($settings[self::PARAM_MAX_BYTES]) && $len > $settings[self::PARAM_MAX_BYTES]) {
+            $this->failure(
+                $this->failureMessage('maxbytes', [
+                    'maxbytes' => $settings[self::PARAM_MAX_BYTES] ?? null,
+                    'maxchars' => $settings[self::PARAM_MAX_CHARS] ?? null,
+                ])->numParams($settings[self::PARAM_MAX_BYTES], $len),
+                $name, $value, $settings, $options
+            );
+        }
+        $len = mb_strlen($value, 'UTF-8');
+        if (isset($settings[self::PARAM_MAX_CHARS]) && $len > $settings[self::PARAM_MAX_CHARS]) {
+            $this->failure(
+                $this->failureMessage('maxchars', [
+                    'maxbytes' => $settings[self::PARAM_MAX_BYTES] ?? null,
+                    'maxchars' => $settings[self::PARAM_MAX_CHARS] ?? null,
+                ])->numParams($settings[self::PARAM_MAX_CHARS], $len),
+                $name, $value, $settings, $options
+            );
+        }
 
-		return $value;
-	}
+        return $value;
+    }
 
-	public function checkSettings( string $name, $settings, array $options, array $ret ): array {
-		$ret = parent::checkSettings( $name, $settings, $options, $ret );
+    public function checkSettings(string $name, $settings, array $options, array $ret): array
+    {
+        $ret = parent::checkSettings($name, $settings, $options, $ret);
 
-		$ret['allowedKeys'] = array_merge( $ret['allowedKeys'], [
-			self::PARAM_MAX_BYTES, self::PARAM_MAX_CHARS,
-		] );
+        $ret['allowedKeys'] = array_merge($ret['allowedKeys'], [
+            self::PARAM_MAX_BYTES, self::PARAM_MAX_CHARS,
+        ]);
 
-		$maxb = $settings[self::PARAM_MAX_BYTES] ?? PHP_INT_MAX;
-		if ( !is_int( $maxb ) ) {
-			$ret['issues'][self::PARAM_MAX_BYTES] = 'PARAM_MAX_BYTES must be an integer, got '
-				. gettype( $maxb );
-		} elseif ( $maxb < 0 ) {
-			$ret['issues'][self::PARAM_MAX_BYTES] = 'PARAM_MAX_BYTES must be greater than or equal to 0';
-		}
+        $maxb = $settings[self::PARAM_MAX_BYTES] ?? PHP_INT_MAX;
+        if (!is_int($maxb)) {
+            $ret['issues'][self::PARAM_MAX_BYTES] = 'PARAM_MAX_BYTES must be an integer, got '
+                . gettype($maxb);
+        } elseif ($maxb < 0) {
+            $ret['issues'][self::PARAM_MAX_BYTES] = 'PARAM_MAX_BYTES must be greater than or equal to 0';
+        }
 
-		$maxc = $settings[self::PARAM_MAX_CHARS] ?? PHP_INT_MAX;
-		if ( !is_int( $maxc ) ) {
-			$ret['issues'][self::PARAM_MAX_CHARS] = 'PARAM_MAX_CHARS must be an integer, got '
-				. gettype( $maxc );
-		} elseif ( $maxc < 0 ) {
-			$ret['issues'][self::PARAM_MAX_CHARS] = 'PARAM_MAX_CHARS must be greater than or equal to 0';
-		}
+        $maxc = $settings[self::PARAM_MAX_CHARS] ?? PHP_INT_MAX;
+        if (!is_int($maxc)) {
+            $ret['issues'][self::PARAM_MAX_CHARS] = 'PARAM_MAX_CHARS must be an integer, got '
+                . gettype($maxc);
+        } elseif ($maxc < 0) {
+            $ret['issues'][self::PARAM_MAX_CHARS] = 'PARAM_MAX_CHARS must be greater than or equal to 0';
+        }
 
-		if ( !$this->allowEmptyWhenRequired && !empty( $settings[ParamValidator::PARAM_REQUIRED] ) ) {
-			if ( $maxb === 0 ) {
-				$ret['issues'][] = 'PARAM_REQUIRED is set, allowEmptyWhenRequired is not set, and '
-					. 'PARAM_MAX_BYTES is 0. That\'s impossible to satisfy.';
-			}
-			if ( $maxc === 0 ) {
-				$ret['issues'][] = 'PARAM_REQUIRED is set, allowEmptyWhenRequired is not set, and '
-					. 'PARAM_MAX_CHARS is 0. That\'s impossible to satisfy.';
-			}
-		}
+        if (!$this->allowEmptyWhenRequired && !empty($settings[ParamValidator::PARAM_REQUIRED])) {
+            if ($maxb === 0) {
+                $ret['issues'][] = 'PARAM_REQUIRED is set, allowEmptyWhenRequired is not set, and '
+                    . 'PARAM_MAX_BYTES is 0. That\'s impossible to satisfy.';
+            }
+            if ($maxc === 0) {
+                $ret['issues'][] = 'PARAM_REQUIRED is set, allowEmptyWhenRequired is not set, and '
+                    . 'PARAM_MAX_CHARS is 0. That\'s impossible to satisfy.';
+            }
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	public function getParamInfo( $name, array $settings, array $options ) {
-		$info = parent::getParamInfo( $name, $settings, $options );
+    public function getParamInfo($name, array $settings, array $options)
+    {
+        $info = parent::getParamInfo($name, $settings, $options);
 
-		$info['maxbytes'] = $settings[self::PARAM_MAX_BYTES] ?? null;
-		$info['maxchars'] = $settings[self::PARAM_MAX_CHARS] ?? null;
+        $info['maxbytes'] = $settings[self::PARAM_MAX_BYTES] ?? null;
+        $info['maxchars'] = $settings[self::PARAM_MAX_CHARS] ?? null;
 
-		return $info;
-	}
+        return $info;
+    }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		if ( isset( $settings[self::PARAM_MAX_BYTES] ) ) {
-			$info[self::PARAM_MAX_BYTES] = MessageValue::new( 'paramvalidator-help-type-string-maxbytes' )
-				->numParams( $settings[self::PARAM_MAX_BYTES] );
-		}
-		if ( isset( $settings[self::PARAM_MAX_CHARS] ) ) {
-			$info[self::PARAM_MAX_CHARS] = MessageValue::new( 'paramvalidator-help-type-string-maxchars' )
-				->numParams( $settings[self::PARAM_MAX_CHARS] );
-		}
+        if (isset($settings[self::PARAM_MAX_BYTES])) {
+            $info[self::PARAM_MAX_BYTES] = MessageValue::new('paramvalidator-help-type-string-maxbytes')
+                ->numParams($settings[self::PARAM_MAX_BYTES]);
+        }
+        if (isset($settings[self::PARAM_MAX_CHARS])) {
+            $info[self::PARAM_MAX_CHARS] = MessageValue::new('paramvalidator-help-type-string-maxchars')
+                ->numParams($settings[self::PARAM_MAX_CHARS]);
+        }
 
-		return $info;
-	}
+        return $info;
+    }
 
 }

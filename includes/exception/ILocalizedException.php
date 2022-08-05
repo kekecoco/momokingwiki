@@ -26,10 +26,11 @@
  * @since 1.29
  * @ingroup Exception
  */
-interface ILocalizedException {
-	/**
-	 * Return a Message object for this exception
-	 * @return Message
-	 */
-	public function getMessageObject();
+interface ILocalizedException
+{
+    /**
+     * Return a Message object for this exception
+     * @return Message
+     */
+    public function getMessageObject();
 }

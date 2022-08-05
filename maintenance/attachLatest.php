@@ -35,73 +35,76 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class AttachLatest extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( "fix", "Actually fix the entries, will dry run otherwise" );
-		$this->addOption( "regenerate-all",
-			"Regenerate the page_latest field for all records in table page" );
-		$this->addDescription( 'Fix page_latest entries in the page table' );
-	}
+class AttachLatest extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption("fix", "Actually fix the entries, will dry run otherwise");
+        $this->addOption("regenerate-all",
+            "Regenerate the page_latest field for all records in table page");
+        $this->addDescription('Fix page_latest entries in the page table');
+    }
 
-	public function execute() {
-		$this->output( "Looking for pages with page_latest set to 0...\n" );
-		$dbw = $this->getDB( DB_PRIMARY );
-		$conds = [ 'page_latest' => 0 ];
-		if ( $this->hasOption( 'regenerate-all' ) ) {
-			$conds = '';
-		}
-		$result = $dbw->newSelectQueryBuilder()
-			->select( [ 'page_id', 'page_namespace', 'page_title' ] )
-			->from( 'page' )
-			->where( $conds )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+    public function execute()
+    {
+        $this->output("Looking for pages with page_latest set to 0...\n");
+        $dbw = $this->getDB(DB_PRIMARY);
+        $conds = ['page_latest' => 0];
+        if ($this->hasOption('regenerate-all')) {
+            $conds = '';
+        }
+        $result = $dbw->newSelectQueryBuilder()
+            ->select(['page_id', 'page_namespace', 'page_title'])
+            ->from('page')
+            ->where($conds)
+            ->caller(__METHOD__)
+            ->fetchResultSet();
 
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$dbDomain = $lbFactory->getLocalDomainID();
-		$wikiPageFactory = $services->getWikiPageFactory();
-		$revisionLookup = $services->getRevisionLookup();
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $dbDomain = $lbFactory->getLocalDomainID();
+        $wikiPageFactory = $services->getWikiPageFactory();
+        $revisionLookup = $services->getRevisionLookup();
 
-		$n = 0;
-		foreach ( $result as $row ) {
-			$pageId = intval( $row->page_id );
-			$title = Title::makeTitle( $row->page_namespace, $row->page_title );
-			$name = $title->getPrefixedText();
-			$latestTime = $dbw->newSelectQueryBuilder()
-				->select( 'MAX(rev_timestamp' )
-				->from( 'revision' )
-				->where( [ 'rev_page' => $pageId ] )
-				->caller( __METHOD__ )
-				->fetchField();
-			if ( !$latestTime ) {
-				$this->output( "$dbDomain $pageId [[$name]] can't find latest rev time?!\n" );
-				continue;
-			}
+        $n = 0;
+        foreach ($result as $row) {
+            $pageId = intval($row->page_id);
+            $title = Title::makeTitle($row->page_namespace, $row->page_title);
+            $name = $title->getPrefixedText();
+            $latestTime = $dbw->newSelectQueryBuilder()
+                ->select('MAX(rev_timestamp')
+                ->from('revision')
+                ->where(['rev_page' => $pageId])
+                ->caller(__METHOD__)
+                ->fetchField();
+            if (!$latestTime) {
+                $this->output("$dbDomain $pageId [[$name]] can't find latest rev time?!\n");
+                continue;
+            }
 
-			$revRecord = $revisionLookup->getRevisionByTimestamp( $title, $latestTime, RevisionLookup::READ_LATEST );
-			if ( $revRecord === null ) {
-				$this->output(
-					"$dbDomain $pageId [[$name]] latest time $latestTime, can't find revision id\n"
-				);
-				continue;
-			}
+            $revRecord = $revisionLookup->getRevisionByTimestamp($title, $latestTime, RevisionLookup::READ_LATEST);
+            if ($revRecord === null) {
+                $this->output(
+                    "$dbDomain $pageId [[$name]] latest time $latestTime, can't find revision id\n"
+                );
+                continue;
+            }
 
-			$id = $revRecord->getId();
-			$this->output( "$dbDomain $pageId [[$name]] latest time $latestTime, rev id $id\n" );
-			if ( $this->hasOption( 'fix' ) ) {
-				$page = $wikiPageFactory->newFromTitle( $title );
-				$page->updateRevisionOn( $dbw, $revRecord );
-				$lbFactory->waitForReplication();
-			}
-			$n++;
-		}
-		$this->output( "Done! Processed $n pages.\n" );
-		if ( !$this->hasOption( 'fix' ) ) {
-			$this->output( "This was a dry run; rerun with --fix to update page_latest.\n" );
-		}
-	}
+            $id = $revRecord->getId();
+            $this->output("$dbDomain $pageId [[$name]] latest time $latestTime, rev id $id\n");
+            if ($this->hasOption('fix')) {
+                $page = $wikiPageFactory->newFromTitle($title);
+                $page->updateRevisionOn($dbw, $revRecord);
+                $lbFactory->waitForReplication();
+            }
+            $n++;
+        }
+        $this->output("Done! Processed $n pages.\n");
+        if (!$this->hasOption('fix')) {
+            $this->output("This was a dry run; rerun with --fix to update page_latest.\n");
+        }
+    }
 }
 
 $maintClass = AttachLatest::class;

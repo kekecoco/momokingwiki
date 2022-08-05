@@ -10,26 +10,29 @@ use MediaWiki\MediaWikiServices;
  * purpose is to provide a consistent API which can easily be maintained
  * after the class has been migrated to dependency injection.
  */
-trait ProtectedHookAccessorTrait {
-	/**
-	 * Get a HookContainer, for running extension hooks or for hook metadata.
-	 *
-	 * @since 1.35
-	 * @return HookContainer
-	 */
-	protected function getHookContainer() {
-		return MediaWikiServices::getInstance()->getHookContainer();
-	}
+trait ProtectedHookAccessorTrait
+{
+    /**
+     * Get a HookContainer, for running extension hooks or for hook metadata.
+     *
+     * @return HookContainer
+     * @since 1.35
+     */
+    protected function getHookContainer()
+    {
+        return MediaWikiServices::getInstance()->getHookContainer();
+    }
 
-	/**
-	 * Get a HookRunner for running core hooks.
-	 *
-	 * @internal This is for use by core only. Hook interfaces may be removed
-	 *   without notice.
-	 * @since 1.35
-	 * @return HookRunner
-	 */
-	protected function getHookRunner() {
-		return new HookRunner( $this->getHookContainer() );
-	}
+    /**
+     * Get a HookRunner for running core hooks.
+     *
+     * @return HookRunner
+     * @since 1.35
+     * @internal This is for use by core only. Hook interfaces may be removed
+     *   without notice.
+     */
+    protected function getHookRunner()
+    {
+        return new HookRunner($this->getHookContainer());
+    }
 }

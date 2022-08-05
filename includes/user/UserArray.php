@@ -22,88 +22,95 @@
 
 use Wikimedia\Rdbms\IResultWrapper;
 
-abstract class UserArray implements Iterator {
-	/**
-	 * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
-	 * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
-	 * In case you need full User objects, you can keep using this method, but it's
-	 * moving towards deprecation.
-	 *
-	 * @param IResultWrapper $res
-	 * @return UserArrayFromResult|ArrayIterator
-	 */
-	public static function newFromResult( $res ) {
-		$userArray = null;
-		if ( !Hooks::runner()->onUserArrayFromResult( $userArray, $res ) ) {
-			return new ArrayIterator( [] );
-		}
-		return $userArray ?? new UserArrayFromResult( $res );
-	}
+abstract class UserArray implements Iterator
+{
+    /**
+     * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
+     * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
+     * In case you need full User objects, you can keep using this method, but it's
+     * moving towards deprecation.
+     *
+     * @param IResultWrapper $res
+     * @return UserArrayFromResult|ArrayIterator
+     */
+    public static function newFromResult($res)
+    {
+        $userArray = null;
+        if (!Hooks::runner()->onUserArrayFromResult($userArray, $res)) {
+            return new ArrayIterator([]);
+        }
 
-	/**
-	 * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
-	 * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
-	 * In case you need full User objects, you can keep using this method, but it's
-	 * moving towards deprecation.
-	 *
-	 * @param array $ids
-	 * @return UserArrayFromResult|ArrayIterator
-	 */
-	public static function newFromIDs( $ids ) {
-		$ids = array_map( 'intval', (array)$ids ); // paranoia
-		if ( !$ids ) {
-			// Database::select() doesn't like empty arrays
-			return new ArrayIterator( [] );
-		}
-		$dbr = wfGetDB( DB_REPLICA );
-		$userQuery = User::getQueryInfo();
-		$res = $dbr->select(
-			$userQuery['tables'],
-			$userQuery['fields'],
-			[ 'user_id' => array_unique( $ids ) ],
-			__METHOD__,
-			[],
-			$userQuery['joins']
-		);
-		return self::newFromResult( $res );
-	}
+        return $userArray ?? new UserArrayFromResult($res);
+    }
 
-	/**
-	 * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
-	 * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
-	 * In case you need full User objects, you can keep using this method, but it's
-	 * moving towards deprecation.
-	 *
-	 * @since 1.25
-	 * @param array $names
-	 * @return UserArrayFromResult|ArrayIterator
-	 */
-	public static function newFromNames( $names ) {
-		$names = array_map( 'strval', (array)$names ); // paranoia
-		if ( !$names ) {
-			// Database::select() doesn't like empty arrays
-			return new ArrayIterator( [] );
-		}
-		$dbr = wfGetDB( DB_REPLICA );
-		$userQuery = User::getQueryInfo();
-		$res = $dbr->select(
-			$userQuery['tables'],
-			$userQuery['fields'],
-			[ 'user_name' => array_unique( $names ) ],
-			__METHOD__,
-			[],
-			$userQuery['joins']
-		);
-		return self::newFromResult( $res );
-	}
+    /**
+     * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
+     * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
+     * In case you need full User objects, you can keep using this method, but it's
+     * moving towards deprecation.
+     *
+     * @param array $ids
+     * @return UserArrayFromResult|ArrayIterator
+     */
+    public static function newFromIDs($ids)
+    {
+        $ids = array_map('intval', (array)$ids); // paranoia
+        if (!$ids) {
+            // Database::select() doesn't like empty arrays
+            return new ArrayIterator([]);
+        }
+        $dbr = wfGetDB(DB_REPLICA);
+        $userQuery = User::getQueryInfo();
+        $res = $dbr->select(
+            $userQuery['tables'],
+            $userQuery['fields'],
+            ['user_id' => array_unique($ids)],
+            __METHOD__,
+            [],
+            $userQuery['joins']
+        );
 
-	/**
-	 * @return User
-	 */
-	abstract public function current(): User;
+        return self::newFromResult($res);
+    }
 
-	/**
-	 * @return int
-	 */
-	abstract public function key(): int;
+    /**
+     * @note Try to avoid in new code, in case getting UserIdentity batch is enough,
+     * use {@link \MediaWiki\User\UserIdentityLookup::newSelectQueryBuilder()}.
+     * In case you need full User objects, you can keep using this method, but it's
+     * moving towards deprecation.
+     *
+     * @param array $names
+     * @return UserArrayFromResult|ArrayIterator
+     * @since 1.25
+     */
+    public static function newFromNames($names)
+    {
+        $names = array_map('strval', (array)$names); // paranoia
+        if (!$names) {
+            // Database::select() doesn't like empty arrays
+            return new ArrayIterator([]);
+        }
+        $dbr = wfGetDB(DB_REPLICA);
+        $userQuery = User::getQueryInfo();
+        $res = $dbr->select(
+            $userQuery['tables'],
+            $userQuery['fields'],
+            ['user_name' => array_unique($names)],
+            __METHOD__,
+            [],
+            $userQuery['joins']
+        );
+
+        return self::newFromResult($res);
+    }
+
+    /**
+     * @return User
+     */
+    abstract public function current(): User;
+
+    /**
+     * @return int
+     */
+    abstract public function key(): int;
 }

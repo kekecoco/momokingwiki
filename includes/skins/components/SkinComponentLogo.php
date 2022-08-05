@@ -25,45 +25,50 @@ use MediaWiki\ResourceLoader as RL;
  * @internal for use inside Skin and SkinTemplate classes only
  * @unstable
  */
-class SkinComponentLogo implements SkinComponent {
-	/** @var Config */
-	private $config;
-	/** @var string|null */
-	private $language;
+class SkinComponentLogo implements SkinComponent
+{
+    /** @var Config */
+    private $config;
+    /** @var string|null */
+    private $language;
 
-	/**
-	 * @param Config $config
-	 * @param string|null $language
-	 */
-	public function __construct( Config $config, ?string $language ) {
-		$this->config = $config;
-		$this->language = $language;
-	}
+    /**
+     * @param Config $config
+     * @param string|null $language
+     */
+    public function __construct(Config $config, ?string $language)
+    {
+        $this->config = $config;
+        $this->language = $language;
+    }
 
-	/**
-	 * @return string|null
-	 */
-	private function getLanguage(): ?string {
-		return $this->language;
-	}
+    /**
+     * @return string|null
+     */
+    private function getLanguage(): ?string
+    {
+        return $this->language;
+    }
 
-	/**
-	 * @return Config
-	 */
-	private function getConfig(): Config {
-		return $this->config;
-	}
+    /**
+     * @return Config
+     */
+    private function getConfig(): Config
+    {
+        return $this->config;
+    }
 
-	/**
-	 * @inheritDoc
-	 * Since 1.35 (all fields optional):
-	 * - string 1x Path to a square icon at 1x resolution
-	 * - string 2x Path to a square icon at 2x resolution
-	 * - string icon Path to a square icon
-	 * - array wordmark with `src`, `width`, `height` and `style` keys.
-	 * - array tagline with `src`, `width`, `height` and `style` keys.
-	 */
-	public function getTemplateData(): array {
-		return RL\SkinModule::getAvailableLogos( $this->getConfig(), $this->getLanguage() );
-	}
+    /**
+     * @inheritDoc
+     * Since 1.35 (all fields optional):
+     * - string 1x Path to a square icon at 1x resolution
+     * - string 2x Path to a square icon at 2x resolution
+     * - string icon Path to a square icon
+     * - array wordmark with `src`, `width`, `height` and `style` keys.
+     * - array tagline with `src`, `width`, `height` and `style` keys.
+     */
+    public function getTemplateData(): array
+    {
+        return RL\SkinModule::getAvailableLogos($this->getConfig(), $this->getLanguage());
+    }
 }

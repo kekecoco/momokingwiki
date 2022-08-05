@@ -32,43 +32,46 @@
  * @newable
  * @since 1.21
  */
-class RawMessage extends Message {
+class RawMessage extends Message
+{
 
-	/**
-	 * Call the parent constructor, then store the key as
-	 * the message.
-	 *
-	 * @stable to call
-	 * @see Message::__construct
-	 *
-	 * @param string $text Message to use.
-	 * @param array $params Parameters for the message.
-	 *
-	 * @throws InvalidArgumentException
-	 */
-	public function __construct( $text, $params = [] ) {
-		if ( !is_string( $text ) ) {
-			throw new InvalidArgumentException( '$text must be a string' );
-		}
+    /**
+     * Call the parent constructor, then store the key as
+     * the message.
+     *
+     * @stable to call
+     * @param string $text Message to use.
+     * @param array $params Parameters for the message.
+     *
+     * @throws InvalidArgumentException
+     * @see Message::__construct
+     *
+     */
+    public function __construct($text, $params = [])
+    {
+        if (!is_string($text)) {
+            throw new InvalidArgumentException('$text must be a string');
+        }
 
-		parent::__construct( $text, $params );
+        parent::__construct($text, $params);
 
-		// The key is the message.
-		$this->message = $text;
-	}
+        // The key is the message.
+        $this->message = $text;
+    }
 
-	/**
-	 * Fetch the message (in this case, the key).
-	 *
-	 * @return string
-	 */
-	public function fetchMessage() {
-		// Just in case the message is unset somewhere.
-		if ( $this->message === null ) {
-			$this->message = $this->key;
-		}
+    /**
+     * Fetch the message (in this case, the key).
+     *
+     * @return string
+     */
+    public function fetchMessage()
+    {
+        // Just in case the message is unset somewhere.
+        if ($this->message === null) {
+            $this->message = $this->key;
+        }
 
-		return $this->message;
-	}
+        return $this->message;
+    }
 
 }

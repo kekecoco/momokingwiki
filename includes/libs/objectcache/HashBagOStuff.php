@@ -29,175 +29,191 @@
  * @newable
  * @ingroup Cache
  */
-class HashBagOStuff extends MediumSpecificBagOStuff {
-	/** @var mixed[] */
-	protected $bag = [];
-	/** @var int|double Max entries allowed, INF for unlimited */
-	protected $maxCacheKeys;
+class HashBagOStuff extends MediumSpecificBagOStuff
+{
+    /** @var mixed[] */
+    protected $bag = [];
+    /** @var int|double Max entries allowed, INF for unlimited */
+    protected $maxCacheKeys;
 
-	/** @var string CAS token prefix for this instance */
-	private $token;
+    /** @var string CAS token prefix for this instance */
+    private $token;
 
-	/** @var int CAS token counter */
-	private static $casCounter = 0;
+    /** @var int CAS token counter */
+    private static $casCounter = 0;
 
-	public const KEY_VAL = 0;
-	public const KEY_EXP = 1;
-	public const KEY_CAS = 2;
+    public const KEY_VAL = 0;
+    public const KEY_EXP = 1;
+    public const KEY_CAS = 2;
 
-	/**
-	 * @stable to call
-	 * @param array $params Additional parameters include:
-	 *   - maxKeys : only allow this many keys (using oldest-first eviction)
-	 * @phpcs:ignore Generic.Files.LineLength
-	 * @phan-param array{logger?:Psr\Log\LoggerInterface,asyncHandler?:callable,keyspace?:string,reportDupes?:bool,syncTimeout?:int,segmentationSize?:int,segmentedValueMaxSize?:int,maxKeys?:int} $params
-	 */
-	public function __construct( $params = [] ) {
-		$params['segmentationSize'] = $params['segmentationSize'] ?? INF;
-		parent::__construct( $params );
+    /**
+     * @stable to call
+     * @param array $params Additional parameters include:
+     *   - maxKeys : only allow this many keys (using oldest-first eviction)
+     * @phpcs:ignore Generic.Files.LineLength
+     * @phan-param array{logger?:Psr\Log\LoggerInterface,asyncHandler?:callable,keyspace?:string,reportDupes?:bool,syncTimeout?:int,segmentationSize?:int,segmentedValueMaxSize?:int,maxKeys?:int} $params
+     */
+    public function __construct($params = [])
+    {
+        $params['segmentationSize'] = $params['segmentationSize'] ?? INF;
+        parent::__construct($params);
 
-		$this->token = microtime( true ) . ':' . mt_rand();
-		$maxKeys = $params['maxKeys'] ?? INF;
-		if ( $maxKeys !== INF && ( !is_int( $maxKeys ) || $maxKeys <= 0 ) ) {
-			throw new InvalidArgumentException( '$maxKeys parameter must be above zero' );
-		}
-		$this->maxCacheKeys = $maxKeys;
+        $this->token = microtime(true) . ':' . mt_rand();
+        $maxKeys = $params['maxKeys'] ?? INF;
+        if ($maxKeys !== INF && (!is_int($maxKeys) || $maxKeys <= 0)) {
+            throw new InvalidArgumentException('$maxKeys parameter must be above zero');
+        }
+        $this->maxCacheKeys = $maxKeys;
 
-		$this->attrMap[self::ATTR_DURABILITY] = self::QOS_DURABILITY_SCRIPT;
-	}
+        $this->attrMap[self::ATTR_DURABILITY] = self::QOS_DURABILITY_SCRIPT;
+    }
 
-	protected function doGet( $key, $flags = 0, &$casToken = null ) {
-		$getToken = ( $casToken === self::PASS_BY_REF );
-		$casToken = null;
+    protected function doGet($key, $flags = 0, &$casToken = null)
+    {
+        $getToken = ($casToken === self::PASS_BY_REF);
+        $casToken = null;
 
-		if ( !$this->hasKey( $key ) || $this->expire( $key ) ) {
-			return false;
-		}
+        if (!$this->hasKey($key) || $this->expire($key)) {
+            return false;
+        }
 
-		// Refresh key position for maxCacheKeys eviction
-		$temp = $this->bag[$key];
-		unset( $this->bag[$key] );
-		$this->bag[$key] = $temp;
+        // Refresh key position for maxCacheKeys eviction
+        $temp = $this->bag[$key];
+        unset($this->bag[$key]);
+        $this->bag[$key] = $temp;
 
-		$value = $this->bag[$key][self::KEY_VAL];
-		if ( $getToken && $value !== false ) {
-			$casToken = $this->bag[$key][self::KEY_CAS];
-		}
+        $value = $this->bag[$key][self::KEY_VAL];
+        if ($getToken && $value !== false) {
+            $casToken = $this->bag[$key][self::KEY_CAS];
+        }
 
-		return $value;
-	}
+        return $value;
+    }
 
-	protected function doSet( $key, $value, $exptime = 0, $flags = 0 ) {
-		// Refresh key position for maxCacheKeys eviction
-		unset( $this->bag[$key] );
-		$this->bag[$key] = [
-			self::KEY_VAL => $value,
-			self::KEY_EXP => $this->getExpirationAsTimestamp( $exptime ),
-			self::KEY_CAS => $this->token . ':' . ++self::$casCounter
-		];
+    protected function doSet($key, $value, $exptime = 0, $flags = 0)
+    {
+        // Refresh key position for maxCacheKeys eviction
+        unset($this->bag[$key]);
+        $this->bag[$key] = [
+            self::KEY_VAL => $value,
+            self::KEY_EXP => $this->getExpirationAsTimestamp($exptime),
+            self::KEY_CAS => $this->token . ':' . ++self::$casCounter
+        ];
 
-		if ( count( $this->bag ) > $this->maxCacheKeys ) {
-			reset( $this->bag );
-			$evictKey = key( $this->bag );
-			unset( $this->bag[$evictKey] );
-		}
+        if (count($this->bag) > $this->maxCacheKeys) {
+            reset($this->bag);
+            $evictKey = key($this->bag);
+            unset($this->bag[$evictKey]);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	protected function doAdd( $key, $value, $exptime = 0, $flags = 0 ) {
-		if ( $this->hasKey( $key ) && !$this->expire( $key ) ) {
-			// key already set
-			return false;
-		}
+    protected function doAdd($key, $value, $exptime = 0, $flags = 0)
+    {
+        if ($this->hasKey($key) && !$this->expire($key)) {
+            // key already set
+            return false;
+        }
 
-		return $this->doSet( $key, $value, $exptime, $flags );
-	}
+        return $this->doSet($key, $value, $exptime, $flags);
+    }
 
-	protected function doDelete( $key, $flags = 0 ) {
-		unset( $this->bag[$key] );
+    protected function doDelete($key, $flags = 0)
+    {
+        unset($this->bag[$key]);
 
-		return true;
-	}
+        return true;
+    }
 
-	public function incr( $key, $value = 1, $flags = 0 ) {
-		return $this->doIncr( $key, $value, $flags );
-	}
+    public function incr($key, $value = 1, $flags = 0)
+    {
+        return $this->doIncr($key, $value, $flags);
+    }
 
-	public function decr( $key, $value = 1, $flags = 0 ) {
-		return $this->doIncr( $key, -$value, $flags );
-	}
+    public function decr($key, $value = 1, $flags = 0)
+    {
+        return $this->doIncr($key, -$value, $flags);
+    }
 
-	private function doIncr( $key, $value = 1, $flags = 0 ) {
-		$n = $this->doGet( $key );
-		if ( $this->isInteger( $n ) ) {
-			$n = max( $n + (int)$value, 0 );
-			$this->bag[$key][self::KEY_VAL] = $n;
+    private function doIncr($key, $value = 1, $flags = 0)
+    {
+        $n = $this->doGet($key);
+        if ($this->isInteger($n)) {
+            $n = max($n + (int)$value, 0);
+            $this->bag[$key][self::KEY_VAL] = $n;
 
-			return $n;
-		}
+            return $n;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	protected function doIncrWithInit( $key, $exptime, $step, $init, $flags ) {
-		$curValue = $this->doGet( $key );
-		if ( $curValue === false ) {
-			$newValue = $this->doSet( $key, $init, $exptime ) ? $init : false;
-		} elseif ( $this->isInteger( $curValue ) ) {
-			$newValue = max( $curValue + $step, 0 );
-			$this->bag[$key][self::KEY_VAL] = $newValue;
-		} else {
-			$newValue = false;
-		}
+    protected function doIncrWithInit($key, $exptime, $step, $init, $flags)
+    {
+        $curValue = $this->doGet($key);
+        if ($curValue === false) {
+            $newValue = $this->doSet($key, $init, $exptime) ? $init : false;
+        } elseif ($this->isInteger($curValue)) {
+            $newValue = max($curValue + $step, 0);
+            $this->bag[$key][self::KEY_VAL] = $newValue;
+        } else {
+            $newValue = false;
+        }
 
-		return $newValue;
-	}
+        return $newValue;
+    }
 
-	/**
-	 * Clear all values in cache
-	 */
-	public function clear() {
-		$this->bag = [];
-	}
+    /**
+     * Clear all values in cache
+     */
+    public function clear()
+    {
+        $this->bag = [];
+    }
 
-	/**
-	 * @param string $key
-	 * @return bool
-	 */
-	protected function expire( $key ) {
-		$et = $this->bag[$key][self::KEY_EXP];
-		if ( $et == self::TTL_INDEFINITE || $et > $this->getCurrentTime() ) {
-			return false;
-		}
+    /**
+     * @param string $key
+     * @return bool
+     */
+    protected function expire($key)
+    {
+        $et = $this->bag[$key][self::KEY_EXP];
+        if ($et == self::TTL_INDEFINITE || $et > $this->getCurrentTime()) {
+            return false;
+        }
 
-		$this->doDelete( $key );
+        $this->doDelete($key);
 
-		return true;
-	}
+        return true;
+    }
 
-	public function setNewPreparedValues( array $valueByKey ) {
-		// Do not bother staging serialized values as this class does not serialize values
-		return $this->guessSerialSizeOfValues( $valueByKey );
-	}
+    public function setNewPreparedValues(array $valueByKey)
+    {
+        // Do not bother staging serialized values as this class does not serialize values
+        return $this->guessSerialSizeOfValues($valueByKey);
+    }
 
-	/**
-	 * Does this bag have a non-null value for the given key?
-	 *
-	 * @param string $key
-	 * @return bool
-	 * @since 1.27
-	 */
-	public function hasKey( $key ) {
-		return isset( $this->bag[$key] );
-	}
+    /**
+     * Does this bag have a non-null value for the given key?
+     *
+     * @param string $key
+     * @return bool
+     * @since 1.27
+     */
+    public function hasKey($key)
+    {
+        return isset($this->bag[$key]);
+    }
 
-	public function makeKeyInternal( $keyspace, $components ) {
-		return $this->genericKeyFromComponents( $keyspace, ...$components );
-	}
+    public function makeKeyInternal($keyspace, $components)
+    {
+        return $this->genericKeyFromComponents($keyspace, ...$components);
+    }
 
-	protected function convertGenericKey( $key ) {
-		// short-circuit; already uses "generic" keys
-		return $key;
-	}
+    protected function convertGenericKey($key)
+    {
+        // short-circuit; already uses "generic" keys
+        return $key;
+    }
 }

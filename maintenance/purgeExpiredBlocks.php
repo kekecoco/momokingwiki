@@ -30,19 +30,22 @@ require_once __DIR__ . '/Maintenance.php';
  * @author DannyS712
  */
 
-class PurgeExpiredBlocks extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Remove expired blocks.' );
-	}
+class PurgeExpiredBlocks extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Remove expired blocks.');
+    }
 
-	public function execute() {
-		$this->output( "Purging expired blocks...\n" );
+    public function execute()
+    {
+        $this->output("Purging expired blocks...\n");
 
-		MediaWikiServices::getInstance()->getDatabaseBlockStore()->purgeExpiredBlocks();
+        MediaWikiServices::getInstance()->getDatabaseBlockStore()->purgeExpiredBlocks();
 
-		$this->output( "Done purging expired blocks.\n" );
-	}
+        $this->output("Done purging expired blocks.\n");
+    }
 }
 
 $maintClass = PurgeExpiredBlocks::class;

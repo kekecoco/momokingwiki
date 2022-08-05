@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Redirect from Special:Edit/$1 to index.php?title=$1&action=edit.
  *
@@ -21,18 +22,20 @@
  * @ingroup SpecialPage
  * @author DannyS712
  */
-class SpecialEditPage extends SpecialRedirectWithAction {
+class SpecialEditPage extends SpecialRedirectWithAction
+{
 
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
-	public function __construct(
-		SearchEngineFactory $searchEngineFactory
-	) {
-		parent::__construct( 'EditPage', 'edit', 'editpage', $searchEngineFactory );
-	}
+    /**
+     * @param SearchEngineFactory $searchEngineFactory
+     */
+    public function __construct(
+        SearchEngineFactory $searchEngineFactory
+    )
+    {
+        parent::__construct('EditPage', 'edit', 'editpage', $searchEngineFactory);
+    }
 
-	// Messages, for grep:
-	// specialeditpage-page
-	// specialeditpage-submit
+    // Messages, for grep:
+    // specialeditpage-page
+    // specialeditpage-submit
 }

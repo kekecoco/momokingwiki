@@ -17,158 +17,185 @@ use Wikimedia\AtEase\AtEase;
  * @internal
  * @since 1.34
  */
-class UploadedFileStream implements StreamInterface {
+class UploadedFileStream implements StreamInterface
+{
 
-	/** @var resource|null File handle */
-	private $fp;
+    /** @var resource|null File handle */
+    private $fp;
 
-	/** @var int|false|null File size. False if not set yet. */
-	private $size = false;
+    /** @var int|false|null File size. False if not set yet. */
+    private $size = false;
 
-	/**
-	 * Call, throwing on error
-	 * @param callable $func Callable to call
-	 * @param array $args Arguments
-	 * @param mixed $fail Failure return value
-	 * @param string $msg Message prefix
-	 * @return mixed
-	 * @throws RuntimeException if $func returns $fail
-	 */
-	private static function quietCall( callable $func, array $args, $fail, $msg ) {
-		error_clear_last();
-		$ret = AtEase::quietCall( $func, ...$args );
-		if ( $ret === $fail ) {
-			$err = error_get_last();
-			throw new RuntimeException( "$msg: " . ( $err['message'] ?? 'Unknown error' ) );
-		}
-		return $ret;
-	}
+    /**
+     * Call, throwing on error
+     * @param callable $func Callable to call
+     * @param array $args Arguments
+     * @param mixed $fail Failure return value
+     * @param string $msg Message prefix
+     * @return mixed
+     * @throws RuntimeException if $func returns $fail
+     */
+    private static function quietCall(callable $func, array $args, $fail, $msg)
+    {
+        error_clear_last();
+        $ret = AtEase::quietCall($func, ...$args);
+        if ($ret === $fail) {
+            $err = error_get_last();
+            throw new RuntimeException("$msg: " . ($err['message'] ?? 'Unknown error'));
+        }
 
-	/**
-	 * @param string $filename
-	 */
-	public function __construct( $filename ) {
-		$this->fp = self::quietCall( 'fopen', [ $filename, 'r' ], false, 'Failed to open file' );
-	}
+        return $ret;
+    }
 
-	/**
-	 * Check if the stream is open
-	 * @throws RuntimeException if closed
-	 */
-	private function checkOpen() {
-		if ( !$this->fp ) {
-			throw new RuntimeException( 'Stream is not open' );
-		}
-	}
+    /**
+     * @param string $filename
+     */
+    public function __construct($filename)
+    {
+        $this->fp = self::quietCall('fopen', [$filename, 'r'], false, 'Failed to open file');
+    }
 
-	public function __destruct() {
-		$this->close();
-	}
+    /**
+     * Check if the stream is open
+     * @throws RuntimeException if closed
+     */
+    private function checkOpen()
+    {
+        if (!$this->fp) {
+            throw new RuntimeException('Stream is not open');
+        }
+    }
 
-	public function __toString() {
-		try {
-			$this->seek( 0 );
-			return $this->getContents();
-		} catch ( Throwable $ex ) {
-			// Not allowed to throw
-			return '';
-		}
-	}
+    public function __destruct()
+    {
+        $this->close();
+    }
 
-	public function close() {
-		if ( $this->fp ) {
-			// Spec doesn't care about close errors.
-			try {
-				// PHP 7 emits warnings, suppress
-				AtEase::quietCall( 'fclose', $this->fp );
-			} catch ( \TypeError $unused ) {
-				// While PHP 8 throws exceptions, ignore
-			}
-			$this->fp = null;
-		}
-	}
+    public function __toString()
+    {
+        try {
+            $this->seek(0);
 
-	public function detach() {
-		$ret = $this->fp;
-		$this->fp = null;
-		return $ret;
-	}
+            return $this->getContents();
+        } catch (Throwable $ex) {
+            // Not allowed to throw
+            return '';
+        }
+    }
 
-	public function getSize() {
-		if ( $this->size === false ) {
-			$this->size = null;
+    public function close()
+    {
+        if ($this->fp) {
+            // Spec doesn't care about close errors.
+            try {
+                // PHP 7 emits warnings, suppress
+                AtEase::quietCall('fclose', $this->fp);
+            } catch (\TypeError $unused) {
+                // While PHP 8 throws exceptions, ignore
+            }
+            $this->fp = null;
+        }
+    }
 
-			if ( $this->fp ) {
-				// Spec doesn't care about errors here.
-				try {
-					$stat = AtEase::quietCall( 'fstat', $this->fp );
-				} catch ( \TypeError $unused ) {
-				}
-				$this->size = $stat['size'] ?? null;
-			}
-		}
+    public function detach()
+    {
+        $ret = $this->fp;
+        $this->fp = null;
 
-		return $this->size;
-	}
+        return $ret;
+    }
 
-	public function tell() {
-		$this->checkOpen();
-		return self::quietCall( 'ftell', [ $this->fp ], -1, 'Cannot determine stream position' );
-	}
+    public function getSize()
+    {
+        if ($this->size === false) {
+            $this->size = null;
 
-	public function eof() {
-		// Spec doesn't care about errors here.
-		try {
-			return !$this->fp || AtEase::quietCall( 'feof', $this->fp );
-		} catch ( \TypeError $unused ) {
-			return true;
-		}
-	}
+            if ($this->fp) {
+                // Spec doesn't care about errors here.
+                try {
+                    $stat = AtEase::quietCall('fstat', $this->fp);
+                } catch (\TypeError $unused) {
+                }
+                $this->size = $stat['size'] ?? null;
+            }
+        }
 
-	public function isSeekable() {
-		return (bool)$this->fp;
-	}
+        return $this->size;
+    }
 
-	public function seek( $offset, $whence = SEEK_SET ) {
-		$this->checkOpen();
-		self::quietCall( 'fseek', [ $this->fp, $offset, $whence ], -1, 'Seek failed' );
-	}
+    public function tell()
+    {
+        $this->checkOpen();
 
-	public function rewind() {
-		$this->seek( 0 );
-	}
+        return self::quietCall('ftell', [$this->fp], -1, 'Cannot determine stream position');
+    }
 
-	public function isWritable() {
-		return false;
-	}
+    public function eof()
+    {
+        // Spec doesn't care about errors here.
+        try {
+            return !$this->fp || AtEase::quietCall('feof', $this->fp);
+        } catch (\TypeError $unused) {
+            return true;
+        }
+    }
 
-	public function write( $string ) {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		$this->checkOpen();
-		throw new RuntimeException( 'Stream is read-only' );
-	}
+    public function isSeekable()
+    {
+        return (bool)$this->fp;
+    }
 
-	public function isReadable() {
-		return (bool)$this->fp;
-	}
+    public function seek($offset, $whence = SEEK_SET)
+    {
+        $this->checkOpen();
+        self::quietCall('fseek', [$this->fp, $offset, $whence], -1, 'Seek failed');
+    }
 
-	public function read( $length ) {
-		$this->checkOpen();
-		return self::quietCall( 'fread', [ $this->fp, $length ], false, 'Read failed' );
-	}
+    public function rewind()
+    {
+        $this->seek(0);
+    }
 
-	public function getContents() {
-		$this->checkOpen();
-		return self::quietCall( 'stream_get_contents', [ $this->fp ], false, 'Read failed' );
-	}
+    public function isWritable()
+    {
+        return false;
+    }
 
-	public function getMetadata( $key = null ) {
-		$this->checkOpen();
-		$ret = self::quietCall( 'stream_get_meta_data', [ $this->fp ], false, 'Metadata fetch failed' );
-		if ( $key !== null ) {
-			$ret = $ret[$key] ?? null;
-		}
-		return $ret;
-	}
+    public function write($string)
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        $this->checkOpen();
+        throw new RuntimeException('Stream is read-only');
+    }
+
+    public function isReadable()
+    {
+        return (bool)$this->fp;
+    }
+
+    public function read($length)
+    {
+        $this->checkOpen();
+
+        return self::quietCall('fread', [$this->fp, $length], false, 'Read failed');
+    }
+
+    public function getContents()
+    {
+        $this->checkOpen();
+
+        return self::quietCall('stream_get_contents', [$this->fp], false, 'Read failed');
+    }
+
+    public function getMetadata($key = null)
+    {
+        $this->checkOpen();
+        $ret = self::quietCall('stream_get_meta_data', [$this->fp], false, 'Metadata fetch failed');
+        if ($key !== null) {
+            $ret = $ret[$key] ?? null;
+        }
+
+        return $ret;
+    }
 
 }

@@ -27,28 +27,31 @@ namespace MediaWiki\Auth;
  * @ingroup Auth
  * @since 1.27
  */
-class CreatedAccountAuthenticationRequest extends AuthenticationRequest {
+class CreatedAccountAuthenticationRequest extends AuthenticationRequest
+{
 
-	public $required = self::OPTIONAL;
+    public $required = self::OPTIONAL;
 
-	/** @var int User id */
-	public $id;
+    /** @var int User id */
+    public $id;
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getFieldInfo() {
-		return [];
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getFieldInfo()
+    {
+        return [];
+    }
 
-	/**
-	 * @stable to call
-	 * @param int $id User id
-	 * @param string $name Username
-	 */
-	public function __construct( $id, $name ) {
-		$this->id = (int)$id;
-		$this->username = $name;
-	}
+    /**
+     * @stable to call
+     * @param int $id User id
+     * @param string $name Username
+     */
+    public function __construct($id, $name)
+    {
+        $this->id = (int)$id;
+        $this->username = $name;
+    }
 }

@@ -31,34 +31,37 @@
  * @since 1.19
  * @ingroup Exception
  */
-class BadTitleError extends ErrorPageError {
-	/**
-	 * @stable to call
-	 *
-	 * @param string|Message|MalformedTitleException $msg A message key (default: 'badtitletext'), or
-	 *     a MalformedTitleException to figure out things from
-	 * @param array $params Parameter to wfMessage()
-	 */
-	public function __construct( $msg = 'badtitletext', $params = [] ) {
-		if ( $msg instanceof MalformedTitleException ) {
-			$errorMessage = $msg->getErrorMessage();
-			if ( !$errorMessage ) {
-				parent::__construct( 'badtitle', 'badtitletext', [] );
-			} else {
-				$errorMessageParams = $msg->getErrorMessageParameters();
-				parent::__construct( 'badtitle', $errorMessage, $errorMessageParams );
-			}
-		} else {
-			parent::__construct( 'badtitle', $msg, $params );
-		}
-	}
+class BadTitleError extends ErrorPageError
+{
+    /**
+     * @stable to call
+     *
+     * @param string|Message|MalformedTitleException $msg A message key (default: 'badtitletext'), or
+     *     a MalformedTitleException to figure out things from
+     * @param array $params Parameter to wfMessage()
+     */
+    public function __construct($msg = 'badtitletext', $params = [])
+    {
+        if ($msg instanceof MalformedTitleException) {
+            $errorMessage = $msg->getErrorMessage();
+            if (!$errorMessage) {
+                parent::__construct('badtitle', 'badtitletext', []);
+            } else {
+                $errorMessageParams = $msg->getErrorMessageParameters();
+                parent::__construct('badtitle', $errorMessage, $errorMessageParams);
+            }
+        } else {
+            parent::__construct('badtitle', $msg, $params);
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function report( $action = self::SEND_OUTPUT ) {
-		global $wgOut;
-		$wgOut->setStatusCode( 404 );
-		parent::report( $action );
-	}
+    /**
+     * @inheritDoc
+     */
+    public function report($action = self::SEND_OUTPUT)
+    {
+        global $wgOut;
+        $wgOut->setStatusCode(404);
+        parent::report($action);
+    }
 }

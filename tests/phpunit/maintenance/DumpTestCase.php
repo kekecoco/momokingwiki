@@ -19,289 +19,308 @@ use WikiPage;
 /**
  * Base TestCase for dumps
  */
-abstract class DumpTestCase extends MediaWikiLangTestCase {
+abstract class DumpTestCase extends MediaWikiLangTestCase
+{
 
-	/**
-	 * exception to be rethrown once in sound PHPUnit surrounding
-	 *
-	 * As the current MediaWikiIntegrationTestCase::run is not robust enough to recover
-	 * from thrown exceptions directly, we cannot throw frow within
-	 * self::addDBData, although it would be appropriate. Hence, we catch the
-	 * exception and store it until we are in setUp and may finally rethrow
-	 * the exception without crashing the test suite.
-	 *
-	 * @var \Exception|null
-	 */
-	protected $exceptionFromAddDBData = null;
+    /**
+     * exception to be rethrown once in sound PHPUnit surrounding
+     *
+     * As the current MediaWikiIntegrationTestCase::run is not robust enough to recover
+     * from thrown exceptions directly, we cannot throw frow within
+     * self::addDBData, although it would be appropriate. Hence, we catch the
+     * exception and store it until we are in setUp and may finally rethrow
+     * the exception without crashing the test suite.
+     *
+     * @var \Exception|null
+     */
+    protected $exceptionFromAddDBData = null;
 
-	/** @var bool|null Whether the 'gzip' utility is available */
-	protected static $hasGzip = null;
+    /** @var bool|null Whether the 'gzip' utility is available */
+    protected static $hasGzip = null;
 
-	/**
-	 * Skip the test if 'gzip' is not in $PATH.
-	 *
-	 * @return bool
-	 */
-	protected function checkHasGzip() {
-		if ( self::$hasGzip === null ) {
-			self::$hasGzip = ( ExecutableFinder::findInDefaultPaths( 'gzip' ) !== false );
-		}
+    /**
+     * Skip the test if 'gzip' is not in $PATH.
+     *
+     * @return bool
+     */
+    protected function checkHasGzip()
+    {
+        if (self::$hasGzip === null) {
+            self::$hasGzip = (ExecutableFinder::findInDefaultPaths('gzip') !== false);
+        }
 
-		if ( !self::$hasGzip ) {
-			$this->markTestSkipped( "Skip test, requires the gzip utility in PATH" );
-		}
+        if (!self::$hasGzip) {
+            $this->markTestSkipped("Skip test, requires the gzip utility in PATH");
+        }
 
-		return self::$hasGzip;
-	}
+        return self::$hasGzip;
+    }
 
-	/**
-	 * Adds a revision to a page, while returning the resuting revision's id text id.
-	 *
-	 * @param WikiPage $page Page to add the revision to
-	 * @param string $text Revisions text
-	 * @param string $summary Revisions summary
-	 * @param string $model The model ID (defaults to wikitext)
-	 *
-	 * @throws MWException
-	 * @return array
-	 */
-	protected function addRevision(
-		WikiPage $page,
-		$text,
-		$summary,
-		$model = CONTENT_MODEL_WIKITEXT
-	) {
-		$contentHandler = ContentHandler::getForModelID( $model );
-		$content = $contentHandler->unserializeContent( $text );
+    /**
+     * Adds a revision to a page, while returning the resuting revision's id text id.
+     *
+     * @param WikiPage $page Page to add the revision to
+     * @param string $text Revisions text
+     * @param string $summary Revisions summary
+     * @param string $model The model ID (defaults to wikitext)
+     *
+     * @return array
+     * @throws MWException
+     */
+    protected function addRevision(
+        WikiPage $page,
+        $text,
+        $summary,
+        $model = CONTENT_MODEL_WIKITEXT
+    )
+    {
+        $contentHandler = ContentHandler::getForModelID($model);
+        $content = $contentHandler->unserializeContent($text);
 
-		$rev = $this->addMultiSlotRevision( $page, [ 'main' => $content ], $summary );
+        $rev = $this->addMultiSlotRevision($page, ['main' => $content], $summary);
 
-		if ( !$rev ) {
-			throw new MWException( "Could not create revision" );
-		}
+        if (!$rev) {
+            throw new MWException("Could not create revision");
+        }
 
-		$text_id = $this->getSlotTextId( $rev->getSlot( SlotRecord::MAIN ) );
-		return [ $rev->getId(), $text_id, $rev ];
-	}
+        $text_id = $this->getSlotTextId($rev->getSlot(SlotRecord::MAIN));
 
-	/**
-	 * @param SlotRecord $slot
-	 *
-	 * @return string|null
-	 */
-	protected function getSlotText( SlotRecord $slot ) {
-		try {
-			return $slot->getContent()->serialize();
-		} catch ( RevisionAccessException $ex ) {
-			return null;
-		}
-	}
+        return [$rev->getId(), $text_id, $rev];
+    }
 
-	/**
-	 * @param SlotRecord $slot
-	 *
-	 * @return int
-	 */
-	protected function getSlotTextId( SlotRecord $slot ) {
-		return (int)preg_replace( '/^tt:/', '', $slot->getAddress() );
-	}
+    /**
+     * @param SlotRecord $slot
+     *
+     * @return string|null
+     */
+    protected function getSlotText(SlotRecord $slot)
+    {
+        try {
+            return $slot->getContent()->serialize();
+        } catch (RevisionAccessException $ex) {
+            return null;
+        }
+    }
 
-	/**
-	 * @param SlotRecord $slot
-	 *
-	 * @return string
-	 */
-	protected function getSlotFormat( SlotRecord $slot ) {
-		$contentHandler = ContentHandler::getForModelID( $slot->getModel() );
-		return $contentHandler->getDefaultFormat();
-	}
+    /**
+     * @param SlotRecord $slot
+     *
+     * @return int
+     */
+    protected function getSlotTextId(SlotRecord $slot)
+    {
+        return (int)preg_replace('/^tt:/', '', $slot->getAddress());
+    }
 
-	/**
-	 * Adds a revision to a page, while returning the resulting revision's id and text id.
-	 *
-	 * @param WikiPage $page Page to add the revision to
-	 * @param Content[] $slots A mapping of slot names to Content objects
-	 * @param string $summary Revisions summary
-	 *
-	 * @throws MWException
-	 * @return RevisionRecord
-	 */
-	protected function addMultiSlotRevision(
-		WikiPage $page,
-		array $slots,
-		$summary
-	) {
-		$slotRoleRegistry = MediaWikiServices::getInstance()->getSlotRoleRegistry();
+    /**
+     * @param SlotRecord $slot
+     *
+     * @return string
+     */
+    protected function getSlotFormat(SlotRecord $slot)
+    {
+        $contentHandler = ContentHandler::getForModelID($slot->getModel());
 
-		$updater = $page->newPageUpdater( $this->getTestUser()->getUser() );
+        return $contentHandler->getDefaultFormat();
+    }
 
-		foreach ( $slots as $role => $content ) {
-			if ( !$slotRoleRegistry->isDefinedRole( $role ) ) {
-				$slotRoleRegistry->defineRoleWithModel( $role, $content->getModel() );
-			}
+    /**
+     * Adds a revision to a page, while returning the resulting revision's id and text id.
+     *
+     * @param WikiPage $page Page to add the revision to
+     * @param Content[] $slots A mapping of slot names to Content objects
+     * @param string $summary Revisions summary
+     *
+     * @return RevisionRecord
+     * @throws MWException
+     */
+    protected function addMultiSlotRevision(
+        WikiPage $page,
+        array $slots,
+        $summary
+    )
+    {
+        $slotRoleRegistry = MediaWikiServices::getInstance()->getSlotRoleRegistry();
 
-			$updater->setContent( $role, $content );
-		}
+        $updater = $page->newPageUpdater($this->getTestUser()->getUser());
 
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment( trim( $summary ) ) );
-		return $updater->getNewRevision();
-	}
+        foreach ($slots as $role => $content) {
+            if (!$slotRoleRegistry->isDefinedRole($role)) {
+                $slotRoleRegistry->defineRoleWithModel($role, $content->getModel());
+            }
 
-	/**
-	 * gunzips the given file and stores the result in the original file name
-	 *
-	 * @param string $fname Filename to read the gzipped data from and stored
-	 *   the gunzipped data into
-	 */
-	protected function gunzip( $fname ) {
-		$gzipped_contents = file_get_contents( $fname );
-		if ( $gzipped_contents === false ) {
-			$this->fail( "Could not get contents of $fname" );
-		}
+            $updater->setContent($role, $content);
+        }
 
-		$contents = gzdecode( $gzipped_contents );
+        $updater->saveRevision(CommentStoreComment::newUnsavedComment(trim($summary)));
 
-		$this->assertEquals(
-			strlen( $contents ),
-			file_put_contents( $fname, $contents ),
-			'# bytes written'
-		);
-	}
+        return $updater->getNewRevision();
+    }
 
-	public static function setUpBeforeClass(): void {
-		parent::setUpBeforeClass();
+    /**
+     * gunzips the given file and stores the result in the original file name
+     *
+     * @param string $fname Filename to read the gzipped data from and stored
+     *   the gunzipped data into
+     */
+    protected function gunzip($fname)
+    {
+        $gzipped_contents = file_get_contents($fname);
+        if ($gzipped_contents === false) {
+            $this->fail("Could not get contents of $fname");
+        }
 
-		if ( !function_exists( 'libxml_set_external_entity_loader' ) ) {
-			return;
-		}
+        $contents = gzdecode($gzipped_contents);
 
-		// The W3C is intentionally slow about returning schema files,
-		// see <https://www.w3.org/Help/Webmaster#slowdtd>.
-		// To work around that, we keep our own copies of the relevant schema files.
-		libxml_set_external_entity_loader(
-			static function ( $public, $system, $context ) {
-				switch ( $system ) {
-					// if more schema files are needed, add them here.
-					case 'http://www.w3.org/2001/xml.xsd':
-						$file = __DIR__ . '/xml.xsd';
-						break;
-					default:
-						if ( is_file( $system ) ) {
-							$file = $system;
-						} else {
-							return null;
-						}
-				}
+        $this->assertEquals(
+            strlen($contents),
+            file_put_contents($fname, $contents),
+            '# bytes written'
+        );
+    }
 
-				return $file;
-			}
-		);
-	}
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
 
-	/**
-	 * Default set up function.
-	 *
-	 * Reports errors from addDBData to PHPUnit
-	 */
-	protected function setUp(): void {
-		parent::setUp();
+        if (!function_exists('libxml_set_external_entity_loader')) {
+            return;
+        }
 
-		// Check if any Exception is stored for rethrowing from addDBData
-		// @see self::exceptionFromAddDBData
-		if ( $this->exceptionFromAddDBData !== null ) {
-			throw $this->exceptionFromAddDBData;
-		}
-	}
+        // The W3C is intentionally slow about returning schema files,
+        // see <https://www.w3.org/Help/Webmaster#slowdtd>.
+        // To work around that, we keep our own copies of the relevant schema files.
+        libxml_set_external_entity_loader(
+            static function ($public, $system, $context) {
+                switch ($system) {
+                    // if more schema files are needed, add them here.
+                    case 'http://www.w3.org/2001/xml.xsd':
+                        $file = __DIR__ . '/xml.xsd';
+                        break;
+                    default:
+                        if (is_file($system)) {
+                            $file = $system;
+                        } else {
+                            return null;
+                        }
+                }
 
-	/**
-	 * Returns the path to the XML schema file for the given schema version.
-	 *
-	 * @param string|null $schemaVersion
-	 *
-	 * @return string
-	 */
-	protected function getXmlSchemaPath( $schemaVersion = null ) {
-		global $IP, $wgXmlDumpSchemaVersion;
+                return $file;
+            }
+        );
+    }
 
-		$schemaVersion = $schemaVersion ?: $wgXmlDumpSchemaVersion;
+    /**
+     * Default set up function.
+     *
+     * Reports errors from addDBData to PHPUnit
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		return "$IP/docs/export-$schemaVersion.xsd";
-	}
+        // Check if any Exception is stored for rethrowing from addDBData
+        // @see self::exceptionFromAddDBData
+        if ($this->exceptionFromAddDBData !== null) {
+            throw $this->exceptionFromAddDBData;
+        }
+    }
 
-	/**
-	 * Checks for test output consisting only of lines containing ETA announcements
-	 */
-	protected function expectETAOutput() {
-		// Newer PHPUnits require assertion about the output using PHPUnit's own
-		// expectOutput[...] functions. However, the PHPUnit shipped prediactes
-		// do not allow to check /each/ line of the output using /readable/ REs.
-		// So we ...
+    /**
+     * Returns the path to the XML schema file for the given schema version.
+     *
+     * @param string|null $schemaVersion
+     *
+     * @return string
+     */
+    protected function getXmlSchemaPath($schemaVersion = null)
+    {
+        global $IP, $wgXmlDumpSchemaVersion;
 
-		// 1. ... add a dummy output checking to make PHPUnit not complain
-		//    about unchecked test output
-		$this->expectOutputRegex( '//' );
+        $schemaVersion = $schemaVersion ?: $wgXmlDumpSchemaVersion;
 
-		// 2. Do the real output checking on our own.
-		$lines = explode( "\n", $this->getActualOutput() );
-		$this->assertGreaterThan( 1, count( $lines ), "Minimal lines of produced output" );
-		$this->assertSame( '', array_pop( $lines ), "Output ends in LF" );
-		$timestamp_re = "[0-9]{4}-[01][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-6][0-9]";
-		foreach ( $lines as $line ) {
-			$this->assertRegExp(
-				"/$timestamp_re: .* \(ID [0-9]+\) [0-9]* pages .*, [0-9]* revs .*, ETA/",
-				$line
-			);
-		}
-	}
+        return "$IP/docs/export-$schemaVersion.xsd";
+    }
 
-	/**
-	 * @param null|string $schemaVersion
-	 *
-	 * @return DumpAsserter
-	 */
-	protected function getDumpAsserter( $schemaVersion = null ) {
-		$schemaVersion = $schemaVersion ?: WikiExporter::schemaVersion();
-		return new DumpAsserter( $schemaVersion );
-	}
+    /**
+     * Checks for test output consisting only of lines containing ETA announcements
+     */
+    protected function expectETAOutput()
+    {
+        // Newer PHPUnits require assertion about the output using PHPUnit's own
+        // expectOutput[...] functions. However, the PHPUnit shipped prediactes
+        // do not allow to check /each/ line of the output using /readable/ REs.
+        // So we ...
 
-	/**
-	 * Checks an XML file against an XSD schema.
-	 * @param string $fname
-	 * @param string $schemaFile
-	 */
-	protected function assertDumpSchema( $fname, $schemaFile ) {
-		if ( !function_exists( 'libxml_use_internal_errors' ) ) {
-			// Would be nice to leave a warning somehow.
-			// We don't want to skip all of the test case that calls this, though.
-			$this->markAsRisky();
-			return;
-		}
-		$xml = new DOMDocument();
-		$this->assertTrue( $xml->load( $fname ),
-			"Opening temporary file $fname via DOMDocument failed" );
+        // 1. ... add a dummy output checking to make PHPUnit not complain
+        //    about unchecked test output
+        $this->expectOutputRegex('//');
 
-		// Don't throw
-		$oldLibXmlInternalErrors = libxml_use_internal_errors( true );
+        // 2. Do the real output checking on our own.
+        $lines = explode("\n", $this->getActualOutput());
+        $this->assertGreaterThan(1, count($lines), "Minimal lines of produced output");
+        $this->assertSame('', array_pop($lines), "Output ends in LF");
+        $timestamp_re = "[0-9]{4}-[01][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-6][0-9]";
+        foreach ($lines as $line) {
+            $this->assertRegExp(
+                "/$timestamp_re: .* \(ID [0-9]+\) [0-9]* pages .*, [0-9]* revs .*, ETA/",
+                $line
+            );
+        }
+    }
 
-		// NOTE: if this reports "Invalid Schema", the schema may be referencing an external
-		// entity (typically, another schema) that needs to be mapped in the
-		// libxml_set_external_entity_loader callback defined in setUpBeforeClass() above!
-		// Or $schemaFile doesn't point to a schema file, or the schema is indeed just broken.
-		if ( !$xml->schemaValidate( $schemaFile ) ) {
-			$errorText = '';
+    /**
+     * @param null|string $schemaVersion
+     *
+     * @return DumpAsserter
+     */
+    protected function getDumpAsserter($schemaVersion = null)
+    {
+        $schemaVersion = $schemaVersion ?: WikiExporter::schemaVersion();
 
-			foreach ( libxml_get_errors() as $error ) {
-				$errorText .= "\nline {$error->line}: {$error->message}";
-			}
+        return new DumpAsserter($schemaVersion);
+    }
 
-			libxml_clear_errors();
+    /**
+     * Checks an XML file against an XSD schema.
+     * @param string $fname
+     * @param string $schemaFile
+     */
+    protected function assertDumpSchema($fname, $schemaFile)
+    {
+        if (!function_exists('libxml_use_internal_errors')) {
+            // Would be nice to leave a warning somehow.
+            // We don't want to skip all of the test case that calls this, though.
+            $this->markAsRisky();
 
-			$this->fail(
-				"Failed asserting that $fname conforms to the schema in $schemaFile:\n$errorText"
-			);
-		}
+            return;
+        }
+        $xml = new DOMDocument();
+        $this->assertTrue($xml->load($fname),
+            "Opening temporary file $fname via DOMDocument failed");
 
-		libxml_use_internal_errors( $oldLibXmlInternalErrors );
-	}
+        // Don't throw
+        $oldLibXmlInternalErrors = libxml_use_internal_errors(true);
+
+        // NOTE: if this reports "Invalid Schema", the schema may be referencing an external
+        // entity (typically, another schema) that needs to be mapped in the
+        // libxml_set_external_entity_loader callback defined in setUpBeforeClass() above!
+        // Or $schemaFile doesn't point to a schema file, or the schema is indeed just broken.
+        if (!$xml->schemaValidate($schemaFile)) {
+            $errorText = '';
+
+            foreach (libxml_get_errors() as $error) {
+                $errorText .= "\nline {$error->line}: {$error->message}";
+            }
+
+            libxml_clear_errors();
+
+            $this->fail(
+                "Failed asserting that $fname conforms to the schema in $schemaFile:\n$errorText"
+            );
+        }
+
+        libxml_use_internal_errors($oldLibXmlInternalErrors);
+    }
 
 }

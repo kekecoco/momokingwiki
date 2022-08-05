@@ -30,6 +30,7 @@ use RuntimeException;
  * @newable
  * @since 1.31
  */
-class BlobAccessException extends RuntimeException {
+class BlobAccessException extends RuntimeException
+{
 
 }

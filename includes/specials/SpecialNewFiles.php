@@ -25,221 +25,227 @@ use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Permissions\GroupPermissionsLookup;
 use Wikimedia\Rdbms\ILoadBalancer;
 
-class SpecialNewFiles extends IncludableSpecialPage {
-	/** @var FormOptions */
-	protected $opts;
+class SpecialNewFiles extends IncludableSpecialPage
+{
+    /** @var FormOptions */
+    protected $opts;
 
-	/** @var string[] */
-	protected $mediaTypes;
+    /** @var string[] */
+    protected $mediaTypes;
 
-	/** @var GroupPermissionsLookup */
-	private $groupPermissionsLookup;
+    /** @var GroupPermissionsLookup */
+    private $groupPermissionsLookup;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/**
-	 * @param MimeAnalyzer $mimeAnalyzer
-	 * @param GroupPermissionsLookup $groupPermissionsLookup
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
-	public function __construct(
-		MimeAnalyzer $mimeAnalyzer,
-		GroupPermissionsLookup $groupPermissionsLookup,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory
-	) {
-		parent::__construct( 'Newimages' );
-		$this->groupPermissionsLookup = $groupPermissionsLookup;
-		$this->loadBalancer = $loadBalancer;
-		$this->mediaTypes = $mimeAnalyzer->getMediaTypes();
-		$this->linkBatchFactory = $linkBatchFactory;
-	}
+    /**
+     * @param MimeAnalyzer $mimeAnalyzer
+     * @param GroupPermissionsLookup $groupPermissionsLookup
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     */
+    public function __construct(
+        MimeAnalyzer $mimeAnalyzer,
+        GroupPermissionsLookup $groupPermissionsLookup,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory
+    )
+    {
+        parent::__construct('Newimages');
+        $this->groupPermissionsLookup = $groupPermissionsLookup;
+        $this->loadBalancer = $loadBalancer;
+        $this->mediaTypes = $mimeAnalyzer->getMediaTypes();
+        $this->linkBatchFactory = $linkBatchFactory;
+    }
 
-	public function execute( $par ) {
-		$context = new DerivativeContext( $this->getContext() );
+    public function execute($par)
+    {
+        $context = new DerivativeContext($this->getContext());
 
-		$this->setHeaders();
-		$this->outputHeader();
+        $this->setHeaders();
+        $this->outputHeader();
 
-		$out = $this->getOutput();
-		$this->addHelpLink( 'Help:New images' );
+        $out = $this->getOutput();
+        $this->addHelpLink('Help:New images');
 
-		$opts = new FormOptions();
+        $opts = new FormOptions();
 
-		$opts->add( 'user', '' );
-		$opts->add( 'showbots', false );
-		$opts->add( 'hidepatrolled', false );
-		$opts->add( 'mediatype', $this->mediaTypes );
-		$opts->add( 'limit', 50 );
-		$opts->add( 'offset', '' );
-		$opts->add( 'start', '' );
-		$opts->add( 'end', '' );
+        $opts->add('user', '');
+        $opts->add('showbots', false);
+        $opts->add('hidepatrolled', false);
+        $opts->add('mediatype', $this->mediaTypes);
+        $opts->add('limit', 50);
+        $opts->add('offset', '');
+        $opts->add('start', '');
+        $opts->add('end', '');
 
-		$opts->fetchValuesFromRequest( $this->getRequest() );
+        $opts->fetchValuesFromRequest($this->getRequest());
 
-		if ( $par !== null ) {
-			$opts->setValue( 'limit', $par );
-		}
+        if ($par !== null) {
+            $opts->setValue('limit', $par);
+        }
 
-		// If start date comes after end date chronologically, swap them.
-		// They are swapped in the interface by JS.
-		$start = $opts->getValue( 'start' );
-		$end = $opts->getValue( 'end' );
-		if ( $start !== '' && $end !== '' && $start > $end ) {
-			$temp = $end;
-			$end = $start;
-			$start = $temp;
+        // If start date comes after end date chronologically, swap them.
+        // They are swapped in the interface by JS.
+        $start = $opts->getValue('start');
+        $end = $opts->getValue('end');
+        if ($start !== '' && $end !== '' && $start > $end) {
+            $temp = $end;
+            $end = $start;
+            $start = $temp;
 
-			$opts->setValue( 'start', $start, true );
-			$opts->setValue( 'end', $end, true );
+            $opts->setValue('start', $start, true);
+            $opts->setValue('end', $end, true);
 
-			// also swap values in request object, which is used by HTMLForm
-			// to pre-populate the fields with the previous input
-			$request = $context->getRequest();
-			$context->setRequest( new DerivativeRequest(
-				$request,
-				[ 'start' => $start, 'end' => $end ] + $request->getValues(),
-				$request->wasPosted()
-			) );
-		}
+            // also swap values in request object, which is used by HTMLForm
+            // to pre-populate the fields with the previous input
+            $request = $context->getRequest();
+            $context->setRequest(new DerivativeRequest(
+                $request,
+                ['start' => $start, 'end' => $end] + $request->getValues(),
+                $request->wasPosted()
+            ));
+        }
 
-		// if all media types have been selected, wipe out the array to prevent
-		// the pointless IN(...) query condition (which would have no effect
-		// because every possible type has been selected)
-		$missingMediaTypes = array_diff( $this->mediaTypes, $opts->getValue( 'mediatype' ) );
-		if ( empty( $missingMediaTypes ) ) {
-			$opts->setValue( 'mediatype', [] );
-		}
+        // if all media types have been selected, wipe out the array to prevent
+        // the pointless IN(...) query condition (which would have no effect
+        // because every possible type has been selected)
+        $missingMediaTypes = array_diff($this->mediaTypes, $opts->getValue('mediatype'));
+        if (empty($missingMediaTypes)) {
+            $opts->setValue('mediatype', []);
+        }
 
-		$opts->validateIntBounds( 'limit', 0, 500 );
+        $opts->validateIntBounds('limit', 0, 500);
 
-		$this->opts = $opts;
+        $this->opts = $opts;
 
-		if ( !$this->including() ) {
-			$this->setTopText();
-			$this->buildForm( $context );
-		}
+        if (!$this->including()) {
+            $this->setTopText();
+            $this->buildForm($context);
+        }
 
-		$pager = new NewFilesPager(
-			$context,
-			$this->groupPermissionsLookup,
-			$this->linkBatchFactory,
-			$this->getLinkRenderer(),
-			$this->loadBalancer,
-			$opts
-		);
+        $pager = new NewFilesPager(
+            $context,
+            $this->groupPermissionsLookup,
+            $this->linkBatchFactory,
+            $this->getLinkRenderer(),
+            $this->loadBalancer,
+            $opts
+        );
 
-		$out->addHTML( $pager->getBody() );
-		if ( !$this->including() ) {
-			$out->addHTML( $pager->getNavigationBar() );
-		}
-	}
+        $out->addHTML($pager->getBody());
+        if (!$this->including()) {
+            $out->addHTML($pager->getNavigationBar());
+        }
+    }
 
-	protected function buildForm( IContextSource $context ) {
-		$mediaTypesText = array_map( function ( $type ) {
-			// mediastatistics-header-unknown, mediastatistics-header-bitmap,
-			// mediastatistics-header-drawing, mediastatistics-header-audio,
-			// mediastatistics-header-video, mediastatistics-header-multimedia,
-			// mediastatistics-header-office, mediastatistics-header-text,
-			// mediastatistics-header-executable, mediastatistics-header-archive,
-			// mediastatistics-header-3d,
-			return $this->msg( 'mediastatistics-header-' . strtolower( $type ) )->escaped();
-		}, $this->mediaTypes );
-		$mediaTypesOptions = array_combine( $mediaTypesText, $this->mediaTypes );
-		ksort( $mediaTypesOptions );
+    protected function buildForm(IContextSource $context)
+    {
+        $mediaTypesText = array_map(function ($type) {
+            // mediastatistics-header-unknown, mediastatistics-header-bitmap,
+            // mediastatistics-header-drawing, mediastatistics-header-audio,
+            // mediastatistics-header-video, mediastatistics-header-multimedia,
+            // mediastatistics-header-office, mediastatistics-header-text,
+            // mediastatistics-header-executable, mediastatistics-header-archive,
+            // mediastatistics-header-3d,
+            return $this->msg('mediastatistics-header-' . strtolower($type))->escaped();
+        }, $this->mediaTypes);
+        $mediaTypesOptions = array_combine($mediaTypesText, $this->mediaTypes);
+        ksort($mediaTypesOptions);
 
-		$formDescriptor = [
-			'user' => [
-				'class' => HTMLUserTextField::class,
-				'label-message' => 'newimages-user',
-				'name' => 'user',
-			],
+        $formDescriptor = [
+            'user' => [
+                'class'         => HTMLUserTextField::class,
+                'label-message' => 'newimages-user',
+                'name'          => 'user',
+            ],
 
-			'showbots' => [
-				'type' => 'check',
-				'label-message' => 'newimages-showbots',
-				'name' => 'showbots',
-			],
+            'showbots' => [
+                'type'          => 'check',
+                'label-message' => 'newimages-showbots',
+                'name'          => 'showbots',
+            ],
 
-			'hidepatrolled' => [
-				'type' => 'check',
-				'label-message' => 'newimages-hidepatrolled',
-				'name' => 'hidepatrolled',
-			],
+            'hidepatrolled' => [
+                'type'          => 'check',
+                'label-message' => 'newimages-hidepatrolled',
+                'name'          => 'hidepatrolled',
+            ],
 
-			'mediatype' => [
-				'type' => 'multiselect',
-				'flatlist' => true,
-				'name' => 'mediatype',
-				'label-message' => 'newimages-mediatype',
-				'options' => $mediaTypesOptions,
-				'default' => $this->mediaTypes,
-			],
+            'mediatype' => [
+                'type'          => 'multiselect',
+                'flatlist'      => true,
+                'name'          => 'mediatype',
+                'label-message' => 'newimages-mediatype',
+                'options'       => $mediaTypesOptions,
+                'default'       => $this->mediaTypes,
+            ],
 
-			'limit' => [
-				'type' => 'hidden',
-				'default' => $this->opts->getValue( 'limit' ),
-				'name' => 'limit',
-			],
+            'limit' => [
+                'type'    => 'hidden',
+                'default' => $this->opts->getValue('limit'),
+                'name'    => 'limit',
+            ],
 
-			'offset' => [
-				'type' => 'hidden',
-				'default' => $this->opts->getValue( 'offset' ),
-				'name' => 'offset',
-			],
+            'offset' => [
+                'type'    => 'hidden',
+                'default' => $this->opts->getValue('offset'),
+                'name'    => 'offset',
+            ],
 
-			'start' => [
-				'type' => 'date',
-				'label-message' => 'date-range-from',
-				'name' => 'start',
-			],
+            'start' => [
+                'type'          => 'date',
+                'label-message' => 'date-range-from',
+                'name'          => 'start',
+            ],
 
-			'end' => [
-				'type' => 'date',
-				'label-message' => 'date-range-to',
-				'name' => 'end',
-			],
-		];
+            'end' => [
+                'type'          => 'date',
+                'label-message' => 'date-range-to',
+                'name'          => 'end',
+            ],
+        ];
 
-		if ( !$this->getUser()->useFilePatrol() ) {
-			unset( $formDescriptor['hidepatrolled'] );
-		}
+        if (!$this->getUser()->useFilePatrol()) {
+            unset($formDescriptor['hidepatrolled']);
+        }
 
-		HTMLForm::factory( 'ooui', $formDescriptor, $context )
-			// For the 'multiselect' field values to be preserved on submit
-			->setFormIdentifier( 'specialnewimages' )
-			->setWrapperLegendMsg( 'newimages-legend' )
-			->setSubmitTextMsg( 'ilsubmit' )
-			->setMethod( 'get' )
-			->prepareForm()
-			->displayForm( false );
-	}
+        HTMLForm::factory('ooui', $formDescriptor, $context)
+            // For the 'multiselect' field values to be preserved on submit
+            ->setFormIdentifier('specialnewimages')
+            ->setWrapperLegendMsg('newimages-legend')
+            ->setSubmitTextMsg('ilsubmit')
+            ->setMethod('get')
+            ->prepareForm()
+            ->displayForm(false);
+    }
 
-	protected function getGroupName() {
-		return 'changes';
-	}
+    protected function getGroupName()
+    {
+        return 'changes';
+    }
 
-	/**
-	 * Send the text to be displayed above the options
-	 */
-	public function setTopText() {
-		$message = $this->msg( 'newimagestext' )->inContentLanguage();
-		if ( !$message->isDisabled() ) {
-			$contLang = $this->getContentLanguage();
-			$this->getOutput()->addWikiTextAsContent(
-				Html::rawElement( 'div',
-					[
-						'lang' => $contLang->getHtmlCode(),
-						'dir' => $contLang->getDir()
-					],
-					"\n" . $message->plain() . "\n"
-				)
-			);
-		}
-	}
+    /**
+     * Send the text to be displayed above the options
+     */
+    public function setTopText()
+    {
+        $message = $this->msg('newimagestext')->inContentLanguage();
+        if (!$message->isDisabled()) {
+            $contLang = $this->getContentLanguage();
+            $this->getOutput()->addWikiTextAsContent(
+                Html::rawElement('div',
+                    [
+                        'lang' => $contLang->getHtmlCode(),
+                        'dir'  => $contLang->getDir()
+                    ],
+                    "\n" . $message->plain() . "\n"
+                )
+            );
+        }
+    }
 }

@@ -19,6 +19,7 @@
  * @file
  * @ingroup Page
  */
+
 namespace MediaWiki\Rest\Handler;
 
 use IBufferingStatsdDataFactory;
@@ -44,195 +45,203 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @unstable Pending consolidation of the Parsoid extension with core code.
  *           Part of this class should probably become a service.
  */
-class ParsoidHTMLHelper {
-	/**
-	 * @internal
-	 * @var string[]
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::ParsoidCacheConfig
-	];
+class ParsoidHTMLHelper
+{
+    /**
+     * @internal
+     * @var string[]
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::ParsoidCacheConfig
+    ];
 
-	/** @var ParsoidOutputStash */
-	private $parsoidOutputStash;
+    /** @var ParsoidOutputStash */
+    private $parsoidOutputStash;
 
-	/** @var PageRecord|null */
-	private $page = null;
+    /** @var PageRecord|null */
+    private $page = null;
 
-	/** @var RevisionRecord|null */
-	private $revision = null;
+    /** @var RevisionRecord|null */
+    private $revision = null;
 
-	/** @var ?string [ 'view', 'stash' ] are the supported flavors for now */
-	private $flavor = null;
+    /** @var ?string [ 'view', 'stash' ] are the supported flavors for now */
+    private $flavor = null;
 
-	/** @var bool */
-	private $stash = false;
+    /** @var bool */
+    private $stash = false;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $stats;
+    /** @var IBufferingStatsdDataFactory */
+    private $stats;
 
-	/** @var User */
-	private $user;
+    /** @var User */
+    private $user;
 
-	/** @var ParsoidOutputAccess */
-	private $parsoidOutputAccess;
+    /** @var ParsoidOutputAccess */
+    private $parsoidOutputAccess;
 
-	/** @var ParserOutput */
-	private $parserOutput;
+    /** @var ParserOutput */
+    private $parserOutput;
 
-	/**
-	 * @param ParsoidOutputStash $parsoidOutputStash
-	 * @param IBufferingStatsdDataFactory $statsDataFactory
-	 * @param ParsoidOutputAccess $parsoidOutputAccess
-	 */
-	public function __construct(
-		ParsoidOutputStash $parsoidOutputStash,
-		IBufferingStatsdDataFactory $statsDataFactory,
-		ParsoidOutputAccess $parsoidOutputAccess
-	) {
-		$this->parsoidOutputStash = $parsoidOutputStash;
-		$this->stats = $statsDataFactory;
-		$this->parsoidOutputAccess = $parsoidOutputAccess;
-	}
+    /**
+     * @param ParsoidOutputStash $parsoidOutputStash
+     * @param IBufferingStatsdDataFactory $statsDataFactory
+     * @param ParsoidOutputAccess $parsoidOutputAccess
+     */
+    public function __construct(
+        ParsoidOutputStash $parsoidOutputStash,
+        IBufferingStatsdDataFactory $statsDataFactory,
+        ParsoidOutputAccess $parsoidOutputAccess
+    )
+    {
+        $this->parsoidOutputStash = $parsoidOutputStash;
+        $this->stats = $statsDataFactory;
+        $this->parsoidOutputAccess = $parsoidOutputAccess;
+    }
 
-	/**
-	 * @param PageRecord $page
-	 * @param array $parameters
-	 * @param User $user
-	 * @param RevisionRecord|null $revision
-	 */
-	public function init(
-		PageRecord $page,
-		array $parameters,
-		User $user,
-		?RevisionRecord $revision = null
-	) {
-		$this->page = $page;
-		$this->user = $user;
-		$this->revision = $revision;
-		$this->stash = $parameters['stash'];
-		$this->flavor = $parameters['stash'] ? 'stash' : 'view'; // more to come, T308743
-	}
+    /**
+     * @param PageRecord $page
+     * @param array $parameters
+     * @param User $user
+     * @param RevisionRecord|null $revision
+     */
+    public function init(
+        PageRecord $page,
+        array $parameters,
+        User $user,
+        ?RevisionRecord $revision = null
+    )
+    {
+        $this->page = $page;
+        $this->user = $user;
+        $this->revision = $revision;
+        $this->stash = $parameters['stash'];
+        $this->flavor = $parameters['stash'] ? 'stash' : 'view'; // more to come, T308743
+    }
 
-	/**
-	 * @return ParserOutput a tuple with html and content-type
-	 * @throws LocalizedHttpException
-	 */
-	public function getHtml(): ParserOutput {
-		$parserOutput = $this->getParserOutput();
+    /**
+     * @return ParserOutput a tuple with html and content-type
+     * @throws LocalizedHttpException
+     */
+    public function getHtml(): ParserOutput
+    {
+        $parserOutput = $this->getParserOutput();
 
-		if ( $this->stash ) {
-			if ( $this->user->pingLimiter( 'stashbasehtml' ) ) {
-				throw new LocalizedHttpException(
-					MessageValue::new( 'parsoid-stash-rate-limit-error' ),
-					// See https://www.rfc-editor.org/rfc/rfc6585#section-4
-					429,
-					[ 'reason' => 'Rate limiter tripped, wait for a few minutes and try again' ]
-				);
-			}
+        if ($this->stash) {
+            if ($this->user->pingLimiter('stashbasehtml')) {
+                throw new LocalizedHttpException(
+                    MessageValue::new('parsoid-stash-rate-limit-error'),
+                    // See https://www.rfc-editor.org/rfc/rfc6585#section-4
+                    429,
+                    ['reason' => 'Rate limiter tripped, wait for a few minutes and try again']
+                );
+            }
 
-			$parsoidStashKey = ParsoidRenderID::newFromKey(
-				$this->parsoidOutputAccess->getParsoidRenderID( $parserOutput )
-			);
-			$stashSuccess = $this->parsoidOutputStash->set(
-				$parsoidStashKey,
-				$this->parsoidOutputAccess->getParsoidPageBundle( $parserOutput )
-			);
-			if ( !$stashSuccess ) {
-				$this->stats->increment( 'parsoidhtmlhelper.stash.fail' );
-				throw new LocalizedHttpException(
-					MessageValue::new( 'rest-html-backend-error' ),
-					500,
-					[ 'reason' => 'Failed to stash parser output' ]
-				);
-			}
-			$this->stats->increment( 'parsoidhtmlhelper.stash.save' );
-		}
+            $parsoidStashKey = ParsoidRenderID::newFromKey(
+                $this->parsoidOutputAccess->getParsoidRenderID($parserOutput)
+            );
+            $stashSuccess = $this->parsoidOutputStash->set(
+                $parsoidStashKey,
+                $this->parsoidOutputAccess->getParsoidPageBundle($parserOutput)
+            );
+            if (!$stashSuccess) {
+                $this->stats->increment('parsoidhtmlhelper.stash.fail');
+                throw new LocalizedHttpException(
+                    MessageValue::new('rest-html-backend-error'),
+                    500,
+                    ['reason' => 'Failed to stash parser output']
+                );
+            }
+            $this->stats->increment('parsoidhtmlhelper.stash.save');
+        }
 
-		return $parserOutput;
-	}
+        return $parserOutput;
+    }
 
-	/**
-	 * Returns an ETag uniquely identifying the HTML output.
-	 *
-	 * @param string $suffix A suffix to attach to the etag.
-	 *
-	 * @return string|null
-	 */
-	public function getETag( string $suffix = '' ): ?string {
-		$parserOutput = $this->getParserOutput();
+    /**
+     * Returns an ETag uniquely identifying the HTML output.
+     *
+     * @param string $suffix A suffix to attach to the etag.
+     *
+     * @return string|null
+     */
+    public function getETag(string $suffix = ''): ?string
+    {
+        $parserOutput = $this->getParserOutput();
 
-		$renderID = $this->parsoidOutputAccess->getParsoidRenderID( $parserOutput )->getKey();
+        $renderID = $this->parsoidOutputAccess->getParsoidRenderID($parserOutput)->getKey();
 
-		if ( $suffix !== '' ) {
-			$eTag = "$renderID/{$this->flavor}/$suffix";
-		} else {
-			$eTag = "$renderID/{$this->flavor}";
-		}
+        if ($suffix !== '') {
+            $eTag = "$renderID/{$this->flavor}/$suffix";
+        } else {
+            $eTag = "$renderID/{$this->flavor}";
+        }
 
-		return "\"{$eTag}\"";
-	}
+        return "\"{$eTag}\"";
+    }
 
-	/**
-	 * Returns the time at which the HTML was rendered.
-	 *
-	 * @return string|null
-	 */
-	public function getLastModified(): ?string {
-		return $this->getParserOutput()->getCacheTime();
-	}
+    /**
+     * Returns the time at which the HTML was rendered.
+     *
+     * @return string|null
+     */
+    public function getLastModified(): ?string
+    {
+        return $this->getParserOutput()->getCacheTime();
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getParamSettings(): array {
-		return [
-			'stash' => [
-				Handler::PARAM_SOURCE => 'query',
-				ParamValidator::PARAM_TYPE => 'boolean',
-				ParamValidator::PARAM_DEFAULT => false,
-				ParamValidator::PARAM_REQUIRED => false,
-			]
-		];
-	}
+    /**
+     * @return array
+     */
+    public function getParamSettings(): array
+    {
+        return [
+            'stash' => [
+                Handler::PARAM_SOURCE          => 'query',
+                ParamValidator::PARAM_TYPE     => 'boolean',
+                ParamValidator::PARAM_DEFAULT  => false,
+                ParamValidator::PARAM_REQUIRED => false,
+            ]
+        ];
+    }
 
-	/**
-	 * @return ParserOutput
-	 */
-	private function getParserOutput(): ParserOutput {
-		if ( !$this->parserOutput ) {
-			$status = $this->parsoidOutputAccess->getParserOutput(
-				$this->page,
-				ParserOptions::newFromAnon(),
-				$this->revision
-			);
+    /**
+     * @return ParserOutput
+     */
+    private function getParserOutput(): ParserOutput
+    {
+        if (!$this->parserOutput) {
+            $status = $this->parsoidOutputAccess->getParserOutput(
+                $this->page,
+                ParserOptions::newFromAnon(),
+                $this->revision
+            );
 
-			if ( !$status->isOK() ) {
-				if ( $status->hasMessage( 'parsoid-client-error' ) ) {
-					throw new LocalizedHttpException(
-						MessageValue::new( 'rest-html-backend-error' ),
-						400,
-						[ 'reason' => $status->getErrors() ]
-					);
-				} elseif ( $status->hasMessage( 'parsoid-resource-limit-exceeded' ) ) {
-					throw new LocalizedHttpException(
-						MessageValue::new( 'rest-resource-limit-exceeded' ),
-						413,
-						[ 'reason' => $status->getErrors() ]
-					);
-				} else {
-					throw new LocalizedHttpException(
-						MessageValue::new( 'rest-html-backend-error' ),
-						500,
-						[ 'reason' => $status->getErrors() ]
-					);
-				}
-			}
+            if (!$status->isOK()) {
+                if ($status->hasMessage('parsoid-client-error')) {
+                    throw new LocalizedHttpException(
+                        MessageValue::new('rest-html-backend-error'),
+                        400,
+                        ['reason' => $status->getErrors()]
+                    );
+                } elseif ($status->hasMessage('parsoid-resource-limit-exceeded')) {
+                    throw new LocalizedHttpException(
+                        MessageValue::new('rest-resource-limit-exceeded'),
+                        413,
+                        ['reason' => $status->getErrors()]
+                    );
+                } else {
+                    throw new LocalizedHttpException(
+                        MessageValue::new('rest-html-backend-error'),
+                        500,
+                        ['reason' => $status->getErrors()]
+                    );
+                }
+            }
 
-			$this->parserOutput = $status->getValue();
-		}
+            $this->parserOutput = $status->getValue();
+        }
 
-		return $this->parserOutput;
-	}
+        return $this->parserOutput;
+    }
 
 }

@@ -42,286 +42,301 @@ use User;
  * @unstable
  * @since 1.36
  */
-class UserAuthority implements Authority {
+class UserAuthority implements Authority
+{
 
-	/**
-	 * @var PermissionManager
-	 */
-	private $permissionManager;
+    /**
+     * @var PermissionManager
+     */
+    private $permissionManager;
 
-	/**
-	 * @var User
-	 */
-	private $actor;
+    /**
+     * @var User
+     */
+    private $actor;
 
-	/**
-	 * Local cache for user block information. False is used to indicate that there is no block,
-	 * while null indicates that we don't know and have to check.
-	 * @var Block|false|null
-	 */
-	private $userBlock = null;
+    /**
+     * Local cache for user block information. False is used to indicate that there is no block,
+     * while null indicates that we don't know and have to check.
+     * @var Block|false|null
+     */
+    private $userBlock = null;
 
-	/**
-	 * @param User $user
-	 * @param PermissionManager $permissionManager
-	 */
-	public function __construct(
-		User $user,
-		PermissionManager $permissionManager
-	) {
-		$this->permissionManager = $permissionManager;
-		$this->actor = $user;
-	}
+    /**
+     * @param User $user
+     * @param PermissionManager $permissionManager
+     */
+    public function __construct(
+        User $user,
+        PermissionManager $permissionManager
+    )
+    {
+        $this->permissionManager = $permissionManager;
+        $this->actor = $user;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return UserIdentity
-	 */
-	public function getUser(): UserIdentity {
-		return $this->actor;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @return UserIdentity
+     */
+    public function getUser(): UserIdentity
+    {
+        return $this->actor;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $permission
-	 *
-	 * @return bool
-	 */
-	public function isAllowed( string $permission ): bool {
-		return $this->permissionManager->userHasRight( $this->actor, $permission );
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $permission
+     *
+     * @return bool
+     */
+    public function isAllowed(string $permission): bool
+    {
+        return $this->permissionManager->userHasRight($this->actor, $permission);
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string ...$permissions
-	 *
-	 * @return bool
-	 */
-	public function isAllowedAny( ...$permissions ): bool {
-		if ( !$permissions ) {
-			throw new InvalidArgumentException( 'At least one permission must be specified' );
-		}
+    /**
+     * @inheritDoc
+     *
+     * @param string ...$permissions
+     *
+     * @return bool
+     */
+    public function isAllowedAny(...$permissions): bool
+    {
+        if (!$permissions) {
+            throw new InvalidArgumentException('At least one permission must be specified');
+        }
 
-		foreach ( $permissions as $perm ) {
-			if ( $this->isAllowed( $perm ) ) {
-				return true;
-			}
-		}
+        foreach ($permissions as $perm) {
+            if ($this->isAllowed($perm)) {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string ...$permissions
-	 *
-	 * @return bool
-	 */
-	public function isAllowedAll( ...$permissions ): bool {
-		if ( !$permissions ) {
-			throw new InvalidArgumentException( 'At least one permission must be specified' );
-		}
+    /**
+     * @inheritDoc
+     *
+     * @param string ...$permissions
+     *
+     * @return bool
+     */
+    public function isAllowedAll(...$permissions): bool
+    {
+        if (!$permissions) {
+            throw new InvalidArgumentException('At least one permission must be specified');
+        }
 
-		foreach ( $permissions as $perm ) {
-			if ( !$this->isAllowed( $perm ) ) {
-				return false;
-			}
-		}
+        foreach ($permissions as $perm) {
+            if (!$this->isAllowed($perm)) {
+                return false;
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function probablyCan(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		return $this->internalCan(
-			PermissionManager::RIGOR_QUICK,
-			$action,
-			$target,
-			$status
-		);
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function probablyCan(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        return $this->internalCan(
+            PermissionManager::RIGOR_QUICK,
+            $action,
+            $target,
+            $status
+        );
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function definitelyCan(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		// Note that we do not use RIGOR_SECURE to avoid hitting the primary
-		// database for read operations. RIGOR_FULL performs the same checks,
-		// but is subject to replication lag.
-		return $this->internalCan(
-			PermissionManager::RIGOR_FULL,
-			$action,
-			$target,
-			$status
-		);
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function definitelyCan(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        // Note that we do not use RIGOR_SECURE to avoid hitting the primary
+        // database for read operations. RIGOR_FULL performs the same checks,
+        // but is subject to replication lag.
+        return $this->internalCan(
+            PermissionManager::RIGOR_FULL,
+            $action,
+            $target,
+            $status
+        );
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function authorizeRead(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		// Any side-effects can be added here.
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function authorizeRead(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        // Any side-effects can be added here.
 
-		// Note that we do not use RIGOR_SECURE to avoid hitting the primary
-		// database for read operations. RIGOR_FULL performs the same checks,
-		// but is subject to replication lag.
-		return $this->internalCan(
-			PermissionManager::RIGOR_FULL,
-			$action,
-			$target,
-			$status
-		);
-	}
+        // Note that we do not use RIGOR_SECURE to avoid hitting the primary
+        // database for read operations. RIGOR_FULL performs the same checks,
+        // but is subject to replication lag.
+        return $this->internalCan(
+            PermissionManager::RIGOR_FULL,
+            $action,
+            $target,
+            $status
+        );
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function authorizeWrite(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		// Any side-effects can be added here.
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function authorizeWrite(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        // Any side-effects can be added here.
 
-		// Note that we need to use RIGOR_SECURE here to ensure that we do not
-		// miss a user block or page protection due to replication lag.
-		return $this->internalCan(
-			PermissionManager::RIGOR_SECURE,
-			$action,
-			$target,
-			$status
-		);
-	}
+        // Note that we need to use RIGOR_SECURE here to ensure that we do not
+        // miss a user block or page protection due to replication lag.
+        return $this->internalCan(
+            PermissionManager::RIGOR_SECURE,
+            $action,
+            $target,
+            $status
+        );
+    }
 
-	/**
-	 * @param string $rigor
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	private function internalCan(
-		string $rigor,
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		if ( !( $target instanceof LinkTarget ) ) {
-			// FIXME: PermissionManager should accept PageIdentity!
-			$target = TitleValue::newFromPage( $target );
-		}
+    /**
+     * @param string $rigor
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    private function internalCan(
+        string $rigor,
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        if (!($target instanceof LinkTarget)) {
+            // FIXME: PermissionManager should accept PageIdentity!
+            $target = TitleValue::newFromPage($target);
+        }
 
-		if ( $status ) {
-			$errors = $this->permissionManager->getPermissionErrors(
-				$action,
-				$this->actor,
-				$target,
-				$rigor
-			);
+        if ($status) {
+            $errors = $this->permissionManager->getPermissionErrors(
+                $action,
+                $this->actor,
+                $target,
+                $rigor
+            );
 
-			foreach ( $errors as $err ) {
-				$status->fatal( wfMessage( ...$err ) );
+            foreach ($errors as $err) {
+                $status->fatal(wfMessage(...$err));
 
-				// HACK: Detect whether the permission was denied because the user is blocked.
-				//       A similar hack exists in ApiBase::$blockMsgMap.
-				//       When permission checking logic is moved out of PermissionManager,
-				//       we can record the block info directly when first checking the block,
-				//       rather than doing that here.
-				if ( strpos( $err[0], 'blockedtext' ) !== false ) {
-					$block = $this->getBlock();
+                // HACK: Detect whether the permission was denied because the user is blocked.
+                //       A similar hack exists in ApiBase::$blockMsgMap.
+                //       When permission checking logic is moved out of PermissionManager,
+                //       we can record the block info directly when first checking the block,
+                //       rather than doing that here.
+                if (strpos($err[0], 'blockedtext') !== false) {
+                    $block = $this->getBlock();
 
-					if ( $block ) {
-						$status->setBlock( $block );
-					}
-				}
-			}
+                    if ($block) {
+                        $status->setBlock($block);
+                    }
+                }
+            }
 
-			return $status->isOK();
-		} else {
-			// allow PermissionManager to short-circuit
-			return $this->permissionManager->userCan(
-				$action,
-				$this->actor,
-				$target,
-				$rigor
-			);
-		}
-	}
+            return $status->isOK();
+        } else {
+            // allow PermissionManager to short-circuit
+            return $this->permissionManager->userCan(
+                $action,
+                $this->actor,
+                $target,
+                $rigor
+            );
+        }
+    }
 
-	/**
-	 * Returns any user block affecting the Authority.
-	 *
-	 * @param int $freshness
-	 *
-	 * @return ?Block
-	 * @since 1.37
-	 *
-	 */
-	public function getBlock( int $freshness = self::READ_NORMAL ): ?Block {
-		// Cache block info, so we don't have to fetch it again unnecessarily.
-		if ( $this->userBlock === null || $freshness === self::READ_LATEST ) {
-			$this->userBlock = $this->actor->getBlock( $freshness );
+    /**
+     * Returns any user block affecting the Authority.
+     *
+     * @param int $freshness
+     *
+     * @return ?Block
+     * @since 1.37
+     *
+     */
+    public function getBlock(int $freshness = self::READ_NORMAL): ?Block
+    {
+        // Cache block info, so we don't have to fetch it again unnecessarily.
+        if ($this->userBlock === null || $freshness === self::READ_LATEST) {
+            $this->userBlock = $this->actor->getBlock($freshness);
 
-			// if we got null back, remember this as "false"
-			$this->userBlock = $this->userBlock ?: false;
-		}
+            // if we got null back, remember this as "false"
+            $this->userBlock = $this->userBlock ?: false;
+        }
 
-		// if we remembered "false", return null
-		return $this->userBlock ?: null;
-	}
+        // if we remembered "false", return null
+        return $this->userBlock ?: null;
+    }
 
-	public function isRegistered(): bool {
-		return $this->actor->isRegistered();
-	}
+    public function isRegistered(): bool
+    {
+        return $this->actor->isRegistered();
+    }
 
-	public function isTemp(): bool {
-		return $this->actor->isTemp();
-	}
+    public function isTemp(): bool
+    {
+        return $this->actor->isTemp();
+    }
 
-	public function isNamed(): bool {
-		return $this->actor->isNamed();
-	}
+    public function isNamed(): bool
+    {
+        return $this->actor->isNamed();
+    }
 }

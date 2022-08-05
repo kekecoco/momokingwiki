@@ -9,385 +9,402 @@ use Wikimedia\ObjectFactory\ObjectFactory;
  * @group API
  * @group medium
  */
-class ApiModuleManagerTest extends MediaWikiUnitTestCase {
+class ApiModuleManagerTest extends MediaWikiUnitTestCase
+{
 
-	private function getModuleManager() {
-		// getContext is called in ApiBase::__construct
-		$apiMain = $this->createMock( ApiMain::class );
-		$apiMain->method( 'getContext' )
-			->willReturn( $this->createMock( RequestContext::class ) );
+    private function getModuleManager()
+    {
+        // getContext is called in ApiBase::__construct
+        $apiMain = $this->createMock(ApiMain::class);
+        $apiMain->method('getContext')
+            ->willReturn($this->createMock(RequestContext::class));
 
-		$containerInterface = $this->createMock( ContainerInterface::class );
-		// Only needs to be able to provide the services used in the tests below, we
-		// don't need a full copy of MediaWikiServices's services. The only service
-		// actually used is a UserFactory, for demonstration purposes
-		$containerInterface->method( 'get' )
-			->with( 'UserFactory' )
-			->willReturn( $this->createMock( UserFactory::class ) );
-		return new ApiModuleManager(
-			$apiMain,
-			new ObjectFactory( $containerInterface )
-		);
-	}
+        $containerInterface = $this->createMock(ContainerInterface::class);
+        // Only needs to be able to provide the services used in the tests below, we
+        // don't need a full copy of MediaWikiServices's services. The only service
+        // actually used is a UserFactory, for demonstration purposes
+        $containerInterface->method('get')
+            ->with('UserFactory')
+            ->willReturn($this->createMock(UserFactory::class));
 
-	public function newApiRsd( $main, $action ) {
-		return new ApiRsd( $main, $action );
-	}
+        return new ApiModuleManager(
+            $apiMain,
+            new ObjectFactory($containerInterface)
+        );
+    }
 
-	public function addModuleProvider() {
-		return [
-			'plain class' => [
-				'rsd',
-				'action',
-				ApiRsd::class,
-				null,
-			],
+    public function newApiRsd($main, $action)
+    {
+        return new ApiRsd($main, $action);
+    }
 
-			'with class and factory' => [
-				'rsd',
-				'action',
-				ApiRsd::class,
-				[ $this, 'newApiRsd' ],
-			],
+    public function addModuleProvider()
+    {
+        return [
+            'plain class' => [
+                'rsd',
+                'action',
+                ApiRsd::class,
+                null,
+            ],
 
-			'with spec (class only)' => [
-				'rsd',
-				'action',
-				[
-					'class' => ApiRsd::class
-				],
-				null,
-			],
+            'with class and factory' => [
+                'rsd',
+                'action',
+                ApiRsd::class,
+                [$this, 'newApiRsd'],
+            ],
 
-			'with spec' => [
-				'rsd',
-				'action',
-				[
-					'class' => ApiRsd::class,
-					'factory' => [ $this, 'newApiRsd' ],
-				],
-				null,
-			],
+            'with spec (class only)' => [
+                'rsd',
+                'action',
+                [
+                    'class' => ApiRsd::class
+                ],
+                null,
+            ],
 
-			'with spec (using services)' => [
-				'rsd',
-				'action',
-				[
-					'class' => ApiRsd::class,
-					'factory' => static function ( ApiMain $main, $action, UserFactory $userFactory ) {
-						// we don't actually need the UserFactory, just demonstrating
-						return new ApiRsd( $main, $action );
-					},
-					'services' => [
-						'UserFactory'
-					],
-				],
-				null,
-			]
-		];
-	}
+            'with spec' => [
+                'rsd',
+                'action',
+                [
+                    'class'   => ApiRsd::class,
+                    'factory' => [$this, 'newApiRsd'],
+                ],
+                null,
+            ],
 
-	/**
-	 * @dataProvider addModuleProvider
-	 */
-	public function testAddModule( $name, $group, $spec, $factory ) {
-		if ( $factory ) {
-			$this->hideDeprecated(
-				ApiModuleManager::class . '::addModule with $class and $factory'
-			);
-		}
+            'with spec (using services)' => [
+                'rsd',
+                'action',
+                [
+                    'class'    => ApiRsd::class,
+                    'factory'  => static function (ApiMain $main, $action, UserFactory $userFactory) {
+                        // we don't actually need the UserFactory, just demonstrating
+                        return new ApiRsd($main, $action);
+                    },
+                    'services' => [
+                        'UserFactory'
+                    ],
+                ],
+                null,
+            ]
+        ];
+    }
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModule( $name, $group, $spec, $factory );
+    /**
+     * @dataProvider addModuleProvider
+     */
+    public function testAddModule($name, $group, $spec, $factory)
+    {
+        if ($factory) {
+            $this->hideDeprecated(
+                ApiModuleManager::class . '::addModule with $class and $factory'
+            );
+        }
 
-		$this->assertTrue( $moduleManager->isDefined( $name, $group ), 'isDefined' );
-		$this->assertNotNull( $moduleManager->getModule( $name, $group, true ), 'getModule' );
-	}
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModule($name, $group, $spec, $factory);
 
-	public function addModulesProvider() {
-		return [
-			'empty' => [
-				[],
-				'action',
-			],
+        $this->assertTrue($moduleManager->isDefined($name, $group), 'isDefined');
+        $this->assertNotNull($moduleManager->getModule($name, $group, true), 'getModule');
+    }
 
-			'simple' => [
-				[
-					'rsd' => ApiRsd::class,
-					'logout' => ApiLogout::class,
-				],
-				'action',
-			],
+    public function addModulesProvider()
+    {
+        return [
+            'empty' => [
+                [],
+                'action',
+            ],
 
-			'with factories' => [
-				[
-					'rsd' => [
-						'class' => ApiRsd::class,
-						'factory' => [ $this, 'newApiRsd' ],
-					],
-					'logout' => [
-						'class' => ApiLogout::class,
-						'factory' => static function ( ApiMain $main, $action ) {
-							return new ApiLogout( $main, $action );
-						},
-					],
-				],
-				'action',
-			],
-		];
-	}
+            'simple' => [
+                [
+                    'rsd'    => ApiRsd::class,
+                    'logout' => ApiLogout::class,
+                ],
+                'action',
+            ],
 
-	/**
-	 * @dataProvider addModulesProvider
-	 */
-	public function testAddModules( array $modules, $group ) {
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $modules, $group );
+            'with factories' => [
+                [
+                    'rsd'    => [
+                        'class'   => ApiRsd::class,
+                        'factory' => [$this, 'newApiRsd'],
+                    ],
+                    'logout' => [
+                        'class'   => ApiLogout::class,
+                        'factory' => static function (ApiMain $main, $action) {
+                            return new ApiLogout($main, $action);
+                        },
+                    ],
+                ],
+                'action',
+            ],
+        ];
+    }
 
-		foreach ( array_keys( $modules ) as $name ) {
-			$this->assertTrue( $moduleManager->isDefined( $name, $group ), 'isDefined' );
-			$this->assertNotNull( $moduleManager->getModule( $name, $group, true ), 'getModule' );
-		}
+    /**
+     * @dataProvider addModulesProvider
+     */
+    public function testAddModules(array $modules, $group)
+    {
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($modules, $group);
 
-		$this->assertTrue( true ); // Don't mark the test as risky if $modules is empty
-	}
+        foreach (array_keys($modules) as $name) {
+            $this->assertTrue($moduleManager->isDefined($name, $group), 'isDefined');
+            $this->assertNotNull($moduleManager->getModule($name, $group, true), 'getModule');
+        }
 
-	public function getModuleProvider() {
-		$modules = [
-			'disabled' => ApiDisabled::class,
-			'disabled2' => [ 'class' => ApiDisabled::class ],
-			'rsd' => [
-				'class' => ApiRsd::class,
-				'factory' => [ $this, 'newApiRsd' ],
-			],
-			'logout' => [
-				'class' => ApiLogout::class,
-				'factory' => static function ( ApiMain $main, $action ) {
-					return new ApiLogout( $main, $action );
-				},
-			],
-		];
+        $this->assertTrue(true); // Don't mark the test as risky if $modules is empty
+    }
 
-		return [
-			'legacy entry' => [
-				$modules,
-				'disabled',
-				ApiDisabled::class,
-			],
+    public function getModuleProvider()
+    {
+        $modules = [
+            'disabled'  => ApiDisabled::class,
+            'disabled2' => ['class' => ApiDisabled::class],
+            'rsd'       => [
+                'class'   => ApiRsd::class,
+                'factory' => [$this, 'newApiRsd'],
+            ],
+            'logout'    => [
+                'class'   => ApiLogout::class,
+                'factory' => static function (ApiMain $main, $action) {
+                    return new ApiLogout($main, $action);
+                },
+            ],
+        ];
 
-			'just a class' => [
-				$modules,
-				'disabled2',
-				ApiDisabled::class,
-			],
+        return [
+            'legacy entry' => [
+                $modules,
+                'disabled',
+                ApiDisabled::class,
+            ],
 
-			'with factory' => [
-				$modules,
-				'rsd',
-				ApiRsd::class,
-			],
+            'just a class' => [
+                $modules,
+                'disabled2',
+                ApiDisabled::class,
+            ],
 
-			'with closure' => [
-				$modules,
-				'logout',
-				ApiLogout::class,
-			],
-		];
-	}
+            'with factory' => [
+                $modules,
+                'rsd',
+                ApiRsd::class,
+            ],
 
-	/**
-	 * @covers ApiModuleManager::getModule
-	 * @dataProvider getModuleProvider
-	 */
-	public function testGetModule( $modules, $name, $expectedClass ) {
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $modules, 'test' );
+            'with closure' => [
+                $modules,
+                'logout',
+                ApiLogout::class,
+            ],
+        ];
+    }
 
-		// should return the right module
-		$module1 = $moduleManager->getModule( $name, null, false );
-		$this->assertInstanceOf( $expectedClass, $module1 );
+    /**
+     * @covers       ApiModuleManager::getModule
+     * @dataProvider getModuleProvider
+     */
+    public function testGetModule($modules, $name, $expectedClass)
+    {
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($modules, 'test');
 
-		// should pass group check (with caching disabled)
-		$module2 = $moduleManager->getModule( $name, 'test', true );
-		$this->assertNotNull( $module2 );
+        // should return the right module
+        $module1 = $moduleManager->getModule($name, null, false);
+        $this->assertInstanceOf($expectedClass, $module1);
 
-		// should use cached instance
-		$module3 = $moduleManager->getModule( $name, null, false );
-		$this->assertSame( $module1, $module3 );
+        // should pass group check (with caching disabled)
+        $module2 = $moduleManager->getModule($name, 'test', true);
+        $this->assertNotNull($module2);
 
-		// should not use cached instance if caching is disabled
-		$module4 = $moduleManager->getModule( $name, null, true );
-		$this->assertNotSame( $module1, $module4 );
-	}
+        // should use cached instance
+        $module3 = $moduleManager->getModule($name, null, false);
+        $this->assertSame($module1, $module3);
 
-	/**
-	 * @covers ApiModuleManager::getModule
-	 */
-	public function testGetModule_null() {
-		$modules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        // should not use cached instance if caching is disabled
+        $module4 = $moduleManager->getModule($name, null, true);
+        $this->assertNotSame($module1, $module4);
+    }
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $modules, 'test' );
+    /**
+     * @covers ApiModuleManager::getModule
+     */
+    public function testGetModule_null()
+    {
+        $modules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$this->assertNull( $moduleManager->getModule( 'quux' ), 'unknown name' );
-		$this->assertNull( $moduleManager->getModule( 'login', 'bla' ), 'wrong group' );
-	}
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($modules, 'test');
 
-	/**
-	 * @covers ApiModuleManager::getNames
-	 */
-	public function testGetNames() {
-		$fooModules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        $this->assertNull($moduleManager->getModule('quux'), 'unknown name');
+        $this->assertNull($moduleManager->getModule('login', 'bla'), 'wrong group');
+    }
 
-		$barModules = [
-			'feedcontributions' => [ 'class' => ApiFeedContributions::class ],
-			'feedrecentchanges' => [ 'class' => ApiFeedRecentChanges::class ],
-		];
+    /**
+     * @covers ApiModuleManager::getNames
+     */
+    public function testGetNames()
+    {
+        $fooModules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $fooModules, 'foo' );
-		$moduleManager->addModules( $barModules, 'bar' );
+        $barModules = [
+            'feedcontributions' => ['class' => ApiFeedContributions::class],
+            'feedrecentchanges' => ['class' => ApiFeedRecentChanges::class],
+        ];
 
-		$fooNames = $moduleManager->getNames( 'foo' );
-		$this->assertArrayEquals( array_keys( $fooModules ), $fooNames );
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($fooModules, 'foo');
+        $moduleManager->addModules($barModules, 'bar');
 
-		$allNames = $moduleManager->getNames();
-		$allModules = array_merge( $fooModules, $barModules );
-		$this->assertArrayEquals( array_keys( $allModules ), $allNames );
-	}
+        $fooNames = $moduleManager->getNames('foo');
+        $this->assertArrayEquals(array_keys($fooModules), $fooNames);
 
-	/**
-	 * @covers ApiModuleManager::getNamesWithClasses
-	 */
-	public function testGetNamesWithClasses() {
-		$fooModules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        $allNames = $moduleManager->getNames();
+        $allModules = array_merge($fooModules, $barModules);
+        $this->assertArrayEquals(array_keys($allModules), $allNames);
+    }
 
-		$barModules = [
-			'feedcontributions' => [ 'class' => ApiFeedContributions::class ],
-			'feedrecentchanges' => [ 'class' => ApiFeedRecentChanges::class ],
-		];
+    /**
+     * @covers ApiModuleManager::getNamesWithClasses
+     */
+    public function testGetNamesWithClasses()
+    {
+        $fooModules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $fooModules, 'foo' );
-		$moduleManager->addModules( $barModules, 'bar' );
+        $barModules = [
+            'feedcontributions' => ['class' => ApiFeedContributions::class],
+            'feedrecentchanges' => ['class' => ApiFeedRecentChanges::class],
+        ];
 
-		$fooNamesWithClasses = $moduleManager->getNamesWithClasses( 'foo' );
-		$this->assertArrayEquals( $fooModules, $fooNamesWithClasses );
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($fooModules, 'foo');
+        $moduleManager->addModules($barModules, 'bar');
 
-		$allNamesWithClasses = $moduleManager->getNamesWithClasses();
-		$allModules = array_merge( $fooModules, [
-			'feedcontributions' => ApiFeedContributions::class,
-			'feedrecentchanges' => ApiFeedRecentChanges::class,
-		] );
-		$this->assertArrayEquals( $allModules, $allNamesWithClasses );
-	}
+        $fooNamesWithClasses = $moduleManager->getNamesWithClasses('foo');
+        $this->assertArrayEquals($fooModules, $fooNamesWithClasses);
 
-	/**
-	 * @covers ApiModuleManager::getModuleGroup
-	 */
-	public function testGetModuleGroup() {
-		$fooModules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        $allNamesWithClasses = $moduleManager->getNamesWithClasses();
+        $allModules = array_merge($fooModules, [
+            'feedcontributions' => ApiFeedContributions::class,
+            'feedrecentchanges' => ApiFeedRecentChanges::class,
+        ]);
+        $this->assertArrayEquals($allModules, $allNamesWithClasses);
+    }
 
-		$barModules = [
-			'feedcontributions' => [ 'class' => ApiFeedContributions::class ],
-			'feedrecentchanges' => [ 'class' => ApiFeedRecentChanges::class ],
-		];
+    /**
+     * @covers ApiModuleManager::getModuleGroup
+     */
+    public function testGetModuleGroup()
+    {
+        $fooModules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $fooModules, 'foo' );
-		$moduleManager->addModules( $barModules, 'bar' );
+        $barModules = [
+            'feedcontributions' => ['class' => ApiFeedContributions::class],
+            'feedrecentchanges' => ['class' => ApiFeedRecentChanges::class],
+        ];
 
-		$this->assertEquals( 'foo', $moduleManager->getModuleGroup( 'rsd' ) );
-		$this->assertEquals( 'bar', $moduleManager->getModuleGroup( 'feedrecentchanges' ) );
-		$this->assertNull( $moduleManager->getModuleGroup( 'quux' ) );
-	}
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($fooModules, 'foo');
+        $moduleManager->addModules($barModules, 'bar');
 
-	/**
-	 * @covers ApiModuleManager::getGroups
-	 */
-	public function testGetGroups() {
-		$fooModules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        $this->assertEquals('foo', $moduleManager->getModuleGroup('rsd'));
+        $this->assertEquals('bar', $moduleManager->getModuleGroup('feedrecentchanges'));
+        $this->assertNull($moduleManager->getModuleGroup('quux'));
+    }
 
-		$barModules = [
-			'feedcontributions' => [ 'class' => ApiFeedContributions::class ],
-			'feedrecentchanges' => [ 'class' => ApiFeedRecentChanges::class ],
-		];
+    /**
+     * @covers ApiModuleManager::getGroups
+     */
+    public function testGetGroups()
+    {
+        $fooModules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $fooModules, 'foo' );
-		$moduleManager->addModules( $barModules, 'bar' );
+        $barModules = [
+            'feedcontributions' => ['class' => ApiFeedContributions::class],
+            'feedrecentchanges' => ['class' => ApiFeedRecentChanges::class],
+        ];
 
-		$groups = $moduleManager->getGroups();
-		$this->assertArrayEquals( [ 'foo', 'bar' ], $groups );
-	}
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($fooModules, 'foo');
+        $moduleManager->addModules($barModules, 'bar');
 
-	/**
-	 * @covers ApiModuleManager::getClassName
-	 */
-	public function testGetClassName() {
-		$fooModules = [
-			'rsd' => ApiRsd::class,
-			'logout' => ApiLogout::class,
-		];
+        $groups = $moduleManager->getGroups();
+        $this->assertArrayEquals(['foo', 'bar'], $groups);
+    }
 
-		$barModules = [
-			'feedcontributions' => [ 'class' => ApiFeedContributions::class ],
-			'feedrecentchanges' => [ 'class' => ApiFeedRecentChanges::class ],
-		];
+    /**
+     * @covers ApiModuleManager::getClassName
+     */
+    public function testGetClassName()
+    {
+        $fooModules = [
+            'rsd'    => ApiRsd::class,
+            'logout' => ApiLogout::class,
+        ];
 
-		$moduleManager = $this->getModuleManager();
-		$moduleManager->addModules( $fooModules, 'foo' );
-		$moduleManager->addModules( $barModules, 'bar' );
+        $barModules = [
+            'feedcontributions' => ['class' => ApiFeedContributions::class],
+            'feedrecentchanges' => ['class' => ApiFeedRecentChanges::class],
+        ];
 
-		$this->assertEquals(
-			ApiRsd::class,
-			$moduleManager->getClassName( 'rsd' )
-		);
-		$this->assertEquals(
-			ApiLogout::class,
-			$moduleManager->getClassName( 'logout' )
-		);
-		$this->assertEquals(
-			ApiFeedContributions::class,
-			$moduleManager->getClassName( 'feedcontributions' )
-		);
-		$this->assertEquals(
-			ApiFeedRecentChanges::class,
-			$moduleManager->getClassName( 'feedrecentchanges' )
-		);
-		$this->assertFalse(
-			$moduleManager->getClassName( 'nonexistentmodule' )
-		);
-	}
+        $moduleManager = $this->getModuleManager();
+        $moduleManager->addModules($fooModules, 'foo');
+        $moduleManager->addModules($barModules, 'bar');
 
-	public function testAddModuleWithIncompleteSpec() {
-		$moduleManager = $this->getModuleManager();
+        $this->assertEquals(
+            ApiRsd::class,
+            $moduleManager->getClassName('rsd')
+        );
+        $this->assertEquals(
+            ApiLogout::class,
+            $moduleManager->getClassName('logout')
+        );
+        $this->assertEquals(
+            ApiFeedContributions::class,
+            $moduleManager->getClassName('feedcontributions')
+        );
+        $this->assertEquals(
+            ApiFeedRecentChanges::class,
+            $moduleManager->getClassName('feedrecentchanges')
+        );
+        $this->assertFalse(
+            $moduleManager->getClassName('nonexistentmodule')
+        );
+    }
 
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( '$spec must define a class name' );
-		$moduleManager->addModule(
-			'logout',
-			'action',
-			[
-				'factory' => static function ( ApiMain $main, $action ) {
-					return new ApiLogout( $main, $action );
-				},
-			]
-		);
-	}
+    public function testAddModuleWithIncompleteSpec()
+    {
+        $moduleManager = $this->getModuleManager();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$spec must define a class name');
+        $moduleManager->addModule(
+            'logout',
+            'action',
+            [
+                'factory' => static function (ApiMain $main, $action) {
+                    return new ApiLogout($main, $action);
+                },
+            ]
+        );
+    }
 }

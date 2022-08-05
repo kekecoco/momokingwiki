@@ -11,16 +11,17 @@ use User;
  * @stable to implement
  * @ingroup Hooks
  */
-interface SpecialMuteModifyFormFieldsHook {
-	/**
-	 * Use this hook to add more fields to Special:Mute
-	 *
-	 * @since 1.35
-	 *
-	 * @param User|null $target Target user
-	 * @param User $user Context user
-	 * @param array &$fields Current HTMLForm fields descriptors
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onSpecialMuteModifyFormFields( $target, $user, &$fields );
+interface SpecialMuteModifyFormFieldsHook
+{
+    /**
+     * Use this hook to add more fields to Special:Mute
+     *
+     * @param User|null $target Target user
+     * @param User $user Context user
+     * @param array &$fields Current HTMLForm fields descriptors
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onSpecialMuteModifyFormFields($target, $user, &$fields);
 }

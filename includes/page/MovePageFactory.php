@@ -30,12 +30,13 @@ use Title;
  *
  * @since 1.35
  */
-interface MovePageFactory {
+interface MovePageFactory
+{
 
-	/**
-	 * @param Title $from
-	 * @param Title $to
-	 * @return MovePage
-	 */
-	public function newMovePage( Title $from, Title $to ): MovePage;
+    /**
+     * @param Title $from
+     * @param Title $to
+     * @return MovePage
+     */
+    public function newMovePage(Title $from, Title $to): MovePage;
 }

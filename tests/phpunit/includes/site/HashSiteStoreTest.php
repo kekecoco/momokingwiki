@@ -24,82 +24,87 @@
  *
  * @author Katie Filbert < aude.wiki@gmail.com >
  */
-class HashSiteStoreTest extends \MediaWikiIntegrationTestCase {
+class HashSiteStoreTest extends \MediaWikiIntegrationTestCase
+{
 
-	/**
-	 * @covers HashSiteStore::getSites
-	 */
-	public function testGetSites() {
-		$expectedSites = [];
+    /**
+     * @covers HashSiteStore::getSites
+     */
+    public function testGetSites()
+    {
+        $expectedSites = [];
 
-		foreach ( TestSites::getSites() as $testSite ) {
-			$siteId = $testSite->getGlobalId();
-			$expectedSites[$siteId] = $testSite;
-		}
+        foreach (TestSites::getSites() as $testSite) {
+            $siteId = $testSite->getGlobalId();
+            $expectedSites[$siteId] = $testSite;
+        }
 
-		$siteStore = new HashSiteStore( $expectedSites );
+        $siteStore = new HashSiteStore($expectedSites);
 
-		$this->assertEquals( new SiteList( $expectedSites ), $siteStore->getSites() );
-	}
+        $this->assertEquals(new SiteList($expectedSites), $siteStore->getSites());
+    }
 
-	/**
-	 * @covers HashSiteStore::saveSite
-	 * @covers HashSiteStore::getSite
-	 */
-	public function testSaveSite() {
-		$store = new HashSiteStore();
+    /**
+     * @covers HashSiteStore::saveSite
+     * @covers HashSiteStore::getSite
+     */
+    public function testSaveSite()
+    {
+        $store = new HashSiteStore();
 
-		$site = new Site();
-		$site->setGlobalId( 'dewiki' );
+        $site = new Site();
+        $site->setGlobalId('dewiki');
 
-		$this->assertCount( 0, $store->getSites(), '0 sites in store' );
+        $this->assertCount(0, $store->getSites(), '0 sites in store');
 
-		$store->saveSite( $site );
+        $store->saveSite($site);
 
-		$this->assertCount( 1, $store->getSites(), 'Store has 1 sites' );
-		$this->assertEquals( $site, $store->getSite( 'dewiki' ), 'Store has dewiki' );
-	}
+        $this->assertCount(1, $store->getSites(), 'Store has 1 sites');
+        $this->assertEquals($site, $store->getSite('dewiki'), 'Store has dewiki');
+    }
 
-	/**
-	 * @covers HashSiteStore::saveSites
-	 */
-	public function testSaveSites() {
-		$store = new HashSiteStore();
+    /**
+     * @covers HashSiteStore::saveSites
+     */
+    public function testSaveSites()
+    {
+        $store = new HashSiteStore();
 
-		$sites = [];
+        $sites = [];
 
-		$site = new Site();
-		$site->setGlobalId( 'enwiki' );
-		$site->setLanguageCode( 'en' );
-		$sites[] = $site;
+        $site = new Site();
+        $site->setGlobalId('enwiki');
+        $site->setLanguageCode('en');
+        $sites[] = $site;
 
-		$site = new MediaWikiSite();
-		$site->setGlobalId( 'eswiki' );
-		$site->setLanguageCode( 'es' );
-		$sites[] = $site;
+        $site = new MediaWikiSite();
+        $site->setGlobalId('eswiki');
+        $site->setLanguageCode('es');
+        $sites[] = $site;
 
-		$this->assertCount( 0, $store->getSites(), '0 sites in store' );
+        $this->assertCount(0, $store->getSites(), '0 sites in store');
 
-		$store->saveSites( $sites );
+        $store->saveSites($sites);
 
-		$this->assertCount( 2, $store->getSites(), 'Store has 2 sites' );
-		$this->assertTrue( $store->getSites()->hasSite( 'enwiki' ), 'Store has enwiki' );
-		$this->assertTrue( $store->getSites()->hasSite( 'eswiki' ), 'Store has eswiki' );
-	}
+        $this->assertCount(2, $store->getSites(), 'Store has 2 sites');
+        $this->assertTrue($store->getSites()->hasSite('enwiki'), 'Store has enwiki');
+        $this->assertTrue($store->getSites()->hasSite('eswiki'), 'Store has eswiki');
+    }
 
-	/**
-	 * @covers HashSiteStore::clear
-	 */
-	public function testClear() {
-		$store = new HashSiteStore();
+    /**
+     * @covers HashSiteStore::clear
+     */
+    public function testClear()
+    {
+        $store = new HashSiteStore();
 
-		$site = new Site();
-		$site->setGlobalId( 'arwiki' );
-		$store->saveSite( $site );
+        $site = new Site();
+        $site->setGlobalId('arwiki');
+        $store->saveSite($site);
 
-		$this->assertCount( 1, $store->getSites(), '1 site in store' );
+        $this->assertCount(1, $store->getSites(), '1 site in store');
 
-		$store->clear();
-		$this->assertCount( 0, $store->getSites(), '0 sites in store' );
-	}
+        $store->clear();
+        $this->assertCount(0, $store->getSites(), '0 sites in store');
+    }
 }

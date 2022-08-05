@@ -23,19 +23,21 @@ use Wikimedia\StaticArrayWriter;
 /**
  * @covers \Wikimedia\StaticArrayWriter
  */
-class StaticArrayWriterTest extends PHPUnit\Framework\TestCase {
-	public function testCreate() {
-		$data = [
-			'foo' => 'bar',
-			'baz' => 'rawr',
-			"they're" => '"quoted properly"',
-			'nested' => [ 'elements', 'work' ],
-			'intlike' => [ '050' => true, '101' => true, '221B' => true ],
-			'and' => [ 'these' => 'do too' ],
-		];
-		$writer = new StaticArrayWriter();
-		$actual = $writer->create( $data, "Header\nWith\nNewlines" );
-		$expected = <<<PHP
+class StaticArrayWriterTest extends PHPUnit\Framework\TestCase
+{
+    public function testCreate()
+    {
+        $data = [
+            'foo'     => 'bar',
+            'baz'     => 'rawr',
+            "they're" => '"quoted properly"',
+            'nested'  => ['elements', 'work'],
+            'intlike' => ['050' => true, '101' => true, '221B' => true],
+            'and'     => ['these' => 'do too'],
+        ];
+        $writer = new StaticArrayWriter();
+        $actual = $writer->create($data, "Header\nWith\nNewlines");
+        $expected = <<<PHP
 <?php
 // Header
 // With
@@ -59,22 +61,23 @@ return [
 ];
 
 PHP;
-		$this->assertSame( $expected, $actual );
-	}
+        $this->assertSame($expected, $actual);
+    }
 
-	public function testWriteClass() {
-		$data = [
-			'foo' => 'bar',
-			'baz' => 'rawr',
-		];
-		$writer = new StaticArrayWriter();
-		$actual = $writer->writeClass( $data, [
-			'header' => "Header\nWith\nNewlines",
-			'namespace' => 'Example\\Foo',
-			'class' => 'Bar',
-			'const' => 'THING',
-		] );
-		$expected = <<<PHP
+    public function testWriteClass()
+    {
+        $data = [
+            'foo' => 'bar',
+            'baz' => 'rawr',
+        ];
+        $writer = new StaticArrayWriter();
+        $actual = $writer->writeClass($data, [
+            'header'    => "Header\nWith\nNewlines",
+            'namespace' => 'Example\\Foo',
+            'class'     => 'Bar',
+            'const'     => 'THING',
+        ]);
+        $expected = <<<PHP
 <?php
 // Header
 // With
@@ -90,6 +93,6 @@ class Bar {
 }
 
 PHP;
-		$this->assertSame( $expected, $actual );
-	}
+        $this->assertSame($expected, $actual);
+    }
 }

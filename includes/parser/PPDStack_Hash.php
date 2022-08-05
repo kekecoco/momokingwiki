@@ -24,96 +24,106 @@
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPDStack_Hash {
-	/** @var PPDStackElement_Hash[] */
-	public $stack;
-	/** @var string[] */
-	public $rootAccum;
-	/** @var string[] */
-	public $accum;
+class PPDStack_Hash
+{
+    /** @var PPDStackElement_Hash[] */
+    public $stack;
+    /** @var string[] */
+    public $rootAccum;
+    /** @var string[] */
+    public $accum;
 
-	/**
-	 * @var PPDStackElement_Hash|false
-	 */
-	public $top;
-	public $out;
-	public $elementClass = PPDStackElement_Hash::class;
+    /**
+     * @var PPDStackElement_Hash|false
+     */
+    public $top;
+    public $out;
+    public $elementClass = PPDStackElement_Hash::class;
 
-	public static $false = false;
+    public static $false = false;
 
-	public function __construct() {
-		$this->stack = [];
-		$this->top = false;
-		$this->rootAccum = [];
-		$this->accum =& $this->rootAccum;
-	}
+    public function __construct()
+    {
+        $this->stack = [];
+        $this->top = false;
+        $this->rootAccum = [];
+        $this->accum =& $this->rootAccum;
+    }
 
-	/**
-	 * @return int
-	 */
-	public function count() {
-		return count( $this->stack );
-	}
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return count($this->stack);
+    }
 
-	public function &getAccum() {
-		return $this->accum;
-	}
+    public function &getAccum()
+    {
+        return $this->accum;
+    }
 
-	/**
-	 * @return false|PPDPart_Hash
-	 */
-	public function getCurrentPart() {
-		if ( $this->top === false ) {
-			return false;
-		} else {
-			return $this->top->getCurrentPart();
-		}
-	}
+    /**
+     * @return false|PPDPart_Hash
+     */
+    public function getCurrentPart()
+    {
+        if ($this->top === false) {
+            return false;
+        } else {
+            return $this->top->getCurrentPart();
+        }
+    }
 
-	public function push( $data ) {
-		if ( $data instanceof $this->elementClass ) {
-			$this->stack[] = $data;
-		} else {
-			$class = $this->elementClass;
-			$this->stack[] = new $class( $data );
-		}
-		$this->top = $this->stack[count( $this->stack ) - 1];
-		$this->accum =& $this->top->getAccum();
-	}
+    public function push($data)
+    {
+        if ($data instanceof $this->elementClass) {
+            $this->stack[] = $data;
+        } else {
+            $class = $this->elementClass;
+            $this->stack[] = new $class($data);
+        }
+        $this->top = $this->stack[count($this->stack) - 1];
+        $this->accum =& $this->top->getAccum();
+    }
 
-	public function pop() {
-		if ( $this->stack === [] ) {
-			throw new MWException( __METHOD__ . ': no elements remaining' );
-		}
-		$temp = array_pop( $this->stack );
+    public function pop()
+    {
+        if ($this->stack === []) {
+            throw new MWException(__METHOD__ . ': no elements remaining');
+        }
+        $temp = array_pop($this->stack);
 
-		if ( count( $this->stack ) ) {
-			$this->top = $this->stack[count( $this->stack ) - 1];
-			$this->accum =& $this->top->getAccum();
-		} else {
-			$this->top = self::$false;
-			$this->accum =& $this->rootAccum;
-		}
-		return $temp;
-	}
+        if (count($this->stack)) {
+            $this->top = $this->stack[count($this->stack) - 1];
+            $this->accum =& $this->top->getAccum();
+        } else {
+            $this->top = self::$false;
+            $this->accum =& $this->rootAccum;
+        }
 
-	public function addPart( $s = '' ) {
-		$this->top->addPart( $s );
-		$this->accum =& $this->top->getAccum();
-	}
+        return $temp;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getFlags() {
-		if ( $this->stack === [] ) {
-			return [
-				'findEquals' => false,
-				'findPipe' => false,
-				'inHeading' => false,
-			];
-		} else {
-			return $this->top->getFlags();
-		}
-	}
+    public function addPart($s = '')
+    {
+        $this->top->addPart($s);
+        $this->accum =& $this->top->getAccum();
+    }
+
+    /**
+     * @return array
+     */
+    public function getFlags()
+    {
+        if ($this->stack === []) {
+            return [
+                'findEquals' => false,
+                'findPipe'   => false,
+                'inHeading'  => false,
+            ];
+        } else {
+            return $this->top->getFlags();
+        }
+    }
 }

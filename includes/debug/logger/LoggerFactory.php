@@ -42,61 +42,67 @@ use Wikimedia\ObjectFactory\ObjectFactory;
  * @since 1.25
  * @copyright © 2014 Wikimedia Foundation and contributors
  */
-class LoggerFactory {
+class LoggerFactory
+{
 
-	/**
-	 * Service provider.
-	 * @var \MediaWiki\Logger\Spi
-	 */
-	private static $spi;
+    /**
+     * Service provider.
+     * @var \MediaWiki\Logger\Spi
+     */
+    private static $spi;
 
-	/**
-	 * Register a service provider to create new \Psr\Log\LoggerInterface
-	 * instances.
-	 *
-	 * @param \MediaWiki\Logger\Spi $provider Provider to register
-	 */
-	public static function registerProvider( Spi $provider ) {
-		self::$spi = $provider;
-	}
+    /**
+     * Register a service provider to create new \Psr\Log\LoggerInterface
+     * instances.
+     *
+     * @param \MediaWiki\Logger\Spi $provider Provider to register
+     */
+    public static function registerProvider(Spi $provider)
+    {
+        self::$spi = $provider;
+    }
 
-	/**
-	 * Get the registered service provider.
-	 *
-	 * If called before any service provider has been registered, it will
-	 * attempt to use the $wgMWLoggerDefaultSpi global to bootstrap
-	 * Spi registration. $wgMWLoggerDefaultSpi is expected to be an
-	 * array usable by ObjectFactory::getObjectFromSpec() to create a class.
-	 *
-	 * @return \MediaWiki\Logger\Spi
-	 * @see registerProvider()
-	 * @see ObjectFactory::getObjectFromSpec()
-	 */
-	public static function getProvider() {
-		if ( self::$spi === null ) {
-			global $wgMWLoggerDefaultSpi;
-			$provider = ObjectFactory::getObjectFromSpec(
-				$wgMWLoggerDefaultSpi
-			);
-			self::registerProvider( $provider );
-		}
-		return self::$spi;
-	}
+    /**
+     * Get the registered service provider.
+     *
+     * If called before any service provider has been registered, it will
+     * attempt to use the $wgMWLoggerDefaultSpi global to bootstrap
+     * Spi registration. $wgMWLoggerDefaultSpi is expected to be an
+     * array usable by ObjectFactory::getObjectFromSpec() to create a class.
+     *
+     * @return \MediaWiki\Logger\Spi
+     * @see registerProvider()
+     * @see ObjectFactory::getObjectFromSpec()
+     */
+    public static function getProvider()
+    {
+        if (self::$spi === null) {
+            global $wgMWLoggerDefaultSpi;
+            $provider = ObjectFactory::getObjectFromSpec(
+                $wgMWLoggerDefaultSpi
+            );
+            self::registerProvider($provider);
+        }
 
-	/**
-	 * Get a named logger instance from the currently configured logger factory.
-	 *
-	 * @param string $channel Logger channel (name)
-	 * @return \Psr\Log\LoggerInterface
-	 */
-	public static function getInstance( $channel ) {
-		return self::getProvider()->getLogger( $channel );
-	}
+        return self::$spi;
+    }
 
-	/**
-	 * Construction of utility class is not allowed.
-	 */
-	private function __construct() {
-		// no-op
-	}
+    /**
+     * Get a named logger instance from the currently configured logger factory.
+     *
+     * @param string $channel Logger channel (name)
+     * @return \Psr\Log\LoggerInterface
+     */
+    public static function getInstance($channel)
+    {
+        return self::getProvider()->getLogger($channel);
+    }
+
+    /**
+     * Construction of utility class is not allowed.
+     */
+    private function __construct()
+    {
+        // no-op
+    }
 }

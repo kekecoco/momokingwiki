@@ -18,11 +18,12 @@
  *
  * @since 1.27
  */
-interface MergeableUpdate extends DeferrableUpdate {
-	/**
-	 * Merge this enqueued update with a new MergeableUpdate of the same qualified class name
-	 *
-	 * @param MergeableUpdate $update The new update (having the same class)
-	 */
-	public function merge( MergeableUpdate $update );
+interface MergeableUpdate extends DeferrableUpdate
+{
+    /**
+     * Merge this enqueued update with a new MergeableUpdate of the same qualified class name
+     *
+     * @param MergeableUpdate $update The new update (having the same class)
+     */
+    public function merge(MergeableUpdate $update);
 }

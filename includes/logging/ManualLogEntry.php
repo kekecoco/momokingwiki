@@ -42,499 +42,528 @@ use Wikimedia\Rdbms\IDatabase;
  * @since 1.19
  * @see https://www.mediawiki.org/wiki/Manual:Logging_to_Special:Log
  */
-class ManualLogEntry extends LogEntryBase implements Taggable {
-	/** @var string Type of log entry */
-	protected $type;
+class ManualLogEntry extends LogEntryBase implements Taggable
+{
+    /** @var string Type of log entry */
+    protected $type;
 
-	/** @var string Sub type of log entry */
-	protected $subtype;
+    /** @var string Sub type of log entry */
+    protected $subtype;
 
-	/** @var array Parameters for log entry */
-	protected $parameters = [];
+    /** @var array Parameters for log entry */
+    protected $parameters = [];
 
-	/** @var array */
-	protected $relations = [];
+    /** @var array */
+    protected $relations = [];
 
-	/** @var UserIdentity Performer of the action for the log entry */
-	protected $performer;
+    /** @var UserIdentity Performer of the action for the log entry */
+    protected $performer;
 
-	/** @var Title Target title for the log entry */
-	protected $target;
+    /** @var Title Target title for the log entry */
+    protected $target;
 
-	/** @var string Timestamp of creation of the log entry */
-	protected $timestamp;
+    /** @var string Timestamp of creation of the log entry */
+    protected $timestamp;
 
-	/** @var string Comment for the log entry */
-	protected $comment = '';
+    /** @var string Comment for the log entry */
+    protected $comment = '';
 
-	/** @var int A rev id associated to the log entry */
-	protected $revId = 0;
+    /** @var int A rev id associated to the log entry */
+    protected $revId = 0;
 
-	/** @var string[] Change tags add to the log entry */
-	protected $tags = [];
+    /** @var string[] Change tags add to the log entry */
+    protected $tags = [];
 
-	/** @var int Deletion state of the log entry */
-	protected $deleted;
+    /** @var int Deletion state of the log entry */
+    protected $deleted;
 
-	/** @var int ID of the log entry */
-	protected $id;
+    /** @var int ID of the log entry */
+    protected $id;
 
-	/** @var bool Can this log entry be patrolled? */
-	protected $isPatrollable = false;
+    /** @var bool Can this log entry be patrolled? */
+    protected $isPatrollable = false;
 
-	/** @var bool Whether this is a legacy log entry */
-	protected $legacy = false;
+    /** @var bool Whether this is a legacy log entry */
+    protected $legacy = false;
 
-	/**
-	 * @stable to call
-	 * @since 1.19
-	 * @param string $type Log type. Should match $wgLogTypes.
-	 * @param string $subtype Log subtype (action). Should match $wgLogActions or
-	 *   (together with $type) $wgLogActionsHandlers.
-	 * @note
-	 */
-	public function __construct( $type, $subtype ) {
-		$this->type = $type;
-		$this->subtype = $subtype;
-	}
+    /**
+     * @stable to call
+     * @param string $type Log type. Should match $wgLogTypes.
+     * @param string $subtype Log subtype (action). Should match $wgLogActions or
+     *   (together with $type) $wgLogActionsHandlers.
+     * @note
+     * @since 1.19
+     */
+    public function __construct($type, $subtype)
+    {
+        $this->type = $type;
+        $this->subtype = $subtype;
+    }
 
-	/**
-	 * Set extra log parameters.
-	 *
-	 * You can pass params to the log action message by prefixing the keys with
-	 * a number and optional type, using colons to separate the fields. The
-	 * numbering should start with number 4 (matching the $4 message parameter),
-	 * the first three parameters are hardcoded for every message ($1 is a link
-	 * to the username and user talk page of the performing user, $2 is just the
-	 * username (for determining gender), $3 is a link to the target page).
-	 *
-	 * Typically, these parameters will be used in the logentry-<type>-<subtype>
-	 * message, but custom formatters, declared via $wgLogActionsHandlers, can
-	 * override that.
-	 *
-	 * If you want to store stuff that should not be available in messages, don't
-	 * prefix the array key with a number and don't use the colons. Parameters
-	 * which should be searchable need to be set with setRelations() instead.
-	 *
-	 * Example:
-	 *   $entry->setParameters(
-	 *     '4::color' => 'blue',
-	 *     '5:number:count' => 3000,
-	 *     'animal' => 'dog'
-	 *   );
-	 *
-	 * @since 1.19
-	 * @param array $parameters Associative array
-	 * @see LogFormatter::formatParameterValue for valid parameter types and
-	 *   their meanings
-	 */
-	public function setParameters( $parameters ) {
-		$this->parameters = $parameters;
-	}
+    /**
+     * Set extra log parameters.
+     *
+     * You can pass params to the log action message by prefixing the keys with
+     * a number and optional type, using colons to separate the fields. The
+     * numbering should start with number 4 (matching the $4 message parameter),
+     * the first three parameters are hardcoded for every message ($1 is a link
+     * to the username and user talk page of the performing user, $2 is just the
+     * username (for determining gender), $3 is a link to the target page).
+     *
+     * Typically, these parameters will be used in the logentry-<type>-<subtype>
+     * message, but custom formatters, declared via $wgLogActionsHandlers, can
+     * override that.
+     *
+     * If you want to store stuff that should not be available in messages, don't
+     * prefix the array key with a number and don't use the colons. Parameters
+     * which should be searchable need to be set with setRelations() instead.
+     *
+     * Example:
+     *   $entry->setParameters(
+     *     '4::color' => 'blue',
+     *     '5:number:count' => 3000,
+     *     'animal' => 'dog'
+     *   );
+     *
+     * @param array $parameters Associative array
+     * @since 1.19
+     * @see LogFormatter::formatParameterValue for valid parameter types and
+     *   their meanings
+     */
+    public function setParameters($parameters)
+    {
+        $this->parameters = $parameters;
+    }
 
-	/**
-	 * Declare arbitrary tag/value relations to this log entry.
-	 * These can be used to filter log entries later on.
-	 *
-	 * @param array $relations Map of (tag => (list of values|value))
-	 * @since 1.22
-	 */
-	public function setRelations( array $relations ) {
-		$this->relations = $relations;
-	}
+    /**
+     * Declare arbitrary tag/value relations to this log entry.
+     * These can be used to filter log entries later on.
+     *
+     * @param array $relations Map of (tag => (list of values|value))
+     * @since 1.22
+     */
+    public function setRelations(array $relations)
+    {
+        $this->relations = $relations;
+    }
 
-	/**
-	 * Set the user that performed the action being logged.
-	 *
-	 * @since 1.19
-	 * @param UserIdentity $performer
-	 */
-	public function setPerformer( UserIdentity $performer ) {
-		$this->performer = $performer;
-	}
+    /**
+     * Set the user that performed the action being logged.
+     *
+     * @param UserIdentity $performer
+     * @since 1.19
+     */
+    public function setPerformer(UserIdentity $performer)
+    {
+        $this->performer = $performer;
+    }
 
-	/**
-	 * Set the title of the object changed.
-	 *
-	 * @param LinkTarget|PageReference $target calling with LinkTarget
-	 *   is deprecated since 1.37
-	 * @since 1.19
-	 */
-	public function setTarget( $target ) {
-		if ( $target instanceof PageReference ) {
-			// @phan-suppress-next-line PhanPossiblyNullTypeMismatchProperty castFrom does not return null here
-			$this->target = Title::castFromPageReference( $target );
-		} elseif ( $target instanceof LinkTarget ) {
-			$this->target = Title::newFromLinkTarget( $target );
-		} else {
-			throw new InvalidArgumentException( "Invalid target provided" );
-		}
-	}
+    /**
+     * Set the title of the object changed.
+     *
+     * @param LinkTarget|PageReference $target calling with LinkTarget
+     *   is deprecated since 1.37
+     * @since 1.19
+     */
+    public function setTarget($target)
+    {
+        if ($target instanceof PageReference) {
+            // @phan-suppress-next-line PhanPossiblyNullTypeMismatchProperty castFrom does not return null here
+            $this->target = Title::castFromPageReference($target);
+        } elseif ($target instanceof LinkTarget) {
+            $this->target = Title::newFromLinkTarget($target);
+        } else {
+            throw new InvalidArgumentException("Invalid target provided");
+        }
+    }
 
-	/**
-	 * Set the timestamp of when the logged action took place.
-	 *
-	 * @since 1.19
-	 * @param string $timestamp
-	 */
-	public function setTimestamp( $timestamp ) {
-		$this->timestamp = $timestamp;
-	}
+    /**
+     * Set the timestamp of when the logged action took place.
+     *
+     * @param string $timestamp
+     * @since 1.19
+     */
+    public function setTimestamp($timestamp)
+    {
+        $this->timestamp = $timestamp;
+    }
 
-	/**
-	 * Set a comment associated with the action being logged.
-	 *
-	 * @since 1.19
-	 * @param string $comment
-	 */
-	public function setComment( string $comment ) {
-		$this->comment = $comment;
-	}
+    /**
+     * Set a comment associated with the action being logged.
+     *
+     * @param string $comment
+     * @since 1.19
+     */
+    public function setComment(string $comment)
+    {
+        $this->comment = $comment;
+    }
 
-	/**
-	 * Set an associated revision id.
-	 *
-	 * For example, the ID of the revision that was inserted to mark a page move
-	 * or protection, file upload, etc.
-	 *
-	 * @since 1.27
-	 * @param int $revId
-	 */
-	public function setAssociatedRevId( $revId ) {
-		$this->revId = $revId;
-	}
+    /**
+     * Set an associated revision id.
+     *
+     * For example, the ID of the revision that was inserted to mark a page move
+     * or protection, file upload, etc.
+     *
+     * @param int $revId
+     * @since 1.27
+     */
+    public function setAssociatedRevId($revId)
+    {
+        $this->revId = $revId;
+    }
 
-	/**
-	 * Set change tags for the log entry.
-	 *
-	 * Passing `null` means the same as empty array,
-	 * for compatibility with WikiPage::doUpdateRestrictions().
-	 *
-	 * @since 1.27
-	 * @param string|string[]|null $tags
-	 * @deprecated since 1.33 Please use addTags() instead.
-	 *  Hard deprecated since 1.39.
-	 */
-	public function setTags( $tags ) {
-		wfDeprecated( __METHOD__, '1.33' );
-		if ( $this->tags ) {
-			wfDebug( 'Overwriting existing ManualLogEntry tags' );
-		}
-		$this->tags = [];
-		$this->addTags( $tags );
-	}
+    /**
+     * Set change tags for the log entry.
+     *
+     * Passing `null` means the same as empty array,
+     * for compatibility with WikiPage::doUpdateRestrictions().
+     *
+     * @param string|string[]|null $tags
+     * @since 1.27
+     * @deprecated since 1.33 Please use addTags() instead.
+     *  Hard deprecated since 1.39.
+     */
+    public function setTags($tags)
+    {
+        wfDeprecated(__METHOD__, '1.33');
+        if ($this->tags) {
+            wfDebug('Overwriting existing ManualLogEntry tags');
+        }
+        $this->tags = [];
+        $this->addTags($tags);
+    }
 
-	/**
-	 * Add change tags for the log entry
-	 *
-	 * @since 1.33
-	 * @param string|string[]|null $tags Tags to apply
-	 */
-	public function addTags( $tags ) {
-		if ( $tags === null ) {
-			return;
-		}
+    /**
+     * Add change tags for the log entry
+     *
+     * @param string|string[]|null $tags Tags to apply
+     * @since 1.33
+     */
+    public function addTags($tags)
+    {
+        if ($tags === null) {
+            return;
+        }
 
-		if ( is_string( $tags ) ) {
-			$tags = [ $tags ];
-		}
-		Assert::parameterElementType( 'string', $tags, 'tags' );
-		$this->tags = array_unique( array_merge( $this->tags, $tags ) );
-	}
+        if (is_string($tags)) {
+            $tags = [$tags];
+        }
+        Assert::parameterElementType('string', $tags, 'tags');
+        $this->tags = array_unique(array_merge($this->tags, $tags));
+    }
 
-	/**
-	 * Set whether this log entry should be made patrollable
-	 * This shouldn't depend on config, only on whether there is full support
-	 * in the software for patrolling this log entry.
-	 * False by default
-	 *
-	 * @since 1.27
-	 * @param bool $patrollable
-	 */
-	public function setIsPatrollable( $patrollable ) {
-		$this->isPatrollable = (bool)$patrollable;
-	}
+    /**
+     * Set whether this log entry should be made patrollable
+     * This shouldn't depend on config, only on whether there is full support
+     * in the software for patrolling this log entry.
+     * False by default
+     *
+     * @param bool $patrollable
+     * @since 1.27
+     */
+    public function setIsPatrollable($patrollable)
+    {
+        $this->isPatrollable = (bool)$patrollable;
+    }
 
-	/**
-	 * Set the 'legacy' flag
-	 *
-	 * @since 1.25
-	 * @param bool $legacy
-	 */
-	public function setLegacy( $legacy ) {
-		$this->legacy = $legacy;
-	}
+    /**
+     * Set the 'legacy' flag
+     *
+     * @param bool $legacy
+     * @since 1.25
+     */
+    public function setLegacy($legacy)
+    {
+        $this->legacy = $legacy;
+    }
 
-	/**
-	 * Set the 'deleted' flag.
-	 *
-	 * @since 1.19
-	 * @param int $deleted One of LogPage::DELETED_* bitfield constants
-	 */
-	public function setDeleted( $deleted ) {
-		$this->deleted = $deleted;
-	}
+    /**
+     * Set the 'deleted' flag.
+     *
+     * @param int $deleted One of LogPage::DELETED_* bitfield constants
+     * @since 1.19
+     */
+    public function setDeleted($deleted)
+    {
+        $this->deleted = $deleted;
+    }
 
-	/**
-	 * Insert the entry into the `logging` table.
-	 *
-	 * @param IDatabase|null $dbw
-	 * @return int ID of the log entry
-	 * @throws MWException
-	 */
-	public function insert( IDatabase $dbw = null ) {
-		$dbw = $dbw ?: wfGetDB( DB_PRIMARY );
+    /**
+     * Insert the entry into the `logging` table.
+     *
+     * @param IDatabase|null $dbw
+     * @return int ID of the log entry
+     * @throws MWException
+     */
+    public function insert(IDatabase $dbw = null)
+    {
+        $dbw = $dbw ?: wfGetDB(DB_PRIMARY);
 
-		if ( $this->timestamp === null ) {
-			$this->timestamp = wfTimestampNow();
-		}
+        if ($this->timestamp === null) {
+            $this->timestamp = wfTimestampNow();
+        }
 
-		$actorId = MediaWikiServices::getInstance()->getActorStore()
-			->acquireActorId( $this->getPerformerIdentity(), $dbw );
+        $actorId = MediaWikiServices::getInstance()->getActorStore()
+            ->acquireActorId($this->getPerformerIdentity(), $dbw);
 
-		// Trim spaces on user supplied text
-		$comment = trim( $this->getComment() );
+        // Trim spaces on user supplied text
+        $comment = trim($this->getComment());
 
-		$params = $this->getParameters();
-		$relations = $this->relations;
+        $params = $this->getParameters();
+        $relations = $this->relations;
 
-		// Additional fields for which there's no space in the database table schema
-		$revId = $this->getAssociatedRevId();
-		if ( $revId ) {
-			$params['associated_rev_id'] = $revId;
-			$relations['associated_rev_id'] = $revId;
-		}
+        // Additional fields for which there's no space in the database table schema
+        $revId = $this->getAssociatedRevId();
+        if ($revId) {
+            $params['associated_rev_id'] = $revId;
+            $relations['associated_rev_id'] = $revId;
+        }
 
-		$data = [
-			'log_type' => $this->getType(),
-			'log_action' => $this->getSubtype(),
-			'log_timestamp' => $dbw->timestamp( $this->getTimestamp() ),
-			'log_actor' => $actorId,
-			'log_namespace' => $this->getTarget()->getNamespace(),
-			'log_title' => $this->getTarget()->getDBkey(),
-			'log_page' => $this->getTarget()->getArticleID(),
-			'log_params' => LogEntryBase::makeParamBlob( $params ),
-		];
-		if ( isset( $this->deleted ) ) {
-			$data['log_deleted'] = $this->deleted;
-		}
-		$data += CommentStore::getStore()->insert( $dbw, 'log_comment', $comment );
+        $data = [
+            'log_type'      => $this->getType(),
+            'log_action'    => $this->getSubtype(),
+            'log_timestamp' => $dbw->timestamp($this->getTimestamp()),
+            'log_actor'     => $actorId,
+            'log_namespace' => $this->getTarget()->getNamespace(),
+            'log_title'     => $this->getTarget()->getDBkey(),
+            'log_page'      => $this->getTarget()->getArticleID(),
+            'log_params'    => LogEntryBase::makeParamBlob($params),
+        ];
+        if (isset($this->deleted)) {
+            $data['log_deleted'] = $this->deleted;
+        }
+        $data += CommentStore::getStore()->insert($dbw, 'log_comment', $comment);
 
-		$dbw->insert( 'logging', $data, __METHOD__ );
-		$this->id = $dbw->insertId();
+        $dbw->insert('logging', $data, __METHOD__);
+        $this->id = $dbw->insertId();
 
-		$rows = [];
-		foreach ( $relations as $tag => $values ) {
-			if ( !strlen( $tag ) ) {
-				throw new MWException( "Got empty log search tag." );
-			}
+        $rows = [];
+        foreach ($relations as $tag => $values) {
+            if (!strlen($tag)) {
+                throw new MWException("Got empty log search tag.");
+            }
 
-			if ( !is_array( $values ) ) {
-				$values = [ $values ];
-			}
+            if (!is_array($values)) {
+                $values = [$values];
+            }
 
-			foreach ( $values as $value ) {
-				$rows[] = [
-					'ls_field' => $tag,
-					'ls_value' => $value,
-					'ls_log_id' => $this->id
-				];
-			}
-		}
-		if ( count( $rows ) ) {
-			$dbw->insert( 'log_search', $rows, __METHOD__, [ 'IGNORE' ] );
-		}
+            foreach ($values as $value) {
+                $rows[] = [
+                    'ls_field'  => $tag,
+                    'ls_value'  => $value,
+                    'ls_log_id' => $this->id
+                ];
+            }
+        }
+        if (count($rows)) {
+            $dbw->insert('log_search', $rows, __METHOD__, ['IGNORE']);
+        }
 
-		return $this->id;
-	}
+        return $this->id;
+    }
 
-	/**
-	 * Get a RecentChanges object for the log entry
-	 *
-	 * @param int $newId
-	 * @return RecentChange
-	 * @since 1.23
-	 */
-	public function getRecentChange( $newId = 0 ) {
-		$formatter = LogFormatter::newFromEntry( $this );
-		$context = RequestContext::newExtraneousContext( $this->getTarget() );
-		$formatter->setContext( $context );
+    /**
+     * Get a RecentChanges object for the log entry
+     *
+     * @param int $newId
+     * @return RecentChange
+     * @since 1.23
+     */
+    public function getRecentChange($newId = 0)
+    {
+        $formatter = LogFormatter::newFromEntry($this);
+        $context = RequestContext::newExtraneousContext($this->getTarget());
+        $formatter->setContext($context);
 
-		$logpage = SpecialPage::getTitleFor( 'Log', $this->getType() );
-		$user = $this->getPerformerIdentity();
-		$ip = "";
-		if ( !$user->isRegistered() ) {
-			// "MediaWiki default" and friends may have
-			// no IP address in their name
-			if ( IPUtils::isIPAddress( $user->getName() ) ) {
-				$ip = $user->getName();
-			}
-		}
+        $logpage = SpecialPage::getTitleFor('Log', $this->getType());
+        $user = $this->getPerformerIdentity();
+        $ip = "";
+        if (!$user->isRegistered()) {
+            // "MediaWiki default" and friends may have
+            // no IP address in their name
+            if (IPUtils::isIPAddress($user->getName())) {
+                $ip = $user->getName();
+            }
+        }
 
-		return RecentChange::newLogEntry(
-			$this->getTimestamp(),
-			$logpage,
-			$user,
-			$formatter->getPlainActionText(),
-			$ip,
-			$this->getType(),
-			$this->getSubtype(),
-			$this->getTarget(),
-			$this->getComment(),
-			LogEntryBase::makeParamBlob( $this->getParameters() ),
-			$newId,
-			$formatter->getIRCActionComment(), // Used for IRC feeds
-			$this->getAssociatedRevId(), // Used for e.g. moves and uploads
-			$this->getIsPatrollable()
-		);
-	}
+        return RecentChange::newLogEntry(
+            $this->getTimestamp(),
+            $logpage,
+            $user,
+            $formatter->getPlainActionText(),
+            $ip,
+            $this->getType(),
+            $this->getSubtype(),
+            $this->getTarget(),
+            $this->getComment(),
+            LogEntryBase::makeParamBlob($this->getParameters()),
+            $newId,
+            $formatter->getIRCActionComment(), // Used for IRC feeds
+            $this->getAssociatedRevId(), // Used for e.g. moves and uploads
+            $this->getIsPatrollable()
+        );
+    }
 
-	/**
-	 * Publish the log entry.
-	 *
-	 * @param int $newId Id of the log entry.
-	 * @param string $to One of: rcandudp (default), rc, udp
-	 */
-	public function publish( $newId, $to = 'rcandudp' ) {
-		$canAddTags = true;
-		// FIXME: this code should be removed once all callers properly call publish()
-		if ( $to === 'udp' && !$newId && !$this->getAssociatedRevId() ) {
-			\MediaWiki\Logger\LoggerFactory::getInstance( 'logging' )->warning(
-				'newId and/or revId must be set when calling ManualLogEntry::publish()',
-				[
-					'newId' => $newId,
-					'to' => $to,
-					'revId' => $this->getAssociatedRevId(),
-					// pass a new exception to register the stack trace
-					'exception' => new RuntimeException()
-				]
-			);
-			$canAddTags = false;
-		}
+    /**
+     * Publish the log entry.
+     *
+     * @param int $newId Id of the log entry.
+     * @param string $to One of: rcandudp (default), rc, udp
+     */
+    public function publish($newId, $to = 'rcandudp')
+    {
+        $canAddTags = true;
+        // FIXME: this code should be removed once all callers properly call publish()
+        if ($to === 'udp' && !$newId && !$this->getAssociatedRevId()) {
+            \MediaWiki\Logger\LoggerFactory::getInstance('logging')->warning(
+                'newId and/or revId must be set when calling ManualLogEntry::publish()',
+                [
+                    'newId'     => $newId,
+                    'to'        => $to,
+                    'revId'     => $this->getAssociatedRevId(),
+                    // pass a new exception to register the stack trace
+                    'exception' => new RuntimeException()
+                ]
+            );
+            $canAddTags = false;
+        }
 
-		DeferredUpdates::addCallableUpdate(
-			function () use ( $newId, $to, $canAddTags ) {
-				$log = new LogPage( $this->getType() );
-				if ( !$log->isRestricted() ) {
-					Hooks::runner()->onManualLogEntryBeforePublish( $this );
-					$rc = $this->getRecentChange( $newId );
+        DeferredUpdates::addCallableUpdate(
+            function () use ($newId, $to, $canAddTags) {
+                $log = new LogPage($this->getType());
+                if (!$log->isRestricted()) {
+                    Hooks::runner()->onManualLogEntryBeforePublish($this);
+                    $rc = $this->getRecentChange($newId);
 
-					if ( $to === 'rc' || $to === 'rcandudp' ) {
-						// save RC, passing tags so they are applied there
-						$rc->addTags( $this->getTags() );
-						$rc->save( $rc::SEND_NONE );
-					} else {
-						$tags = $this->getTags();
-						if ( $tags && $canAddTags ) {
-							$revId = $this->getAssociatedRevId();
-							ChangeTags::addTags(
-								$tags,
-								null,
-								$revId > 0 ? $revId : null,
-								$newId > 0 ? $newId : null
-							);
-						}
-					}
+                    if ($to === 'rc' || $to === 'rcandudp') {
+                        // save RC, passing tags so they are applied there
+                        $rc->addTags($this->getTags());
+                        $rc->save($rc::SEND_NONE);
+                    } else {
+                        $tags = $this->getTags();
+                        if ($tags && $canAddTags) {
+                            $revId = $this->getAssociatedRevId();
+                            ChangeTags::addTags(
+                                $tags,
+                                null,
+                                $revId > 0 ? $revId : null,
+                                $newId > 0 ? $newId : null
+                            );
+                        }
+                    }
 
-					if ( $to === 'udp' || $to === 'rcandudp' ) {
-						$rc->notifyRCFeeds();
-					}
-				}
-			},
-			DeferredUpdates::POSTSEND,
-			wfGetDB( DB_PRIMARY )
-		);
-	}
+                    if ($to === 'udp' || $to === 'rcandudp') {
+                        $rc->notifyRCFeeds();
+                    }
+                }
+            },
+            DeferredUpdates::POSTSEND,
+            wfGetDB(DB_PRIMARY)
+        );
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getType() {
-		return $this->type;
-	}
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getSubtype() {
-		return $this->subtype;
-	}
+    /**
+     * @return string
+     */
+    public function getSubtype()
+    {
+        return $this->subtype;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getParameters() {
-		return $this->parameters;
-	}
+    /**
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
 
-	/**
-	 * @return UserIdentity
-	 */
-	public function getPerformerIdentity(): UserIdentity {
-		return $this->performer;
-	}
+    /**
+     * @return UserIdentity
+     */
+    public function getPerformerIdentity(): UserIdentity
+    {
+        return $this->performer;
+    }
 
-	/**
-	 * @return Title
-	 */
-	public function getTarget() {
-		return $this->target;
-	}
+    /**
+     * @return Title
+     */
+    public function getTarget()
+    {
+        return $this->target;
+    }
 
-	/**
-	 * @return string|false
-	 */
-	public function getTimestamp() {
-		$ts = $this->timestamp ?? wfTimestampNow();
+    /**
+     * @return string|false
+     */
+    public function getTimestamp()
+    {
+        $ts = $this->timestamp ?? wfTimestampNow();
 
-		return wfTimestamp( TS_MW, $ts );
-	}
+        return wfTimestamp(TS_MW, $ts);
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getComment() {
-		return $this->comment;
-	}
+    /**
+     * @return string
+     */
+    public function getComment()
+    {
+        return $this->comment;
+    }
 
-	/**
-	 * @since 1.27
-	 * @return int
-	 */
-	public function getAssociatedRevId() {
-		return $this->revId;
-	}
+    /**
+     * @return int
+     * @since 1.27
+     */
+    public function getAssociatedRevId()
+    {
+        return $this->revId;
+    }
 
-	/**
-	 * @since 1.27
-	 * @return string[]
-	 */
-	public function getTags() {
-		return $this->tags;
-	}
+    /**
+     * @return string[]
+     * @since 1.27
+     */
+    public function getTags()
+    {
+        return $this->tags;
+    }
 
-	/**
-	 * Whether this log entry is patrollable
-	 *
-	 * @since 1.27
-	 * @return bool
-	 */
-	public function getIsPatrollable() {
-		return $this->isPatrollable;
-	}
+    /**
+     * Whether this log entry is patrollable
+     *
+     * @return bool
+     * @since 1.27
+     */
+    public function getIsPatrollable()
+    {
+        return $this->isPatrollable;
+    }
 
-	/**
-	 * @since 1.25
-	 * @return bool
-	 */
-	public function isLegacy() {
-		return $this->legacy;
-	}
+    /**
+     * @return bool
+     * @since 1.25
+     */
+    public function isLegacy()
+    {
+        return $this->legacy;
+    }
 
-	/**
-	 * @return int
-	 */
-	public function getDeleted() {
-		return (int)$this->deleted;
-	}
+    /**
+     * @return int
+     */
+    public function getDeleted()
+    {
+        return (int)$this->deleted;
+    }
 }

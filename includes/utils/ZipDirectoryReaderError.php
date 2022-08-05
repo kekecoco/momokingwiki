@@ -22,23 +22,26 @@
  * Internal exception class. Will be caught by private code.
  * @newable
  */
-class ZipDirectoryReaderError extends Exception {
-	protected $errorCode;
+class ZipDirectoryReaderError extends Exception
+{
+    protected $errorCode;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param mixed $code
-	 */
-	public function __construct( $code ) {
-		$this->errorCode = $code;
-		parent::__construct( "ZipDirectoryReader error: $code" );
-	}
+    /**
+     * @stable to call
+     *
+     * @param mixed $code
+     */
+    public function __construct($code)
+    {
+        $this->errorCode = $code;
+        parent::__construct("ZipDirectoryReader error: $code");
+    }
 
-	/**
-	 * @return mixed
-	 */
-	public function getErrorCode() {
-		return $this->errorCode;
-	}
+    /**
+     * @return mixed
+     */
+    public function getErrorCode()
+    {
+        return $this->errorCode;
+    }
 }

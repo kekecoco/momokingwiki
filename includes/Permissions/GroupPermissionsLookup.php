@@ -28,177 +28,186 @@ use MediaWiki\MainConfigNames;
  * @since 1.36
  * @package MediaWiki\Permissions
  */
-class GroupPermissionsLookup {
+class GroupPermissionsLookup
+{
 
-	/**
-	 * @internal
-	 * @var string[]
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::GroupInheritsPermissions,
-		MainConfigNames::GroupPermissions,
-		MainConfigNames::RevokePermissions,
-	];
+    /**
+     * @internal
+     * @var string[]
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::GroupInheritsPermissions,
+        MainConfigNames::GroupPermissions,
+        MainConfigNames::RevokePermissions,
+    ];
 
-	/** @var array[] */
-	private $groupPermissions;
+    /** @var array[] */
+    private $groupPermissions;
 
-	/** @var array[] */
-	private $revokePermissions;
+    /** @var array[] */
+    private $revokePermissions;
 
-	/** @var string[] */
-	private $groupInheritance;
+    /** @var string[] */
+    private $groupInheritance;
 
-	/*
-	 * @param ServiceOptions $options
-	 */
-	public function __construct( ServiceOptions $options ) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->groupPermissions = $options->get( MainConfigNames::GroupPermissions );
-		$this->revokePermissions = $options->get( MainConfigNames::RevokePermissions );
-		$this->groupInheritance = $options->get( MainConfigNames::GroupInheritsPermissions );
-	}
+    /*
+     * @param ServiceOptions $options
+     */
+    public function __construct(ServiceOptions $options)
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        $this->groupPermissions = $options->get(MainConfigNames::GroupPermissions);
+        $this->revokePermissions = $options->get(MainConfigNames::RevokePermissions);
+        $this->groupInheritance = $options->get(MainConfigNames::GroupInheritsPermissions);
+    }
 
-	/**
-	 * Check, if the given group has the given permission
-	 *
-	 * If you're wanting to check whether all users have a permission,
-	 * use PermissionManager::isEveryoneAllowed() instead.
-	 * That properly checks if it's revoked from anyone.
-	 *
-	 * @param string $group Group to check
-	 * @param string $permission Role to check
-	 *
-	 * @return bool
-	 */
-	public function groupHasPermission( string $group, string $permission ): bool {
-		$inheritsFrom = $this->groupInheritance[$group] ?? false;
-		$has = isset( $this->groupPermissions[$group][$permission] ) &&
-			$this->groupPermissions[$group][$permission];
-		// If the group doesn't have the permission and inherits from somewhere,
-		// check that group too
-		if ( !$has && $inheritsFrom !== false ) {
-			$has = isset( $this->groupPermissions[$inheritsFrom][$permission] ) &&
-				$this->groupPermissions[$inheritsFrom][$permission];
-		}
-		if ( !$has ) {
-			// If they don't have the permission, exit early
-			return false;
-		}
+    /**
+     * Check, if the given group has the given permission
+     *
+     * If you're wanting to check whether all users have a permission,
+     * use PermissionManager::isEveryoneAllowed() instead.
+     * That properly checks if it's revoked from anyone.
+     *
+     * @param string $group Group to check
+     * @param string $permission Role to check
+     *
+     * @return bool
+     */
+    public function groupHasPermission(string $group, string $permission): bool
+    {
+        $inheritsFrom = $this->groupInheritance[$group] ?? false;
+        $has = isset($this->groupPermissions[$group][$permission]) &&
+            $this->groupPermissions[$group][$permission];
+        // If the group doesn't have the permission and inherits from somewhere,
+        // check that group too
+        if (!$has && $inheritsFrom !== false) {
+            $has = isset($this->groupPermissions[$inheritsFrom][$permission]) &&
+                $this->groupPermissions[$inheritsFrom][$permission];
+        }
+        if (!$has) {
+            // If they don't have the permission, exit early
+            return false;
+        }
 
-		// Check if the permission has been revoked
-		$revoked = isset( $this->revokePermissions[$group][$permission] ) &&
-		$this->revokePermissions[$group][$permission];
-		if ( !$revoked && $inheritsFrom !== false ) {
-			$revoked = isset( $this->revokePermissions[$inheritsFrom][$permission] ) &&
-				$this->revokePermissions[$inheritsFrom][$permission];
-		}
+        // Check if the permission has been revoked
+        $revoked = isset($this->revokePermissions[$group][$permission]) &&
+            $this->revokePermissions[$group][$permission];
+        if (!$revoked && $inheritsFrom !== false) {
+            $revoked = isset($this->revokePermissions[$inheritsFrom][$permission]) &&
+                $this->revokePermissions[$inheritsFrom][$permission];
+        }
 
-		return !$revoked;
-	}
+        return !$revoked;
+    }
 
-	/**
-	 * Get a list of permissions granted to this group. This
-	 * must *NOT* be used for permissions checking as it
-	 * does not check whether a permission has been revoked
-	 * from this group.
-	 *
-	 * @param string $group Group to get permissions of
-	 * @return string[]
-	 * @since 1.38
-	 */
-	public function getGrantedPermissions( string $group ): array {
-		$rights = array_keys( array_filter( $this->groupPermissions[$group] ?? [] ) );
-		$inheritsFrom = $this->groupInheritance[$group] ?? false;
-		if ( $inheritsFrom !== false ) {
-			$rights = array_merge(
-				$rights,
-				// array_filter removes empty items
-				array_keys( array_filter( $this->groupPermissions[$inheritsFrom] ?? [] ) )
-			);
-		}
+    /**
+     * Get a list of permissions granted to this group. This
+     * must *NOT* be used for permissions checking as it
+     * does not check whether a permission has been revoked
+     * from this group.
+     *
+     * @param string $group Group to get permissions of
+     * @return string[]
+     * @since 1.38
+     */
+    public function getGrantedPermissions(string $group): array
+    {
+        $rights = array_keys(array_filter($this->groupPermissions[$group] ?? []));
+        $inheritsFrom = $this->groupInheritance[$group] ?? false;
+        if ($inheritsFrom !== false) {
+            $rights = array_merge(
+                $rights,
+                // array_filter removes empty items
+                array_keys(array_filter($this->groupPermissions[$inheritsFrom] ?? []))
+            );
+        }
 
-		return array_unique( $rights );
-	}
+        return array_unique($rights);
+    }
 
-	/**
-	 * Get a list of permissions revoked from this group
-	 *
-	 * @param string $group Group to get revoked permissions of
-	 * @return string[]
-	 * @since 1.38
-	 */
-	public function getRevokedPermissions( string $group ): array {
-		$rights = array_keys( array_filter( $this->revokePermissions[$group] ?? [] ) );
-		$inheritsFrom = $this->groupInheritance[$group] ?? false;
-		if ( $inheritsFrom !== false ) {
-			$rights = array_merge(
-				$rights,
-				// array_filter removes empty items
-				array_keys( array_filter( $this->revokePermissions[$inheritsFrom] ?? [] ) )
-			);
-		}
+    /**
+     * Get a list of permissions revoked from this group
+     *
+     * @param string $group Group to get revoked permissions of
+     * @return string[]
+     * @since 1.38
+     */
+    public function getRevokedPermissions(string $group): array
+    {
+        $rights = array_keys(array_filter($this->revokePermissions[$group] ?? []));
+        $inheritsFrom = $this->groupInheritance[$group] ?? false;
+        if ($inheritsFrom !== false) {
+            $rights = array_merge(
+                $rights,
+                // array_filter removes empty items
+                array_keys(array_filter($this->revokePermissions[$inheritsFrom] ?? []))
+            );
+        }
 
-		return array_unique( $rights );
-	}
+        return array_unique($rights);
+    }
 
-	/**
-	 * Get the permissions associated with a given list of groups
-	 *
-	 * @param string[] $groups internal group names
-	 * @return string[] permission key names for given groups combined
-	 */
-	public function getGroupPermissions( array $groups ): array {
-		$rights = [];
-		$checkGroups = [];
+    /**
+     * Get the permissions associated with a given list of groups
+     *
+     * @param string[] $groups internal group names
+     * @return string[] permission key names for given groups combined
+     */
+    public function getGroupPermissions(array $groups): array
+    {
+        $rights = [];
+        $checkGroups = [];
 
-		// Add inherited groups to the list of groups to check
-		foreach ( $groups as $group ) {
-			$checkGroups[] = $group;
-			if ( isset( $this->groupInheritance[$group] ) ) {
-				$checkGroups[] = $this->groupInheritance[$group];
-			}
-		}
+        // Add inherited groups to the list of groups to check
+        foreach ($groups as $group) {
+            $checkGroups[] = $group;
+            if (isset($this->groupInheritance[$group])) {
+                $checkGroups[] = $this->groupInheritance[$group];
+            }
+        }
 
-		// grant every granted permission first
-		foreach ( $checkGroups as $group ) {
-			if ( isset( $this->groupPermissions[$group] ) ) {
-				$rights = array_merge(
-					$rights,
-					// array_filter removes empty items
-					array_keys( array_filter( $this->groupPermissions[$group] ) )
-				);
-			}
-		}
-		// now revoke the revoked permissions
-		foreach ( $checkGroups as $group ) {
-			if ( isset( $this->revokePermissions[$group] ) ) {
-				$rights = array_diff(
-					$rights,
-					array_keys( array_filter( $this->revokePermissions[$group] ) )
-				);
-			}
-		}
-		return array_unique( $rights );
-	}
+        // grant every granted permission first
+        foreach ($checkGroups as $group) {
+            if (isset($this->groupPermissions[$group])) {
+                $rights = array_merge(
+                    $rights,
+                    // array_filter removes empty items
+                    array_keys(array_filter($this->groupPermissions[$group]))
+                );
+            }
+        }
+        // now revoke the revoked permissions
+        foreach ($checkGroups as $group) {
+            if (isset($this->revokePermissions[$group])) {
+                $rights = array_diff(
+                    $rights,
+                    array_keys(array_filter($this->revokePermissions[$group]))
+                );
+            }
+        }
 
-	/**
-	 * Get all the groups who have a given permission
-	 *
-	 * @param string $permission
-	 * @return string[] internal group names with the given permission
-	 */
-	public function getGroupsWithPermission( string $permission ): array {
-		$allowedGroups = [];
-		$groups = array_merge(
-			array_keys( $this->groupPermissions ),
-			array_keys( $this->groupInheritance )
-		);
-		foreach ( $groups as $group ) {
-			if ( $this->groupHasPermission( $group, $permission ) ) {
-				$allowedGroups[] = $group;
-			}
-		}
-		return $allowedGroups;
-	}
+        return array_unique($rights);
+    }
+
+    /**
+     * Get all the groups who have a given permission
+     *
+     * @param string $permission
+     * @return string[] internal group names with the given permission
+     */
+    public function getGroupsWithPermission(string $permission): array
+    {
+        $allowedGroups = [];
+        $groups = array_merge(
+            array_keys($this->groupPermissions),
+            array_keys($this->groupInheritance)
+        );
+        foreach ($groups as $group) {
+            if ($this->groupHasPermission($group, $permission)) {
+                $allowedGroups[] = $group;
+            }
+        }
+
+        return $allowedGroups;
+    }
 }

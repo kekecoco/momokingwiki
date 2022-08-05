@@ -12,13 +12,14 @@ use UserEditCountInfo;
  * @since 1.38
  * @ingroup Hooks
  */
-interface UserEditCountUpdateHook {
-	/**
-	 * This is called from a deferred update on edit or move and provides
-	 * collected user edit count information.
-	 *
-	 * @param UserEditCountInfo[] $infos
-	 * @return void
-	 */
-	public function onUserEditCountUpdate( $infos ): void;
+interface UserEditCountUpdateHook
+{
+    /**
+     * This is called from a deferred update on edit or move and provides
+     * collected user edit count information.
+     *
+     * @param UserEditCountInfo[] $infos
+     * @return void
+     */
+    public function onUserEditCountUpdate($infos): void;
 }

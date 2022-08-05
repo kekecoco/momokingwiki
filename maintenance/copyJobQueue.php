@@ -33,68 +33,72 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class CopyJobQueue extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Copy jobs from one queue system to another.' );
-		$this->addOption( 'src', 'Key to $wgJobQueueMigrationConfig for source', true, true );
-		$this->addOption( 'dst', 'Key to $wgJobQueueMigrationConfig for destination', true, true );
-		$this->addOption( 'type', 'Types of jobs to copy (use "all" for all)', true, true );
-		$this->setBatchSize( 500 );
-	}
+class CopyJobQueue extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Copy jobs from one queue system to another.');
+        $this->addOption('src', 'Key to $wgJobQueueMigrationConfig for source', true, true);
+        $this->addOption('dst', 'Key to $wgJobQueueMigrationConfig for destination', true, true);
+        $this->addOption('type', 'Types of jobs to copy (use "all" for all)', true, true);
+        $this->setBatchSize(500);
+    }
 
-	public function execute() {
-		global $wgJobQueueMigrationConfig;
+    public function execute()
+    {
+        global $wgJobQueueMigrationConfig;
 
-		$srcKey = $this->getOption( 'src' );
-		$dstKey = $this->getOption( 'dst' );
+        $srcKey = $this->getOption('src');
+        $dstKey = $this->getOption('dst');
 
-		if ( !isset( $wgJobQueueMigrationConfig[$srcKey] ) ) {
-			$this->fatalError( "\$wgJobQueueMigrationConfig not set for '$srcKey'." );
-		} elseif ( !isset( $wgJobQueueMigrationConfig[$dstKey] ) ) {
-			$this->fatalError( "\$wgJobQueueMigrationConfig not set for '$dstKey'." );
-		}
+        if (!isset($wgJobQueueMigrationConfig[$srcKey])) {
+            $this->fatalError("\$wgJobQueueMigrationConfig not set for '$srcKey'.");
+        } elseif (!isset($wgJobQueueMigrationConfig[$dstKey])) {
+            $this->fatalError("\$wgJobQueueMigrationConfig not set for '$dstKey'.");
+        }
 
-		$types = ( $this->getOption( 'type' ) === 'all' )
-			? MediaWikiServices::getInstance()->getJobQueueGroup()->getQueueTypes()
-			: [ $this->getOption( 'type' ) ];
+        $types = ($this->getOption('type') === 'all')
+            ? MediaWikiServices::getInstance()->getJobQueueGroup()->getQueueTypes()
+            : [$this->getOption('type')];
 
-		$dbDomain = WikiMap::getCurrentWikiDbDomain()->getId();
-		foreach ( $types as $type ) {
-			$baseConfig = [ 'type' => $type, 'domain' => $dbDomain ];
-			$src = JobQueue::factory( $baseConfig + $wgJobQueueMigrationConfig[$srcKey] );
-			$dst = JobQueue::factory( $baseConfig + $wgJobQueueMigrationConfig[$dstKey] );
+        $dbDomain = WikiMap::getCurrentWikiDbDomain()->getId();
+        foreach ($types as $type) {
+            $baseConfig = ['type' => $type, 'domain' => $dbDomain];
+            $src = JobQueue::factory($baseConfig + $wgJobQueueMigrationConfig[$srcKey]);
+            $dst = JobQueue::factory($baseConfig + $wgJobQueueMigrationConfig[$dstKey]);
 
-			list( $total, $totalOK ) = $this->copyJobs( $src, $dst, $src->getAllQueuedJobs() );
-			$this->output( "Copied $totalOK/$total queued $type jobs.\n" );
+            [$total, $totalOK] = $this->copyJobs($src, $dst, $src->getAllQueuedJobs());
+            $this->output("Copied $totalOK/$total queued $type jobs.\n");
 
-			list( $total, $totalOK ) = $this->copyJobs( $src, $dst, $src->getAllDelayedJobs() );
-			$this->output( "Copied $totalOK/$total delayed $type jobs.\n" );
-		}
-	}
+            [$total, $totalOK] = $this->copyJobs($src, $dst, $src->getAllDelayedJobs());
+            $this->output("Copied $totalOK/$total delayed $type jobs.\n");
+        }
+    }
 
-	protected function copyJobs( JobQueue $src, JobQueue $dst, $jobs ) {
-		$total = 0;
-		$totalOK = 0;
-		$batch = [];
-		foreach ( $jobs as $job ) {
-			++$total;
-			$batch[] = $job;
-			if ( count( $batch ) >= $this->getBatchSize() ) {
-				$dst->push( $batch );
-				$totalOK += count( $batch );
-				$batch = [];
-				$dst->waitForBackups();
-			}
-		}
-		if ( count( $batch ) ) {
-			$dst->push( $batch );
-			$totalOK += count( $batch );
-			$dst->waitForBackups();
-		}
+    protected function copyJobs(JobQueue $src, JobQueue $dst, $jobs)
+    {
+        $total = 0;
+        $totalOK = 0;
+        $batch = [];
+        foreach ($jobs as $job) {
+            ++$total;
+            $batch[] = $job;
+            if (count($batch) >= $this->getBatchSize()) {
+                $dst->push($batch);
+                $totalOK += count($batch);
+                $batch = [];
+                $dst->waitForBackups();
+            }
+        }
+        if (count($batch)) {
+            $dst->push($batch);
+            $totalOK += count($batch);
+            $dst->waitForBackups();
+        }
 
-		return [ $total, $totalOK ];
-	}
+        return [$total, $totalOK];
+    }
 }
 
 $maintClass = CopyJobQueue::class;

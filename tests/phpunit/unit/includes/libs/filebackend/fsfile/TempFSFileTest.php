@@ -7,10 +7,12 @@ use MediaWiki\FileBackend\FSFile\TempFSFileFactory;
  * @covers ::__construct
  * @covers ::newTempFSFile
  */
-class TempFSFileTest extends MediaWikiUnitTestCase {
-	use TempFSFileTestTrait;
+class TempFSFileTest extends MediaWikiUnitTestCase
+{
+    use TempFSFileTestTrait;
 
-	private function newFile() {
-		return ( new TempFSFileFactory() )->newTempFSFile( 'tmp' );
-	}
+    private function newFile()
+    {
+        return (new TempFSFileFactory())->newTempFSFile('tmp');
+    }
 }

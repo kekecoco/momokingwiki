@@ -1,7 +1,7 @@
-var FilterTagMultiselectWidget = require( './FilterTagMultiselectWidget.js' ),
-	LiveUpdateButtonWidget = require( './LiveUpdateButtonWidget.js' ),
-	ChangesLimitAndDateButtonWidget = require( './ChangesLimitAndDateButtonWidget.js' ),
-	FilterWrapperWidget;
+var FilterTagMultiselectWidget = require('./FilterTagMultiselectWidget.js'),
+    LiveUpdateButtonWidget = require('./LiveUpdateButtonWidget.js'),
+    ChangesLimitAndDateButtonWidget = require('./ChangesLimitAndDateButtonWidget.js'),
+    FilterWrapperWidget;
 
 /**
  * List displaying all filter groups
@@ -23,90 +23,90 @@ var FilterTagMultiselectWidget = require( './FilterTagMultiselectWidget.js' ),
  * @cfg {boolean} [collapsed] Filter area is collapsed
  */
 FilterWrapperWidget = function MwRcfiltersUiFilterWrapperWidget(
-	controller, model, savedQueriesModel, changesListModel, config
+    controller, model, savedQueriesModel, changesListModel, config
 ) {
-	var $bottom;
-	config = config || {};
+    var $bottom;
+    config = config || {};
 
-	// Parent
-	FilterWrapperWidget.parent.call( this, config );
-	// Mixin constructors
-	OO.ui.mixin.PendingElement.call( this, config );
+    // Parent
+    FilterWrapperWidget.parent.call(this, config);
+    // Mixin constructors
+    OO.ui.mixin.PendingElement.call(this, config);
 
-	this.controller = controller;
-	this.model = model;
-	this.queriesModel = savedQueriesModel;
-	this.changesListModel = changesListModel;
-	this.$overlay = config.$overlay || this.$element;
-	this.$wrapper = config.$wrapper || this.$element;
+    this.controller = controller;
+    this.model = model;
+    this.queriesModel = savedQueriesModel;
+    this.changesListModel = changesListModel;
+    this.$overlay = config.$overlay || this.$element;
+    this.$wrapper = config.$wrapper || this.$element;
 
-	this.filterTagWidget = new FilterTagMultiselectWidget(
-		this.controller,
-		this.model,
-		this.queriesModel,
-		{
-			$overlay: this.$overlay,
-			collapsed: config.collapsed,
-			$wrapper: this.$wrapper,
-			isMobile: OO.ui.isMobile()
-		}
-	);
+    this.filterTagWidget = new FilterTagMultiselectWidget(
+        this.controller,
+        this.model,
+        this.queriesModel,
+        {
+            $overlay: this.$overlay,
+            collapsed: config.collapsed,
+            $wrapper: this.$wrapper,
+            isMobile: OO.ui.isMobile()
+        }
+    );
 
-	this.liveUpdateButton = new LiveUpdateButtonWidget(
-		this.controller,
-		this.changesListModel
-	);
+    this.liveUpdateButton = new LiveUpdateButtonWidget(
+        this.controller,
+        this.changesListModel
+    );
 
-	this.numChangesAndDateWidget = new ChangesLimitAndDateButtonWidget(
-		this.controller,
-		this.model,
-		{
-			$overlay: this.$overlay
-		}
-	);
+    this.numChangesAndDateWidget = new ChangesLimitAndDateButtonWidget(
+        this.controller,
+        this.model,
+        {
+            $overlay: this.$overlay
+        }
+    );
 
-	this.showNewChangesLink = new OO.ui.ButtonWidget( {
-		icon: 'reload',
-		framed: false,
-		flags: [ 'progressive' ],
-		classes: [ 'mw-rcfilters-ui-filterWrapperWidget-showNewChanges' ]
-	} );
+    this.showNewChangesLink = new OO.ui.ButtonWidget({
+        icon: 'reload',
+        framed: false,
+        flags: ['progressive'],
+        classes: ['mw-rcfilters-ui-filterWrapperWidget-showNewChanges']
+    });
 
-	// Events
-	this.filterTagWidget.menu.connect( this, { toggle: [ 'emit', 'menuToggle' ] } );
-	this.changesListModel.connect( this, { newChangesExist: 'onNewChangesExist' } );
-	this.showNewChangesLink.connect( this, { click: 'onShowNewChangesClick' } );
-	this.showNewChangesLink.toggle( false );
+    // Events
+    this.filterTagWidget.menu.connect(this, {toggle: ['emit', 'menuToggle']});
+    this.changesListModel.connect(this, {newChangesExist: 'onNewChangesExist'});
+    this.showNewChangesLink.connect(this, {click: 'onShowNewChangesClick'});
+    this.showNewChangesLink.toggle(false);
 
-	// Initialize
-	this.$top = $( '<div>' )
-		.addClass( 'mw-rcfilters-ui-filterWrapperWidget-top' );
+    // Initialize
+    this.$top = $('<div>')
+        .addClass('mw-rcfilters-ui-filterWrapperWidget-top');
 
-	$bottom = $( '<div>' )
-		.addClass( 'mw-rcfilters-ui-filterWrapperWidget-bottom' )
-		.addClass( OO.ui.isMobile() ? 'mw-rcfilters-ui-filterWrapperWidget-bottom-mobile' : '' )
-		.append(
-			this.showNewChangesLink.$element,
-			this.numChangesAndDateWidget.$element
-		);
+    $bottom = $('<div>')
+        .addClass('mw-rcfilters-ui-filterWrapperWidget-bottom')
+        .addClass(OO.ui.isMobile() ? 'mw-rcfilters-ui-filterWrapperWidget-bottom-mobile' : '')
+        .append(
+            this.showNewChangesLink.$element,
+            this.numChangesAndDateWidget.$element
+        );
 
-	if ( this.controller.pollingRate ) {
-		$bottom.prepend( this.liveUpdateButton.$element );
-	}
+    if (this.controller.pollingRate) {
+        $bottom.prepend(this.liveUpdateButton.$element);
+    }
 
-	this.$element
-		.addClass( 'mw-rcfilters-ui-filterWrapperWidget' )
-		.append(
-			this.$top,
-			this.filterTagWidget.$element,
-			$bottom
-		);
+    this.$element
+        .addClass('mw-rcfilters-ui-filterWrapperWidget')
+        .append(
+            this.$top,
+            this.filterTagWidget.$element,
+            $bottom
+        );
 };
 
 /* Initialization */
 
-OO.inheritClass( FilterWrapperWidget, OO.ui.Widget );
-OO.mixinClass( FilterWrapperWidget, OO.ui.mixin.PendingElement );
+OO.inheritClass(FilterWrapperWidget, OO.ui.Widget);
+OO.mixinClass(FilterWrapperWidget, OO.ui.mixin.PendingElement);
 
 /* Methods */
 
@@ -115,15 +115,15 @@ OO.mixinClass( FilterWrapperWidget, OO.ui.mixin.PendingElement );
  *
  * @param {jQuery} $topSectionElement
  */
-FilterWrapperWidget.prototype.setTopSection = function ( $topSectionElement ) {
-	this.$top.append( $topSectionElement );
+FilterWrapperWidget.prototype.setTopSection = function ($topSectionElement) {
+    this.$top.append($topSectionElement);
 };
 
 /**
  * Respond to the user clicking the 'show new changes' button
  */
 FilterWrapperWidget.prototype.onShowNewChangesClick = function () {
-	this.controller.showNewChanges();
+    this.controller.showNewChanges();
 };
 
 /**
@@ -131,16 +131,16 @@ FilterWrapperWidget.prototype.onShowNewChangesClick = function () {
  *
  * @param {boolean} newChangesExist Whether new changes exist
  */
-FilterWrapperWidget.prototype.onNewChangesExist = function ( newChangesExist ) {
-	if ( newChangesExist ) {
-		this.showNewChangesLink.setLabel(
-			mw.msg(
-				'rcfilters-show-new-changes',
-				this.changesListModel.getNextFromFormatted()
-			)
-		);
-	}
-	this.showNewChangesLink.toggle( newChangesExist );
+FilterWrapperWidget.prototype.onNewChangesExist = function (newChangesExist) {
+    if (newChangesExist) {
+        this.showNewChangesLink.setLabel(
+            mw.msg(
+                'rcfilters-show-new-changes',
+                this.changesListModel.getNextFromFormatted()
+            )
+        );
+    }
+    this.showNewChangesLink.toggle(newChangesExist);
 };
 
 module.exports = FilterWrapperWidget;

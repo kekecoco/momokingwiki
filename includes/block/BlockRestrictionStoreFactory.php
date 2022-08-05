@@ -28,36 +28,40 @@ use Wikimedia\Rdbms\LBFactory;
  *
  * @since 1.38
  */
-class BlockRestrictionStoreFactory {
-	/** @var LBFactory */
-	private $loadBalancerFactory;
+class BlockRestrictionStoreFactory
+{
+    /** @var LBFactory */
+    private $loadBalancerFactory;
 
-	/** @var BlockRestrictionStore[] */
-	private $storeCache = [];
+    /** @var BlockRestrictionStore[] */
+    private $storeCache = [];
 
-	/**
-	 * @param LBFactory $loadBalancerFactory
-	 */
-	public function __construct( LBFactory $loadBalancerFactory ) {
-		$this->loadBalancerFactory = $loadBalancerFactory;
-	}
+    /**
+     * @param LBFactory $loadBalancerFactory
+     */
+    public function __construct(LBFactory $loadBalancerFactory)
+    {
+        $this->loadBalancerFactory = $loadBalancerFactory;
+    }
 
-	/**
-	 * @param string|false $wikiId
-	 * @return BlockRestrictionStore
-	 */
-	public function getBlockRestrictionStore( $wikiId = WikiAwareEntity::LOCAL ): BlockRestrictionStore {
-		if ( is_string( $wikiId ) && $this->loadBalancerFactory->getLocalDomainID() === $wikiId ) {
-			$wikiId = WikiAwareEntity::LOCAL;
-		}
+    /**
+     * @param string|false $wikiId
+     * @return BlockRestrictionStore
+     */
+    public function getBlockRestrictionStore($wikiId = WikiAwareEntity::LOCAL): BlockRestrictionStore
+    {
+        if (is_string($wikiId) && $this->loadBalancerFactory->getLocalDomainID() === $wikiId) {
+            $wikiId = WikiAwareEntity::LOCAL;
+        }
 
-		$storeCacheKey = $wikiId === WikiAwareEntity::LOCAL ? 'LOCAL' : 'crosswikistore-' . $wikiId;
-		if ( !isset( $this->storeCache[$storeCacheKey] ) ) {
-			$this->storeCache[$storeCacheKey] = new BlockRestrictionStore(
-				$this->loadBalancerFactory->getMainLB( $wikiId ),
-				$wikiId
-			);
-		}
-		return $this->storeCache[$storeCacheKey];
-	}
+        $storeCacheKey = $wikiId === WikiAwareEntity::LOCAL ? 'LOCAL' : 'crosswikistore-' . $wikiId;
+        if (!isset($this->storeCache[$storeCacheKey])) {
+            $this->storeCache[$storeCacheKey] = new BlockRestrictionStore(
+                $this->loadBalancerFactory->getMainLB($wikiId),
+                $wikiId
+            );
+        }
+
+        return $this->storeCache[$storeCacheKey];
+    }
 }

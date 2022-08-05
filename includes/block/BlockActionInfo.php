@@ -37,82 +37,88 @@ use MWException;
  *
  * @since 1.37
  */
-class BlockActionInfo {
-	/** @var HookRunner */
-	private $hookRunner;
+class BlockActionInfo
+{
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/** @var int */
-	private const ACTION_UPLOAD = 1;
+    /** @var int */
+    private const ACTION_UPLOAD = 1;
 
-	/** @var int */
-	private const ACTION_MOVE = 2;
+    /** @var int */
+    private const ACTION_MOVE = 2;
 
-	/** @var int */
-	private const ACTION_CREATE = 3;
+    /** @var int */
+    private const ACTION_CREATE = 3;
 
-	/**
-	 * Core block actions.
-	 *
-	 * Each key is an action string passed to PermissionManager::checkUserBlock
-	 * Each value is a class constant for that action
-	 *
-	 * Each key has a corresponding message with key "ipb-action-$key"
-	 *
-	 * Core messages:
-	 * ipb-action-upload
-	 * ipb-action-move
-	 * ipb-action-create
-	 *
-	 * @var int[]
-	 */
-	private const CORE_BLOCK_ACTIONS = [
-		'upload' => self::ACTION_UPLOAD,
-		'move' => self::ACTION_MOVE,
-		'create' => self::ACTION_CREATE,
-	];
+    /**
+     * Core block actions.
+     *
+     * Each key is an action string passed to PermissionManager::checkUserBlock
+     * Each value is a class constant for that action
+     *
+     * Each key has a corresponding message with key "ipb-action-$key"
+     *
+     * Core messages:
+     * ipb-action-upload
+     * ipb-action-move
+     * ipb-action-create
+     *
+     * @var int[]
+     */
+    private const CORE_BLOCK_ACTIONS = [
+        'upload' => self::ACTION_UPLOAD,
+        'move'   => self::ACTION_MOVE,
+        'create' => self::ACTION_CREATE,
+    ];
 
-	/**
-	 * @param HookContainer $hookContainer
-	 */
-	public function __construct( HookContainer $hookContainer ) {
-		$this->hookRunner = new HookRunner( $hookContainer );
-	}
+    /**
+     * @param HookContainer $hookContainer
+     */
+    public function __construct(HookContainer $hookContainer)
+    {
+        $this->hookRunner = new HookRunner($hookContainer);
+    }
 
-	/**
-	 * Cache the array of actions
-	 * @var int[]|null
-	 */
-	private $allBlockActions = null;
+    /**
+     * Cache the array of actions
+     * @var int[]|null
+     */
+    private $allBlockActions = null;
 
-	/**
-	 * @return int[]
-	 */
-	public function getAllBlockActions(): array {
-		// Don't run the hook multiple times in the same request
-		if ( !$this->allBlockActions ) {
-			$this->allBlockActions = self::CORE_BLOCK_ACTIONS;
-			$this->hookRunner->onGetAllBlockActions( $this->allBlockActions );
-		}
-		if ( count( $this->allBlockActions ) !== count( array_unique( $this->allBlockActions ) ) ) {
-			throw new MWException( 'Blockable action IDs not unique' );
-		}
-		return $this->allBlockActions;
-	}
+    /**
+     * @return int[]
+     */
+    public function getAllBlockActions(): array
+    {
+        // Don't run the hook multiple times in the same request
+        if (!$this->allBlockActions) {
+            $this->allBlockActions = self::CORE_BLOCK_ACTIONS;
+            $this->hookRunner->onGetAllBlockActions($this->allBlockActions);
+        }
+        if (count($this->allBlockActions) !== count(array_unique($this->allBlockActions))) {
+            throw new MWException('Blockable action IDs not unique');
+        }
 
-	/**
-	 * @param int $actionId
-	 * @return string|false
-	 */
-	public function getActionFromId( int $actionId ) {
-		return array_search( $actionId, $this->getAllBlockActions() );
-	}
+        return $this->allBlockActions;
+    }
 
-	/**
-	 * @param string $action
-	 * @return int|bool False if the action is not in the list of blockable actions
-	 */
-	public function getIdFromAction( string $action ) {
-		return $this->getAllBlockActions()[$action] ?? false;
-	}
+    /**
+     * @param int $actionId
+     * @return string|false
+     */
+    public function getActionFromId(int $actionId)
+    {
+        return array_search($actionId, $this->getAllBlockActions());
+    }
+
+    /**
+     * @param string $action
+     * @return int|bool False if the action is not in the list of blockable actions
+     */
+    public function getIdFromAction(string $action)
+    {
+        return $this->getAllBlockActions()[$action] ?? false;
+    }
 
 }

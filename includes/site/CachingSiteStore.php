@@ -28,170 +28,179 @@
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  * @author Katie Filbert < aude.wiki@gmail.com >
  */
-class CachingSiteStore implements SiteStore {
+class CachingSiteStore implements SiteStore
+{
 
-	/**
-	 * @var SiteList|null
-	 */
-	private $sites = null;
+    /**
+     * @var SiteList|null
+     */
+    private $sites = null;
 
-	/**
-	 * @var string|null
-	 */
-	private $cacheKey;
+    /**
+     * @var string|null
+     */
+    private $cacheKey;
 
-	/**
-	 * @var int
-	 */
-	private $cacheTimeout;
+    /**
+     * @var int
+     */
+    private $cacheTimeout;
 
-	/**
-	 * @var BagOStuff
-	 */
-	private $cache;
+    /**
+     * @var BagOStuff
+     */
+    private $cache;
 
-	/**
-	 * @var SiteStore
-	 */
-	private $siteStore;
+    /**
+     * @var SiteStore
+     */
+    private $siteStore;
 
-	/**
-	 * @param SiteStore $siteStore
-	 * @param BagOStuff $cache
-	 * @param string|null $cacheKey
-	 * @param int $cacheTimeout
-	 */
-	public function __construct(
-		SiteStore $siteStore,
-		BagOStuff $cache,
-		$cacheKey = null,
-		$cacheTimeout = 3600
-	) {
-		$this->siteStore = $siteStore;
-		$this->cache = $cache;
-		$this->cacheKey = $cacheKey;
-		$this->cacheTimeout = $cacheTimeout;
-	}
+    /**
+     * @param SiteStore $siteStore
+     * @param BagOStuff $cache
+     * @param string|null $cacheKey
+     * @param int $cacheTimeout
+     */
+    public function __construct(
+        SiteStore $siteStore,
+        BagOStuff $cache,
+        $cacheKey = null,
+        $cacheTimeout = 3600
+    )
+    {
+        $this->siteStore = $siteStore;
+        $this->cache = $cache;
+        $this->cacheKey = $cacheKey;
+        $this->cacheTimeout = $cacheTimeout;
+    }
 
-	/**
-	 * Constructs a cache key to use for caching the list of sites.
-	 *
-	 * This includes the concrete class name of the site list as well as a version identifier
-	 * for the list's serialization, to avoid problems when unserializing site lists serialized
-	 * by an older version, e.g. when reading from a cache.
-	 *
-	 * The cache key also includes information about where the sites were loaded from, e.g.
-	 * the name of a database table.
-	 *
-	 * @see SiteList::getSerialVersionId
-	 *
-	 * @return string The cache key.
-	 */
-	private function getCacheKey() {
-		if ( $this->cacheKey === null ) {
-			$type = 'SiteList#' . SiteList::getSerialVersionId();
-			$this->cacheKey = $this->cache->makeKey( "sites/$type" );
-		}
+    /**
+     * Constructs a cache key to use for caching the list of sites.
+     *
+     * This includes the concrete class name of the site list as well as a version identifier
+     * for the list's serialization, to avoid problems when unserializing site lists serialized
+     * by an older version, e.g. when reading from a cache.
+     *
+     * The cache key also includes information about where the sites were loaded from, e.g.
+     * the name of a database table.
+     *
+     * @return string The cache key.
+     * @see SiteList::getSerialVersionId
+     *
+     */
+    private function getCacheKey()
+    {
+        if ($this->cacheKey === null) {
+            $type = 'SiteList#' . SiteList::getSerialVersionId();
+            $this->cacheKey = $this->cache->makeKey("sites/$type");
+        }
 
-		return $this->cacheKey;
-	}
+        return $this->cacheKey;
+    }
 
-	/**
-	 * @see SiteStore::getSites
-	 *
-	 * @since 1.25
-	 *
-	 * @return SiteList
-	 */
-	public function getSites() {
-		if ( $this->sites === null ) {
-			$this->sites = $this->cache->getWithSetCallback(
-				$this->getCacheKey(),
-				$this->cacheTimeout,
-				[ $this->siteStore, 'getSites' ]
-			);
-		}
+    /**
+     * @return SiteList
+     * @since 1.25
+     *
+     * @see SiteStore::getSites
+     *
+     */
+    public function getSites()
+    {
+        if ($this->sites === null) {
+            $this->sites = $this->cache->getWithSetCallback(
+                $this->getCacheKey(),
+                $this->cacheTimeout,
+                [$this->siteStore, 'getSites']
+            );
+        }
 
-		return $this->sites;
-	}
+        return $this->sites;
+    }
 
-	/**
-	 * @see SiteStore::getSite
-	 *
-	 * @since 1.25
-	 *
-	 * @param string $globalId
-	 *
-	 * @return Site|null
-	 */
-	public function getSite( $globalId ) {
-		$sites = $this->getSites();
+    /**
+     * @param string $globalId
+     *
+     * @return Site|null
+     * @see SiteStore::getSite
+     *
+     * @since 1.25
+     *
+     */
+    public function getSite($globalId)
+    {
+        $sites = $this->getSites();
 
-		return $sites->hasSite( $globalId ) ? $sites->getSite( $globalId ) : null;
-	}
+        return $sites->hasSite($globalId) ? $sites->getSite($globalId) : null;
+    }
 
-	/**
-	 * @see SiteStore::saveSite
-	 *
-	 * @since 1.25
-	 *
-	 * @param Site $site
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSite( Site $site ) {
-		return $this->saveSites( [ $site ] );
-	}
+    /**
+     * @param Site $site
+     *
+     * @return bool Success indicator
+     * @see SiteStore::saveSite
+     *
+     * @since 1.25
+     *
+     */
+    public function saveSite(Site $site)
+    {
+        return $this->saveSites([$site]);
+    }
 
-	/**
-	 * @see SiteStore::saveSites
-	 *
-	 * @since 1.25
-	 *
-	 * @param Site[] $sites
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSites( array $sites ) {
-		if ( empty( $sites ) ) {
-			return true;
-		}
+    /**
+     * @param Site[] $sites
+     *
+     * @return bool Success indicator
+     * @see SiteStore::saveSites
+     *
+     * @since 1.25
+     *
+     */
+    public function saveSites(array $sites)
+    {
+        if (empty($sites)) {
+            return true;
+        }
 
-		$success = $this->siteStore->saveSites( $sites );
+        $success = $this->siteStore->saveSites($sites);
 
-		// purge cache
-		$this->reset();
+        // purge cache
+        $this->reset();
 
-		return $success;
-	}
+        return $success;
+    }
 
-	/**
-	 * Purges the internal and external cache of the site list, forcing the list.
-	 * of sites to be reloaded.
-	 *
-	 * Only use this for testing, as APC is typically used and is per-server
-	 *
-	 * @since 1.25
-	 */
-	public function reset() {
-		// purge cache
-		$this->cache->delete( $this->getCacheKey() );
-		$this->sites = null;
-	}
+    /**
+     * Purges the internal and external cache of the site list, forcing the list.
+     * of sites to be reloaded.
+     *
+     * Only use this for testing, as APC is typically used and is per-server
+     *
+     * @since 1.25
+     */
+    public function reset()
+    {
+        // purge cache
+        $this->cache->delete($this->getCacheKey());
+        $this->sites = null;
+    }
 
-	/**
-	 * Clears the list of sites stored.
-	 *
-	 * Only use this for testing, as APC is typically used and is per-server.
-	 *
-	 * @see SiteStore::clear()
-	 *
-	 * @return bool Success
-	 */
-	public function clear() {
-		$this->reset();
+    /**
+     * Clears the list of sites stored.
+     *
+     * Only use this for testing, as APC is typically used and is per-server.
+     *
+     * @return bool Success
+     * @see SiteStore::clear()
+     *
+     */
+    public function clear()
+    {
+        $this->reset();
 
-		return $this->siteStore->clear();
-	}
+        return $this->siteStore->clear();
+    }
 
 }

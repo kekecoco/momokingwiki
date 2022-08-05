@@ -25,12 +25,13 @@ namespace MediaWiki\Session;
  * @since 1.37
  * @package MediaWiki\Session
  */
-interface CsrfTokenSetProvider {
+interface CsrfTokenSetProvider
+{
 
-	/**
-	 * Get a set of CSRF tokens to obtain and match specific tokens.
-	 *
-	 * @return CsrfTokenSet
-	 */
-	public function getCsrfTokenSet(): CsrfTokenSet;
+    /**
+     * Get a set of CSRF tokens to obtain and match specific tokens.
+     *
+     * @return CsrfTokenSet
+     */
+    public function getCsrfTokenSet(): CsrfTokenSet;
 }

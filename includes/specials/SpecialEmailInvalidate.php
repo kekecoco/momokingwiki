@@ -30,62 +30,67 @@ use Wikimedia\ScopedCallback;
  *
  * @ingroup SpecialPage
  */
-class SpecialEmailInvalidate extends UnlistedSpecialPage {
+class SpecialEmailInvalidate extends UnlistedSpecialPage
+{
 
-	/** @var UserFactory */
-	private $userFactory;
+    /** @var UserFactory */
+    private $userFactory;
 
-	/**
-	 * @param UserFactory $userFactory
-	 */
-	public function __construct( UserFactory $userFactory ) {
-		parent::__construct( 'Invalidateemail', 'editmyprivateinfo' );
+    /**
+     * @param UserFactory $userFactory
+     */
+    public function __construct(UserFactory $userFactory)
+    {
+        parent::__construct('Invalidateemail', 'editmyprivateinfo');
 
-		$this->userFactory = $userFactory;
-	}
+        $this->userFactory = $userFactory;
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function execute( $code ) {
-		// Ignore things like primary queries/connections on GET requests.
-		// It's very convenient to just allow formless link usage.
-		$trxProfiler = Profiler::instance()->getTransactionProfiler();
+    public function execute($code)
+    {
+        // Ignore things like primary queries/connections on GET requests.
+        // It's very convenient to just allow formless link usage.
+        $trxProfiler = Profiler::instance()->getTransactionProfiler();
 
-		$this->setHeaders();
-		$this->checkReadOnly();
-		$this->checkPermissions();
+        $this->setHeaders();
+        $this->checkReadOnly();
+        $this->checkPermissions();
 
-		$scope = $trxProfiler->silenceForScope();
-		$this->attemptInvalidate( $code );
-		ScopedCallback::consume( $scope );
-	}
+        $scope = $trxProfiler->silenceForScope();
+        $this->attemptInvalidate($code);
+        ScopedCallback::consume($scope);
+    }
 
-	/**
-	 * Attempt to invalidate the user's email address and show success or failure
-	 * as needed; if successful, link to main page
-	 *
-	 * @param string $code Confirmation code
-	 */
-	private function attemptInvalidate( $code ) {
-		$user = $this->userFactory->newFromConfirmationCode(
-			(string)$code,
-			UserFactory::READ_LATEST
-		);
+    /**
+     * Attempt to invalidate the user's email address and show success or failure
+     * as needed; if successful, link to main page
+     *
+     * @param string $code Confirmation code
+     */
+    private function attemptInvalidate($code)
+    {
+        $user = $this->userFactory->newFromConfirmationCode(
+            (string)$code,
+            UserFactory::READ_LATEST
+        );
 
-		if ( !is_object( $user ) ) {
-			$this->getOutput()->addWikiMsg( 'confirmemail_invalid' );
+        if (!is_object($user)) {
+            $this->getOutput()->addWikiMsg('confirmemail_invalid');
 
-			return;
-		}
+            return;
+        }
 
-		$user->invalidateEmail();
-		$user->saveSettings();
-		$this->getOutput()->addWikiMsg( 'confirmemail_invalidated' );
+        $user->invalidateEmail();
+        $user->saveSettings();
+        $this->getOutput()->addWikiMsg('confirmemail_invalidated');
 
-		if ( !$this->getUser()->isRegistered() ) {
-			$this->getOutput()->returnToMain();
-		}
-	}
+        if (!$this->getUser()->isRegistered()) {
+            $this->getOutput()->returnToMain();
+        }
+    }
 }

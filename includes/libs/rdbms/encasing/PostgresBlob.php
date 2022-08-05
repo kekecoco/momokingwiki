@@ -5,6 +5,7 @@ namespace Wikimedia\Rdbms;
 /**
  * @newable
  */
-class PostgresBlob extends Blob {
+class PostgresBlob extends Blob
+{
 
 }

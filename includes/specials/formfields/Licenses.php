@@ -28,215 +28,229 @@ use MediaWiki\MediaWikiServices;
 /**
  * A License class for use on Special:Upload
  */
-class Licenses extends HTMLFormField {
-	/** @var string */
-	protected $msg;
+class Licenses extends HTMLFormField
+{
+    /** @var string */
+    protected $msg;
 
-	/** @var array */
-	protected $lines = [];
+    /** @var array */
+    protected $lines = [];
 
-	/** @var string */
-	protected $html;
+    /** @var string */
+    protected $html;
 
-	/** @var string|null */
-	protected $selected;
-	/** #@- */
+    /** @var string|null */
+    protected $selected;
+    /** #@- */
 
-	/**
-	 * @param array $params
-	 */
-	public function __construct( $params ) {
-		parent::__construct( $params );
+    /**
+     * @param array $params
+     */
+    public function __construct($params)
+    {
+        parent::__construct($params);
 
-		$this->msg = static::getMessageFromParams( $params );
-		$this->selected = null;
+        $this->msg = static::getMessageFromParams($params);
+        $this->selected = null;
 
-		$this->makeLines();
-	}
+        $this->makeLines();
+    }
 
-	/**
-	 * @param array $params
-	 * @return string
-	 */
-	protected static function getMessageFromParams( $params ) {
-		if ( !empty( $params['licenses'] ) ) {
-			return $params['licenses'];
-		}
+    /**
+     * @param array $params
+     * @return string
+     */
+    protected static function getMessageFromParams($params)
+    {
+        if (!empty($params['licenses'])) {
+            return $params['licenses'];
+        }
 
-		// If the licenses page is in $wgForceUIMsgAsContentMsg (which is the case
-		// on Commons), translations will be in the database, in subpages of this
-		// message (e.g. MediaWiki:Licenses/<lang>)
-		// If there is no such translation, the result will be '-' (the empty default
-		// in the i18n files), so we'll need to force it to look up the actual licenses
-		// in the default site language (= get the translation from MediaWiki:Licenses)
-		// Also see https://phabricator.wikimedia.org/T3495
-		$defaultMsg = wfMessage( 'licenses' )->inContentLanguage();
-		if ( $defaultMsg->isDisabled() ) {
-			$defaultMsg = wfMessage( 'licenses' )->inLanguage(
-				MediaWikiServices::getInstance()->getContentLanguage() );
-		}
+        // If the licenses page is in $wgForceUIMsgAsContentMsg (which is the case
+        // on Commons), translations will be in the database, in subpages of this
+        // message (e.g. MediaWiki:Licenses/<lang>)
+        // If there is no such translation, the result will be '-' (the empty default
+        // in the i18n files), so we'll need to force it to look up the actual licenses
+        // in the default site language (= get the translation from MediaWiki:Licenses)
+        // Also see https://phabricator.wikimedia.org/T3495
+        $defaultMsg = wfMessage('licenses')->inContentLanguage();
+        if ($defaultMsg->isDisabled()) {
+            $defaultMsg = wfMessage('licenses')->inLanguage(
+                MediaWikiServices::getInstance()->getContentLanguage());
+        }
 
-		return $defaultMsg->plain();
-	}
+        return $defaultMsg->plain();
+    }
 
-	/**
-	 * @param string $line
-	 * @return License
-	 */
-	protected function buildLine( $line ) {
-		return new License( $line );
-	}
+    /**
+     * @param string $line
+     * @return License
+     */
+    protected function buildLine($line)
+    {
+        return new License($line);
+    }
 
-	/**
-	 * @internal
-	 */
-	protected function makeLines() {
-		$levels = [];
-		$lines = explode( "\n", $this->msg );
+    /**
+     * @internal
+     */
+    protected function makeLines()
+    {
+        $levels = [];
+        $lines = explode("\n", $this->msg);
 
-		foreach ( $lines as $line ) {
-			if ( strpos( $line, '*' ) !== 0 ) {
-				continue;
-			}
-			list( $level, $line ) = $this->trimStars( $line );
+        foreach ($lines as $line) {
+            if (strpos($line, '*') !== 0) {
+                continue;
+            }
+            [$level, $line] = $this->trimStars($line);
 
-			if ( strpos( $line, '|' ) !== false ) {
-				$obj = $this->buildLine( $line );
-				$this->stackItem( $this->lines, $levels, $obj );
-			} else {
-				if ( $level < count( $levels ) ) {
-					$levels = array_slice( $levels, 0, $level );
-				}
-				if ( $level == count( $levels ) ) {
-					$levels[$level - 1] = $line;
-				} elseif ( $level > count( $levels ) ) {
-					$levels[] = $line;
-				}
-			}
-		}
-	}
+            if (strpos($line, '|') !== false) {
+                $obj = $this->buildLine($line);
+                $this->stackItem($this->lines, $levels, $obj);
+            } else {
+                if ($level < count($levels)) {
+                    $levels = array_slice($levels, 0, $level);
+                }
+                if ($level == count($levels)) {
+                    $levels[$level - 1] = $line;
+                } elseif ($level > count($levels)) {
+                    $levels[] = $line;
+                }
+            }
+        }
+    }
 
-	/**
-	 * @param string $str
-	 * @return array
-	 */
-	protected function trimStars( $str ) {
-		$numStars = strspn( $str, '*' );
-		return [ $numStars, ltrim( substr( $str, $numStars ), ' ' ) ];
-	}
+    /**
+     * @param string $str
+     * @return array
+     */
+    protected function trimStars($str)
+    {
+        $numStars = strspn($str, '*');
 
-	/**
-	 * @param array &$list
-	 * @param array $path
-	 * @param mixed $item
-	 */
-	protected function stackItem( &$list, $path, $item ) {
-		$position =& $list;
-		if ( $path ) {
-			foreach ( $path as $key ) {
-				$position =& $position[$key];
-			}
-		}
-		$position[] = $item;
-	}
+        return [$numStars, ltrim(substr($str, $numStars), ' ')];
+    }
 
-	/**
-	 * @param array $tagset
-	 * @param int $depth
-	 * @return string
-	 */
-	protected function makeHtml( $tagset, $depth = 0 ) {
-		$html = '';
+    /**
+     * @param array &$list
+     * @param array $path
+     * @param mixed $item
+     */
+    protected function stackItem(&$list, $path, $item)
+    {
+        $position =& $list;
+        if ($path) {
+            foreach ($path as $key) {
+                $position =& $position[$key];
+            }
+        }
+        $position[] = $item;
+    }
 
-		foreach ( $tagset as $key => $val ) {
-			if ( is_array( $val ) ) {
-				$html .= $this->outputOption(
-					$key, '',
-					[
-						'disabled' => 'disabled',
-						'style' => 'color: GrayText', // for MSIE
-					],
-					$depth
-				);
-				$html .= $this->makeHtml( $val, $depth + 1 );
-			} else {
-				$html .= $this->outputOption(
-					$val->text, $val->template,
-					[ 'title' => '{{' . $val->template . '}}' ],
-					$depth
-				);
-			}
-		}
+    /**
+     * @param array $tagset
+     * @param int $depth
+     * @return string
+     */
+    protected function makeHtml($tagset, $depth = 0)
+    {
+        $html = '';
 
-		return $html;
-	}
+        foreach ($tagset as $key => $val) {
+            if (is_array($val)) {
+                $html .= $this->outputOption(
+                    $key, '',
+                    [
+                        'disabled' => 'disabled',
+                        'style'    => 'color: GrayText', // for MSIE
+                    ],
+                    $depth
+                );
+                $html .= $this->makeHtml($val, $depth + 1);
+            } else {
+                $html .= $this->outputOption(
+                    $val->text, $val->template,
+                    ['title' => '{{' . $val->template . '}}'],
+                    $depth
+                );
+            }
+        }
 
-	/**
-	 * @param string $message
-	 * @param string $value
-	 * @param null|array $attribs
-	 * @param int $depth
-	 * @return string
-	 */
-	protected function outputOption( $message, $value, $attribs = null, $depth = 0 ) {
-		$msgObj = $this->msg( $message );
-		$text = $msgObj->exists() ? $msgObj->text() : $message;
-		$attribs['value'] = $value;
-		if ( $value === $this->selected ) {
-			$attribs['selected'] = 'selected';
-		}
+        return $html;
+    }
 
-		$val = str_repeat( /* &nbsp */ "\u{00A0}", $depth * 2 ) . $text;
-		return str_repeat( "\t", $depth ) . Xml::element( 'option', $attribs, $val ) . "\n";
-	}
+    /**
+     * @param string $message
+     * @param string $value
+     * @param null|array $attribs
+     * @param int $depth
+     * @return string
+     */
+    protected function outputOption($message, $value, $attribs = null, $depth = 0)
+    {
+        $msgObj = $this->msg($message);
+        $text = $msgObj->exists() ? $msgObj->text() : $message;
+        $attribs['value'] = $value;
+        if ($value === $this->selected) {
+            $attribs['selected'] = 'selected';
+        }
 
-	/** #@- */
+        $val = str_repeat( /* &nbsp */ "\u{00A0}", $depth * 2) . $text;
 
-	/**
-	 * Accessor for $this->lines
-	 *
-	 * @return array
-	 */
-	public function getLines() {
-		return $this->lines;
-	}
+        return str_repeat("\t", $depth) . Xml::element('option', $attribs, $val) . "\n";
+    }
 
-	/**
-	 * Accessor for $this->lines
-	 *
-	 * @return array
-	 *
-	 * @deprecated since 1.31 Use getLines() instead
-	 */
-	public function getLicenses() {
-		return $this->getLines();
-	}
+    /** #@- */
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getInputHTML( $value ) {
-		$this->selected = $value;
+    /**
+     * Accessor for $this->lines
+     *
+     * @return array
+     */
+    public function getLines()
+    {
+        return $this->lines;
+    }
 
-		// add a default "no license selected" option
-		$default = $this->buildLine( '|nolicense' );
-		array_unshift( $this->lines, $default );
+    /**
+     * Accessor for $this->lines
+     *
+     * @return array
+     *
+     * @deprecated since 1.31 Use getLines() instead
+     */
+    public function getLicenses()
+    {
+        return $this->getLines();
+    }
 
-		$html = $this->makeHtml( $this->getLines() );
+    /**
+     * @inheritDoc
+     */
+    public function getInputHTML($value)
+    {
+        $this->selected = $value;
 
-		$attribs = [
-			'name' => $this->mName,
-			'id' => $this->mID
-		];
-		if ( !empty( $this->mParams['disabled'] ) ) {
-			$attribs['disabled'] = 'disabled';
-		}
+        // add a default "no license selected" option
+        $default = $this->buildLine('|nolicense');
+        array_unshift($this->lines, $default);
 
-		$html = Html::rawElement( 'select', $attribs, $html );
+        $html = $this->makeHtml($this->getLines());
 
-		// remove default "no license selected" from lines again
-		array_shift( $this->lines );
+        $attribs = [
+            'name' => $this->mName,
+            'id'   => $this->mID
+        ];
+        if (!empty($this->mParams['disabled'])) {
+            $attribs['disabled'] = 'disabled';
+        }
 
-		return $html;
-	}
+        $html = Html::rawElement('select', $attribs, $html);
+
+        // remove default "no license selected" from lines again
+        array_shift($this->lines);
+
+        return $html;
+    }
 }

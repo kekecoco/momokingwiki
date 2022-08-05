@@ -35,14 +35,15 @@ use JsonSerializable;
  * @since 1.36
  * @package MediaWiki\Json
  */
-interface JsonUnserializable extends JsonSerializable {
+interface JsonUnserializable extends JsonSerializable
+{
 
-	/**
-	 * Creates a new instance of the class and initialized it from the $json array.
-	 * @param JsonUnserializer $unserializer an instance of JsonUnserializer to use
-	 *   for nested properties if they need special care.
-	 * @param array $json
-	 * @return JsonUnserializable
-	 */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json );
+    /**
+     * Creates a new instance of the class and initialized it from the $json array.
+     * @param JsonUnserializer $unserializer an instance of JsonUnserializer to use
+     *   for nested properties if they need special care.
+     * @param array $json
+     * @return JsonUnserializable
+     */
+    public static function newFromJsonArray(JsonUnserializer $unserializer, array $json);
 }

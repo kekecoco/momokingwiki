@@ -24,21 +24,24 @@
 
 namespace Wikimedia\Rdbms;
 
-class Subquery {
-	/** @var string */
-	private $sql;
+class Subquery
+{
+    /** @var string */
+    private $sql;
 
-	/**
-	 * @param string $sql SQL query defining the table
-	 */
-	public function __construct( $sql ) {
-		$this->sql = $sql;
-	}
+    /**
+     * @param string $sql SQL query defining the table
+     */
+    public function __construct($sql)
+    {
+        $this->sql = $sql;
+    }
 
-	/**
-	 * @return string Original SQL query
-	 */
-	public function __toString() {
-		return '(' . $this->sql . ')';
-	}
+    /**
+     * @return string Original SQL query
+     */
+    public function __toString()
+    {
+        return '(' . $this->sql . ')';
+    }
 }

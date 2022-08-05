@@ -27,28 +27,31 @@
  *
  * @ingroup Media
  */
-class Jpeg2000Handler extends BitmapHandler {
+class Jpeg2000Handler extends BitmapHandler
+{
 
-	/**
-	 * Not all browsers support jpeg2000
-	 *
-	 * @param File $file
-	 * @return bool
-	 */
-	public function mustRender( $file ) {
-		return true;
-	}
+    /**
+     * Not all browsers support jpeg2000
+     *
+     * @param File $file
+     * @return bool
+     */
+    public function mustRender($file)
+    {
+        return true;
+    }
 
-	/**
-	 * Render files as PNG
-	 *
-	 * @param string $ext
-	 * @param string $mime
-	 * @param array|null $params
-	 * @return array
-	 */
-	public function getThumbType( $ext, $mime, $params = null ) {
-		return [ 'png', 'image/png' ];
-	}
+    /**
+     * Render files as PNG
+     *
+     * @param string $ext
+     * @param string $mime
+     * @param array|null $params
+     * @return array
+     */
+    public function getThumbType($ext, $mime, $params = null)
+    {
+        return ['png', 'image/png'];
+    }
 
 }

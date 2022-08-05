@@ -26,27 +26,32 @@ namespace MediaWiki\Message;
 use MediaWiki\User\UserIdentity;
 use Stringable;
 
-class UserGroupMembershipParam implements Stringable {
-	/** @var string */
-	private $group;
+class UserGroupMembershipParam implements Stringable
+{
+    /** @var string */
+    private $group;
 
-	/** @var UserIdentity */
-	private $member;
+    /** @var UserIdentity */
+    private $member;
 
-	public function __construct( string $group, UserIdentity $member ) {
-		$this->group = $group;
-		$this->member = $member;
-	}
+    public function __construct(string $group, UserIdentity $member)
+    {
+        $this->group = $group;
+        $this->member = $member;
+    }
 
-	public function getGroup(): string {
-		return $this->group;
-	}
+    public function getGroup(): string
+    {
+        return $this->group;
+    }
 
-	public function getMember(): UserIdentity {
-		return $this->member;
-	}
+    public function getMember(): UserIdentity
+    {
+        return $this->member;
+    }
 
-	public function __toString() {
-		return $this->group . ':' . $this->member->getName();
-	}
+    public function __toString()
+    {
+        return $this->group . ':' . $this->member->getName();
+    }
 }

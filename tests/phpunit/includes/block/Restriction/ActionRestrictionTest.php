@@ -10,26 +10,30 @@ use Title;
  * @covers \MediaWiki\Block\Restriction\AbstractRestriction
  * @covers \MediaWiki\Block\Restriction\ActionRestriction
  */
-class ActionRestrictionTest extends RestrictionTestCase {
+class ActionRestrictionTest extends RestrictionTestCase
+{
 
-	public function testMatches() {
-		$class = $this->getClass();
-		$restriction = new $class( 1, 2 );
-		$this->assertFalse( $restriction->matches(
-			$this->createMock( Title::class )
-		) );
-	}
+    public function testMatches()
+    {
+        $class = $this->getClass();
+        $restriction = new $class(1, 2);
+        $this->assertFalse($restriction->matches(
+            $this->createMock(Title::class)
+        ));
+    }
 
-	public function testGetType() {
-		$class = $this->getClass();
-		$restriction = new $class( 1, 2 );
-		$this->assertEquals( 'action', $restriction->getType() );
-	}
+    public function testGetType()
+    {
+        $class = $this->getClass();
+        $restriction = new $class(1, 2);
+        $this->assertEquals('action', $restriction->getType());
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function getClass() {
-		return ActionRestriction::class;
-	}
+    /**
+     * @inheritDoc
+     */
+    protected function getClass()
+    {
+        return ActionRestriction::class;
+    }
 }

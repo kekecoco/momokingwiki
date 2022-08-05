@@ -26,133 +26,141 @@
  *
  * @stable to extend
  */
-class VFormHTMLForm extends HTMLForm {
-	/**
-	 * Wrapper and its legend are never generated in VForm mode.
-	 * @var bool
-	 */
-	protected $mWrapperLegend = false;
+class VFormHTMLForm extends HTMLForm
+{
+    /**
+     * Wrapper and its legend are never generated in VForm mode.
+     * @var bool
+     */
+    protected $mWrapperLegend = false;
 
-	/**
-	 * Symbolic display format name.
-	 * @var string
-	 */
-	protected $displayFormat = 'vform';
+    /**
+     * Symbolic display format name.
+     * @var string
+     */
+    protected $displayFormat = 'vform';
 
-	public static function loadInputFromParameters( $fieldname, $descriptor,
-		HTMLForm $parent = null
-	) {
-		$field = parent::loadInputFromParameters( $fieldname, $descriptor, $parent );
-		$field->setShowEmptyLabel( false );
-		return $field;
-	}
+    public static function loadInputFromParameters($fieldname, $descriptor,
+                                                   HTMLForm $parent = null
+    )
+    {
+        $field = parent::loadInputFromParameters($fieldname, $descriptor, $parent);
+        $field->setShowEmptyLabel(false);
 
-	public function getHTML( $submitResult ) {
-		// This is required for VForm HTMLForms that use that style regardless
-		// of wgUseMediaWikiUIEverywhere (since they pre-date it).
-		// When wgUseMediaWikiUIEverywhere is removed, this should be consolidated
-		// with the addModuleStyles in SpecialPage->setHeaders.
-		$this->getOutput()->addModuleStyles( [
-			'mediawiki.ui',
-			'mediawiki.ui.button',
-			'mediawiki.ui.input',
-			'mediawiki.ui.checkbox',
-		] );
+        return $field;
+    }
 
-		return parent::getHTML( $submitResult );
-	}
+    public function getHTML($submitResult)
+    {
+        // This is required for VForm HTMLForms that use that style regardless
+        // of wgUseMediaWikiUIEverywhere (since they pre-date it).
+        // When wgUseMediaWikiUIEverywhere is removed, this should be consolidated
+        // with the addModuleStyles in SpecialPage->setHeaders.
+        $this->getOutput()->addModuleStyles([
+            'mediawiki.ui',
+            'mediawiki.ui.button',
+            'mediawiki.ui.input',
+            'mediawiki.ui.checkbox',
+        ]);
 
-	protected function getFormAttributes() {
-		$attribs = parent::getFormAttributes();
-		$attribs['class'] = [ 'mw-htmlform', 'mw-ui-vform', 'mw-ui-container' ];
-		return $attribs;
-	}
+        return parent::getHTML($submitResult);
+    }
 
-	public function wrapForm( $html ) {
-		// Always discard $this->mWrapperLegend
-		return Html::rawElement( 'form', $this->getFormAttributes(), $html );
-	}
+    protected function getFormAttributes()
+    {
+        $attribs = parent::getFormAttributes();
+        $attribs['class'] = ['mw-htmlform', 'mw-ui-vform', 'mw-ui-container'];
 
-	public function getButtons() {
-		$buttons = '';
+        return $attribs;
+    }
 
-		if ( $this->mShowSubmit ) {
-			$attribs = [];
+    public function wrapForm($html)
+    {
+        // Always discard $this->mWrapperLegend
+        return Html::rawElement('form', $this->getFormAttributes(), $html);
+    }
 
-			if ( isset( $this->mSubmitID ) ) {
-				$attribs['id'] = $this->mSubmitID;
-			}
+    public function getButtons()
+    {
+        $buttons = '';
 
-			if ( isset( $this->mSubmitName ) ) {
-				$attribs['name'] = $this->mSubmitName;
-			}
+        if ($this->mShowSubmit) {
+            $attribs = [];
 
-			if ( isset( $this->mSubmitTooltip ) ) {
-				$attribs += Linker::tooltipAndAccesskeyAttribs( $this->mSubmitTooltip );
-			}
+            if (isset($this->mSubmitID)) {
+                $attribs['id'] = $this->mSubmitID;
+            }
 
-			$attribs['class'] = [
-				'mw-htmlform-submit',
-				'mw-ui-button mw-ui-big mw-ui-block',
-			];
-			foreach ( $this->mSubmitFlags as $flag ) {
-				$attribs['class'][] = 'mw-ui-' . $flag;
-			}
+            if (isset($this->mSubmitName)) {
+                $attribs['name'] = $this->mSubmitName;
+            }
 
-			$buttons .= Xml::submitButton( $this->getSubmitText(), $attribs ) . "\n";
-		}
+            if (isset($this->mSubmitTooltip)) {
+                $attribs += Linker::tooltipAndAccesskeyAttribs($this->mSubmitTooltip);
+            }
 
-		if ( $this->mShowReset ) {
-			$buttons .= Html::element(
-				'input',
-				[
-					'type' => 'reset',
-					'value' => $this->msg( 'htmlform-reset' )->text(),
-					'class' => 'mw-ui-button mw-ui-big mw-ui-block',
-				]
-			) . "\n";
-		}
+            $attribs['class'] = [
+                'mw-htmlform-submit',
+                'mw-ui-button mw-ui-big mw-ui-block',
+            ];
+            foreach ($this->mSubmitFlags as $flag) {
+                $attribs['class'][] = 'mw-ui-' . $flag;
+            }
 
-		if ( $this->mShowCancel ) {
-			$target = $this->getCancelTargetURL();
-			$buttons .= Html::element(
-					'a',
-					[
-						'class' => 'mw-ui-button mw-ui-big mw-ui-block',
-						'href' => $target,
-					],
-					$this->msg( 'cancel' )->text()
-				) . "\n";
-		}
+            $buttons .= Xml::submitButton($this->getSubmitText(), $attribs) . "\n";
+        }
 
-		foreach ( $this->mButtons as $button ) {
-			$attrs = [
-				'type' => 'submit',
-				'name' => $button['name'],
-				'value' => $button['value']
-			];
+        if ($this->mShowReset) {
+            $buttons .= Html::element(
+                    'input',
+                    [
+                        'type'  => 'reset',
+                        'value' => $this->msg('htmlform-reset')->text(),
+                        'class' => 'mw-ui-button mw-ui-big mw-ui-block',
+                    ]
+                ) . "\n";
+        }
 
-			// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset Always set in HTMLForm::addButton
-			if ( $button['attribs'] ) {
-				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset Always set in HTMLForm::addButton
-				$attrs += $button['attribs'];
-			}
+        if ($this->mShowCancel) {
+            $target = $this->getCancelTargetURL();
+            $buttons .= Html::element(
+                    'a',
+                    [
+                        'class' => 'mw-ui-button mw-ui-big mw-ui-block',
+                        'href'  => $target,
+                    ],
+                    $this->msg('cancel')->text()
+                ) . "\n";
+        }
 
-			if ( isset( $button['id'] ) ) {
-				$attrs['id'] = $button['id'];
-			}
+        foreach ($this->mButtons as $button) {
+            $attrs = [
+                'type'  => 'submit',
+                'name'  => $button['name'],
+                'value' => $button['value']
+            ];
 
-			$attrs['class'] = isset( $attrs['class'] ) ? (array)$attrs['class'] : [];
-			$attrs['class'][] = 'mw-ui-button mw-ui-big mw-ui-block';
+            // @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset Always set in HTMLForm::addButton
+            if ($button['attribs']) {
+                // @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset Always set in HTMLForm::addButton
+                $attrs += $button['attribs'];
+            }
 
-			$buttons .= Html::element( 'input', $attrs ) . "\n";
-		}
+            if (isset($button['id'])) {
+                $attrs['id'] = $button['id'];
+            }
 
-		if ( !$buttons ) {
-			return '';
-		}
+            $attrs['class'] = isset($attrs['class']) ? (array)$attrs['class'] : [];
+            $attrs['class'][] = 'mw-ui-button mw-ui-big mw-ui-block';
 
-		return Html::rawElement( 'div',
-			[ 'class' => 'mw-htmlform-submit-buttons' ], "\n$buttons" ) . "\n";
-	}
+            $buttons .= Html::element('input', $attrs) . "\n";
+        }
+
+        if (!$buttons) {
+            return '';
+        }
+
+        return Html::rawElement('div',
+                ['class' => 'mw-htmlform-submit-buttons'], "\n$buttons") . "\n";
+    }
 }

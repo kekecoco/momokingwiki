@@ -32,88 +32,91 @@ use RuntimeException;
  *
  * @since 1.30
  */
-class PreparedEdit {
-	/**
-	 * Revision ID
-	 *
-	 * @var int|null
-	 */
-	public $revid;
+class PreparedEdit
+{
+    /**
+     * Revision ID
+     *
+     * @var int|null
+     */
+    public $revid;
 
-	/**
-	 * Content after going through pre-save transform
-	 *
-	 * @var Content|null
-	 */
-	public $pstContent;
+    /**
+     * Content after going through pre-save transform
+     *
+     * @var Content|null
+     */
+    public $pstContent;
 
-	/**
-	 * Content format
-	 *
-	 * @var string
-	 */
-	public $format;
+    /**
+     * Content format
+     *
+     * @var string
+     */
+    public $format;
 
-	/**
-	 * Parser options used to get parser output
-	 *
-	 * @var ParserOptions
-	 */
-	public $popts;
+    /**
+     * Parser options used to get parser output
+     *
+     * @var ParserOptions
+     */
+    public $popts;
 
-	/**
-	 * Parser output
-	 *
-	 * @var ParserOutput|null
-	 */
-	private $canonicalOutput;
+    /**
+     * Parser output
+     *
+     * @var ParserOutput|null
+     */
+    private $canonicalOutput;
 
-	/**
-	 * Content that is being saved (before PST)
-	 *
-	 * @var Content
-	 */
-	public $newContent;
+    /**
+     * Content that is being saved (before PST)
+     *
+     * @var Content
+     */
+    public $newContent;
 
-	/**
-	 * Current content of the page, if any
-	 *
-	 * @var Content|null
-	 */
-	public $oldContent;
+    /**
+     * Current content of the page, if any
+     *
+     * @var Content|null
+     */
+    public $oldContent;
 
-	/**
-	 * Lazy-loading callback to get canonical ParserOutput object
-	 *
-	 * @var callable
-	 */
-	public $parserOutputCallback;
+    /**
+     * Lazy-loading callback to get canonical ParserOutput object
+     *
+     * @var callable
+     */
+    public $parserOutputCallback;
 
-	/**
-	 * @return ParserOutput Canonical parser output
-	 */
-	public function getOutput() {
-		if ( !$this->canonicalOutput ) {
-			$this->canonicalOutput = call_user_func( $this->parserOutputCallback );
-		}
+    /**
+     * @return ParserOutput Canonical parser output
+     */
+    public function getOutput()
+    {
+        if (!$this->canonicalOutput) {
+            $this->canonicalOutput = call_user_func($this->parserOutputCallback);
+        }
 
-		return $this->canonicalOutput;
-	}
+        return $this->canonicalOutput;
+    }
 
-	/**
-	 * Fetch the ParserOutput via a lazy-loaded callback (for backwards compatibility).
-	 *
-	 * @deprecated since 1.33
-	 * @param string $name
-	 * @return mixed
-	 */
-	public function __get( $name ) {
-		if ( $name === 'output' ) {
-			return $this->getOutput();
-		} elseif ( $name === 'timestamp' ) {
-			return $this->getOutput()->getCacheTime();
-		}
+    /**
+     * Fetch the ParserOutput via a lazy-loaded callback (for backwards compatibility).
+     *
+     * @param string $name
+     * @return mixed
+     * @deprecated since 1.33
+     */
+    public function __get($name)
+    {
+        if ($name === 'output') {
+            return $this->getOutput();
+        } elseif ($name === 'timestamp') {
+            return $this->getOutput()->getCacheTime();
+        }
 
-		throw new RuntimeException( "Undefined field $name." );
-	}
+        throw new RuntimeException("Undefined field $name.");
+    }
 }

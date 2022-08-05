@@ -32,163 +32,173 @@
  *
  * @ingroup Media
  */
-class XCFHandler extends BitmapHandler {
-	/**
-	 * @param File $file
-	 * @return bool
-	 */
-	public function mustRender( $file ) {
-		return true;
-	}
+class XCFHandler extends BitmapHandler
+{
+    /**
+     * @param File $file
+     * @return bool
+     */
+    public function mustRender($file)
+    {
+        return true;
+    }
 
-	/**
-	 * Render files as PNG
-	 *
-	 * @param string $ext
-	 * @param string $mime
-	 * @param array|null $params
-	 * @return array
-	 */
-	public function getThumbType( $ext, $mime, $params = null ) {
-		return [ 'png', 'image/png' ];
-	}
+    /**
+     * Render files as PNG
+     *
+     * @param string $ext
+     * @param string $mime
+     * @param array|null $params
+     * @return array
+     */
+    public function getThumbType($ext, $mime, $params = null)
+    {
+        return ['png', 'image/png'];
+    }
 
-	/**
-	 * Metadata for a given XCF file
-	 *
-	 * Will return false if file magic signature is not recognized
-	 * @author Hexmode
-	 * @author Hashar
-	 *
-	 * @param string $filename Full path to a XCF file
-	 * @return array|null Metadata Array just like PHP getimagesize()
-	 */
-	private static function getXCFMetaData( $filename ) {
-		# Decode master structure
-		$f = fopen( $filename, 'rb' );
-		if ( !$f ) {
-			return null;
-		}
-		# The image structure always starts at offset 0 in the XCF file.
-		# So we just read it :-)
-		$binaryHeader = fread( $f, 26 );
-		fclose( $f );
+    /**
+     * Metadata for a given XCF file
+     *
+     * Will return false if file magic signature is not recognized
+     * @param string $filename Full path to a XCF file
+     * @return array|null Metadata Array just like PHP getimagesize()
+     * @author Hexmode
+     * @author Hashar
+     *
+     */
+    private static function getXCFMetaData($filename)
+    {
+        # Decode master structure
+        $f = fopen($filename, 'rb');
+        if (!$f) {
+            return null;
+        }
+        # The image structure always starts at offset 0 in the XCF file.
+        # So we just read it :-)
+        $binaryHeader = fread($f, 26);
+        fclose($f);
 
-		/**
-		 * Master image structure:
-		 *
-		 * byte[9] "gimp xcf "  File type magic
-		 * byte[4] version      XCF version
-		 *                        "file" - version 0
-		 *                        "v001" - version 1
-		 *                        "v002" - version 2
-		 * byte    0            Zero-terminator for version tag
-		 * uint32  width        With of canvas
-		 * uint32  height       Height of canvas
-		 * uint32  base_type    Color mode of the image; one of
-		 *                         0: RGB color
-		 *                         1: Grayscale
-		 *                         2: Indexed color
-		 *        (enum GimpImageBaseType in libgimpbase/gimpbaseenums.h)
-		 */
-		try {
-			$header = wfUnpack(
-				"A9magic" . # A: space padded
-					"/a5version" . # a: zero padded
-					"/Nwidth" . # \
-					"/Nheight" . # N: unsigned long 32bit big endian
-					"/Nbase_type", # /
-				$binaryHeader
-			);
-		} catch ( MWException $mwe ) {
-			return null;
-		}
+        /**
+         * Master image structure:
+         *
+         * byte[9] "gimp xcf "  File type magic
+         * byte[4] version      XCF version
+         *                        "file" - version 0
+         *                        "v001" - version 1
+         *                        "v002" - version 2
+         * byte    0            Zero-terminator for version tag
+         * uint32  width        With of canvas
+         * uint32  height       Height of canvas
+         * uint32  base_type    Color mode of the image; one of
+         *                         0: RGB color
+         *                         1: Grayscale
+         *                         2: Indexed color
+         *        (enum GimpImageBaseType in libgimpbase/gimpbaseenums.h)
+         */
+        try {
+            $header = wfUnpack(
+                "A9magic" . # A: space padded
+                "/a5version" . # a: zero padded
+                "/Nwidth" . # \
+                "/Nheight" . # N: unsigned long 32bit big endian
+                "/Nbase_type", # /
+                $binaryHeader
+            );
+        } catch (MWException $mwe) {
+            return null;
+        }
 
-		# Check values
-		if ( $header['magic'] !== 'gimp xcf' ) {
-			wfDebug( __METHOD__ . " '$filename' has invalid magic signature." );
+        # Check values
+        if ($header['magic'] !== 'gimp xcf') {
+            wfDebug(__METHOD__ . " '$filename' has invalid magic signature.");
 
-			return null;
-		}
-		# TODO: we might want to check for correct values of width and height
+            return null;
+        }
+        # TODO: we might want to check for correct values of width and height
 
-		wfDebug( __METHOD__ .
-			": canvas size of '$filename' is {$header['width']} x {$header['height']} px" );
+        wfDebug(__METHOD__ .
+            ": canvas size of '$filename' is {$header['width']} x {$header['height']} px");
 
-		return $header;
-	}
+        return $header;
+    }
 
-	public function getSizeAndMetadata( $state, $filename ) {
-		$header = self::getXCFMetaData( $filename );
-		$metadata = [];
-		if ( $header ) {
-			// Try to be consistent with the names used by PNG files.
-			// Unclear from base media type if it has an alpha layer,
-			// so just assume that it does since it "potentially" could.
-			switch ( $header['base_type'] ) {
-				case 0:
-					$metadata['colorType'] = 'truecolour-alpha';
-					break;
-				case 1:
-					$metadata['colorType'] = 'greyscale-alpha';
-					break;
-				case 2:
-					$metadata['colorType'] = 'index-coloured';
-					break;
-				default:
-					$metadata['colorType'] = 'unknown';
-			}
-		} else {
-			// Marker to prevent repeated attempted extraction
-			$metadata['error'] = true;
-		}
-		return [
-			'width' => $header['width'] ?? 0,
-			'height' => $header['height'] ?? 0,
-			'bits' => 8,
-			'metadata' => $metadata
-		];
-	}
+    public function getSizeAndMetadata($state, $filename)
+    {
+        $header = self::getXCFMetaData($filename);
+        $metadata = [];
+        if ($header) {
+            // Try to be consistent with the names used by PNG files.
+            // Unclear from base media type if it has an alpha layer,
+            // so just assume that it does since it "potentially" could.
+            switch ($header['base_type']) {
+                case 0:
+                    $metadata['colorType'] = 'truecolour-alpha';
+                    break;
+                case 1:
+                    $metadata['colorType'] = 'greyscale-alpha';
+                    break;
+                case 2:
+                    $metadata['colorType'] = 'index-coloured';
+                    break;
+                default:
+                    $metadata['colorType'] = 'unknown';
+            }
+        } else {
+            // Marker to prevent repeated attempted extraction
+            $metadata['error'] = true;
+        }
 
-	/**
-	 * Should we refresh the metadata
-	 *
-	 * @param File $file The file object for the file in question
-	 * @return bool|int One of the self::METADATA_(BAD|GOOD|COMPATIBLE) constants
-	 */
-	public function isFileMetadataValid( $file ) {
-		if ( !$file->getMetadataArray() ) {
-			// Old metadata when we just put an empty string in there
-			return self::METADATA_BAD;
-		} else {
-			return self::METADATA_GOOD;
-		}
-	}
+        return [
+            'width'    => $header['width'] ?? 0,
+            'height'   => $header['height'] ?? 0,
+            'bits'     => 8,
+            'metadata' => $metadata
+        ];
+    }
 
-	/**
-	 * Must use "im" for XCF
-	 *
-	 * @param string|null $dstPath
-	 * @param bool $checkDstPath
-	 * @return string
-	 */
-	protected function getScalerType( $dstPath, $checkDstPath = true ) {
-		return "im";
-	}
+    /**
+     * Should we refresh the metadata
+     *
+     * @param File $file The file object for the file in question
+     * @return bool|int One of the self::METADATA_(BAD|GOOD|COMPATIBLE) constants
+     */
+    public function isFileMetadataValid($file)
+    {
+        if (!$file->getMetadataArray()) {
+            // Old metadata when we just put an empty string in there
+            return self::METADATA_BAD;
+        } else {
+            return self::METADATA_GOOD;
+        }
+    }
 
-	/**
-	 * Can we render this file?
-	 *
-	 * Image magick doesn't support indexed xcf files as of current
-	 * writing (as of 6.8.9-3)
-	 * @param File $file
-	 * @return bool
-	 */
-	public function canRender( $file ) {
-		$xcfMeta = $file->getMetadataArray();
-		if ( isset( $xcfMeta['colorType'] ) && $xcfMeta['colorType'] === 'index-coloured' ) {
-			return false;
-		}
-		return parent::canRender( $file );
-	}
+    /**
+     * Must use "im" for XCF
+     *
+     * @param string|null $dstPath
+     * @param bool $checkDstPath
+     * @return string
+     */
+    protected function getScalerType($dstPath, $checkDstPath = true)
+    {
+        return "im";
+    }
+
+    /**
+     * Can we render this file?
+     *
+     * Image magick doesn't support indexed xcf files as of current
+     * writing (as of 6.8.9-3)
+     * @param File $file
+     * @return bool
+     */
+    public function canRender($file)
+    {
+        $xcfMeta = $file->getMetadataArray();
+        if (isset($xcfMeta['colorType']) && $xcfMeta['colorType'] === 'index-coloured') {
+            return false;
+        }
+
+        return parent::canRender($file);
+    }
 }

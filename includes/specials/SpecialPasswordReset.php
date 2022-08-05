@@ -32,171 +32,184 @@ use MediaWiki\MainConfigNames;
  *
  * @ingroup SpecialPage
  */
-class SpecialPasswordReset extends FormSpecialPage {
-	/** @var PasswordReset */
-	private $passwordReset;
+class SpecialPasswordReset extends FormSpecialPage
+{
+    /** @var PasswordReset */
+    private $passwordReset;
 
-	/**
-	 * @var Status
-	 */
-	private $result;
+    /**
+     * @var Status
+     */
+    private $result;
 
-	/**
-	 * @var string Identifies which password reset field was specified by the user.
-	 */
-	private $method;
+    /**
+     * @var string Identifies which password reset field was specified by the user.
+     */
+    private $method;
 
-	/**
-	 * @param PasswordReset $passwordReset
-	 */
-	public function __construct( PasswordReset $passwordReset ) {
-		parent::__construct( 'PasswordReset', 'editmyprivateinfo' );
+    /**
+     * @param PasswordReset $passwordReset
+     */
+    public function __construct(PasswordReset $passwordReset)
+    {
+        parent::__construct('PasswordReset', 'editmyprivateinfo');
 
-		$this->passwordReset = $passwordReset;
-	}
+        $this->passwordReset = $passwordReset;
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function userCanExecute( User $user ) {
-		return $this->passwordReset->isAllowed( $user )->isGood();
-	}
+    public function userCanExecute(User $user)
+    {
+        return $this->passwordReset->isAllowed($user)->isGood();
+    }
 
-	public function checkExecutePermissions( User $user ) {
-		$status = Status::wrap( $this->passwordReset->isAllowed( $user ) );
-		if ( !$status->isGood() ) {
-			throw new ErrorPageError( 'internalerror', $status->getMessage() );
-		}
+    public function checkExecutePermissions(User $user)
+    {
+        $status = Status::wrap($this->passwordReset->isAllowed($user));
+        if (!$status->isGood()) {
+            throw new ErrorPageError('internalerror', $status->getMessage());
+        }
 
-		parent::checkExecutePermissions( $user );
-	}
+        parent::checkExecutePermissions($user);
+    }
 
-	/**
-	 * @param string|null $par
-	 */
-	public function execute( $par ) {
-		$out = $this->getOutput();
-		$out->disallowUserJs();
-		parent::execute( $par );
-	}
+    /**
+     * @param string|null $par
+     */
+    public function execute($par)
+    {
+        $out = $this->getOutput();
+        $out->disallowUserJs();
+        parent::execute($par);
+    }
 
-	protected function getFormFields() {
-		$resetRoutes = $this->getConfig()->get( MainConfigNames::PasswordResetRoutes );
-		$a = [];
-		if ( isset( $resetRoutes['username'] ) && $resetRoutes['username'] ) {
-			$a['Username'] = [
-				'type' => 'text',
-				'default' => $this->getRequest()->getSession()->suggestLoginUsername(),
-				'label-message' => 'passwordreset-username',
-			];
+    protected function getFormFields()
+    {
+        $resetRoutes = $this->getConfig()->get(MainConfigNames::PasswordResetRoutes);
+        $a = [];
+        if (isset($resetRoutes['username']) && $resetRoutes['username']) {
+            $a['Username'] = [
+                'type'          => 'text',
+                'default'       => $this->getRequest()->getSession()->suggestLoginUsername(),
+                'label-message' => 'passwordreset-username',
+            ];
 
-			if ( $this->getUser()->isRegistered() ) {
-				$a['Username']['default'] = $this->getUser()->getName();
-			}
-		}
+            if ($this->getUser()->isRegistered()) {
+                $a['Username']['default'] = $this->getUser()->getName();
+            }
+        }
 
-		if ( isset( $resetRoutes['email'] ) && $resetRoutes['email'] ) {
-			$a['Email'] = [
-				'type' => 'email',
-				'label-message' => 'passwordreset-email',
-			];
-		}
+        if (isset($resetRoutes['email']) && $resetRoutes['email']) {
+            $a['Email'] = [
+                'type'          => 'email',
+                'label-message' => 'passwordreset-email',
+            ];
+        }
 
-		return $a;
-	}
+        return $a;
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-	public function alterForm( HTMLForm $form ) {
-		$resetRoutes = $this->getConfig()->get( MainConfigNames::PasswordResetRoutes );
+    public function alterForm(HTMLForm $form)
+    {
+        $resetRoutes = $this->getConfig()->get(MainConfigNames::PasswordResetRoutes);
 
-		$form->setSubmitDestructive();
+        $form->setSubmitDestructive();
 
-		$form->addHiddenFields( $this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
+        $form->addHiddenFields($this->getRequest()->getValues('returnto', 'returntoquery'));
 
-		$i = 0;
-		if ( isset( $resetRoutes['username'] ) && $resetRoutes['username'] ) {
-			$i++;
-		}
-		if ( isset( $resetRoutes['email'] ) && $resetRoutes['email'] ) {
-			$i++;
-		}
+        $i = 0;
+        if (isset($resetRoutes['username']) && $resetRoutes['username']) {
+            $i++;
+        }
+        if (isset($resetRoutes['email']) && $resetRoutes['email']) {
+            $i++;
+        }
 
-		$message = ( $i > 1 ) ? 'passwordreset-text-many' : 'passwordreset-text-one';
+        $message = ($i > 1) ? 'passwordreset-text-many' : 'passwordreset-text-one';
 
-		$form->setHeaderText( $this->msg( $message, $i )->parseAsBlock() );
-		$form->setSubmitTextMsg( 'mailmypassword' );
-	}
+        $form->setHeaderText($this->msg($message, $i)->parseAsBlock());
+        $form->setSubmitTextMsg('mailmypassword');
+    }
 
-	/**
-	 * Process the form.  At this point we know that the user passes all the criteria in
-	 * userCanExecute(), and if the data array contains 'Username', etc, then Username
-	 * resets are allowed.
-	 * @param array $data
-	 * @throws MWException
-	 * @throws ThrottledError|PermissionsError
-	 * @return Status
-	 */
-	public function onSubmit( array $data ) {
-		$username = $data['Username'] ?? null;
-		$email = $data['Email'] ?? null;
+    /**
+     * Process the form.  At this point we know that the user passes all the criteria in
+     * userCanExecute(), and if the data array contains 'Username', etc, then Username
+     * resets are allowed.
+     * @param array $data
+     * @return Status
+     * @throws ThrottledError|PermissionsError
+     * @throws MWException
+     */
+    public function onSubmit(array $data)
+    {
+        $username = $data['Username'] ?? null;
+        $email = $data['Email'] ?? null;
 
-		$this->method = $username ? 'username' : 'email';
-		$this->result = Status::wrap(
-			$this->passwordReset->execute( $this->getUser(), $username, $email ) );
+        $this->method = $username ? 'username' : 'email';
+        $this->result = Status::wrap(
+            $this->passwordReset->execute($this->getUser(), $username, $email));
 
-		if ( $this->result->hasMessage( 'actionthrottledtext' ) ) {
-			throw new ThrottledError;
-		}
+        if ($this->result->hasMessage('actionthrottledtext')) {
+            throw new ThrottledError;
+        }
 
-		return $this->result;
-	}
+        return $this->result;
+    }
 
-	/**
-	 * Show a message on the successful processing of the form.
-	 * This doesn't necessarily mean a reset email was sent.
-	 */
-	public function onSuccess() {
-		$output = $this->getOutput();
+    /**
+     * Show a message on the successful processing of the form.
+     * This doesn't necessarily mean a reset email was sent.
+     */
+    public function onSuccess()
+    {
+        $output = $this->getOutput();
 
-		// Information messages.
-		$output->addWikiMsg( 'passwordreset-success' );
-		$output->addWikiMsg( 'passwordreset-success-details-generic',
-			$this->getConfig()->get( MainConfigNames::PasswordReminderResendTime ) );
+        // Information messages.
+        $output->addWikiMsg('passwordreset-success');
+        $output->addWikiMsg('passwordreset-success-details-generic',
+            $this->getConfig()->get(MainConfigNames::PasswordReminderResendTime));
 
-		// Confirmation of what the user has just submitted.
-		$info = "\n";
-		$postVals = $this->getRequest()->getPostValues();
-		if ( isset( $postVals['wpUsername'] ) && $postVals['wpUsername'] !== '' ) {
-			$info .= "* " . $this->msg( 'passwordreset-username' ) . ' '
-				. wfEscapeWikiText( $postVals['wpUsername'] ) . "\n";
-		}
-		if ( isset( $postVals['wpEmail'] ) && $postVals['wpEmail'] !== '' ) {
-			$info .= "* " . $this->msg( 'passwordreset-email' ) . ' '
-				. wfEscapeWikiText( $postVals['wpEmail'] ) . "\n";
-		}
-		$output->addWikiMsg( 'passwordreset-success-info', $info );
+        // Confirmation of what the user has just submitted.
+        $info = "\n";
+        $postVals = $this->getRequest()->getPostValues();
+        if (isset($postVals['wpUsername']) && $postVals['wpUsername'] !== '') {
+            $info .= "* " . $this->msg('passwordreset-username') . ' '
+                . wfEscapeWikiText($postVals['wpUsername']) . "\n";
+        }
+        if (isset($postVals['wpEmail']) && $postVals['wpEmail'] !== '') {
+            $info .= "* " . $this->msg('passwordreset-email') . ' '
+                . wfEscapeWikiText($postVals['wpEmail']) . "\n";
+        }
+        $output->addWikiMsg('passwordreset-success-info', $info);
 
-		// Link to main page.
-		$output->returnToMain();
-	}
+        // Link to main page.
+        $output->returnToMain();
+    }
 
-	/**
-	 * Hide the password reset page if resets are disabled.
-	 * @return bool
-	 */
-	public function isListed() {
-		if ( $this->passwordReset->isAllowed( $this->getUser() )->isGood() ) {
-			return parent::isListed();
-		}
+    /**
+     * Hide the password reset page if resets are disabled.
+     * @return bool
+     */
+    public function isListed()
+    {
+        if ($this->passwordReset->isAllowed($this->getUser())->isGood()) {
+            return parent::isListed();
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 }

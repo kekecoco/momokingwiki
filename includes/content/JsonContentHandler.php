@@ -33,87 +33,96 @@ use MediaWiki\Content\Transform\PreSaveTransformParams;
  * @stable to extend
  * @ingroup Content
  */
-class JsonContentHandler extends CodeContentHandler {
+class JsonContentHandler extends CodeContentHandler
+{
 
-	/**
-	 * @param string $modelId
-	 * @stable to call
-	 */
-	public function __construct( $modelId = CONTENT_MODEL_JSON ) {
-		parent::__construct( $modelId, [ CONTENT_FORMAT_JSON ] );
-	}
+    /**
+     * @param string $modelId
+     * @stable to call
+     */
+    public function __construct($modelId = CONTENT_MODEL_JSON)
+    {
+        parent::__construct($modelId, [CONTENT_FORMAT_JSON]);
+    }
 
-	/**
-	 * @return string
-	 */
-	protected function getContentClass() {
-		return JsonContent::class;
-	}
+    /**
+     * @return string
+     */
+    protected function getContentClass()
+    {
+        return JsonContent::class;
+    }
 
-	public function makeEmptyContent() {
-		$class = $this->getContentClass();
-		return new $class( '{}' );
-	}
+    public function makeEmptyContent()
+    {
+        $class = $this->getContentClass();
 
-	/**
-	 * Enables EditPage's preload feature on .json pages as well as for extensions like MassMessage
-	 * that subclass {@see JsonContentHandler}.
-	 *
-	 * @return true
-	 */
-	public function supportsPreloadContent(): bool {
-		return true;
-	}
+        return new $class('{}');
+    }
 
-	public function preSaveTransform(
-		Content $content,
-		PreSaveTransformParams $pstParams
-	): Content {
-		$shouldCallDeprecatedMethod = $this->shouldCallDeprecatedContentTransformMethod(
-			$content,
-			$pstParams
-		);
+    /**
+     * Enables EditPage's preload feature on .json pages as well as for extensions like MassMessage
+     * that subclass {@see JsonContentHandler}.
+     *
+     * @return true
+     */
+    public function supportsPreloadContent(): bool
+    {
+        return true;
+    }
 
-		if ( $shouldCallDeprecatedMethod ) {
-			return $this->callDeprecatedContentPST(
-				$content,
-				$pstParams
-			);
-		}
+    public function preSaveTransform(
+        Content $content,
+        PreSaveTransformParams $pstParams
+    ): Content
+    {
+        $shouldCallDeprecatedMethod = $this->shouldCallDeprecatedContentTransformMethod(
+            $content,
+            $pstParams
+        );
 
-		'@phan-var JsonContent $content';
+        if ($shouldCallDeprecatedMethod) {
+            return $this->callDeprecatedContentPST(
+                $content,
+                $pstParams
+            );
+        }
 
-		// FIXME: WikiPage::doUserEditContent invokes PST before validation. As such, native
-		// data may be invalid (though PST result is discarded later in that case).
-		if ( !$content->isValid() ) {
-			return $content;
-		}
+        '@phan-var JsonContent $content';
 
-		$contentClass = $this->getContentClass();
-		return new $contentClass( JsonContent::normalizeLineEndings( $content->beautifyJSON() ) );
-	}
+        // FIXME: WikiPage::doUserEditContent invokes PST before validation. As such, native
+        // data may be invalid (though PST result is discarded later in that case).
+        if (!$content->isValid()) {
+            return $content;
+        }
 
-	/**
-	 * Set the HTML and add the appropriate styles.
-	 *
-	 * @since 1.38
-	 * @param Content $content
-	 * @param ContentParseParams $cpoParams
-	 * @param ParserOutput &$parserOutput The output object to fill (reference).
-	 */
-	protected function fillParserOutput(
-		Content $content,
-		ContentParseParams $cpoParams,
-		ParserOutput &$parserOutput
-	) {
-		'@phan-var JsonContent $content';
-		// FIXME: WikiPage::doUserEditContent generates parser output before validation.
-		// As such, native data may be invalid (though output is discarded later in that case).
-		if ( $cpoParams->getGenerateHtml() && $content->isValid() ) {
-			$parserOutput->setText( $content->rootValueTable( $content->getData()->getValue() ) );
-			$parserOutput->addModuleStyles( [ 'mediawiki.content.json' ] );
-		} else {
-			$parserOutput->setText( null );
-		}
-	}
+        $contentClass = $this->getContentClass();
+
+        return new $contentClass(JsonContent::normalizeLineEndings($content->beautifyJSON()));
+    }
+
+    /**
+     * Set the HTML and add the appropriate styles.
+     *
+     * @param Content $content
+     * @param ContentParseParams $cpoParams
+     * @param ParserOutput &$parserOutput The output object to fill (reference).
+     * @since 1.38
+     */
+    protected function fillParserOutput(
+        Content $content,
+        ContentParseParams $cpoParams,
+        ParserOutput &$parserOutput
+    )
+    {
+        '@phan-var JsonContent $content';
+        // FIXME: WikiPage::doUserEditContent generates parser output before validation.
+        // As such, native data may be invalid (though output is discarded later in that case).
+        if ($cpoParams->getGenerateHtml() && $content->isValid()) {
+            $parserOutput->setText($content->rootValueTable($content->getData()->getValue()));
+            $parserOutput->addModuleStyles(['mediawiki.content.json']);
+        } else {
+            $parserOutput->setText(null);
+        }
+    }
 }

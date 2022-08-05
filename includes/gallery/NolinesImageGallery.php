@@ -21,17 +21,21 @@
  * @file
  */
 
-class NolinesImageGallery extends TraditionalImageGallery {
-	protected function getThumbPadding() {
-		return 0;
-	}
+class NolinesImageGallery extends TraditionalImageGallery
+{
+    protected function getThumbPadding()
+    {
+        return 0;
+    }
 
-	protected function getGBBorders() {
-		// This accounts for extra space between <li> elements.
-		return 4;
-	}
+    protected function getGBBorders()
+    {
+        // This accounts for extra space between <li> elements.
+        return 4;
+    }
 
-	protected function getVPad( $boxHeight, $thumbHeight ) {
-		return 0;
-	}
+    protected function getVPad($boxHeight, $thumbHeight)
+    {
+        return 0;
+    }
 }

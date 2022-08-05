@@ -33,235 +33,249 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @ingroup FileBackend
  * @since 1.23
  */
-class MemoryFileBackend extends FileBackendStore {
-	/** @var array Map of (file path => (data,mtime) */
-	protected $files = [];
+class MemoryFileBackend extends FileBackendStore
+{
+    /** @var array Map of (file path => (data,mtime) */
+    protected $files = [];
 
-	public function getFeatures() {
-		return self::ATTR_UNICODE_PATHS;
-	}
+    public function getFeatures()
+    {
+        return self::ATTR_UNICODE_PATHS;
+    }
 
-	public function isPathUsableInternal( $storagePath ) {
-		return ( $this->resolveHashKey( $storagePath ) !== null );
-	}
+    public function isPathUsableInternal($storagePath)
+    {
+        return ($this->resolveHashKey($storagePath) !== null);
+    }
 
-	protected function doCreateInternal( array $params ) {
-		$status = $this->newStatus();
+    protected function doCreateInternal(array $params)
+    {
+        $status = $this->newStatus();
 
-		$dst = $this->resolveHashKey( $params['dst'] );
-		if ( $dst === null ) {
-			$status->fatal( 'backend-fail-invalidpath', $params['dst'] );
+        $dst = $this->resolveHashKey($params['dst']);
+        if ($dst === null) {
+            $status->fatal('backend-fail-invalidpath', $params['dst']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$this->files[$dst] = [
-			'data' => $params['content'],
-			'mtime' => ConvertibleTimestamp::convert( TS_MW, time() )
-		];
+        $this->files[$dst] = [
+            'data'  => $params['content'],
+            'mtime' => ConvertibleTimestamp::convert(TS_MW, time())
+        ];
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function doStoreInternal( array $params ) {
-		$status = $this->newStatus();
+    protected function doStoreInternal(array $params)
+    {
+        $status = $this->newStatus();
 
-		$dst = $this->resolveHashKey( $params['dst'] );
-		if ( $dst === null ) {
-			$status->fatal( 'backend-fail-invalidpath', $params['dst'] );
+        $dst = $this->resolveHashKey($params['dst']);
+        if ($dst === null) {
+            $status->fatal('backend-fail-invalidpath', $params['dst']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		AtEase::suppressWarnings();
-		$data = file_get_contents( $params['src'] );
-		AtEase::restoreWarnings();
-		if ( $data === false ) { // source doesn't exist?
-			$status->fatal( 'backend-fail-store', $params['src'], $params['dst'] );
+        AtEase::suppressWarnings();
+        $data = file_get_contents($params['src']);
+        AtEase::restoreWarnings();
+        if ($data === false) { // source doesn't exist?
+            $status->fatal('backend-fail-store', $params['src'], $params['dst']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$this->files[$dst] = [
-			'data' => $data,
-			'mtime' => ConvertibleTimestamp::convert( TS_MW, time() )
-		];
+        $this->files[$dst] = [
+            'data'  => $data,
+            'mtime' => ConvertibleTimestamp::convert(TS_MW, time())
+        ];
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function doCopyInternal( array $params ) {
-		$status = $this->newStatus();
+    protected function doCopyInternal(array $params)
+    {
+        $status = $this->newStatus();
 
-		$src = $this->resolveHashKey( $params['src'] );
-		if ( $src === null ) {
-			$status->fatal( 'backend-fail-invalidpath', $params['src'] );
+        $src = $this->resolveHashKey($params['src']);
+        if ($src === null) {
+            $status->fatal('backend-fail-invalidpath', $params['src']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$dst = $this->resolveHashKey( $params['dst'] );
-		if ( $dst === null ) {
-			$status->fatal( 'backend-fail-invalidpath', $params['dst'] );
+        $dst = $this->resolveHashKey($params['dst']);
+        if ($dst === null) {
+            $status->fatal('backend-fail-invalidpath', $params['dst']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		if ( !isset( $this->files[$src] ) ) {
-			if ( empty( $params['ignoreMissingSource'] ) ) {
-				$status->fatal( 'backend-fail-copy', $params['src'], $params['dst'] );
-			}
+        if (!isset($this->files[$src])) {
+            if (empty($params['ignoreMissingSource'])) {
+                $status->fatal('backend-fail-copy', $params['src'], $params['dst']);
+            }
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$this->files[$dst] = [
-			'data' => $this->files[$src]['data'],
-			'mtime' => ConvertibleTimestamp::convert( TS_MW, time() )
-		];
+        $this->files[$dst] = [
+            'data'  => $this->files[$src]['data'],
+            'mtime' => ConvertibleTimestamp::convert(TS_MW, time())
+        ];
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function doDeleteInternal( array $params ) {
-		$status = $this->newStatus();
+    protected function doDeleteInternal(array $params)
+    {
+        $status = $this->newStatus();
 
-		$src = $this->resolveHashKey( $params['src'] );
-		if ( $src === null ) {
-			$status->fatal( 'backend-fail-invalidpath', $params['src'] );
+        $src = $this->resolveHashKey($params['src']);
+        if ($src === null) {
+            $status->fatal('backend-fail-invalidpath', $params['src']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		if ( !isset( $this->files[$src] ) ) {
-			if ( empty( $params['ignoreMissingSource'] ) ) {
-				$status->fatal( 'backend-fail-delete', $params['src'] );
-			}
+        if (!isset($this->files[$src])) {
+            if (empty($params['ignoreMissingSource'])) {
+                $status->fatal('backend-fail-delete', $params['src']);
+            }
 
-			return $status;
-		}
+            return $status;
+        }
 
-		unset( $this->files[$src] );
+        unset($this->files[$src]);
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function doGetFileStat( array $params ) {
-		$src = $this->resolveHashKey( $params['src'] );
-		if ( $src === null ) {
-			return self::$RES_ERROR; // invalid path
-		}
+    protected function doGetFileStat(array $params)
+    {
+        $src = $this->resolveHashKey($params['src']);
+        if ($src === null) {
+            return self::$RES_ERROR; // invalid path
+        }
 
-		if ( isset( $this->files[$src] ) ) {
-			return [
-				'mtime' => $this->files[$src]['mtime'],
-				'size' => strlen( $this->files[$src]['data'] ),
-			];
-		}
+        if (isset($this->files[$src])) {
+            return [
+                'mtime' => $this->files[$src]['mtime'],
+                'size'  => strlen($this->files[$src]['data']),
+            ];
+        }
 
-		return self::$RES_ABSENT;
-	}
+        return self::$RES_ABSENT;
+    }
 
-	protected function doGetLocalCopyMulti( array $params ) {
-		$tmpFiles = []; // (path => TempFSFile)
-		foreach ( $params['srcs'] as $srcPath ) {
-			$src = $this->resolveHashKey( $srcPath );
-			if ( $src === null ) {
-				$fsFile = self::$RES_ERROR;
-			} elseif ( !isset( $this->files[$src] ) ) {
-				$fsFile = self::$RES_ABSENT;
-			} else {
-				// Create a new temporary file with the same extension...
-				$ext = FileBackend::extensionFromPath( $src );
-				$fsFile = $this->tmpFileFactory->newTempFSFile( 'localcopy_', $ext );
-				if ( $fsFile ) {
-					$bytes = file_put_contents( $fsFile->getPath(), $this->files[$src]['data'] );
-					if ( $bytes !== strlen( $this->files[$src]['data'] ) ) {
-						$fsFile = self::$RES_ERROR;
-					}
-				}
-			}
-			$tmpFiles[$srcPath] = $fsFile;
-		}
+    protected function doGetLocalCopyMulti(array $params)
+    {
+        $tmpFiles = []; // (path => TempFSFile)
+        foreach ($params['srcs'] as $srcPath) {
+            $src = $this->resolveHashKey($srcPath);
+            if ($src === null) {
+                $fsFile = self::$RES_ERROR;
+            } elseif (!isset($this->files[$src])) {
+                $fsFile = self::$RES_ABSENT;
+            } else {
+                // Create a new temporary file with the same extension...
+                $ext = FileBackend::extensionFromPath($src);
+                $fsFile = $this->tmpFileFactory->newTempFSFile('localcopy_', $ext);
+                if ($fsFile) {
+                    $bytes = file_put_contents($fsFile->getPath(), $this->files[$src]['data']);
+                    if ($bytes !== strlen($this->files[$src]['data'])) {
+                        $fsFile = self::$RES_ERROR;
+                    }
+                }
+            }
+            $tmpFiles[$srcPath] = $fsFile;
+        }
 
-		return $tmpFiles;
-	}
+        return $tmpFiles;
+    }
 
-	protected function doDirectoryExists( $container, $dir, array $params ) {
-		$prefix = rtrim( "$container/$dir", '/' ) . '/';
-		foreach ( $this->files as $path => $data ) {
-			if ( strpos( $path, $prefix ) === 0 ) {
-				return true;
-			}
-		}
+    protected function doDirectoryExists($container, $dir, array $params)
+    {
+        $prefix = rtrim("$container/$dir", '/') . '/';
+        foreach ($this->files as $path => $data) {
+            if (strpos($path, $prefix) === 0) {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public function getDirectoryListInternal( $container, $dir, array $params ) {
-		$dirs = [];
-		$prefix = rtrim( "$container/$dir", '/' ) . '/';
-		$prefixLen = strlen( $prefix );
-		foreach ( $this->files as $path => $data ) {
-			if ( strpos( $path, $prefix ) === 0 ) {
-				$relPath = substr( $path, $prefixLen );
-				if ( $relPath === false ) {
-					continue;
-				} elseif ( strpos( $relPath, '/' ) === false ) {
-					continue; // just a file
-				}
-				$parts = array_slice( explode( '/', $relPath ), 0, -1 ); // last part is file name
-				if ( !empty( $params['topOnly'] ) ) {
-					$dirs[$parts[0]] = 1; // top directory
-				} else {
-					$current = '';
-					foreach ( $parts as $part ) { // all directories
-						$dir = ( $current === '' ) ? $part : "$current/$part";
-						$dirs[$dir] = 1;
-						$current = $dir;
-					}
-				}
-			}
-		}
+    public function getDirectoryListInternal($container, $dir, array $params)
+    {
+        $dirs = [];
+        $prefix = rtrim("$container/$dir", '/') . '/';
+        $prefixLen = strlen($prefix);
+        foreach ($this->files as $path => $data) {
+            if (strpos($path, $prefix) === 0) {
+                $relPath = substr($path, $prefixLen);
+                if ($relPath === false) {
+                    continue;
+                } elseif (strpos($relPath, '/') === false) {
+                    continue; // just a file
+                }
+                $parts = array_slice(explode('/', $relPath), 0, -1); // last part is file name
+                if (!empty($params['topOnly'])) {
+                    $dirs[$parts[0]] = 1; // top directory
+                } else {
+                    $current = '';
+                    foreach ($parts as $part) { // all directories
+                        $dir = ($current === '') ? $part : "$current/$part";
+                        $dirs[$dir] = 1;
+                        $current = $dir;
+                    }
+                }
+            }
+        }
 
-		return array_keys( $dirs );
-	}
+        return array_keys($dirs);
+    }
 
-	public function getFileListInternal( $container, $dir, array $params ) {
-		$files = [];
-		$prefix = rtrim( "$container/$dir", '/' ) . '/';
-		$prefixLen = strlen( $prefix );
-		foreach ( $this->files as $path => $data ) {
-			if ( strpos( $path, $prefix ) === 0 ) {
-				$relPath = substr( $path, $prefixLen );
-				if ( $relPath === false ) {
-					continue;
-				} elseif ( !empty( $params['topOnly'] ) && strpos( $relPath, '/' ) !== false ) {
-					continue;
-				}
-				$files[] = $relPath;
-			}
-		}
+    public function getFileListInternal($container, $dir, array $params)
+    {
+        $files = [];
+        $prefix = rtrim("$container/$dir", '/') . '/';
+        $prefixLen = strlen($prefix);
+        foreach ($this->files as $path => $data) {
+            if (strpos($path, $prefix) === 0) {
+                $relPath = substr($path, $prefixLen);
+                if ($relPath === false) {
+                    continue;
+                } elseif (!empty($params['topOnly']) && strpos($relPath, '/') !== false) {
+                    continue;
+                }
+                $files[] = $relPath;
+            }
+        }
 
-		return $files;
-	}
+        return $files;
+    }
 
-	protected function directoriesAreVirtual() {
-		return true;
-	}
+    protected function directoriesAreVirtual()
+    {
+        return true;
+    }
 
-	/**
-	 * Get the absolute file system path for a storage path
-	 *
-	 * @param string $storagePath
-	 * @return string|null
-	 */
-	protected function resolveHashKey( $storagePath ) {
-		list( $fullCont, $relPath ) = $this->resolveStoragePathReal( $storagePath );
-		if ( $relPath === null ) {
-			return null; // invalid
-		}
+    /**
+     * Get the absolute file system path for a storage path
+     *
+     * @param string $storagePath
+     * @return string|null
+     */
+    protected function resolveHashKey($storagePath)
+    {
+        [$fullCont, $relPath] = $this->resolveStoragePathReal($storagePath);
+        if ($relPath === null) {
+            return null; // invalid
+        }
 
-		return ( $relPath !== '' ) ? "$fullCont/$relPath" : $fullCont;
-	}
+        return ($relPath !== '') ? "$fullCont/$relPath" : $fullCont;
+    }
 }

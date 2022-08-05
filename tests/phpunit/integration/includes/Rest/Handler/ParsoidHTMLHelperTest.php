@@ -34,312 +34,331 @@ use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
  * @covers \MediaWiki\Rest\Handler\ParsoidHTMLHelper
  * @group Database
  */
-class ParsoidHTMLHelperTest extends MediaWikiIntegrationTestCase {
-	private const CACHE_EPOCH = '20001111010101';
+class ParsoidHTMLHelperTest extends MediaWikiIntegrationTestCase
+{
+    private const CACHE_EPOCH = '20001111010101';
 
-	private const TIMESTAMP_OLD = '20200101112233';
-	private const TIMESTAMP = '20200101223344';
-	private const TIMESTAMP_LATER = '20200101234200';
+    private const TIMESTAMP_OLD = '20200101112233';
+    private const TIMESTAMP = '20200101223344';
+    private const TIMESTAMP_LATER = '20200101234200';
 
-	private const WIKITEXT_OLD = 'Hello \'\'\'Goat\'\'\'';
-	private const WIKITEXT = 'Hello \'\'\'World\'\'\'';
+    private const WIKITEXT_OLD = 'Hello \'\'\'Goat\'\'\'';
+    private const WIKITEXT = 'Hello \'\'\'World\'\'\'';
 
-	private const HTML_OLD = '>Goat<';
-	private const HTML = '>World<';
+    private const HTML_OLD = '>Goat<';
+    private const HTML = '>World<';
 
-	private const PARAM_DEFAULTS = [
-		'stash' => false,
-	];
+    private const PARAM_DEFAULTS = [
+        'stash' => false,
+    ];
 
-	private const MOCK_HTML = '<!DOCTYPE html><html>mocked HTML</html>';
+    private const MOCK_HTML = '<!DOCTYPE html><html>mocked HTML</html>';
 
-	private function exactlyOrAny( ?int $count ): InvocationOrder {
-		return $count === null ? $this->any() : $this->exactly( $count );
-	}
+    private function exactlyOrAny(?int $count): InvocationOrder
+    {
+        return $count === null ? $this->any() : $this->exactly($count);
+    }
 
-	/**
-	 * @param array<string,int> $expectedCalls
-	 *
-	 * @return MockObject|ParsoidOutputAccess
-	 */
-	public function newMockParsoidOutputAccess( $expectedCalls = [] ): ParsoidOutputAccess {
-		$expectedCalls += [
-			'getParserOutput' => 1,
-			'getParsoidRenderID' => null,
-			'getParsoidPageBundle' => null,
-		];
+    /**
+     * @param array<string,int> $expectedCalls
+     *
+     * @return MockObject|ParsoidOutputAccess
+     */
+    public function newMockParsoidOutputAccess($expectedCalls = []): ParsoidOutputAccess
+    {
+        $expectedCalls += [
+            'getParserOutput'      => 1,
+            'getParsoidRenderID'   => null,
+            'getParsoidPageBundle' => null,
+        ];
 
-		$parsoid = $this->createNoOpMock( ParsoidOutputAccess::class, array_keys( $expectedCalls ) );
+        $parsoid = $this->createNoOpMock(ParsoidOutputAccess::class, array_keys($expectedCalls));
 
-		$parsoid->expects( $this->exactlyOrAny( $expectedCalls[ 'getParserOutput' ] ) )
-			->method( 'getParserOutput' )
-			->willReturnCallback( static function (
-				PageRecord $page,
-				ParserOptions $parserOpts,
-				?RevisionRecord $rev = null,
-				int $options = 0
-			) {
-				$pout = new ParserOutput( self::MOCK_HTML );
-				$pout->setCacheRevisionId( $rev ? $rev->getId() : $page->getLatest() );
-				$pout->setCacheTime( wfTimestampNow() ); // will use fake time
-				return Status::newGood( $pout );
-			} );
+        $parsoid->expects($this->exactlyOrAny($expectedCalls['getParserOutput']))
+            ->method('getParserOutput')
+            ->willReturnCallback(static function (
+                PageRecord $page,
+                ParserOptions $parserOpts,
+                ?RevisionRecord $rev = null,
+                int $options = 0
+            ) {
+                $pout = new ParserOutput(self::MOCK_HTML);
+                $pout->setCacheRevisionId($rev ? $rev->getId() : $page->getLatest());
+                $pout->setCacheTime(wfTimestampNow()); // will use fake time
 
-		$parsoid->expects( $this->exactlyOrAny( $expectedCalls[ 'getParsoidRenderID' ] ) )
-			->method( 'getParsoidRenderID' )
-			->willReturnCallback( static function ( ParserOutput $pout ) {
-				return new ParsoidRenderID( $pout->getCacheRevisionId(), $pout->getCacheTime() );
-			} );
+                return Status::newGood($pout);
+            });
 
-		$parsoid->expects( $this->exactlyOrAny( $expectedCalls[ 'getParsoidPageBundle' ] ) )
-			->method( 'getParsoidPageBundle' )
-			->willReturnCallback( static function ( ParserOutput $pout ) {
-				return new PageBundle( $pout->getRawText() );
-			} );
+        $parsoid->expects($this->exactlyOrAny($expectedCalls['getParsoidRenderID']))
+            ->method('getParsoidRenderID')
+            ->willReturnCallback(static function (ParserOutput $pout) {
+                return new ParsoidRenderID($pout->getCacheRevisionId(), $pout->getCacheTime());
+            });
 
-		return $parsoid;
-	}
+        $parsoid->expects($this->exactlyOrAny($expectedCalls['getParsoidPageBundle']))
+            ->method('getParsoidPageBundle')
+            ->willReturnCallback(static function (ParserOutput $pout) {
+                return new PageBundle($pout->getRawText());
+            });
 
-	protected function setUp(): void {
-		parent::setUp();
+        return $parsoid;
+    }
 
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'Parsoid' ) ) {
-			$this->markTestSkipped( 'Parsoid is not configured' );
-		}
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->overrideConfigValue( MainConfigNames::CacheEpoch, self::CACHE_EPOCH );
+        if (!ExtensionRegistry::getInstance()->isLoaded('Parsoid')) {
+            $this->markTestSkipped('Parsoid is not configured');
+        }
 
-		// Clean up these tables after each test
-		$this->tablesUsed = [
-			'page',
-			'revision',
-			'comment',
-			'text',
-			'content'
-		];
-	}
+        $this->overrideConfigValue(MainConfigNames::CacheEpoch, self::CACHE_EPOCH);
 
-	/**
-	 * @param array $returns
-	 *
-	 * @return MockObject|User
-	 */
-	private function newUser( array $returns = [] ): MockObject {
-		$user = $this->createNoOpMock( User::class, [ 'pingLimiter' ] );
-		$user->method( 'pingLimiter' )->willReturn( $returns['pingLimiter'] ?? false );
-		return $user;
-	}
+        // Clean up these tables after each test
+        $this->tablesUsed = [
+            'page',
+            'revision',
+            'comment',
+            'text',
+            'content'
+        ];
+    }
 
-	/**
-	 * @param BagOStuff|null $cache
-	 * @param ?ParsoidOutputAccess $access
-	 * @return ParsoidHTMLHelper
-	 * @throws Exception
-	 */
-	private function newHelper( BagOStuff $cache = null, ?ParsoidOutputAccess $access = null ): ParsoidHTMLHelper {
-		$cache = $cache ?: new EmptyBagOStuff();
-		$stash = new SimpleParsoidOutputStash( $cache, 1 );
+    /**
+     * @param array $returns
+     *
+     * @return MockObject|User
+     */
+    private function newUser(array $returns = []): MockObject
+    {
+        $user = $this->createNoOpMock(User::class, ['pingLimiter']);
+        $user->method('pingLimiter')->willReturn($returns['pingLimiter'] ?? false);
 
-		$helper = new ParsoidHTMLHelper(
-			$stash,
-			new NullStatsdDataFactory(),
-			$access ?? $this->newMockParsoidOutputAccess()
-		);
+        return $user;
+    }
 
-		return $helper;
-	}
+    /**
+     * @param BagOStuff|null $cache
+     * @param ?ParsoidOutputAccess $access
+     * @return ParsoidHTMLHelper
+     * @throws Exception
+     */
+    private function newHelper(BagOStuff $cache = null, ?ParsoidOutputAccess $access = null): ParsoidHTMLHelper
+    {
+        $cache = $cache ?: new EmptyBagOStuff();
+        $stash = new SimpleParsoidOutputStash($cache, 1);
 
-	private function getExistingPageWithRevisions( $name ) {
-		$page = $this->getNonexistingTestPage( $name );
+        $helper = new ParsoidHTMLHelper(
+            $stash,
+            new NullStatsdDataFactory(),
+            $access ?? $this->newMockParsoidOutputAccess()
+        );
 
-		MWTimestamp::setFakeTime( self::TIMESTAMP_OLD );
-		$this->editPage( $page, self::WIKITEXT_OLD );
-		$revisions['first'] = $page->getRevisionRecord();
+        return $helper;
+    }
 
-		MWTimestamp::setFakeTime( self::TIMESTAMP );
-		$this->editPage( $page, self::WIKITEXT );
-		$revisions['latest'] = $page->getRevisionRecord();
+    private function getExistingPageWithRevisions($name)
+    {
+        $page = $this->getNonexistingTestPage($name);
 
-		MWTimestamp::setFakeTime( self::TIMESTAMP_LATER );
-		return [ $page, $revisions ];
-	}
+        MWTimestamp::setFakeTime(self::TIMESTAMP_OLD);
+        $this->editPage($page, self::WIKITEXT_OLD);
+        $revisions['first'] = $page->getRevisionRecord();
 
-	public function provideRevisionReferences() {
-		return [
-			'current' => [ null, [ 'html' => self::HTML, 'timestamp' => self::TIMESTAMP ] ],
-			'old' => [ 'first', [ 'html' => self::HTML_OLD, 'timestamp' => self::TIMESTAMP_OLD ] ],
-		];
-	}
+        MWTimestamp::setFakeTime(self::TIMESTAMP);
+        $this->editPage($page, self::WIKITEXT);
+        $revisions['latest'] = $page->getRevisionRecord();
 
-	/**
-	 * @dataProvider provideRevisionReferences()
-	 */
-	public function testGetHtml( $revRef, $revInfo ) {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
-		$rev = $revRef ? $revisions[ $revRef ] : null;
+        MWTimestamp::setFakeTime(self::TIMESTAMP_LATER);
 
-		$helper = $this->newHelper();
-		$helper->init( $page, self::PARAM_DEFAULTS, $this->newUser(), $rev );
+        return [$page, $revisions];
+    }
 
-		$htmlresult = $helper->getHtml()->getRawText();
+    public function provideRevisionReferences()
+    {
+        return [
+            'current' => [null, ['html' => self::HTML, 'timestamp' => self::TIMESTAMP]],
+            'old'     => ['first', ['html' => self::HTML_OLD, 'timestamp' => self::TIMESTAMP_OLD]],
+        ];
+    }
 
-		$this->assertSame( self::MOCK_HTML, $htmlresult );
-	}
+    /**
+     * @dataProvider provideRevisionReferences()
+     */
+    public function testGetHtml($revRef, $revInfo)
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
+        $rev = $revRef ? $revisions[$revRef] : null;
 
-	public function testHtmlIsStashed() {
-		[ $page, ] = $this->getExistingPageWithRevisions( __METHOD__ );
+        $helper = $this->newHelper();
+        $helper->init($page, self::PARAM_DEFAULTS, $this->newUser(), $rev);
 
-		$cache = new HashBagOStuff();
+        $htmlresult = $helper->getHtml()->getRawText();
 
-		$helper = $this->newHelper( $cache );
+        $this->assertSame(self::MOCK_HTML, $htmlresult);
+    }
 
-		$helper->init( $page, [ 'stash' => true ] + self::PARAM_DEFAULTS, $this->newUser() );
-		$htmlresult = $helper->getHtml()->getRawText();
-		$this->assertSame( self::MOCK_HTML, $htmlresult );
+    public function testHtmlIsStashed()
+    {
+        [$page,] = $this->getExistingPageWithRevisions(__METHOD__);
 
-		$eTag = $helper->getETag();
-		$parsoidStashKey = ParsoidRenderID::newFromETag( $eTag );
+        $cache = new HashBagOStuff();
 
-		$stash = new SimpleParsoidOutputStash( $cache, 1 );
-		$this->assertNotNull( $stash->get( $parsoidStashKey ) );
-	}
+        $helper = $this->newHelper($cache);
 
-	public function testStashRateLimit() {
-		$page = $this->getExistingTestPage( __METHOD__ );
+        $helper->init($page, ['stash' => true] + self::PARAM_DEFAULTS, $this->newUser());
+        $htmlresult = $helper->getHtml()->getRawText();
+        $this->assertSame(self::MOCK_HTML, $htmlresult);
 
-		$helper = $this->newHelper();
+        $eTag = $helper->getETag();
+        $parsoidStashKey = ParsoidRenderID::newFromETag($eTag);
 
-		$user = $this->newUser( [ 'pingLimiter' => true ] );
-		$helper->init( $page, [ 'stash' => true ] + self::PARAM_DEFAULTS, $user );
+        $stash = new SimpleParsoidOutputStash($cache, 1);
+        $this->assertNotNull($stash->get($parsoidStashKey));
+    }
 
-		$this->expectException( LocalizedHttpException::class );
-		$this->expectExceptionCode( 429 );
-		$helper->getHtml();
-	}
+    public function testStashRateLimit()
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
 
-	/**
-	 * @dataProvider provideRevisionReferences()
-	 */
-	public function testEtagLastModified( $revRef, $revInfo ) {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
-		$rev = $revRef ? $revisions[ $revRef ] : null;
+        $helper = $this->newHelper();
 
-		$cache = new HashBagOStuff();
+        $user = $this->newUser(['pingLimiter' => true]);
+        $helper->init($page, ['stash' => true] + self::PARAM_DEFAULTS, $user);
 
-		// First, test it works if nothing was cached yet.
-		$helper = $this->newHelper( $cache );
-		$helper->init( $page, self::PARAM_DEFAULTS, $this->newUser(), $rev );
-		$etag = $helper->getETag();
-		$lastModified = $helper->getLastModified();
-		$helper->getHtml(); // put HTML into the cache
+        $this->expectException(LocalizedHttpException::class);
+        $this->expectExceptionCode(429);
+        $helper->getHtml();
+    }
 
-		// make sure the etag didn't change after getHtml();
-		$this->assertSame( $etag, $helper->getETag() );
-		$this->assertSame(
-			MWTimestamp::convert( TS_MW, $lastModified ),
-			MWTimestamp::convert( TS_MW, $helper->getLastModified() )
-		);
+    /**
+     * @dataProvider provideRevisionReferences()
+     */
+    public function testEtagLastModified($revRef, $revInfo)
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
+        $rev = $revRef ? $revisions[$revRef] : null;
 
-		// Now, expire the cache. etag and timestamp should change
-		$now = MWTimestamp::convert( TS_UNIX, self::TIMESTAMP_LATER ) + 10000;
-		MWTimestamp::setFakeTime( $now );
-		$this->assertTrue(
-			$page->getTitle()->invalidateCache( MWTimestamp::convert( TS_MW, $now ) ),
-			'Cannot invalidate cache'
-		);
-		DeferredUpdates::doUpdates();
-		$page->clear();
+        $cache = new HashBagOStuff();
 
-		$helper = $this->newHelper( $cache );
-		$helper->init( $page, self::PARAM_DEFAULTS, $this->newUser(), $rev );
+        // First, test it works if nothing was cached yet.
+        $helper = $this->newHelper($cache);
+        $helper->init($page, self::PARAM_DEFAULTS, $this->newUser(), $rev);
+        $etag = $helper->getETag();
+        $lastModified = $helper->getLastModified();
+        $helper->getHtml(); // put HTML into the cache
 
-		$this->assertNotSame( $etag, $helper->getETag() );
-		$this->assertSame(
-			MWTimestamp::convert( TS_MW, $now ),
-			MWTimestamp::convert( TS_MW, $helper->getLastModified() )
-		);
-	}
+        // make sure the etag didn't change after getHtml();
+        $this->assertSame($etag, $helper->getETag());
+        $this->assertSame(
+            MWTimestamp::convert(TS_MW, $lastModified),
+            MWTimestamp::convert(TS_MW, $helper->getLastModified())
+        );
 
-	public function provideETagSuffix() {
-		yield 'stash + html' =>
-		[ [ 'stash' => true ], 'html', '/stash/html' ];
+        // Now, expire the cache. etag and timestamp should change
+        $now = MWTimestamp::convert(TS_UNIX, self::TIMESTAMP_LATER) + 10000;
+        MWTimestamp::setFakeTime($now);
+        $this->assertTrue(
+            $page->getTitle()->invalidateCache(MWTimestamp::convert(TS_MW, $now)),
+            'Cannot invalidate cache'
+        );
+        DeferredUpdates::doUpdates();
+        $page->clear();
 
-		yield 'view html' =>
-		[ [], 'html', '/view/html' ];
+        $helper = $this->newHelper($cache);
+        $helper->init($page, self::PARAM_DEFAULTS, $this->newUser(), $rev);
 
-		yield 'stash + wrapped' =>
-		[ [ 'stash' => true ], 'with_html', '/stash/with_html' ];
+        $this->assertNotSame($etag, $helper->getETag());
+        $this->assertSame(
+            MWTimestamp::convert(TS_MW, $now),
+            MWTimestamp::convert(TS_MW, $helper->getLastModified())
+        );
+    }
 
-		yield 'view wrapped' =>
-		[ [], 'with_html', '/view/with_html' ];
+    public function provideETagSuffix()
+    {
+        yield 'stash + html' =>
+        [['stash' => true], 'html', '/stash/html'];
 
-		yield 'stash' =>
-		[ [ 'stash' => true ], '', '/stash' ];
+        yield 'view html' =>
+        [[], 'html', '/view/html'];
 
-		yield 'nothing' =>
-		[ [], '', '/view' ];
-	}
+        yield 'stash + wrapped' =>
+        [['stash' => true], 'with_html', '/stash/with_html'];
 
-	/**
-	 * @dataProvider provideETagSuffix()
-	 */
-	public function testETagSuffix( array $params, string $mode, string $suffix ) {
-		$page = $this->getExistingTestPage( __METHOD__ );
+        yield 'view wrapped' =>
+        [[], 'with_html', '/view/with_html'];
 
-		$cache = new HashBagOStuff();
+        yield 'stash' =>
+        [['stash' => true], '', '/stash'];
 
-		// First, test it works if nothing was cached yet.
-		$helper = $this->newHelper( $cache );
-		$helper->init( $page, $params + self::PARAM_DEFAULTS, $this->newUser() );
+        yield 'nothing' =>
+        [[], '', '/view'];
+    }
 
-		$etag = $helper->getETag( $mode );
-		$etag = trim( $etag, '"' );
-		$this->assertStringEndsWith( $suffix, $etag );
-	}
+    /**
+     * @dataProvider provideETagSuffix()
+     */
+    public function testETagSuffix(array $params, string $mode, string $suffix)
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
 
-	public function provideHandlesParsoidError() {
-		yield 'ClientError' => [
-			new ClientError( 'TEST_TEST' ),
-			new LocalizedHttpException(
-				new MessageValue( 'rest-html-backend-error' ),
-				400,
-				[
-					'reason' => 'TEST_TEST'
-				]
-			)
-		];
-		yield 'ResourceLimitExceededException' => [
-			new ResourceLimitExceededException( 'TEST_TEST' ),
-			new LocalizedHttpException(
-				new MessageValue( 'rest-resource-limit-exceeded' ),
-				413,
-				[
-					'reason' => 'TEST_TEST'
-				]
-			)
-		];
-	}
+        $cache = new HashBagOStuff();
 
-	/**
-	 * @dataProvider provideHandlesParsoidError
-	 */
-	public function testHandlesParsoidError(
-		Exception $parsoidException,
-		Exception $expectedException
-	) {
-		$page = $this->getExistingTestPage( __METHOD__ );
+        // First, test it works if nothing was cached yet.
+        $helper = $this->newHelper($cache);
+        $helper->init($page, $params + self::PARAM_DEFAULTS, $this->newUser());
 
-		/** @var ParsoidOutputAccess|MockObject $access */
-		$access = $this->createNoOpMock( ParsoidOutputAccess::class, [ 'getParserOutput' ] );
-		$access->expects( $this->once() )
-			->method( 'wikitext2html' )
-			->willThrowException( $parsoidException );
+        $etag = $helper->getETag($mode);
+        $etag = trim($etag, '"');
+        $this->assertStringEndsWith($suffix, $etag);
+    }
 
-		$helper = $this->newHelper( null, $access );
-		$helper->init( $page, self::PARAM_DEFAULTS, $this->newUser() );
+    public function provideHandlesParsoidError()
+    {
+        yield 'ClientError' => [
+            new ClientError('TEST_TEST'),
+            new LocalizedHttpException(
+                new MessageValue('rest-html-backend-error'),
+                400,
+                [
+                    'reason' => 'TEST_TEST'
+                ]
+            )
+        ];
+        yield 'ResourceLimitExceededException' => [
+            new ResourceLimitExceededException('TEST_TEST'),
+            new LocalizedHttpException(
+                new MessageValue('rest-resource-limit-exceeded'),
+                413,
+                [
+                    'reason' => 'TEST_TEST'
+                ]
+            )
+        ];
+    }
 
-		$this->expectExceptionObject( $expectedException );
-		$helper->getHtml();
-	}
+    /**
+     * @dataProvider provideHandlesParsoidError
+     */
+    public function testHandlesParsoidError(
+        Exception $parsoidException,
+        Exception $expectedException
+    )
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
+
+        /** @var ParsoidOutputAccess|MockObject $access */
+        $access = $this->createNoOpMock(ParsoidOutputAccess::class, ['getParserOutput']);
+        $access->expects($this->once())
+            ->method('wikitext2html')
+            ->willThrowException($parsoidException);
+
+        $helper = $this->newHelper(null, $access);
+        $helper->init($page, self::PARAM_DEFAULTS, $this->newUser());
+
+        $this->expectExceptionObject($expectedException);
+        $helper->getHtml();
+    }
 
 }

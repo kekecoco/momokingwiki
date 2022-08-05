@@ -13,92 +13,100 @@ use Wikimedia\Rdbms\SessionConsistentConnectionManager;
  *
  * @author Daniel Kinzler
  */
-class SessionConsistentConnectionManagerTest extends TestCase {
-	/**
-	 * @return IDatabase|MockObject
-	 */
-	private function getIDatabaseMock() {
-		return $this->getMockBuilder( IDatabase::class )
-			->getMock();
-	}
+class SessionConsistentConnectionManagerTest extends TestCase
+{
+    /**
+     * @return IDatabase|MockObject
+     */
+    private function getIDatabaseMock()
+    {
+        return $this->getMockBuilder(IDatabase::class)
+            ->getMock();
+    }
 
-	/**
-	 * @return LoadBalancer|MockObject
-	 */
-	private function getLoadBalancerMock() {
-		return $this->createMock( LoadBalancer::class );
-	}
+    /**
+     * @return LoadBalancer|MockObject
+     */
+    private function getLoadBalancerMock()
+    {
+        return $this->createMock(LoadBalancer::class);
+    }
 
-	public function testGetReadConnection() {
-		$database = $this->getIDatabaseMock();
-		$lb = $this->getLoadBalancerMock();
+    public function testGetReadConnection()
+    {
+        $database = $this->getIDatabaseMock();
+        $lb = $this->getLoadBalancerMock();
 
-		$lb->expects( $this->once() )
-			->method( 'getConnection' )
-			->with( DB_REPLICA )
-			->willReturn( $database );
+        $lb->expects($this->once())
+            ->method('getConnection')
+            ->with(DB_REPLICA)
+            ->willReturn($database);
 
-		$manager = new SessionConsistentConnectionManager( $lb );
-		$actual = $manager->getReadConnection();
+        $manager = new SessionConsistentConnectionManager($lb);
+        $actual = $manager->getReadConnection();
 
-		$this->assertSame( $database, $actual );
-	}
+        $this->assertSame($database, $actual);
+    }
 
-	public function testGetReadConnectionReturnsWriteDbOnForceMaster() {
-		$database = $this->getIDatabaseMock();
-		$lb = $this->getLoadBalancerMock();
+    public function testGetReadConnectionReturnsWriteDbOnForceMaster()
+    {
+        $database = $this->getIDatabaseMock();
+        $lb = $this->getLoadBalancerMock();
 
-		$lb->expects( $this->once() )
-			->method( 'getConnection' )
-			->with( DB_PRIMARY )
-			->willReturn( $database );
+        $lb->expects($this->once())
+            ->method('getConnection')
+            ->with(DB_PRIMARY)
+            ->willReturn($database);
 
-		$manager = new SessionConsistentConnectionManager( $lb );
-		$manager->prepareForUpdates();
-		$actual = $manager->getReadConnection();
+        $manager = new SessionConsistentConnectionManager($lb);
+        $manager->prepareForUpdates();
+        $actual = $manager->getReadConnection();
 
-		$this->assertSame( $database, $actual );
-	}
+        $this->assertSame($database, $actual);
+    }
 
-	public function testGetWriteConnection() {
-		$database = $this->getIDatabaseMock();
-		$lb = $this->getLoadBalancerMock();
+    public function testGetWriteConnection()
+    {
+        $database = $this->getIDatabaseMock();
+        $lb = $this->getLoadBalancerMock();
 
-		$lb->expects( $this->once() )
-			->method( 'getConnection' )
-			->with( DB_PRIMARY )
-			->willReturn( $database );
+        $lb->expects($this->once())
+            ->method('getConnection')
+            ->with(DB_PRIMARY)
+            ->willReturn($database);
 
-		$manager = new SessionConsistentConnectionManager( $lb );
-		$actual = $manager->getWriteConnection();
+        $manager = new SessionConsistentConnectionManager($lb);
+        $actual = $manager->getWriteConnection();
 
-		$this->assertSame( $database, $actual );
-	}
+        $this->assertSame($database, $actual);
+    }
 
-	public function testForceMaster() {
-		$database = $this->getIDatabaseMock();
-		$lb = $this->getLoadBalancerMock();
+    public function testForceMaster()
+    {
+        $database = $this->getIDatabaseMock();
+        $lb = $this->getLoadBalancerMock();
 
-		$lb->expects( $this->once() )
-			->method( 'getConnection' )
-			->with( DB_PRIMARY )
-			->willReturn( $database );
+        $lb->expects($this->once())
+            ->method('getConnection')
+            ->with(DB_PRIMARY)
+            ->willReturn($database);
 
-		$manager = new SessionConsistentConnectionManager( $lb );
-		$manager->prepareForUpdates();
-		$manager->getReadConnection();
-	}
+        $manager = new SessionConsistentConnectionManager($lb);
+        $manager->prepareForUpdates();
+        $manager->getReadConnection();
+    }
 
-	public function testReleaseConnection() {
-		$database = $this->getIDatabaseMock();
-		$lb = $this->getLoadBalancerMock();
+    public function testReleaseConnection()
+    {
+        $database = $this->getIDatabaseMock();
+        $lb = $this->getLoadBalancerMock();
 
-		$lb->expects( $this->once() )
-			->method( 'reuseConnection' )
-			->with( $database )
-			->willReturn( null );
+        $lb->expects($this->once())
+            ->method('reuseConnection')
+            ->with($database)
+            ->willReturn(null);
 
-		$manager = new SessionConsistentConnectionManager( $lb );
-		$manager->releaseConnection( $database );
-	}
+        $manager = new SessionConsistentConnectionManager($lb);
+        $manager->releaseConnection($database);
+    }
 }

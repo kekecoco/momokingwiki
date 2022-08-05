@@ -8,7 +8,7 @@
  */
 
 $namespaceNames = [
-	NS_MEDIA            => 'Медиа',
+    NS_MEDIA => 'Медиа',
 ];
 
 $linkTrail = '/^([a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюяӀ]+)(.*)$/sDu';

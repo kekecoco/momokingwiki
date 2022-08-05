@@ -35,28 +35,32 @@
  *   all the methods.
  * @ingroup Search
  */
-class SearchResult {
-	use SearchResultTrait;
-	use RevisionSearchResultTrait;
+class SearchResult
+{
+    use SearchResultTrait;
+    use RevisionSearchResultTrait;
 
-	public function __construct() {
-		if ( self::class === static::class ) {
-			wfDeprecated( __METHOD__, '1.34' );
-		}
-	}
+    public function __construct()
+    {
+        if (self::class === static::class) {
+            wfDeprecated(__METHOD__, '1.34');
+        }
+    }
 
-	/**
-	 * Return a new SearchResult and initializes it with a title.
-	 *
-	 * @param Title $title
-	 * @param ISearchResultSet|null $parentSet
-	 * @return SearchResult
-	 */
-	public static function newFromTitle( $title, ISearchResultSet $parentSet = null ) {
-		$result = new RevisionSearchResult( $title );
-		if ( $parentSet ) {
-			$parentSet->augmentResult( $result );
-		}
-		return $result;
-	}
+    /**
+     * Return a new SearchResult and initializes it with a title.
+     *
+     * @param Title $title
+     * @param ISearchResultSet|null $parentSet
+     * @return SearchResult
+     */
+    public static function newFromTitle($title, ISearchResultSet $parentSet = null)
+    {
+        $result = new RevisionSearchResult($title);
+        if ($parentSet) {
+            $parentSet->augmentResult($result);
+        }
+
+        return $result;
+    }
 }

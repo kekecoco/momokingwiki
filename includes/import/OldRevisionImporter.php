@@ -3,15 +3,16 @@
 /**
  * @since 1.31
  */
-interface OldRevisionImporter {
+interface OldRevisionImporter
+{
 
-	/**
-	 * @since 1.31
-	 *
-	 * @param ImportableOldRevision $importableRevision
-	 *
-	 * @return bool Success
-	 */
-	public function import( ImportableOldRevision $importableRevision );
+    /**
+     * @param ImportableOldRevision $importableRevision
+     *
+     * @return bool Success
+     * @since 1.31
+     *
+     */
+    public function import(ImportableOldRevision $importableRevision);
 
 }

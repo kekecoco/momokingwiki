@@ -32,63 +32,67 @@ use TitleValue;
  * @ingroup ResourceLoader
  * @internal
  */
-class UserStylesModule extends WikiModule {
+class UserStylesModule extends WikiModule
+{
 
-	protected $origin = self::ORIGIN_USER_INDIVIDUAL;
-	protected $targets = [ 'desktop', 'mobile' ];
+    protected $origin = self::ORIGIN_USER_INDIVIDUAL;
+    protected $targets = ['desktop', 'mobile'];
 
-	/**
-	 * @param Context $context
-	 * @return array[]
-	 */
-	protected function getPages( Context $context ) {
-		$user = $context->getUserIdentity();
-		if ( !$user || !$user->isRegistered() ) {
-			return [];
-		}
+    /**
+     * @param Context $context
+     * @return array[]
+     */
+    protected function getPages(Context $context)
+    {
+        $user = $context->getUserIdentity();
+        if (!$user || !$user->isRegistered()) {
+            return [];
+        }
 
-		$config = $this->getConfig();
-		$pages = [];
+        $config = $this->getConfig();
+        $pages = [];
 
-		if ( $config->get( MainConfigNames::AllowUserCss ) ) {
-			$titleFormatter = MediaWikiServices::getInstance()->getTitleFormatter();
-			// Use localised/normalised variant to ensure $excludepage matches
-			$userPage = $titleFormatter->getPrefixedDBkey( new TitleValue( NS_USER, $user->getName() ) );
-			$pages["$userPage/common.css"] = [ 'type' => 'style' ];
-			$pages["$userPage/" . $context->getSkin() . '.css'] = [ 'type' => 'style' ];
-		}
+        if ($config->get(MainConfigNames::AllowUserCss)) {
+            $titleFormatter = MediaWikiServices::getInstance()->getTitleFormatter();
+            // Use localised/normalised variant to ensure $excludepage matches
+            $userPage = $titleFormatter->getPrefixedDBkey(new TitleValue(NS_USER, $user->getName()));
+            $pages["$userPage/common.css"] = ['type' => 'style'];
+            $pages["$userPage/" . $context->getSkin() . '.css'] = ['type' => 'style'];
+        }
 
-		// User group pages are maintained site-wide and enabled with site JS/CSS.
-		if ( $config->get( MainConfigNames::UseSiteCss ) ) {
-			$effectiveGroups = MediaWikiServices::getInstance()->getUserGroupManager()
-				->getUserEffectiveGroups( $user );
-			foreach ( $effectiveGroups as $group ) {
-				if ( $group == '*' ) {
-					continue;
-				}
-				$pages["MediaWiki:Group-$group.css"] = [ 'type' => 'style' ];
-			}
-		}
+        // User group pages are maintained site-wide and enabled with site JS/CSS.
+        if ($config->get(MainConfigNames::UseSiteCss)) {
+            $effectiveGroups = MediaWikiServices::getInstance()->getUserGroupManager()
+                ->getUserEffectiveGroups($user);
+            foreach ($effectiveGroups as $group) {
+                if ($group == '*') {
+                    continue;
+                }
+                $pages["MediaWiki:Group-$group.css"] = ['type' => 'style'];
+            }
+        }
 
-		return $pages;
-	}
+        return $pages;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getType() {
-		return self::LOAD_STYLES;
-	}
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return self::LOAD_STYLES;
+    }
 
-	/**
-	 * Get group name
-	 *
-	 * @return string
-	 */
-	public function getGroup() {
-		return self::GROUP_USER;
-	}
+    /**
+     * Get group name
+     *
+     * @return string
+     */
+    public function getGroup()
+    {
+        return self::GROUP_USER;
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( UserStylesModule::class, 'ResourceLoaderUserStylesModule' );
+class_alias(UserStylesModule::class, 'ResourceLoaderUserStylesModule');

@@ -38,132 +38,138 @@ use WANObjectCache;
  * @since 1.36
  * @package MediaWiki\Parser
  */
-class ParserCacheFactory {
+class ParserCacheFactory
+{
 
-	/** @var string name of ParserCache for the default parser */
-	public const DEFAULT_NAME = 'pcache';
+    /** @var string name of ParserCache for the default parser */
+    public const DEFAULT_NAME = 'pcache';
 
-	/** @var BagOStuff */
-	private $parserCacheBackend;
+    /** @var BagOStuff */
+    private $parserCacheBackend;
 
-	/** @var WANObjectCache */
-	private $revisionOutputCacheBackend;
+    /** @var WANObjectCache */
+    private $revisionOutputCacheBackend;
 
-	/** @var HookContainer */
-	private $hookContainer;
+    /** @var HookContainer */
+    private $hookContainer;
 
-	/** @var JsonCodec */
-	private $jsonCodec;
+    /** @var JsonCodec */
+    private $jsonCodec;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $stats;
+    /** @var IBufferingStatsdDataFactory */
+    private $stats;
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	/** @var TitleFactory */
-	private $titleFactory;
+    /** @var TitleFactory */
+    private $titleFactory;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/** @var ParserCache[] */
-	private $parserCaches = [];
+    /** @var ParserCache[] */
+    private $parserCaches = [];
 
-	/** @var RevisionOutputCache[] */
-	private $revisionOutputCaches = [];
+    /** @var RevisionOutputCache[] */
+    private $revisionOutputCaches = [];
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/**
-	 * @internal
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::CacheEpoch,
-		MainConfigNames::OldRevisionParserCacheExpireTime,
-	];
+    /**
+     * @internal
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::CacheEpoch,
+        MainConfigNames::OldRevisionParserCacheExpireTime,
+    ];
 
-	/**
-	 * @param BagOStuff $parserCacheBackend
-	 * @param WANObjectCache $revisionOutputCacheBackend
-	 * @param HookContainer $hookContainer
-	 * @param JsonCodec $jsonCodec
-	 * @param IBufferingStatsdDataFactory $stats
-	 * @param LoggerInterface $logger
-	 * @param ServiceOptions $options
-	 * @param TitleFactory $titleFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
-	public function __construct(
-		BagOStuff $parserCacheBackend,
-		WANObjectCache $revisionOutputCacheBackend,
-		HookContainer $hookContainer,
-		JsonCodec $jsonCodec,
-		IBufferingStatsdDataFactory $stats,
-		LoggerInterface $logger,
-		ServiceOptions $options,
-		TitleFactory $titleFactory,
-		WikiPageFactory $wikiPageFactory
-	) {
-		$this->parserCacheBackend = $parserCacheBackend;
-		$this->revisionOutputCacheBackend = $revisionOutputCacheBackend;
-		$this->hookContainer = $hookContainer;
-		$this->jsonCodec = $jsonCodec;
-		$this->stats = $stats;
-		$this->logger = $logger;
+    /**
+     * @param BagOStuff $parserCacheBackend
+     * @param WANObjectCache $revisionOutputCacheBackend
+     * @param HookContainer $hookContainer
+     * @param JsonCodec $jsonCodec
+     * @param IBufferingStatsdDataFactory $stats
+     * @param LoggerInterface $logger
+     * @param ServiceOptions $options
+     * @param TitleFactory $titleFactory
+     * @param WikiPageFactory $wikiPageFactory
+     */
+    public function __construct(
+        BagOStuff $parserCacheBackend,
+        WANObjectCache $revisionOutputCacheBackend,
+        HookContainer $hookContainer,
+        JsonCodec $jsonCodec,
+        IBufferingStatsdDataFactory $stats,
+        LoggerInterface $logger,
+        ServiceOptions $options,
+        TitleFactory $titleFactory,
+        WikiPageFactory $wikiPageFactory
+    )
+    {
+        $this->parserCacheBackend = $parserCacheBackend;
+        $this->revisionOutputCacheBackend = $revisionOutputCacheBackend;
+        $this->hookContainer = $hookContainer;
+        $this->jsonCodec = $jsonCodec;
+        $this->stats = $stats;
+        $this->logger = $logger;
 
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->titleFactory = $titleFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-	}
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        $this->options = $options;
+        $this->titleFactory = $titleFactory;
+        $this->wikiPageFactory = $wikiPageFactory;
+    }
 
-	/**
-	 * Get a ParserCache instance by $name.
-	 * @param string $name
-	 * @return ParserCache
-	 */
-	public function getParserCache( string $name ): ParserCache {
-		if ( !isset( $this->parserCaches[$name] ) ) {
-			$this->logger->debug( "Creating ParserCache instance for {$name}" );
-			$cache = new ParserCache(
-				$name,
-				$this->parserCacheBackend,
-				$this->options->get( MainConfigNames::CacheEpoch ),
-				$this->hookContainer,
-				$this->jsonCodec,
-				$this->stats,
-				$this->logger,
-				$this->titleFactory,
-				$this->wikiPageFactory
-			);
+    /**
+     * Get a ParserCache instance by $name.
+     * @param string $name
+     * @return ParserCache
+     */
+    public function getParserCache(string $name): ParserCache
+    {
+        if (!isset($this->parserCaches[$name])) {
+            $this->logger->debug("Creating ParserCache instance for {$name}");
+            $cache = new ParserCache(
+                $name,
+                $this->parserCacheBackend,
+                $this->options->get(MainConfigNames::CacheEpoch),
+                $this->hookContainer,
+                $this->jsonCodec,
+                $this->stats,
+                $this->logger,
+                $this->titleFactory,
+                $this->wikiPageFactory
+            );
 
-			$this->parserCaches[$name] = $cache;
-		}
-		return $this->parserCaches[$name];
-	}
+            $this->parserCaches[$name] = $cache;
+        }
 
-	/**
-	 * Get a RevisionOutputCache instance by $name.
-	 * @param string $name
-	 * @return RevisionOutputCache
-	 */
-	public function getRevisionOutputCache( string $name ): RevisionOutputCache {
-		if ( !isset( $this->revisionOutputCaches[$name] ) ) {
-			$this->logger->debug( "Creating RevisionOutputCache instance for {$name}" );
-			$cache = new RevisionOutputCache(
-				$name,
-				$this->revisionOutputCacheBackend,
-				$this->options->get( MainConfigNames::OldRevisionParserCacheExpireTime ),
-				$this->options->get( MainConfigNames::CacheEpoch ),
-				$this->jsonCodec,
-				$this->stats,
-				$this->logger
-			);
+        return $this->parserCaches[$name];
+    }
 
-			$this->revisionOutputCaches[$name] = $cache;
-		}
-		return $this->revisionOutputCaches[$name];
-	}
+    /**
+     * Get a RevisionOutputCache instance by $name.
+     * @param string $name
+     * @return RevisionOutputCache
+     */
+    public function getRevisionOutputCache(string $name): RevisionOutputCache
+    {
+        if (!isset($this->revisionOutputCaches[$name])) {
+            $this->logger->debug("Creating RevisionOutputCache instance for {$name}");
+            $cache = new RevisionOutputCache(
+                $name,
+                $this->revisionOutputCacheBackend,
+                $this->options->get(MainConfigNames::OldRevisionParserCacheExpireTime),
+                $this->options->get(MainConfigNames::CacheEpoch),
+                $this->jsonCodec,
+                $this->stats,
+                $this->logger
+            );
+
+            $this->revisionOutputCaches[$name] = $cache;
+        }
+
+        return $this->revisionOutputCaches[$name];
+    }
 }

@@ -31,49 +31,55 @@ use Title;
  * @internal
  * @author DannyS712
  */
-class CreationPermissionConstraint implements IEditConstraint {
+class CreationPermissionConstraint implements IEditConstraint
+{
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param Authority $performer
-	 * @param Title $title
-	 */
-	public function __construct(
-		Authority $performer,
-		Title $title
-	) {
-		$this->performer = $performer;
-		$this->title = $title;
-	}
+    /**
+     * @param Authority $performer
+     * @param Title $title
+     */
+    public function __construct(
+        Authority $performer,
+        Title $title
+    )
+    {
+        $this->performer = $performer;
+        $this->title = $title;
+    }
 
-	public function checkConstraint(): string {
-		// Check isn't simple enough to just repeat when getting the status
-		if ( !$this->performer->authorizeWrite( 'create', $this->title ) ) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+    public function checkConstraint(): string
+    {
+        // Check isn't simple enough to just repeat when getting the status
+        if (!$this->performer->authorizeWrite('create', $this->title)) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        $this->result = self::CONSTRAINT_PASSED;
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->fatal( 'nocreatetext' );
-			$statusValue->value = self::AS_NO_CREATE_PERMISSION;
-		}
+        return self::CONSTRAINT_PASSED;
+    }
 
-		return $statusValue;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->fatal('nocreatetext');
+            $statusValue->value = self::AS_NO_CREATE_PERMISSION;
+        }
+
+        return $statusValue;
+    }
 
 }

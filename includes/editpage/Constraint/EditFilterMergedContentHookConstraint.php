@@ -39,143 +39,152 @@ use User;
  * @author DannyS712
  * @internal
  */
-class EditFilterMergedContentHookConstraint implements IEditConstraint {
+class EditFilterMergedContentHookConstraint implements IEditConstraint
+{
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/** @var Content */
-	private $content;
+    /** @var Content */
+    private $content;
 
-	/** @var IContextSource */
-	private $hookContext;
+    /** @var IContextSource */
+    private $hookContext;
 
-	/** @var string */
-	private $summary;
+    /** @var string */
+    private $summary;
 
-	/** @var bool */
-	private $minorEdit;
+    /** @var bool */
+    private $minorEdit;
 
-	/** @var Language */
-	private $language;
+    /** @var Language */
+    private $language;
 
-	/** @var User */
-	private $hookUser;
+    /** @var User */
+    private $hookUser;
 
-	/** @var Status */
-	private $status;
+    /** @var Status */
+    private $status;
 
-	/** @var string */
-	private $hookError = '';
+    /** @var string */
+    private $hookError = '';
 
-	/**
-	 * @param HookContainer $hookContainer
-	 * @param Content $content
-	 * @param IContextSource $hookContext NOTE: This should only be passed to the hook.
-	 * @param string $summary
-	 * @param bool $minorEdit
-	 * @param Language $language
-	 * @param User $hookUser NOTE: This should only be passed to the hook.
-	 */
-	public function __construct(
-		HookContainer $hookContainer,
-		Content $content,
-		IContextSource $hookContext,
-		string $summary,
-		bool $minorEdit,
-		Language $language,
-		User $hookUser
-	) {
-		$this->hookRunner = new HookRunner( $hookContainer );
-		$this->content = $content;
-		$this->hookContext = $hookContext;
-		$this->summary = $summary;
-		$this->minorEdit = $minorEdit;
-		$this->language = $language;
-		$this->hookUser = $hookUser;
-		$this->status = Status::newGood();
-	}
+    /**
+     * @param HookContainer $hookContainer
+     * @param Content $content
+     * @param IContextSource $hookContext NOTE: This should only be passed to the hook.
+     * @param string $summary
+     * @param bool $minorEdit
+     * @param Language $language
+     * @param User $hookUser NOTE: This should only be passed to the hook.
+     */
+    public function __construct(
+        HookContainer $hookContainer,
+        Content $content,
+        IContextSource $hookContext,
+        string $summary,
+        bool $minorEdit,
+        Language $language,
+        User $hookUser
+    )
+    {
+        $this->hookRunner = new HookRunner($hookContainer);
+        $this->content = $content;
+        $this->hookContext = $hookContext;
+        $this->summary = $summary;
+        $this->minorEdit = $minorEdit;
+        $this->language = $language;
+        $this->hookUser = $hookUser;
+        $this->status = Status::newGood();
+    }
 
-	public function checkConstraint(): string {
-		$hookResult = $this->hookRunner->onEditFilterMergedContent(
-			$this->hookContext,
-			$this->content,
-			$this->status,
-			$this->summary,
-			$this->hookUser,
-			$this->minorEdit
-		);
-		if ( !$hookResult ) {
-			// Error messages etc. could be handled within the hook...
-			if ( $this->status->isGood() ) {
-				$this->status->fatal( 'hookaborted' );
-				// Not setting $this->hookError here is a hack to allow the hook
-				// to cause a return to the edit page without $this->hookError
-				// being set. This is used by ConfirmEdit to display a captcha
-				// without any error message cruft.
-			} else {
-				if ( !$this->status->getErrors() ) {
-					// Provide a fallback error message if none was set
-					$this->status->fatal( 'hookaborted' );
-				}
-				$this->hookError = $this->formatStatusErrors( $this->status );
-			}
-			// Use the existing $status->value if the hook set it
-			if ( !$this->status->value ) {
-				// T273354: Should be AS_HOOK_ERROR_EXPECTED to display error message
-				$this->status->value = self::AS_HOOK_ERROR_EXPECTED;
-			}
-			return self::CONSTRAINT_FAILED;
-		}
+    public function checkConstraint(): string
+    {
+        $hookResult = $this->hookRunner->onEditFilterMergedContent(
+            $this->hookContext,
+            $this->content,
+            $this->status,
+            $this->summary,
+            $this->hookUser,
+            $this->minorEdit
+        );
+        if (!$hookResult) {
+            // Error messages etc. could be handled within the hook...
+            if ($this->status->isGood()) {
+                $this->status->fatal('hookaborted');
+                // Not setting $this->hookError here is a hack to allow the hook
+                // to cause a return to the edit page without $this->hookError
+                // being set. This is used by ConfirmEdit to display a captcha
+                // without any error message cruft.
+            } else {
+                if (!$this->status->getErrors()) {
+                    // Provide a fallback error message if none was set
+                    $this->status->fatal('hookaborted');
+                }
+                $this->hookError = $this->formatStatusErrors($this->status);
+            }
+            // Use the existing $status->value if the hook set it
+            if (!$this->status->value) {
+                // T273354: Should be AS_HOOK_ERROR_EXPECTED to display error message
+                $this->status->value = self::AS_HOOK_ERROR_EXPECTED;
+            }
 
-		if ( !$this->status->isOK() ) {
-			// ...or the hook could be expecting us to produce an error
-			// FIXME this sucks, we should just use the Status object throughout
-			if ( !$this->status->getErrors() ) {
-				// Provide a fallback error message if none was set
-				$this->status->fatal( 'hookaborted' );
-			}
-			$this->hookError = $this->formatStatusErrors( $this->status );
-			$this->status->value = self::AS_HOOK_ERROR_EXPECTED;
-			return self::CONSTRAINT_FAILED;
-		}
+            return self::CONSTRAINT_FAILED;
+        }
 
-		return self::CONSTRAINT_PASSED;
-	}
+        if (!$this->status->isOK()) {
+            // ...or the hook could be expecting us to produce an error
+            // FIXME this sucks, we should just use the Status object throughout
+            if (!$this->status->getErrors()) {
+                // Provide a fallback error message if none was set
+                $this->status->fatal('hookaborted');
+            }
+            $this->hookError = $this->formatStatusErrors($this->status);
+            $this->status->value = self::AS_HOOK_ERROR_EXPECTED;
 
-	public function getLegacyStatus(): StatusValue {
-		// This returns a Status instead of a StatusValue since a Status object is
-		// used in the hook
-		return $this->status;
-	}
+            return self::CONSTRAINT_FAILED;
+        }
 
-	/**
-	 * TODO this is really ugly. The constraint shouldn't know that the status
-	 * will be used as wikitext, with is what the hookError represents, rather
-	 * than just the error code. This needs a big refactor to remove the hook
-	 * error string and just rely on the status object entirely.
-	 *
-	 * @internal
-	 * @return string
-	 */
-	public function getHookError(): string {
-		return $this->hookError;
-	}
+        return self::CONSTRAINT_PASSED;
+    }
 
-	/**
-	 * Wrap status errors in error boxes for increased visibility.
-	 * @param Status $status
-	 * @return string
-	 */
-	private function formatStatusErrors( Status $status ): string {
-		$ret = '';
-		foreach ( $status->getErrors() as $rawError ) {
-			// XXX: This interface is ugly, but it seems to be the only convenient way to convert a message specifier
-			// as used in Status to a Message without all the cruft that Status::getMessage & friends add.
-			$msg = Message::newFromSpecifier( ApiMessage::create( $rawError ) );
-			$ret .= Html::errorBox( "\n" . $msg->inLanguage( $this->language )->plain() . "\n" );
-		}
-		return $ret;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        // This returns a Status instead of a StatusValue since a Status object is
+        // used in the hook
+        return $this->status;
+    }
+
+    /**
+     * TODO this is really ugly. The constraint shouldn't know that the status
+     * will be used as wikitext, with is what the hookError represents, rather
+     * than just the error code. This needs a big refactor to remove the hook
+     * error string and just rely on the status object entirely.
+     *
+     * @return string
+     * @internal
+     */
+    public function getHookError(): string
+    {
+        return $this->hookError;
+    }
+
+    /**
+     * Wrap status errors in error boxes for increased visibility.
+     * @param Status $status
+     * @return string
+     */
+    private function formatStatusErrors(Status $status): string
+    {
+        $ret = '';
+        foreach ($status->getErrors() as $rawError) {
+            // XXX: This interface is ugly, but it seems to be the only convenient way to convert a message specifier
+            // as used in Status to a Message without all the cruft that Status::getMessage & friends add.
+            $msg = Message::newFromSpecifier(ApiMessage::create($rawError));
+            $ret .= Html::errorBox("\n" . $msg->inLanguage($this->language)->plain() . "\n");
+        }
+
+        return $ret;
+    }
 
 }

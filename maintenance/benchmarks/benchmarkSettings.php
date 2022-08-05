@@ -35,121 +35,126 @@ require_once __DIR__ . '/../includes/Benchmarker.php';
  *
  * @ingroup Benchmark
  */
-class BenchmarkSettings extends Benchmarker {
-	public function __construct() {
-		parent::__construct();
-		$this->defaultCount = 100;
-		$this->addDescription( 'Benchmark loading settings files.' );
-	}
+class BenchmarkSettings extends Benchmarker
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->defaultCount = 100;
+        $this->addDescription('Benchmark loading settings files.');
+    }
 
-	private function newSettingsBuilder() {
-		$extReg = new ExtensionRegistry();
-		$configBuilder = new ArrayConfigBuilder();
-		$phpIniSink = new NullIniSink();
-		return new SettingsBuilder( MW_INSTALL_PATH, $extReg, $configBuilder, $phpIniSink, null );
-	}
+    private function newSettingsBuilder()
+    {
+        $extReg = new ExtensionRegistry();
+        $configBuilder = new ArrayConfigBuilder();
+        $phpIniSink = new NullIniSink();
 
-	public function execute() {
-		$benches = [];
+        return new SettingsBuilder(MW_INSTALL_PATH, $extReg, $configBuilder, $phpIniSink, null);
+    }
 
-		$schemaSource = new ReflectionSchemaSource( MainConfigSchema::class );
-		$schema = $schemaSource->load();
-		$defaults = [];
+    public function execute()
+    {
+        $benches = [];
 
-		foreach ( $schema['config-schema'] as $key => $sch ) {
-			if ( array_key_exists( 'default', $sch ) ) {
-				$defaults[$key] = $sch['default'];
-			}
-		}
+        $schemaSource = new ReflectionSchemaSource(MainConfigSchema::class);
+        $schema = $schemaSource->load();
+        $defaults = [];
 
-		$benches['DefaultSettings.php'] = [
-			'setup' => static function () {
-				// do this once beforehand
-				include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
-			},
-			'function' => static function () {
-				include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
-			}
-		];
+        foreach ($schema['config-schema'] as $key => $sch) {
+            if (array_key_exists('default', $sch)) {
+                $defaults[$key] = $sch['default'];
+            }
+        }
 
-		$benches['DefaultSettings.php + config-merge-strategies.php'] = [
-			'setup' => static function () {
-				// do this once beforehand
-				include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
-			},
-			'function' => function () {
-				include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
-				$settingsBuilder = $this->newSettingsBuilder();
-				$settingsBuilder->load(
-					new PhpSettingsSource(
-						MW_INSTALL_PATH . '/includes/config-merge-strategies.php'
-					)
-				);
-				$settingsBuilder->apply();
-			}
-		];
+        $benches['DefaultSettings.php'] = [
+            'setup'    => static function () {
+                // do this once beforehand
+                include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
+            },
+            'function' => static function () {
+                include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
+            }
+        ];
 
-		$benches['config-schema.php'] = [
-			'function' => function () {
-				$settingsBuilder = $this->newSettingsBuilder();
-				$settingsBuilder->load(
-					new PhpSettingsSource( MW_INSTALL_PATH . '/includes/config-schema.php' )
-				);
-				$settingsBuilder->apply();
-			}
-		];
+        $benches['DefaultSettings.php + config-merge-strategies.php'] = [
+            'setup'    => static function () {
+                // do this once beforehand
+                include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
+            },
+            'function' => function () {
+                include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
+                $settingsBuilder = $this->newSettingsBuilder();
+                $settingsBuilder->load(
+                    new PhpSettingsSource(
+                        MW_INSTALL_PATH . '/includes/config-merge-strategies.php'
+                    )
+                );
+                $settingsBuilder->apply();
+            }
+        ];
 
-		$benches['config-schema.php + merge'] = [
-			'function' => function () use ( $defaults ) {
-				$settingsBuilder = $this->newSettingsBuilder();
+        $benches['config-schema.php'] = [
+            'function' => function () {
+                $settingsBuilder = $this->newSettingsBuilder();
+                $settingsBuilder->load(
+                    new PhpSettingsSource(MW_INSTALL_PATH . '/includes/config-schema.php')
+                );
+                $settingsBuilder->apply();
+            }
+        ];
 
-				// worst case: all config is set before defaults are applied
-				$settingsBuilder->loadArray( [ 'config' => $defaults ] );
-				$settingsBuilder->load(
-					new PhpSettingsSource( MW_INSTALL_PATH . '/includes/config-schema.php' )
-				);
-				$settingsBuilder->apply();
-			}
-		];
+        $benches['config-schema.php + merge'] = [
+            'function' => function () use ($defaults) {
+                $settingsBuilder = $this->newSettingsBuilder();
 
-		$benches['MainConfigSchema::class'] = [
-			'function' => function () {
-				$settingsBuilder = $this->newSettingsBuilder();
-				$settingsBuilder->load( new ReflectionSchemaSource( MainConfigSchema::class ) );
-				$settingsBuilder->apply();
-			}
-		];
+                // worst case: all config is set before defaults are applied
+                $settingsBuilder->loadArray(['config' => $defaults]);
+                $settingsBuilder->load(
+                    new PhpSettingsSource(MW_INSTALL_PATH . '/includes/config-schema.php')
+                );
+                $settingsBuilder->apply();
+            }
+        ];
 
-		$benches['DefaultSettings.php + SetupDynamicConfig.php'] = [
-			'function' => static function () {
-				$IP = MW_INSTALL_PATH;
-				include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
+        $benches['MainConfigSchema::class'] = [
+            'function' => function () {
+                $settingsBuilder = $this->newSettingsBuilder();
+                $settingsBuilder->load(new ReflectionSchemaSource(MainConfigSchema::class));
+                $settingsBuilder->apply();
+            }
+        ];
 
-				// phpcs:ignore MediaWiki.VariableAnalysis.MisleadingGlobalNames.Misleading$wgLocaltimezone
-				$wgLocaltimezone = 'utc';
-				include MW_INSTALL_PATH . '/includes/SetupDynamicConfig.php';
-			}
-		];
+        $benches['DefaultSettings.php + SetupDynamicConfig.php'] = [
+            'function' => static function () {
+                $IP = MW_INSTALL_PATH;
+                include MW_INSTALL_PATH . '/includes/DefaultSettings.php';
 
-		$benches['config-schema.php + finalize'] = [
-			'function' => function () {
-				$settingsBuilder = $this->newSettingsBuilder();
-				$settingsBuilder->load(
-					new PhpSettingsSource( MW_INSTALL_PATH . '/includes/config-schema.php' )
-				);
-				$settingsBuilder->finalize(); // applies some dynamic defaults
+                // phpcs:ignore MediaWiki.VariableAnalysis.MisleadingGlobalNames.Misleading$wgLocaltimezone
+                $wgLocaltimezone = 'utc';
+                include MW_INSTALL_PATH . '/includes/SetupDynamicConfig.php';
+            }
+        ];
 
-				// phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.extract
-				extract( $GLOBALS );
+        $benches['config-schema.php + finalize'] = [
+            'function' => function () {
+                $settingsBuilder = $this->newSettingsBuilder();
+                $settingsBuilder->load(
+                    new PhpSettingsSource(MW_INSTALL_PATH . '/includes/config-schema.php')
+                );
+                $settingsBuilder->finalize(); // applies some dynamic defaults
 
-				// phpcs:ignore MediaWiki.VariableAnalysis.MisleadingGlobalNames.Misleading$wgDummyLanguageCodes
-				$wgDummyLanguageCodes = [];
-				include MW_INSTALL_PATH . '/includes/SetupDynamicConfig.php';
-			}
-		];
+                // phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.extract
+                extract($GLOBALS);
 
-		$this->bench( $benches );
-	}
+                // phpcs:ignore MediaWiki.VariableAnalysis.MisleadingGlobalNames.Misleading$wgDummyLanguageCodes
+                $wgDummyLanguageCodes = [];
+                include MW_INSTALL_PATH . '/includes/SetupDynamicConfig.php';
+            }
+        ];
+
+        $this->bench($benches);
+    }
 }
 
 $maintClass = BenchmarkSettings::class;

@@ -25,5 +25,6 @@ namespace Wikimedia\Rdbms;
  * @newable
  * @ingroup Database
  */
-class DBSessionStateError extends DBTransactionError {
+class DBSessionStateError extends DBTransactionError
+{
 }

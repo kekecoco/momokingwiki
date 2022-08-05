@@ -23,140 +23,147 @@
  *
  * @ingroup Languages
  */
-class UzConverter extends LanguageConverter {
-	public $toLatin = [
-		'а' => 'a', 'А' => 'A',
-		'б' => 'b', 'Б' => 'B',
-		'д' => 'd', 'Д' => 'D',
-		'е' => 'e', 'Е' => 'E',
-		'э' => 'e', 'Э' => 'E',
-		'в' => 'v', 'В' => 'V',
-		'х' => 'x', 'Х' => 'X',
-		'ғ' => 'gʻ', 'Ғ' => 'Gʻ',
-		'г' => 'g', 'Г' => 'G',
-		'ҳ' => 'h', 'Ҳ' => 'H',
-		'ж' => 'j', 'Ж' => 'J',
-		'з' => 'z', 'З' => 'Z',
-		'и' => 'i', 'И' => 'I',
-		'к' => 'k', 'К' => 'K',
-		'л' => 'l', 'Л' => 'L',
-		'м' => 'm', 'М' => 'M',
-		'н' => 'n', 'Н' => 'N',
-		'о' => 'o', 'О' => 'O',
-		'п' => 'p', 'П' => 'P',
-		'р' => 'r', 'Р' => 'R',
-		'с' => 's', 'С' => 'S',
-		'т' => 't', 'Т' => 'T',
-		'у' => 'u', 'У' => 'U',
-		'ф' => 'f', 'Ф' => 'F',
-		'ў' => 'oʻ', 'Ў' => 'Oʻ',
-		// note: at the beginning of a word and right after a consonant, only "s" is used
-		'ц' => 'ts', 'Ц' => 'Ts',
-		'қ' => 'q', 'Қ' => 'Q',
-		'ё' => 'yo', 'Ё' => 'Yo',
-		'ю' => 'yu', 'Ю' => 'Yu',
-		'ч' => 'ch', 'Ч' => 'Ch',
-		'ш' => 'sh', 'Ш' => 'Sh',
-		'й' => 'y', 'Й' => 'Y',
-		'я' => 'ya', 'Я' => 'Ya',
-		'ъ' => 'ʼ',
-	];
+class UzConverter extends LanguageConverter
+{
+    public $toLatin = [
+        'а' => 'a', 'А' => 'A',
+        'б' => 'b', 'Б' => 'B',
+        'д' => 'd', 'Д' => 'D',
+        'е' => 'e', 'Е' => 'E',
+        'э' => 'e', 'Э' => 'E',
+        'в' => 'v', 'В' => 'V',
+        'х' => 'x', 'Х' => 'X',
+        'ғ' => 'gʻ', 'Ғ' => 'Gʻ',
+        'г' => 'g', 'Г' => 'G',
+        'ҳ' => 'h', 'Ҳ' => 'H',
+        'ж' => 'j', 'Ж' => 'J',
+        'з' => 'z', 'З' => 'Z',
+        'и' => 'i', 'И' => 'I',
+        'к' => 'k', 'К' => 'K',
+        'л' => 'l', 'Л' => 'L',
+        'м' => 'm', 'М' => 'M',
+        'н' => 'n', 'Н' => 'N',
+        'о' => 'o', 'О' => 'O',
+        'п' => 'p', 'П' => 'P',
+        'р' => 'r', 'Р' => 'R',
+        'с' => 's', 'С' => 'S',
+        'т' => 't', 'Т' => 'T',
+        'у' => 'u', 'У' => 'U',
+        'ф' => 'f', 'Ф' => 'F',
+        'ў' => 'oʻ', 'Ў' => 'Oʻ',
+        // note: at the beginning of a word and right after a consonant, only "s" is used
+        'ц' => 'ts', 'Ц' => 'Ts',
+        'қ' => 'q', 'Қ' => 'Q',
+        'ё' => 'yo', 'Ё' => 'Yo',
+        'ю' => 'yu', 'Ю' => 'Yu',
+        'ч' => 'ch', 'Ч' => 'Ch',
+        'ш' => 'sh', 'Ш' => 'Sh',
+        'й' => 'y', 'Й' => 'Y',
+        'я' => 'ya', 'Я' => 'Ya',
+        'ъ' => 'ʼ',
+    ];
 
-	public $toCyrillic = [
-		'a' => 'а', 'A' => 'А',
-		'b' => 'б', 'B' => 'Б',
-		'd' => 'д', 'D' => 'Д',
-		// at the beginning of a word and after a vowel, "э" is used instead of "e"
-		// (see regex below)
-		'e' => 'э', 'E' => 'Э',
-		'f' => 'ф', 'F' => 'Ф',
-		'g' => 'г', 'G' => 'Г',
-		'g‘' => 'ғ', 'G‘' => 'Ғ', 'gʻ' => 'ғ', 'Gʻ' => 'Ғ',
-		'h' => 'ҳ', 'H' => 'Ҳ',
-		'i' => 'и', 'I' => 'И',
-		'k' => 'к', 'K' => 'К',
-		'l' => 'л', 'L' => 'Л',
-		'm' => 'м', 'M' => 'М',
-		'n' => 'н', 'N' => 'Н',
-		'o' => 'о', 'O' => 'О',
-		'p' => 'п', 'P' => 'П',
-		'r' => 'р', 'R' => 'Р',
-		's' => 'с', 'S' => 'С',
-		't' => 'т', 'T' => 'Т',
-		'u' => 'у', 'U' => 'У',
-		'v' => 'в', 'V' => 'В',
-		'x' => 'х', 'X' => 'Х',
-		'z' => 'з', 'Z' => 'З',
-		'j' => 'ж', 'J' => 'Ж',
-		'o‘' => 'ў', 'O‘' => 'Ў', 'oʻ' => 'ў', 'Oʻ' => 'Ў',
-		'yo‘' => 'йў', 'Yo‘' => 'Йў', 'yoʻ' => 'йў', 'Yoʻ' => 'Йў',
-		'ts' => 'ц', 'Ts' => 'Ц',
-		'q' => 'қ', 'Q' => 'Қ',
-		'yo' => 'ё', 'Yo' => 'Ё',
-		'yu' => 'ю', 'Yu' => 'Ю',
-		'ch' => 'ч', 'Ch' => 'Ч',
-		'sh' => 'ш', 'Sh' => 'Ш',
-		'y' => 'й', 'Y' => 'Й',
-		'ya' => 'я', 'Ya' => 'Я',
-		'ʼ' => 'ъ',
-	];
+    public $toCyrillic = [
+        'a'   => 'а', 'A' => 'А',
+        'b'   => 'б', 'B' => 'Б',
+        'd'   => 'д', 'D' => 'Д',
+        // at the beginning of a word and after a vowel, "э" is used instead of "e"
+        // (see regex below)
+        'e'   => 'э', 'E' => 'Э',
+        'f'   => 'ф', 'F' => 'Ф',
+        'g'   => 'г', 'G' => 'Г',
+        'g‘'  => 'ғ', 'G‘' => 'Ғ', 'gʻ' => 'ғ', 'Gʻ' => 'Ғ',
+        'h'   => 'ҳ', 'H' => 'Ҳ',
+        'i'   => 'и', 'I' => 'И',
+        'k'   => 'к', 'K' => 'К',
+        'l'   => 'л', 'L' => 'Л',
+        'm'   => 'м', 'M' => 'М',
+        'n'   => 'н', 'N' => 'Н',
+        'o'   => 'о', 'O' => 'О',
+        'p'   => 'п', 'P' => 'П',
+        'r'   => 'р', 'R' => 'Р',
+        's'   => 'с', 'S' => 'С',
+        't'   => 'т', 'T' => 'Т',
+        'u'   => 'у', 'U' => 'У',
+        'v'   => 'в', 'V' => 'В',
+        'x'   => 'х', 'X' => 'Х',
+        'z'   => 'з', 'Z' => 'З',
+        'j'   => 'ж', 'J' => 'Ж',
+        'o‘'  => 'ў', 'O‘' => 'Ў', 'oʻ' => 'ў', 'Oʻ' => 'Ў',
+        'yo‘' => 'йў', 'Yo‘' => 'Йў', 'yoʻ' => 'йў', 'Yoʻ' => 'Йў',
+        'ts'  => 'ц', 'Ts' => 'Ц',
+        'q'   => 'қ', 'Q' => 'Қ',
+        'yo'  => 'ё', 'Yo' => 'Ё',
+        'yu'  => 'ю', 'Yu' => 'Ю',
+        'ch'  => 'ч', 'Ch' => 'Ч',
+        'sh'  => 'ш', 'Sh' => 'Ш',
+        'y'   => 'й', 'Y' => 'Й',
+        'ya'  => 'я', 'Ya' => 'Я',
+        'ʼ'   => 'ъ',
+    ];
 
-	/**
-	 * Get Main language code.
-	 * @since 1.36
-	 *
-	 * @return string
-	 */
-	public function getMainCode(): string {
-		return 'uz';
-	}
+    /**
+     * Get Main language code.
+     * @return string
+     * @since 1.36
+     *
+     */
+    public function getMainCode(): string
+    {
+        return 'uz';
+    }
 
-	/**
-	 * Get supported variants of the language.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getLanguageVariants(): array {
-		return [ 'uz', 'uz-latn', 'uz-cyrl' ];
-	}
+    /**
+     * Get supported variants of the language.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getLanguageVariants(): array
+    {
+        return ['uz', 'uz-latn', 'uz-cyrl'];
+    }
 
-	/**
-	 * Get language variants fallbacks.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getVariantsFallbacks(): array {
-		return [
-			'uz' => 'uz-latn',
-			'uz-cyrl' => 'uz',
-			'uz-latn' => 'uz',
-		];
-	}
+    /**
+     * Get language variants fallbacks.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getVariantsFallbacks(): array
+    {
+        return [
+            'uz'      => 'uz-latn',
+            'uz-cyrl' => 'uz',
+            'uz-latn' => 'uz',
+        ];
+    }
 
-	protected function loadDefaultTables() {
-		$this->mTables = [
-			'uz-cyrl' => new ReplacementArray( $this->toCyrillic ),
-			'uz-latn' => new ReplacementArray( $this->toLatin ),
-			'uz' => new ReplacementArray()
-		];
-	}
+    protected function loadDefaultTables()
+    {
+        $this->mTables = [
+            'uz-cyrl' => new ReplacementArray($this->toCyrillic),
+            'uz-latn' => new ReplacementArray($this->toLatin),
+            'uz'      => new ReplacementArray()
+        ];
+    }
 
-	/**
-	 * @param string $text
-	 * @param string $toVariant
-	 * @return string
-	 */
-	public function translate( $text, $toVariant ) {
-		if ( $toVariant == 'uz-cyrl' ) {
-			$text = str_replace( 'ye', 'е', $text );
-			$text = str_replace( 'Ye', 'Е', $text );
-			$text = str_replace( 'YE', 'Е', $text );
-			// "е" after consonants, otherwise "э" (see above)
-			$text = preg_replace( '/([BVGDJZYKLMNPRSTFXCWQʻ‘H])E/u', '$1Е', $text );
-			$text = preg_replace( '/([bvgdjzyklmnprstfxcwqʻ‘h])e/ui', '$1е', $text );
-		}
-		return parent::translate( $text, $toVariant );
-	}
+    /**
+     * @param string $text
+     * @param string $toVariant
+     * @return string
+     */
+    public function translate($text, $toVariant)
+    {
+        if ($toVariant == 'uz-cyrl') {
+            $text = str_replace('ye', 'е', $text);
+            $text = str_replace('Ye', 'Е', $text);
+            $text = str_replace('YE', 'Е', $text);
+            // "е" after consonants, otherwise "э" (see above)
+            $text = preg_replace('/([BVGDJZYKLMNPRSTFXCWQʻ‘H])E/u', '$1Е', $text);
+            $text = preg_replace('/([bvgdjzyklmnprstfxcwqʻ‘h])e/ui', '$1е', $text);
+        }
+
+        return parent::translate($text, $toVariant);
+    }
 }

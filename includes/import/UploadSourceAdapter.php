@@ -28,126 +28,134 @@
  * This is a horrible hack used to keep source compatibility.
  * @ingroup SpecialPage
  */
-class UploadSourceAdapter {
-	/** @var ImportSource[] */
-	public static $sourceRegistrations = [];
+class UploadSourceAdapter
+{
+    /** @var ImportSource[] */
+    public static $sourceRegistrations = [];
 
-	/** @var ImportSource */
-	private $mSource;
+    /** @var ImportSource */
+    private $mSource;
 
-	/** @var string */
-	private $mBuffer = '';
+    /** @var string */
+    private $mBuffer = '';
 
-	/** @var int */
-	private $mPosition;
+    /** @var int */
+    private $mPosition;
 
-	/**
-	 * @param ImportSource $source
-	 * @return string
-	 */
-	public static function registerSource( ImportSource $source ) {
-		$id = wfRandomString();
+    /**
+     * @param ImportSource $source
+     * @return string
+     */
+    public static function registerSource(ImportSource $source)
+    {
+        $id = wfRandomString();
 
-		self::$sourceRegistrations[$id] = $source;
+        self::$sourceRegistrations[$id] = $source;
 
-		return $id;
-	}
+        return $id;
+    }
 
-	/**
-	 * @param string $path
-	 * @param string $mode
-	 * @param int $options
-	 * @param string &$opened_path
-	 * @return bool
-	 */
-	public function stream_open( $path, $mode, $options, &$opened_path ) {
-		$url = parse_url( $path );
-		if ( !isset( $url['host'] ) ) {
-			return false;
-		}
-		$id = $url['host'];
+    /**
+     * @param string $path
+     * @param string $mode
+     * @param int $options
+     * @param string &$opened_path
+     * @return bool
+     */
+    public function stream_open($path, $mode, $options, &$opened_path)
+    {
+        $url = parse_url($path);
+        if (!isset($url['host'])) {
+            return false;
+        }
+        $id = $url['host'];
 
-		if ( !isset( self::$sourceRegistrations[$id] ) ) {
-			return false;
-		}
+        if (!isset(self::$sourceRegistrations[$id])) {
+            return false;
+        }
 
-		$this->mSource = self::$sourceRegistrations[$id];
+        $this->mSource = self::$sourceRegistrations[$id];
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * @param int $count
-	 * @return string
-	 */
-	public function stream_read( $count ) {
-		$return = '';
-		$leave = false;
+    /**
+     * @param int $count
+     * @return string
+     */
+    public function stream_read($count)
+    {
+        $return = '';
+        $leave = false;
 
-		while ( !$leave && !$this->mSource->atEnd() &&
-			strlen( $this->mBuffer ) < $count
-		) {
-			$read = $this->mSource->readChunk();
+        while (!$leave && !$this->mSource->atEnd() &&
+            strlen($this->mBuffer) < $count
+        ) {
+            $read = $this->mSource->readChunk();
 
-			if ( !strlen( $read ) ) {
-				$leave = true;
-			}
+            if (!strlen($read)) {
+                $leave = true;
+            }
 
-			$this->mBuffer .= $read;
-		}
+            $this->mBuffer .= $read;
+        }
 
-		if ( strlen( $this->mBuffer ) ) {
-			$return = substr( $this->mBuffer, 0, $count );
-			$this->mBuffer = substr( $this->mBuffer, $count );
-		}
+        if (strlen($this->mBuffer)) {
+            $return = substr($this->mBuffer, 0, $count);
+            $this->mBuffer = substr($this->mBuffer, $count);
+        }
 
-		$this->mPosition += strlen( $return );
+        $this->mPosition += strlen($return);
 
-		return $return;
-	}
+        return $return;
+    }
 
-	/**
-	 * @param string $data
-	 * @return false
-	 */
-	public function stream_write( $data ) {
-		return false;
-	}
+    /**
+     * @param string $data
+     * @return false
+     */
+    public function stream_write($data)
+    {
+        return false;
+    }
 
-	/**
-	 * @return int
-	 */
-	public function stream_tell() {
-		return $this->mPosition;
-	}
+    /**
+     * @return int
+     */
+    public function stream_tell()
+    {
+        return $this->mPosition;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function stream_eof() {
-		return $this->mSource->atEnd();
-	}
+    /**
+     * @return bool
+     */
+    public function stream_eof()
+    {
+        return $this->mSource->atEnd();
+    }
 
-	/**
-	 * @return int[]
-	 */
-	public function url_stat() {
-		$result = [];
+    /**
+     * @return int[]
+     */
+    public function url_stat()
+    {
+        $result = [];
 
-		$result['dev'] = $result[0] = 0;
-		$result['ino'] = $result[1] = 0;
-		$result['mode'] = $result[2] = 0;
-		$result['nlink'] = $result[3] = 0;
-		$result['uid'] = $result[4] = 0;
-		$result['gid'] = $result[5] = 0;
-		$result['rdev'] = $result[6] = 0;
-		$result['size'] = $result[7] = 0;
-		$result['atime'] = $result[8] = 0;
-		$result['mtime'] = $result[9] = 0;
-		$result['ctime'] = $result[10] = 0;
-		$result['blksize'] = $result[11] = 0;
-		$result['blocks'] = $result[12] = 0;
+        $result['dev'] = $result[0] = 0;
+        $result['ino'] = $result[1] = 0;
+        $result['mode'] = $result[2] = 0;
+        $result['nlink'] = $result[3] = 0;
+        $result['uid'] = $result[4] = 0;
+        $result['gid'] = $result[5] = 0;
+        $result['rdev'] = $result[6] = 0;
+        $result['size'] = $result[7] = 0;
+        $result['atime'] = $result[8] = 0;
+        $result['mtime'] = $result[9] = 0;
+        $result['ctime'] = $result[10] = 0;
+        $result['blksize'] = $result[11] = 0;
+        $result['blocks'] = $result[12] = 0;
 
-		return $result;
-	}
+        return $result;
+    }
 }

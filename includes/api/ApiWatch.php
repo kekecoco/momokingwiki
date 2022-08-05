@@ -30,205 +30,217 @@ use Wikimedia\ParamValidator\TypeDef\ExpiryDef;
  *
  * @ingroup API
  */
-class ApiWatch extends ApiBase {
-	private $mPageSet = null;
+class ApiWatch extends ApiBase
+{
+    private $mPageSet = null;
 
-	/** @var bool Whether watchlist expiries are enabled. */
-	private $expiryEnabled;
+    /** @var bool Whether watchlist expiries are enabled. */
+    private $expiryEnabled;
 
-	/** @var string Relative maximum expiry. */
-	private $maxDuration;
+    /** @var string Relative maximum expiry. */
+    private $maxDuration;
 
-	/** @var WatchlistManager */
-	protected $watchlistManager;
+    /** @var WatchlistManager */
+    protected $watchlistManager;
 
-	public function __construct( ApiMain $mainModule, $moduleName, WatchlistManager $watchlistManager ) {
-		parent::__construct( $mainModule, $moduleName );
+    public function __construct(ApiMain $mainModule, $moduleName, WatchlistManager $watchlistManager)
+    {
+        parent::__construct($mainModule, $moduleName);
 
-		$this->watchlistManager = $watchlistManager;
-		$this->expiryEnabled = $this->getConfig()->get( MainConfigNames::WatchlistExpiry );
-		$this->maxDuration = $this->getConfig()->get( MainConfigNames::WatchlistExpiryMaxDuration );
-	}
+        $this->watchlistManager = $watchlistManager;
+        $this->expiryEnabled = $this->getConfig()->get(MainConfigNames::WatchlistExpiry);
+        $this->maxDuration = $this->getConfig()->get(MainConfigNames::WatchlistExpiryMaxDuration);
+    }
 
-	public function execute() {
-		$user = $this->getUser();
-		if ( !$user->isRegistered() ) {
-			$this->dieWithError( 'watchlistanontext', 'notloggedin' );
-		}
+    public function execute()
+    {
+        $user = $this->getUser();
+        if (!$user->isRegistered()) {
+            $this->dieWithError('watchlistanontext', 'notloggedin');
+        }
 
-		$this->checkUserRightsAny( 'editmywatchlist' );
+        $this->checkUserRightsAny('editmywatchlist');
 
-		$params = $this->extractRequestParams();
+        $params = $this->extractRequestParams();
 
-		$continuationManager = new ApiContinuationManager( $this, [], [] );
-		$this->setContinuationManager( $continuationManager );
+        $continuationManager = new ApiContinuationManager($this, [], []);
+        $this->setContinuationManager($continuationManager);
 
-		$pageSet = $this->getPageSet();
-		// by default we use pageset to extract the page to work on.
-		// title is still supported for backward compatibility
-		if ( !isset( $params['title'] ) ) {
-			$pageSet->execute();
-			$res = $pageSet->getInvalidTitlesAndRevisions( [
-				'invalidTitles',
-				'special',
-				'missingIds',
-				'missingRevIds',
-				'interwikiTitles'
-			] );
+        $pageSet = $this->getPageSet();
+        // by default we use pageset to extract the page to work on.
+        // title is still supported for backward compatibility
+        if (!isset($params['title'])) {
+            $pageSet->execute();
+            $res = $pageSet->getInvalidTitlesAndRevisions([
+                'invalidTitles',
+                'special',
+                'missingIds',
+                'missingRevIds',
+                'interwikiTitles'
+            ]);
 
-			foreach ( $pageSet->getMissingTitles() as $title ) {
-				$r = $this->watchTitle( $title, $user, $params );
-				$r['missing'] = true;
-				$res[] = $r;
-			}
+            foreach ($pageSet->getMissingTitles() as $title) {
+                $r = $this->watchTitle($title, $user, $params);
+                $r['missing'] = true;
+                $res[] = $r;
+            }
 
-			foreach ( $pageSet->getGoodTitles() as $title ) {
-				$r = $this->watchTitle( $title, $user, $params );
-				$res[] = $r;
-			}
-			ApiResult::setIndexedTagName( $res, 'w' );
-		} else {
-			// dont allow use of old title parameter with new pageset parameters.
-			$extraParams = array_keys( array_filter( $pageSet->extractRequestParams(), static function ( $x ) {
-				return $x !== null && $x !== false;
-			} ) );
+            foreach ($pageSet->getGoodTitles() as $title) {
+                $r = $this->watchTitle($title, $user, $params);
+                $res[] = $r;
+            }
+            ApiResult::setIndexedTagName($res, 'w');
+        } else {
+            // dont allow use of old title parameter with new pageset parameters.
+            $extraParams = array_keys(array_filter($pageSet->extractRequestParams(), static function ($x) {
+                return $x !== null && $x !== false;
+            }));
 
-			if ( $extraParams ) {
-				$this->dieWithError(
-					[
-						'apierror-invalidparammix-cannotusewith',
-						$this->encodeParamName( 'title' ),
-						$pageSet->encodeParamName( $extraParams[0] )
-					],
-					'invalidparammix'
-				);
-			}
+            if ($extraParams) {
+                $this->dieWithError(
+                    [
+                        'apierror-invalidparammix-cannotusewith',
+                        $this->encodeParamName('title'),
+                        $pageSet->encodeParamName($extraParams[0])
+                    ],
+                    'invalidparammix'
+                );
+            }
 
-			$title = Title::newFromText( $params['title'] );
-			if ( !$title || !$this->watchlistManager->isWatchable( $title ) ) {
-				$this->dieWithError( [ 'invalidtitle', $params['title'] ] );
-			}
-			$res = $this->watchTitle( $title, $user, $params, true );
-		}
-		$this->getResult()->addValue( null, $this->getModuleName(), $res );
+            $title = Title::newFromText($params['title']);
+            if (!$title || !$this->watchlistManager->isWatchable($title)) {
+                $this->dieWithError(['invalidtitle', $params['title']]);
+            }
+            $res = $this->watchTitle($title, $user, $params, true);
+        }
+        $this->getResult()->addValue(null, $this->getModuleName(), $res);
 
-		$this->setContinuationManager( null );
-		$continuationManager->setContinuationIntoResult( $this->getResult() );
-	}
+        $this->setContinuationManager(null);
+        $continuationManager->setContinuationIntoResult($this->getResult());
+    }
 
-	private function watchTitle( Title $title, User $user, array $params,
-		$compatibilityMode = false
-	) {
-		$res = [ 'title' => $title->getPrefixedText(), 'ns' => $title->getNamespace() ];
+    private function watchTitle(Title $title, User $user, array $params,
+                                $compatibilityMode = false
+    )
+    {
+        $res = ['title' => $title->getPrefixedText(), 'ns' => $title->getNamespace()];
 
-		if ( !$this->watchlistManager->isWatchable( $title ) ) {
-			$res['watchable'] = 0;
-			return $res;
-		}
+        if (!$this->watchlistManager->isWatchable($title)) {
+            $res['watchable'] = 0;
 
-		if ( $params['unwatch'] ) {
-			$status = $this->watchlistManager->removeWatch( $user, $title );
-			$res['unwatched'] = $status->isOK();
-		} else {
-			$expiry = null;
+            return $res;
+        }
 
-			// NOTE: If an expiry parameter isn't given, any existing expiries remain unchanged.
-			if ( $this->expiryEnabled && isset( $params['expiry'] ) ) {
-				$expiry = $params['expiry'];
-				$res['expiry'] = ApiResult::formatExpiry( $expiry );
-			}
+        if ($params['unwatch']) {
+            $status = $this->watchlistManager->removeWatch($user, $title);
+            $res['unwatched'] = $status->isOK();
+        } else {
+            $expiry = null;
 
-			$status = $this->watchlistManager->addWatch( $user, $title, $expiry );
-			$res['watched'] = $status->isOK();
-		}
+            // NOTE: If an expiry parameter isn't given, any existing expiries remain unchanged.
+            if ($this->expiryEnabled && isset($params['expiry'])) {
+                $expiry = $params['expiry'];
+                $res['expiry'] = ApiResult::formatExpiry($expiry);
+            }
 
-		if ( !$status->isOK() ) {
-			if ( $compatibilityMode ) {
-				$this->dieStatus( $status );
-			}
-			$res['errors'] = $this->getErrorFormatter()->arrayFromStatus( $status, 'error' );
-			$res['warnings'] = $this->getErrorFormatter()->arrayFromStatus( $status, 'warning' );
-			if ( !$res['warnings'] ) {
-				unset( $res['warnings'] );
-			}
-		}
+            $status = $this->watchlistManager->addWatch($user, $title, $expiry);
+            $res['watched'] = $status->isOK();
+        }
 
-		return $res;
-	}
+        if (!$status->isOK()) {
+            if ($compatibilityMode) {
+                $this->dieStatus($status);
+            }
+            $res['errors'] = $this->getErrorFormatter()->arrayFromStatus($status, 'error');
+            $res['warnings'] = $this->getErrorFormatter()->arrayFromStatus($status, 'warning');
+            if (!$res['warnings']) {
+                unset($res['warnings']);
+            }
+        }
 
-	/**
-	 * Get a cached instance of an ApiPageSet object
-	 * @return ApiPageSet
-	 */
-	private function getPageSet() {
-		if ( $this->mPageSet === null ) {
-			$this->mPageSet = new ApiPageSet( $this );
-		}
+        return $res;
+    }
 
-		return $this->mPageSet;
-	}
+    /**
+     * Get a cached instance of an ApiPageSet object
+     * @return ApiPageSet
+     */
+    private function getPageSet()
+    {
+        if ($this->mPageSet === null) {
+            $this->mPageSet = new ApiPageSet($this);
+        }
 
-	public function mustBePosted() {
-		return true;
-	}
+        return $this->mPageSet;
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function needsToken() {
-		return 'watch';
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function getAllowedParams( $flags = 0 ) {
-		$result = [
-			'title' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_DEPRECATED => true,
-			],
-			'expiry' => [
-				ParamValidator::PARAM_TYPE => 'expiry',
-				ExpiryDef::PARAM_MAX => $this->maxDuration,
-				ExpiryDef::PARAM_USE_MAX => true,
-			],
-			'unwatch' => false,
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-		];
+    public function needsToken()
+    {
+        return 'watch';
+    }
 
-		// If expiry is not enabled, don't accept the parameter.
-		if ( !$this->expiryEnabled ) {
-			unset( $result['expiry'] );
-		}
+    public function getAllowedParams($flags = 0)
+    {
+        $result = [
+            'title'    => [
+                ParamValidator::PARAM_TYPE       => 'string',
+                ParamValidator::PARAM_DEPRECATED => true,
+            ],
+            'expiry'   => [
+                ParamValidator::PARAM_TYPE => 'expiry',
+                ExpiryDef::PARAM_MAX       => $this->maxDuration,
+                ExpiryDef::PARAM_USE_MAX   => true,
+            ],
+            'unwatch'  => false,
+            'continue' => [
+                ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+            ],
+        ];
 
-		if ( $flags ) {
-			$result += $this->getPageSet()->getFinalParams( $flags );
-		}
+        // If expiry is not enabled, don't accept the parameter.
+        if (!$this->expiryEnabled) {
+            unset($result['expiry']);
+        }
 
-		return $result;
-	}
+        if ($flags) {
+            $result += $this->getPageSet()->getFinalParams($flags);
+        }
 
-	protected function getExamplesMessages() {
-		// Logically expiry example should go before unwatch examples.
-		$examples = [
-			'action=watch&titles=Main_Page&token=123ABC'
-				=> 'apihelp-watch-example-watch',
-		];
-		if ( $this->expiryEnabled ) {
-			$examples['action=watch&titles=Main_Page|Foo|Bar&expiry=1%20month&token=123ABC']
-				= 'apihelp-watch-example-watch-expiry';
-		}
+        return $result;
+    }
 
-		return array_merge( $examples, [
-			'action=watch&titles=Main_Page&unwatch=&token=123ABC'
-				=> 'apihelp-watch-example-unwatch',
-			'action=watch&generator=allpages&gapnamespace=0&token=123ABC'
-				=> 'apihelp-watch-example-generator',
-		] );
-	}
+    protected function getExamplesMessages()
+    {
+        // Logically expiry example should go before unwatch examples.
+        $examples = [
+            'action=watch&titles=Main_Page&token=123ABC'
+            => 'apihelp-watch-example-watch',
+        ];
+        if ($this->expiryEnabled) {
+            $examples['action=watch&titles=Main_Page|Foo|Bar&expiry=1%20month&token=123ABC']
+                = 'apihelp-watch-example-watch-expiry';
+        }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Watch';
-	}
+        return array_merge($examples, [
+            'action=watch&titles=Main_Page&unwatch=&token=123ABC'
+            => 'apihelp-watch-example-unwatch',
+            'action=watch&generator=allpages&gapnamespace=0&token=123ABC'
+            => 'apihelp-watch-example-generator',
+        ]);
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Watch';
+    }
 }

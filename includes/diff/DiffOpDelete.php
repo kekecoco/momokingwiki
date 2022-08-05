@@ -32,22 +32,25 @@
  * @internal
  * @ingroup DifferenceEngine
  */
-class DiffOpDelete extends DiffOp {
-	/** @inheritDoc */
-	public $type = 'delete';
+class DiffOpDelete extends DiffOp
+{
+    /** @inheritDoc */
+    public $type = 'delete';
 
-	/**
-	 * @param string[] $lines
-	 */
-	public function __construct( $lines ) {
-		$this->orig = $lines;
-		$this->closing = false;
-	}
+    /**
+     * @param string[] $lines
+     */
+    public function __construct($lines)
+    {
+        $this->orig = $lines;
+        $this->closing = false;
+    }
 
-	/**
-	 * @return DiffOpAdd
-	 */
-	public function reverse() {
-		return new DiffOpAdd( $this->orig );
-	}
+    /**
+     * @return DiffOpAdd
+     */
+    public function reverse()
+    {
+        return new DiffOpAdd($this->orig);
+    }
 }

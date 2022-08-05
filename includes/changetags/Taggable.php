@@ -22,6 +22,7 @@
  * @author Piotr Miazga
  * @license GPL-2.0-or-later
  */
+
 namespace MediaWiki\ChangeTags;
 
 /**
@@ -29,14 +30,15 @@ namespace MediaWiki\ChangeTags;
  *
  * @since 1.33
  */
-interface Taggable {
+interface Taggable
+{
 
-	/**
-	 * Append tags to the tagged object
-	 *
-	 * @since 1.33
-	 * @param string|string[] $tags Tags to apply
-	 */
-	public function addTags( $tags );
+    /**
+     * Append tags to the tagged object
+     *
+     * @param string|string[] $tags Tags to apply
+     * @since 1.33
+     */
+    public function addTags($tags);
 
 }

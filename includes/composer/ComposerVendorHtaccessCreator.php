@@ -26,18 +26,20 @@
  * environment and cannot depend upon any MediaWiki
  * code.
  */
-class ComposerVendorHtaccessCreator {
+class ComposerVendorHtaccessCreator
+{
 
-	/**
-	 * Handle post-install-cmd and post-update-cmd hooks
-	 */
-	public static function onEvent() {
-		$fname = dirname( dirname( __DIR__ ) ) . "/vendor/.htaccess";
-		if ( file_exists( $fname ) ) {
-			// Already exists
-			return;
-		}
+    /**
+     * Handle post-install-cmd and post-update-cmd hooks
+     */
+    public static function onEvent()
+    {
+        $fname = dirname(dirname(__DIR__)) . "/vendor/.htaccess";
+        if (file_exists($fname)) {
+            // Already exists
+            return;
+        }
 
-		file_put_contents( $fname, "Deny from all\n" );
-	}
+        file_put_contents($fname, "Deny from all\n");
+    }
 }

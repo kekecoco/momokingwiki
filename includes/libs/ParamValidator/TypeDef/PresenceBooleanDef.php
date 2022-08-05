@@ -18,66 +18,73 @@ use Wikimedia\ParamValidator\TypeDef;
  * @since 1.34
  * @unstable
  */
-class PresenceBooleanDef extends TypeDef {
+class PresenceBooleanDef extends TypeDef
+{
 
-	public function getValue( $name, array $settings, array $options ) {
-		return $this->callbacks->hasParam( $name, $options ) ? true : null;
-	}
+    public function getValue($name, array $settings, array $options)
+    {
+        return $this->callbacks->hasParam($name, $options) ? true : null;
+    }
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		return (bool)$value;
-	}
+    public function validate($name, $value, array $settings, array $options)
+    {
+        return (bool)$value;
+    }
 
-	public function normalizeSettings( array $settings ) {
-		// Cannot be multi-valued
-		$settings[ParamValidator::PARAM_ISMULTI] = false;
+    public function normalizeSettings(array $settings)
+    {
+        // Cannot be multi-valued
+        $settings[ParamValidator::PARAM_ISMULTI] = false;
 
-		// Default the default to false so ParamValidator::getValue() returns false (T244440)
-		$settings += [ ParamValidator::PARAM_DEFAULT => false ];
+        // Default the default to false so ParamValidator::getValue() returns false (T244440)
+        $settings += [ParamValidator::PARAM_DEFAULT => false];
 
-		return parent::normalizeSettings( $settings );
-	}
+        return parent::normalizeSettings($settings);
+    }
 
-	public function checkSettings( string $name, $settings, array $options, array $ret ): array {
-		$ret = parent::checkSettings( $name, $settings, $options, $ret );
+    public function checkSettings(string $name, $settings, array $options, array $ret): array
+    {
+        $ret = parent::checkSettings($name, $settings, $options, $ret);
 
-		if ( !empty( $settings[ParamValidator::PARAM_ISMULTI] ) &&
-			!isset( $ret['issues'][ParamValidator::PARAM_ISMULTI] )
-		) {
-			$ret['issues'][ParamValidator::PARAM_ISMULTI] =
-				'PARAM_ISMULTI cannot be used for presence-boolean-type parameters';
-		}
+        if (!empty($settings[ParamValidator::PARAM_ISMULTI]) &&
+            !isset($ret['issues'][ParamValidator::PARAM_ISMULTI])
+        ) {
+            $ret['issues'][ParamValidator::PARAM_ISMULTI] =
+                'PARAM_ISMULTI cannot be used for presence-boolean-type parameters';
+        }
 
-		if ( ( $settings[ParamValidator::PARAM_DEFAULT] ?? false ) !== false &&
-			!isset( $ret['issues'][ParamValidator::PARAM_DEFAULT] )
-		) {
-			$ret['issues'][ParamValidator::PARAM_DEFAULT] =
-				'Default for presence-boolean-type parameters must be false or null';
-		}
+        if (($settings[ParamValidator::PARAM_DEFAULT] ?? false) !== false &&
+            !isset($ret['issues'][ParamValidator::PARAM_DEFAULT])
+        ) {
+            $ret['issues'][ParamValidator::PARAM_DEFAULT] =
+                'Default for presence-boolean-type parameters must be false or null';
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	public function getParamInfo( $name, array $settings, array $options ) {
-		$info = parent::getParamInfo( $name, $settings, $options );
+    public function getParamInfo($name, array $settings, array $options)
+    {
+        $info = parent::getParamInfo($name, $settings, $options);
 
-		// No need to report the default of "false"
-		$info['default'] = null;
+        // No need to report the default of "false"
+        $info['default'] = null;
 
-		return $info;
-	}
+        return $info;
+    }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new(
-			'paramvalidator-help-type-presenceboolean'
-		)->params( 1 );
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new(
+            'paramvalidator-help-type-presenceboolean'
+        )->params(1);
 
-		// No need to report the default of "false"
-		$info[ParamValidator::PARAM_DEFAULT] = null;
+        // No need to report the default of "false"
+        $info[ParamValidator::PARAM_DEFAULT] = null;
 
-		return $info;
-	}
+        return $info;
+    }
 
 }

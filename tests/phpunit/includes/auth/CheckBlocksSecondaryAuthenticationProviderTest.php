@@ -12,178 +12,188 @@ use Wikimedia\TestingAccessWrapper;
  * @group Database
  * @covers \MediaWiki\Auth\CheckBlocksSecondaryAuthenticationProvider
  */
-class CheckBlocksSecondaryAuthenticationProviderTest extends \MediaWikiIntegrationTestCase {
-	use AuthenticationProviderTestTrait;
+class CheckBlocksSecondaryAuthenticationProviderTest extends \MediaWikiIntegrationTestCase
+{
+    use AuthenticationProviderTestTrait;
 
-	public function testConstructor() {
-		$provider = new CheckBlocksSecondaryAuthenticationProvider();
-		$providerPriv = TestingAccessWrapper::newFromObject( $provider );
-		$config = new \HashConfig( [
-			'BlockDisablesLogin' => false
-		] );
-		$this->initProvider( $provider, $config );
-		$this->assertSame( false, $providerPriv->blockDisablesLogin );
+    public function testConstructor()
+    {
+        $provider = new CheckBlocksSecondaryAuthenticationProvider();
+        $providerPriv = TestingAccessWrapper::newFromObject($provider);
+        $config = new \HashConfig([
+            'BlockDisablesLogin' => false
+        ]);
+        $this->initProvider($provider, $config);
+        $this->assertSame(false, $providerPriv->blockDisablesLogin);
 
-		$provider = new CheckBlocksSecondaryAuthenticationProvider(
-			[ 'blockDisablesLogin' => true ]
-		);
-		$providerPriv = TestingAccessWrapper::newFromObject( $provider );
-		$config = new \HashConfig( [
-			'BlockDisablesLogin' => false
-		] );
-		$this->initProvider( $provider, $config );
-		$this->assertSame( true, $providerPriv->blockDisablesLogin );
-	}
+        $provider = new CheckBlocksSecondaryAuthenticationProvider(
+            ['blockDisablesLogin' => true]
+        );
+        $providerPriv = TestingAccessWrapper::newFromObject($provider);
+        $config = new \HashConfig([
+            'BlockDisablesLogin' => false
+        ]);
+        $this->initProvider($provider, $config);
+        $this->assertSame(true, $providerPriv->blockDisablesLogin);
+    }
 
-	public function testBasics() {
-		$provider = new CheckBlocksSecondaryAuthenticationProvider();
-		$user = \User::newFromName( 'UTSysop' );
+    public function testBasics()
+    {
+        $provider = new CheckBlocksSecondaryAuthenticationProvider();
+        $user = \User::newFromName('UTSysop');
 
-		$this->assertEquals(
-			AuthenticationResponse::newAbstain(),
-			$provider->beginSecondaryAccountCreation( $user, $user, [] )
-		);
-	}
+        $this->assertEquals(
+            AuthenticationResponse::newAbstain(),
+            $provider->beginSecondaryAccountCreation($user, $user, [])
+        );
+    }
 
-	/**
-	 * @dataProvider provideGetAuthenticationRequests
-	 * @param string $action
-	 * @param array $response
-	 */
-	public function testGetAuthenticationRequests( $action, $response ) {
-		$provider = new CheckBlocksSecondaryAuthenticationProvider();
+    /**
+     * @dataProvider provideGetAuthenticationRequests
+     * @param string $action
+     * @param array $response
+     */
+    public function testGetAuthenticationRequests($action, $response)
+    {
+        $provider = new CheckBlocksSecondaryAuthenticationProvider();
 
-		$this->assertEquals( $response, $provider->getAuthenticationRequests( $action, [] ) );
-	}
+        $this->assertEquals($response, $provider->getAuthenticationRequests($action, []));
+    }
 
-	public static function provideGetAuthenticationRequests() {
-		return [
-			[ AuthManager::ACTION_LOGIN, [] ],
-			[ AuthManager::ACTION_CREATE, [] ],
-			[ AuthManager::ACTION_LINK, [] ],
-			[ AuthManager::ACTION_CHANGE, [] ],
-			[ AuthManager::ACTION_REMOVE, [] ],
-		];
-	}
+    public static function provideGetAuthenticationRequests()
+    {
+        return [
+            [AuthManager::ACTION_LOGIN, []],
+            [AuthManager::ACTION_CREATE, []],
+            [AuthManager::ACTION_LINK, []],
+            [AuthManager::ACTION_CHANGE, []],
+            [AuthManager::ACTION_REMOVE, []],
+        ];
+    }
 
-	private function getBlockedUser() {
-		$user = \User::newFromName( 'UTBlockee' );
-		if ( $user->getId() == 0 ) {
-			$user->addToDatabase();
-			\TestUser::setPasswordForUser( $user, 'UTBlockeePassword' );
-			$user->saveSettings();
-		}
-		$blockStore = $this->getServiceContainer()->getDatabaseBlockStore();
-		$oldBlock = DatabaseBlock::newFromTarget( 'UTBlockee' );
-		if ( $oldBlock ) {
-			// An old block will prevent our new one from saving.
-			$blockStore->deleteBlock( $oldBlock );
-		}
-		$blockOptions = [
-			'address' => 'UTBlockee',
-			'user' => $user->getId(),
-			'by' => $this->getTestSysop()->getUser(),
-			'reason' => __METHOD__,
-			'expiry' => time() + 100500,
-			'createAccount' => true,
-		];
-		$block = new DatabaseBlock( $blockOptions );
-		$blockStore->insertBlock( $block );
-		return $user;
-	}
+    private function getBlockedUser()
+    {
+        $user = \User::newFromName('UTBlockee');
+        if ($user->getId() == 0) {
+            $user->addToDatabase();
+            \TestUser::setPasswordForUser($user, 'UTBlockeePassword');
+            $user->saveSettings();
+        }
+        $blockStore = $this->getServiceContainer()->getDatabaseBlockStore();
+        $oldBlock = DatabaseBlock::newFromTarget('UTBlockee');
+        if ($oldBlock) {
+            // An old block will prevent our new one from saving.
+            $blockStore->deleteBlock($oldBlock);
+        }
+        $blockOptions = [
+            'address'       => 'UTBlockee',
+            'user'          => $user->getId(),
+            'by'            => $this->getTestSysop()->getUser(),
+            'reason'        => __METHOD__,
+            'expiry'        => time() + 100500,
+            'createAccount' => true,
+        ];
+        $block = new DatabaseBlock($blockOptions);
+        $blockStore->insertBlock($block);
 
-	public function testBeginSecondaryAuthentication() {
-		$unblockedUser = \User::newFromName( 'UTSysop' );
-		$blockedUser = $this->getBlockedUser();
+        return $user;
+    }
 
-		$provider = new CheckBlocksSecondaryAuthenticationProvider(
-			[ 'blockDisablesLogin' => false ]
-		);
-		$this->assertEquals(
-			AuthenticationResponse::newAbstain(),
-			$provider->beginSecondaryAuthentication( $unblockedUser, [] )
-		);
-		$this->assertEquals(
-			AuthenticationResponse::newAbstain(),
-			$provider->beginSecondaryAuthentication( $blockedUser, [] )
-		);
+    public function testBeginSecondaryAuthentication()
+    {
+        $unblockedUser = \User::newFromName('UTSysop');
+        $blockedUser = $this->getBlockedUser();
 
-		$provider = new CheckBlocksSecondaryAuthenticationProvider(
-			[ 'blockDisablesLogin' => true ]
-		);
-		$this->assertEquals(
-			AuthenticationResponse::newPass(),
-			$provider->beginSecondaryAuthentication( $unblockedUser, [] )
-		);
-		$ret = $provider->beginSecondaryAuthentication( $blockedUser, [] );
-		$this->assertEquals( AuthenticationResponse::FAIL, $ret->status );
-	}
+        $provider = new CheckBlocksSecondaryAuthenticationProvider(
+            ['blockDisablesLogin' => false]
+        );
+        $this->assertEquals(
+            AuthenticationResponse::newAbstain(),
+            $provider->beginSecondaryAuthentication($unblockedUser, [])
+        );
+        $this->assertEquals(
+            AuthenticationResponse::newAbstain(),
+            $provider->beginSecondaryAuthentication($blockedUser, [])
+        );
 
-	public function testTestUserForCreation() {
-		$provider = new CheckBlocksSecondaryAuthenticationProvider(
-			[ 'blockDisablesLogin' => false ]
-		);
+        $provider = new CheckBlocksSecondaryAuthenticationProvider(
+            ['blockDisablesLogin' => true]
+        );
+        $this->assertEquals(
+            AuthenticationResponse::newPass(),
+            $provider->beginSecondaryAuthentication($unblockedUser, [])
+        );
+        $ret = $provider->beginSecondaryAuthentication($blockedUser, []);
+        $this->assertEquals(AuthenticationResponse::FAIL, $ret->status);
+    }
 
-		$this->initProvider( $provider,  new HashConfig(), null, $this->getServiceContainer()->getAuthManager() );
+    public function testTestUserForCreation()
+    {
+        $provider = new CheckBlocksSecondaryAuthenticationProvider(
+            ['blockDisablesLogin' => false]
+        );
 
-		$unblockedUser = \User::newFromName( 'UTSysop' );
-		$blockedUser = $this->getBlockedUser();
+        $this->initProvider($provider, new HashConfig(), null, $this->getServiceContainer()->getAuthManager());
 
-		$user = \User::newFromName( 'RandomUser' );
+        $unblockedUser = \User::newFromName('UTSysop');
+        $blockedUser = $this->getBlockedUser();
 
-		$this->assertEquals(
-			\StatusValue::newGood(),
-			$provider->testUserForCreation( $unblockedUser, AuthManager::AUTOCREATE_SOURCE_SESSION )
-		);
-		$this->assertEquals(
-			\StatusValue::newGood(),
-			$provider->testUserForCreation( $unblockedUser, false )
-		);
+        $user = \User::newFromName('RandomUser');
 
-		$status = $provider->testUserForCreation( $blockedUser, AuthManager::AUTOCREATE_SOURCE_SESSION );
-		$this->assertInstanceOf( \StatusValue::class, $status );
-		$this->assertStatusError( 'blockedtext', $status );
+        $this->assertEquals(
+            \StatusValue::newGood(),
+            $provider->testUserForCreation($unblockedUser, AuthManager::AUTOCREATE_SOURCE_SESSION)
+        );
+        $this->assertEquals(
+            \StatusValue::newGood(),
+            $provider->testUserForCreation($unblockedUser, false)
+        );
 
-		$status = $provider->testUserForCreation( $blockedUser, false );
-		$this->assertInstanceOf( \StatusValue::class, $status );
-		$this->assertStatusError( 'blockedtext', $status );
-	}
+        $status = $provider->testUserForCreation($blockedUser, AuthManager::AUTOCREATE_SOURCE_SESSION);
+        $this->assertInstanceOf(\StatusValue::class, $status);
+        $this->assertStatusError('blockedtext', $status);
 
-	public function testPartialBlock() {
-		$blockOptions = [
-			'address' => '127.0.0.0/24',
-			'reason' => __METHOD__,
-			'by' => $this->getTestSysop()->getUser(),
-			'expiry' => time() + 100500,
-			'createAccount' => true,
-			'sitewide' => false,
-		];
-		$block = new DatabaseBlock( $blockOptions );
-		$this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( $block );
+        $status = $provider->testUserForCreation($blockedUser, false);
+        $this->assertInstanceOf(\StatusValue::class, $status);
+        $this->assertStatusError('blockedtext', $status);
+    }
 
-		$user = \User::newFromName( 'UTNormalUser' );
-		if ( $user->getId() == 0 ) {
-			$user->addToDatabase();
-			\TestUser::setPasswordForUser( $user, 'UTNormalUserPassword' );
-			$user->saveSettings();
-		}
-		\RequestContext::getMain()->setUser( $user );
-		$newuser = \User::newFromName( 'RandomUser' );
+    public function testPartialBlock()
+    {
+        $blockOptions = [
+            'address'       => '127.0.0.0/24',
+            'reason'        => __METHOD__,
+            'by'            => $this->getTestSysop()->getUser(),
+            'expiry'        => time() + 100500,
+            'createAccount' => true,
+            'sitewide'      => false,
+        ];
+        $block = new DatabaseBlock($blockOptions);
+        $this->getServiceContainer()->getDatabaseBlockStore()->insertBlock($block);
 
-		$provider = new CheckBlocksSecondaryAuthenticationProvider(
-			[ 'blockDisablesLogin' => true ]
-		);
-		$this->initProvider( $provider,  new HashConfig(), null, $this->getServiceContainer()->getAuthManager() );
+        $user = \User::newFromName('UTNormalUser');
+        if ($user->getId() == 0) {
+            $user->addToDatabase();
+            \TestUser::setPasswordForUser($user, 'UTNormalUserPassword');
+            $user->saveSettings();
+        }
+        \RequestContext::getMain()->setUser($user);
+        $newuser = \User::newFromName('RandomUser');
 
-		$ret = $provider->beginSecondaryAuthentication( $user, [] );
-		$this->assertEquals( AuthenticationResponse::FAIL, $ret->status );
+        $provider = new CheckBlocksSecondaryAuthenticationProvider(
+            ['blockDisablesLogin' => true]
+        );
+        $this->initProvider($provider, new HashConfig(), null, $this->getServiceContainer()->getAuthManager());
 
-		$status = $provider->testUserForCreation( $newuser, AuthManager::AUTOCREATE_SOURCE_SESSION );
-		$this->assertInstanceOf( \StatusValue::class, $status );
-		$this->assertStatusError( 'blockedtext-partial', $status );
+        $ret = $provider->beginSecondaryAuthentication($user, []);
+        $this->assertEquals(AuthenticationResponse::FAIL, $ret->status);
 
-		$status = $provider->testUserForCreation( $newuser, false );
-		$this->assertInstanceOf( \StatusValue::class, $status );
-		$this->assertStatusError( 'blockedtext-partial', $status );
-	}
+        $status = $provider->testUserForCreation($newuser, AuthManager::AUTOCREATE_SOURCE_SESSION);
+        $this->assertInstanceOf(\StatusValue::class, $status);
+        $this->assertStatusError('blockedtext-partial', $status);
+
+        $status = $provider->testUserForCreation($newuser, false);
+        $this->assertInstanceOf(\StatusValue::class, $status);
+        $this->assertStatusError('blockedtext-partial', $status);
+    }
 }

@@ -4,8 +4,8 @@
  */
 
 $namespaceAliases = [
-	'Cat' => NS_FILE,
-	'Cat_toots' => NS_FILE_TALK,
+    'Cat'       => NS_FILE,
+    'Cat_toots' => NS_FILE_TALK,
 ];
 
 $fallback = 'x-foo';

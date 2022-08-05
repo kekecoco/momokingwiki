@@ -11,17 +11,20 @@ use MediaWiki\Rest\RequestInterface;
  *
  * @internal
  */
-class MWBasicAuthorizer extends BasicAuthorizerBase {
-	/** @var Authority */
-	private $authority;
+class MWBasicAuthorizer extends BasicAuthorizerBase
+{
+    /** @var Authority */
+    private $authority;
 
-	public function __construct( Authority $authority ) {
-		$this->authority = $authority;
-	}
+    public function __construct(Authority $authority)
+    {
+        $this->authority = $authority;
+    }
 
-	protected function createRequestAuthorizer( RequestInterface $request,
-		Handler $handler
-	): BasicRequestAuthorizer {
-		return new MWBasicRequestAuthorizer( $request, $handler, $this->authority );
-	}
+    protected function createRequestAuthorizer(RequestInterface $request,
+                                               Handler $handler
+    ): BasicRequestAuthorizer
+    {
+        return new MWBasicRequestAuthorizer($request, $handler, $this->authority);
+    }
 }

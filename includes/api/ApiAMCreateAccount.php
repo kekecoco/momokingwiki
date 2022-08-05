@@ -28,126 +28,140 @@ use MediaWiki\Auth\AuthManager;
  *
  * @ingroup API
  */
-class ApiAMCreateAccount extends ApiBase {
+class ApiAMCreateAccount extends ApiBase
+{
 
-	/** @var AuthManager */
-	private $authManager;
+    /** @var AuthManager */
+    private $authManager;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param AuthManager $authManager
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		AuthManager $authManager
-	) {
-		parent::__construct( $main, $action, 'create' );
-		$this->authManager = $authManager;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param AuthManager $authManager
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        AuthManager $authManager
+    )
+    {
+        parent::__construct($main, $action, 'create');
+        $this->authManager = $authManager;
+    }
 
-	public function getFinalDescription() {
-		// A bit of a hack to append 'api-help-authmanager-general-usage'
-		$msgs = parent::getFinalDescription();
-		$msgs[] = ApiBase::makeMessage( 'api-help-authmanager-general-usage', $this->getContext(), [
-			$this->getModulePrefix(),
-			$this->getModuleName(),
-			$this->getModulePath(),
-			AuthManager::ACTION_CREATE,
-			self::needsToken(),
-		] );
-		return $msgs;
-	}
+    public function getFinalDescription()
+    {
+        // A bit of a hack to append 'api-help-authmanager-general-usage'
+        $msgs = parent::getFinalDescription();
+        $msgs[] = ApiBase::makeMessage('api-help-authmanager-general-usage', $this->getContext(), [
+            $this->getModulePrefix(),
+            $this->getModuleName(),
+            $this->getModulePath(),
+            AuthManager::ACTION_CREATE,
+            self::needsToken(),
+        ]);
 
-	public function execute() {
-		$params = $this->extractRequestParams();
+        return $msgs;
+    }
 
-		$this->requireAtLeastOneParameter( $params, 'continue', 'returnurl' );
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
 
-		if ( $params['returnurl'] !== null ) {
-			$bits = wfParseUrl( $params['returnurl'] );
-			if ( !$bits || $bits['scheme'] === '' ) {
-				$encParamName = $this->encodeParamName( 'returnurl' );
-				$this->dieWithError(
-					[ 'apierror-badurl', $encParamName, wfEscapeWikiText( $params['returnurl'] ) ],
-					"badurl_{$encParamName}"
-				);
-			}
-		}
+        $this->requireAtLeastOneParameter($params, 'continue', 'returnurl');
 
-		$helper = new ApiAuthManagerHelper( $this, $this->authManager );
+        if ($params['returnurl'] !== null) {
+            $bits = wfParseUrl($params['returnurl']);
+            if (!$bits || $bits['scheme'] === '') {
+                $encParamName = $this->encodeParamName('returnurl');
+                $this->dieWithError(
+                    ['apierror-badurl', $encParamName, wfEscapeWikiText($params['returnurl'])],
+                    "badurl_{$encParamName}"
+                );
+            }
+        }
 
-		// Make sure it's possible to create accounts
-		if ( !$this->authManager->canCreateAccounts() ) {
-			$this->getResult()->addValue( null, 'createaccount', $helper->formatAuthenticationResponse(
-				AuthenticationResponse::newFail(
-					$this->msg( 'userlogin-cannot-' . AuthManager::ACTION_CREATE )
-				)
-			) );
-			$helper->logAuthenticationResult( 'accountcreation',
-				'userlogin-cannot-' . AuthManager::ACTION_CREATE );
-			return;
-		}
+        $helper = new ApiAuthManagerHelper($this, $this->authManager);
 
-		// Perform the create step
-		if ( $params['continue'] ) {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_CREATE_CONTINUE );
-			$res = $this->authManager->continueAccountCreation( $reqs );
-		} else {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_CREATE );
-			if ( $params['preservestate'] ) {
-				$req = $helper->getPreservedRequest();
-				if ( $req ) {
-					$reqs[] = $req;
-				}
-			}
-			$res = $this->authManager->beginAccountCreation(
-				$this->getAuthority(),
-				$reqs,
-				$params['returnurl']
-			);
-		}
+        // Make sure it's possible to create accounts
+        if (!$this->authManager->canCreateAccounts()) {
+            $this->getResult()->addValue(null, 'createaccount', $helper->formatAuthenticationResponse(
+                AuthenticationResponse::newFail(
+                    $this->msg('userlogin-cannot-' . AuthManager::ACTION_CREATE)
+                )
+            ));
+            $helper->logAuthenticationResult('accountcreation',
+                'userlogin-cannot-' . AuthManager::ACTION_CREATE);
 
-		$this->getResult()->addValue( null, 'createaccount',
-			$helper->formatAuthenticationResponse( $res ) );
-		$helper->logAuthenticationResult( 'accountcreation', $res );
-	}
+            return;
+        }
 
-	public function isReadMode() {
-		return false;
-	}
+        // Perform the create step
+        if ($params['continue']) {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_CREATE_CONTINUE);
+            $res = $this->authManager->continueAccountCreation($reqs);
+        } else {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_CREATE);
+            if ($params['preservestate']) {
+                $req = $helper->getPreservedRequest();
+                if ($req) {
+                    $reqs[] = $req;
+                }
+            }
+            $res = $this->authManager->beginAccountCreation(
+                $this->getAuthority(),
+                $reqs,
+                $params['returnurl']
+            );
+        }
 
-	public function isWriteMode() {
-		return true;
-	}
+        $this->getResult()->addValue(null, 'createaccount',
+            $helper->formatAuthenticationResponse($res));
+        $helper->logAuthenticationResult('accountcreation', $res);
+    }
 
-	public function needsToken() {
-		return 'createaccount';
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	public function getAllowedParams() {
-		$ret = ApiAuthManagerHelper::getStandardParams( AuthManager::ACTION_CREATE,
-			'requests', 'messageformat', 'mergerequestfields', 'preservestate', 'returnurl', 'continue'
-		);
-		$ret['preservestate'][ApiBase::PARAM_HELP_MSG_APPEND][] =
-			'apihelp-createaccount-param-preservestate';
-		return $ret;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function dynamicParameterDocumentation() {
-		return [ 'api-help-authmanagerhelper-additional-params', AuthManager::ACTION_CREATE ];
-	}
+    public function needsToken()
+    {
+        return 'createaccount';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=createaccount&username=Example&password=ExamplePassword&retype=ExamplePassword'
-				. '&createreturnurl=http://example.org/&createtoken=123ABC'
-				=> 'apihelp-createaccount-example-create',
-		];
-	}
+    public function getAllowedParams()
+    {
+        $ret = ApiAuthManagerHelper::getStandardParams(AuthManager::ACTION_CREATE,
+            'requests', 'messageformat', 'mergerequestfields', 'preservestate', 'returnurl', 'continue'
+        );
+        $ret['preservestate'][ApiBase::PARAM_HELP_MSG_APPEND][] =
+            'apihelp-createaccount-param-preservestate';
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Account_creation';
-	}
+        return $ret;
+    }
+
+    public function dynamicParameterDocumentation()
+    {
+        return ['api-help-authmanagerhelper-additional-params', AuthManager::ACTION_CREATE];
+    }
+
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=createaccount&username=Example&password=ExamplePassword&retype=ExamplePassword'
+            . '&createreturnurl=http://example.org/&createtoken=123ABC'
+            => 'apihelp-createaccount-example-create',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Account_creation';
+    }
 }

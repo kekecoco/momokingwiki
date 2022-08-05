@@ -26,60 +26,73 @@
  *
  * @ingroup Cache
  */
-class EmptyBagOStuff extends MediumSpecificBagOStuff {
-	public function __construct( array $params = [] ) {
-		parent::__construct( $params );
+class EmptyBagOStuff extends MediumSpecificBagOStuff
+{
+    public function __construct(array $params = [])
+    {
+        parent::__construct($params);
 
-		$this->attrMap[self::ATTR_DURABILITY] = self::QOS_DURABILITY_NONE;
-	}
+        $this->attrMap[self::ATTR_DURABILITY] = self::QOS_DURABILITY_NONE;
+    }
 
-	protected function doGet( $key, $flags = 0, &$casToken = null ) {
-		$casToken = null;
+    protected function doGet($key, $flags = 0, &$casToken = null)
+    {
+        $casToken = null;
 
-		return false;
-	}
+        return false;
+    }
 
-	protected function doSet( $key, $value, $exptime = 0, $flags = 0 ) {
-		return true;
-	}
+    protected function doSet($key, $value, $exptime = 0, $flags = 0)
+    {
+        return true;
+    }
 
-	protected function doDelete( $key, $flags = 0 ) {
-		return true;
-	}
+    protected function doDelete($key, $flags = 0)
+    {
+        return true;
+    }
 
-	protected function doAdd( $key, $value, $exptime = 0, $flags = 0 ) {
-		return true;
-	}
+    protected function doAdd($key, $value, $exptime = 0, $flags = 0)
+    {
+        return true;
+    }
 
-	public function incr( $key, $value = 1, $flags = 0 ) {
-		return false;
-	}
+    public function incr($key, $value = 1, $flags = 0)
+    {
+        return false;
+    }
 
-	public function decr( $key, $value = 1, $flags = 0 ) {
-		return false;
-	}
+    public function decr($key, $value = 1, $flags = 0)
+    {
+        return false;
+    }
 
-	protected function doIncrWithInit( $key, $exptime, $step, $init, $flags ) {
-		// faster
-		return $init;
-	}
+    protected function doIncrWithInit($key, $exptime, $step, $init, $flags)
+    {
+        // faster
+        return $init;
+    }
 
-	public function merge( $key, callable $callback, $exptime = 0, $attempts = 10, $flags = 0 ) {
-		// faster
-		return true;
-	}
+    public function merge($key, callable $callback, $exptime = 0, $attempts = 10, $flags = 0)
+    {
+        // faster
+        return true;
+    }
 
-	public function setNewPreparedValues( array $valueByKey ) {
-		// Do not bother staging serialized values as this class does not serialize values
-		return $this->guessSerialSizeOfValues( $valueByKey );
-	}
+    public function setNewPreparedValues(array $valueByKey)
+    {
+        // Do not bother staging serialized values as this class does not serialize values
+        return $this->guessSerialSizeOfValues($valueByKey);
+    }
 
-	public function makeKeyInternal( $keyspace, $components ) {
-		return $this->genericKeyFromComponents( $keyspace, ...$components );
-	}
+    public function makeKeyInternal($keyspace, $components)
+    {
+        return $this->genericKeyFromComponents($keyspace, ...$components);
+    }
 
-	protected function convertGenericKey( $key ) {
-		// short-circuit; already uses "generic" keys
-		return $key;
-	}
+    protected function convertGenericKey($key)
+    {
+        // short-circuit; already uses "generic" keys
+        return $key;
+    }
 }

@@ -28,117 +28,128 @@ use MediaWiki\MainConfigNames;
  *
  * @ingroup SpecialPage
  */
-class SpecialRunJobs extends UnlistedSpecialPage {
+class SpecialRunJobs extends UnlistedSpecialPage
+{
 
-	/** @var JobRunner */
-	private $jobRunner;
+    /** @var JobRunner */
+    private $jobRunner;
 
-	/** @var ReadOnlyMode */
-	private $readOnlyMode;
+    /** @var ReadOnlyMode */
+    private $readOnlyMode;
 
-	/**
-	 * @param JobRunner $jobRunner
-	 * @param ReadOnlyMode $readOnlyMode
-	 */
-	public function __construct(
-		JobRunner $jobRunner,
-		ReadOnlyMode $readOnlyMode
-	) {
-		parent::__construct( 'RunJobs' );
-		$this->jobRunner = $jobRunner;
-		$this->readOnlyMode = $readOnlyMode;
-	}
+    /**
+     * @param JobRunner $jobRunner
+     * @param ReadOnlyMode $readOnlyMode
+     */
+    public function __construct(
+        JobRunner $jobRunner,
+        ReadOnlyMode $readOnlyMode
+    )
+    {
+        parent::__construct('RunJobs');
+        $this->jobRunner = $jobRunner;
+        $this->readOnlyMode = $readOnlyMode;
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function execute( $par ) {
-		$this->getOutput()->disable();
+    public function execute($par)
+    {
+        $this->getOutput()->disable();
 
-		if ( $this->readOnlyMode->isReadOnly() ) {
-			wfHttpError( 423, 'Locked', 'Wiki is in read-only mode.' );
-			return;
-		}
+        if ($this->readOnlyMode->isReadOnly()) {
+            wfHttpError(423, 'Locked', 'Wiki is in read-only mode.');
 
-		// Validate request method
-		if ( !$this->getRequest()->wasPosted() ) {
-			wfHttpError( 400, 'Bad Request', 'Request must be POSTed.' );
-			return;
-		}
+            return;
+        }
 
-		// Validate request parameters
-		$optional = [ 'maxjobs' => 0, 'maxtime' => 30, 'type' => false,
-			'async' => true, 'stats' => false ];
-		$required = array_fill_keys( [ 'title', 'tasks', 'signature', 'sigexpiry' ], true );
-		$params = array_intersect_key( $this->getRequest()->getValues(), $required + $optional );
-		$missing = array_diff_key( $required, $params );
-		if ( count( $missing ) ) {
-			wfHttpError( 400, 'Bad Request',
-				'Missing parameters: ' . implode( ', ', array_keys( $missing ) )
-			);
-			return;
-		}
+        // Validate request method
+        if (!$this->getRequest()->wasPosted()) {
+            wfHttpError(400, 'Bad Request', 'Request must be POSTed.');
 
-		// Validate request signature
-		$squery = $params;
-		unset( $squery['signature'] );
-		$correctSignature = self::getQuerySignature( $squery,
-			$this->getConfig()->get( MainConfigNames::SecretKey ) );
-		$providedSignature = $params['signature'];
-		$verified = is_string( $providedSignature )
-			&& hash_equals( $correctSignature, $providedSignature );
-		if ( !$verified || $params['sigexpiry'] < time() ) {
-			wfHttpError( 400, 'Bad Request', 'Invalid or stale signature provided.' );
-			return;
-		}
+            return;
+        }
 
-		// Apply any default parameter values
-		$params += $optional;
+        // Validate request parameters
+        $optional = ['maxjobs' => 0, 'maxtime' => 30, 'type' => false,
+                     'async'   => true, 'stats' => false];
+        $required = array_fill_keys(['title', 'tasks', 'signature', 'sigexpiry'], true);
+        $params = array_intersect_key($this->getRequest()->getValues(), $required + $optional);
+        $missing = array_diff_key($required, $params);
+        if (count($missing)) {
+            wfHttpError(400, 'Bad Request',
+                'Missing parameters: ' . implode(', ', array_keys($missing))
+            );
 
-		if ( $params['async'] ) {
-			// HTTP 202 Accepted
-			HttpStatus::header( 202 );
-			// Clients are meant to disconnect without waiting for the full response.
-			// Let the page output happen before the jobs start, so that clients know it's
-			// safe to disconnect. MediaWiki::preOutputCommit() calls ignore_user_abort()
-			// or similar to make sure we stay alive to run the deferred update.
-			DeferredUpdates::addUpdate(
-				new TransactionRoundDefiningUpdate(
-					function () use ( $params ) {
-						$this->doRun( $params );
-					},
-					__METHOD__
-				),
-				DeferredUpdates::POSTSEND
-			);
-		} else {
-			$stats = $this->doRun( $params );
+            return;
+        }
 
-			if ( $params['stats'] ) {
-				$this->getRequest()->response()->header( 'Content-Type: application/json' );
-				print FormatJson::encode( $stats );
-			} else {
-				print "Done\n";
-			}
-		}
-	}
+        // Validate request signature
+        $squery = $params;
+        unset($squery['signature']);
+        $correctSignature = self::getQuerySignature($squery,
+            $this->getConfig()->get(MainConfigNames::SecretKey));
+        $providedSignature = $params['signature'];
+        $verified = is_string($providedSignature)
+            && hash_equals($correctSignature, $providedSignature);
+        if (!$verified || $params['sigexpiry'] < time()) {
+            wfHttpError(400, 'Bad Request', 'Invalid or stale signature provided.');
 
-	protected function doRun( array $params ) {
-		return $this->jobRunner->run( [
-			'type'     => $params['type'],
-			'maxJobs'  => $params['maxjobs'] ?: 1,
-			'maxTime'  => $params['maxtime'] ?: 30
-		] );
-	}
+            return;
+        }
 
-	/**
-	 * @param array $query
-	 * @param string $secretKey
-	 * @return string
-	 */
-	public static function getQuerySignature( array $query, $secretKey ) {
-		ksort( $query ); // stable order
-		return hash_hmac( 'sha1', wfArrayToCgi( $query ), $secretKey );
-	}
+        // Apply any default parameter values
+        $params += $optional;
+
+        if ($params['async']) {
+            // HTTP 202 Accepted
+            HttpStatus::header(202);
+            // Clients are meant to disconnect without waiting for the full response.
+            // Let the page output happen before the jobs start, so that clients know it's
+            // safe to disconnect. MediaWiki::preOutputCommit() calls ignore_user_abort()
+            // or similar to make sure we stay alive to run the deferred update.
+            DeferredUpdates::addUpdate(
+                new TransactionRoundDefiningUpdate(
+                    function () use ($params) {
+                        $this->doRun($params);
+                    },
+                    __METHOD__
+                ),
+                DeferredUpdates::POSTSEND
+            );
+        } else {
+            $stats = $this->doRun($params);
+
+            if ($params['stats']) {
+                $this->getRequest()->response()->header('Content-Type: application/json');
+                print FormatJson::encode($stats);
+            } else {
+                print "Done\n";
+            }
+        }
+    }
+
+    protected function doRun(array $params)
+    {
+        return $this->jobRunner->run([
+            'type'    => $params['type'],
+            'maxJobs' => $params['maxjobs'] ?: 1,
+            'maxTime' => $params['maxtime'] ?: 30
+        ]);
+    }
+
+    /**
+     * @param array $query
+     * @param string $secretKey
+     * @return string
+     */
+    public static function getQuerySignature(array $query, $secretKey)
+    {
+        ksort($query); // stable order
+
+        return hash_hmac('sha1', wfArrayToCgi($query), $secretKey);
+    }
 }

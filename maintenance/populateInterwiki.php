@@ -28,17 +28,19 @@ use MediaWiki\MediaWikiServices;
 
 require_once __DIR__ . '/Maintenance.php';
 
-class PopulateInterwiki extends Maintenance {
+class PopulateInterwiki extends Maintenance
+{
 
-	/**
-	 * @var string
-	 */
-	private $source;
+    /**
+     * @var string
+     */
+    private $source;
 
-	public function __construct() {
-		parent::__construct();
+    public function __construct()
+    {
+        parent::__construct();
 
-		$this->addDescription( <<<TEXT
+        $this->addDescription(<<<TEXT
 This script will populate the interwiki table, pulling in interwiki links that are used on Wikipedia
 or another MediaWiki wiki.
 
@@ -49,111 +51,115 @@ without the --force option.
 (the default) from which the script fetches the interwiki data and uses here to populate
 the interwiki database table.
 TEXT
-		);
+        );
 
-		$this->addOption( 'source', 'Source wiki for interwiki table, such as '
-			. 'https://en.wikipedia.org/w/api.php (the default)', false, true );
-		$this->addOption( 'force', 'Run regardless of whether the database says it has '
-			. 'been run already.' );
-	}
+        $this->addOption('source', 'Source wiki for interwiki table, such as '
+            . 'https://en.wikipedia.org/w/api.php (the default)', false, true);
+        $this->addOption('force', 'Run regardless of whether the database says it has '
+            . 'been run already.');
+    }
 
-	public function execute() {
-		$force = $this->hasOption( 'force' );
-		$this->source = $this->getOption( 'source', 'https://en.wikipedia.org/w/api.php' );
+    public function execute()
+    {
+        $force = $this->hasOption('force');
+        $this->source = $this->getOption('source', 'https://en.wikipedia.org/w/api.php');
 
-		$data = $this->fetchLinks();
+        $data = $this->fetchLinks();
 
-		if ( $data === false ) {
-			$this->error( "Error during fetching data." );
-		} else {
-			$this->doPopulate( $data, $force );
-		}
-	}
+        if ($data === false) {
+            $this->error("Error during fetching data.");
+        } else {
+            $this->doPopulate($data, $force);
+        }
+    }
 
-	/**
-	 * @return array[]|bool The 'interwikimap' sub-array or false on failure.
-	 */
-	protected function fetchLinks() {
-		$url = wfArrayToCgi( [
-			'action' => 'query',
-			'meta' => 'siteinfo',
-			'siprop' => 'interwikimap',
-			'sifilteriw' => 'local',
-			'format' => 'json'
-		] );
+    /**
+     * @return array[]|bool The 'interwikimap' sub-array or false on failure.
+     */
+    protected function fetchLinks()
+    {
+        $url = wfArrayToCgi([
+            'action'     => 'query',
+            'meta'       => 'siteinfo',
+            'siprop'     => 'interwikimap',
+            'sifilteriw' => 'local',
+            'format'     => 'json'
+        ]);
 
-		if ( !empty( $this->source ) ) {
-			$url = rtrim( $this->source, '?' ) . '?' . $url;
-		}
+        if (!empty($this->source)) {
+            $url = rtrim($this->source, '?') . '?' . $url;
+        }
 
-		$json = MediaWikiServices::getInstance()->getHttpRequestFactory()->get( $url, [], __METHOD__ );
-		$data = json_decode( $json, true );
+        $json = MediaWikiServices::getInstance()->getHttpRequestFactory()->get($url, [], __METHOD__);
+        $data = json_decode($json, true);
 
-		if ( is_array( $data ) ) {
-			return $data['query']['interwikimap'];
-		} else {
-			return false;
-		}
-	}
+        if (is_array($data)) {
+            return $data['query']['interwikimap'];
+        } else {
+            return false;
+        }
+    }
 
-	/**
-	 * @param array[] $data
-	 * @param bool $force
-	 *
-	 * @return bool
-	 */
-	protected function doPopulate( array $data, $force ) {
-		$dbw = $this->getDB( DB_PRIMARY );
+    /**
+     * @param array[] $data
+     * @param bool $force
+     *
+     * @return bool
+     */
+    protected function doPopulate(array $data, $force)
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		if ( !$force ) {
-			$row = $dbw->selectRow(
-				'updatelog',
-				'1',
-				[ 'ul_key' => 'populate interwiki' ],
-				__METHOD__
-			);
+        if (!$force) {
+            $row = $dbw->selectRow(
+                'updatelog',
+                '1',
+                ['ul_key' => 'populate interwiki'],
+                __METHOD__
+            );
 
-			if ( $row ) {
-				$this->output( "Interwiki table already populated.  Use php " .
-					"maintenance/populateInterwiki.php\n--force from the command line " .
-					"to override.\n" );
-				return true;
-			}
-		}
+            if ($row) {
+                $this->output("Interwiki table already populated.  Use php " .
+                    "maintenance/populateInterwiki.php\n--force from the command line " .
+                    "to override.\n");
 
-		$lookup = MediaWikiServices::getInstance()->getInterwikiLookup();
-		foreach ( $data as $d ) {
-			$prefix = $d['prefix'];
+                return true;
+            }
+        }
 
-			$row = $dbw->selectRow(
-				'interwiki',
-				'1',
-				[ 'iw_prefix' => $prefix ],
-				__METHOD__
-			);
+        $lookup = MediaWikiServices::getInstance()->getInterwikiLookup();
+        foreach ($data as $d) {
+            $prefix = $d['prefix'];
 
-			if ( !$row ) {
-				$dbw->insert(
-					'interwiki',
-					[
-						'iw_prefix' => $prefix,
-						'iw_url' => $d['url'],
-						'iw_local' => 1,
-						'iw_api' => '',
-						'iw_wikiid' => '',
-					],
-					__METHOD__,
-					[ 'IGNORE' ]
-				);
-			}
+            $row = $dbw->selectRow(
+                'interwiki',
+                '1',
+                ['iw_prefix' => $prefix],
+                __METHOD__
+            );
 
-			$lookup->invalidateCache( $prefix );
-		}
+            if (!$row) {
+                $dbw->insert(
+                    'interwiki',
+                    [
+                        'iw_prefix' => $prefix,
+                        'iw_url'    => $d['url'],
+                        'iw_local'  => 1,
+                        'iw_api'    => '',
+                        'iw_wikiid' => '',
+                    ],
+                    __METHOD__,
+                    ['IGNORE']
+                );
+            }
 
-		$this->output( "Interwiki links are populated.\n" );
+            $lookup->invalidateCache($prefix);
+        }
 
-		return true;
-	}
+        $this->output("Interwiki links are populated.\n");
+
+        return true;
+    }
 
 }
 

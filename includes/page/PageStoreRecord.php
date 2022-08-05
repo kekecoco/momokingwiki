@@ -31,114 +31,123 @@ use Wikimedia\Assert\Assert;
  *
  * @since 1.36
  */
-class PageStoreRecord extends PageIdentityValue implements ExistingPageRecord {
+class PageStoreRecord extends PageIdentityValue implements ExistingPageRecord
+{
 
-	/**
-	 * Fields that must be present in the row object passed to the constructor.
-	 * Note that page_lang is optional, so it is not included here.
-	 *
-	 * @since 1.37
-	 */
-	public const REQUIRED_FIELDS = [
-		'page_id',
-		'page_namespace',
-		'page_title',
-		'page_is_redirect',
-		'page_is_new',
-		'page_latest',
-		'page_touched',
-	];
+    /**
+     * Fields that must be present in the row object passed to the constructor.
+     * Note that page_lang is optional, so it is not included here.
+     *
+     * @since 1.37
+     */
+    public const REQUIRED_FIELDS = [
+        'page_id',
+        'page_namespace',
+        'page_title',
+        'page_is_redirect',
+        'page_is_new',
+        'page_latest',
+        'page_touched',
+    ];
 
-	/**
-	 * Fields from the page table.
-	 *
-	 * @var stdClass
-	 */
-	private $row;
+    /**
+     * Fields from the page table.
+     *
+     * @var stdClass
+     */
+    private $row;
 
-	/**
-	 * The $row object must provide all fields listed in PageStoreRecord::REQUIRED_FIELDS.
-	 *
-	 * @param stdClass $row A row from the page table
-	 * @param string|bool $wikiId The Id of the wiki this page belongs to,
-	 *        or self::LOCAL for the local wiki.
-	 */
-	public function __construct( stdClass $row, $wikiId ) {
-		foreach ( self::REQUIRED_FIELDS as $field ) {
-			Assert::parameter( isset( $row->$field ), '$row->' . $field, 'is required' );
-		}
+    /**
+     * The $row object must provide all fields listed in PageStoreRecord::REQUIRED_FIELDS.
+     *
+     * @param stdClass $row A row from the page table
+     * @param string|bool $wikiId The Id of the wiki this page belongs to,
+     *        or self::LOCAL for the local wiki.
+     */
+    public function __construct(stdClass $row, $wikiId)
+    {
+        foreach (self::REQUIRED_FIELDS as $field) {
+            Assert::parameter(isset($row->$field), '$row->' . $field, 'is required');
+        }
 
-		Assert::parameter( $row->page_id > 0, '$pageId', 'must be greater than zero (page must exist)' );
+        Assert::parameter($row->page_id > 0, '$pageId', 'must be greater than zero (page must exist)');
 
-		parent::__construct( $row->page_id, $row->page_namespace, $row->page_title, $wikiId );
+        parent::__construct($row->page_id, $row->page_namespace, $row->page_title, $wikiId);
 
-		$this->row = $row;
-	}
+        $this->row = $row;
+    }
 
-	/**
-	 * False if the page has had more than one edit.
-	 *
-	 * @return bool
-	 */
-	public function isNew(): bool {
-		return (bool)$this->row->page_is_new;
-	}
+    /**
+     * False if the page has had more than one edit.
+     *
+     * @return bool
+     */
+    public function isNew(): bool
+    {
+        return (bool)$this->row->page_is_new;
+    }
 
-	/**
-	 * True if the page is a redirect.
-	 *
-	 * @return bool
-	 */
-	public function isRedirect(): bool {
-		return (bool)$this->row->page_is_redirect;
-	}
+    /**
+     * True if the page is a redirect.
+     *
+     * @return bool
+     */
+    public function isRedirect(): bool
+    {
+        return (bool)$this->row->page_is_redirect;
+    }
 
-	/**
-	 * The ID of the page'S latest revision.
-	 *
-	 * @param bool $wikiId
-	 *
-	 * @return int
-	 */
-	public function getLatest( $wikiId = self::LOCAL ): int {
-		$this->assertWiki( $wikiId );
-		return (int)$this->row->page_latest;
-	}
+    /**
+     * The ID of the page'S latest revision.
+     *
+     * @param bool $wikiId
+     *
+     * @return int
+     */
+    public function getLatest($wikiId = self::LOCAL): int
+    {
+        $this->assertWiki($wikiId);
 
-	/**
-	 * Timestamp at which the page was last rerendered.
-	 *
-	 * @return string
-	 */
-	public function getTouched(): string {
-		return MWTimestamp::convert( TS_MW, $this->row->page_touched );
-	}
+        return (int)$this->row->page_latest;
+    }
 
-	/**
-	 * Language in which the page is written.
-	 *
-	 * @return ?string
-	 */
-	public function getLanguage(): ?string {
-		return $this->getField( 'page_lang' );
-	}
+    /**
+     * Timestamp at which the page was last rerendered.
+     *
+     * @return string
+     */
+    public function getTouched(): string
+    {
+        return MWTimestamp::convert(TS_MW, $this->row->page_touched);
+    }
 
-	/**
-	 * Return the raw value for the given field as returned by the database query.
-	 *
-	 * Numeric values may be encoded as strings.
-	 * Boolean values may be represented as integers (or numeric strings).
-	 * Timestamps will use the database's native format.
-	 *
-	 * @internal
-	 *
-	 * @param string $field
-	 *
-	 * @return string|int|bool|null
-	 */
-	public function getField( string $field ) {
-		// Field may be missing entirely.
-		return $this->row->$field ?? null;
-	}
+    /**
+     * Language in which the page is written.
+     *
+     * @return ?string
+     */
+    public function getLanguage(): ?string
+    {
+        return $this->getField('page_lang');
+    }
+
+    /**
+     * Return the raw value for the given field as returned by the database query.
+     *
+     * Numeric values may be encoded as strings.
+     * Boolean values may be represented as integers (or numeric strings).
+     * Timestamps will use the database's native format.
+     *
+     * @param string $field
+     *
+     * @return string|int|bool|null
+     * @internal
+     *
+     */
+    public function getField(string $field)
+    {
+        // Field may be missing entirely.
+        return $this->row->$field ?? null;
+    }
 
 }

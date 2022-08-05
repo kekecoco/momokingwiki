@@ -27,160 +27,175 @@ use MediaWiki\MediaWikiServices;
 /**
  * @ingroup HTTP
  */
-class FauxResponse extends WebResponse {
-	private $headers;
-	private $cookies = [];
-	private $code;
+class FauxResponse extends WebResponse
+{
+    private $headers;
+    private $cookies = [];
+    private $code;
 
-	/** @var ?Config */
-	private $cookieConfig = null;
+    /** @var ?Config */
+    private $cookieConfig = null;
 
-	/**
-	 * Stores a HTTP header
-	 * @param string $string Header to output
-	 * @param bool $replace Replace current similar header
-	 * @param null|int $http_response_code Forces the HTTP response code to the specified value.
-	 */
-	public function header( $string, $replace = true, $http_response_code = null ) {
-		if ( substr( $string, 0, 5 ) == 'HTTP/' ) {
-			$parts = explode( ' ', $string, 3 );
-			$this->code = intval( $parts[1] );
-		} else {
-			[ $key, $val ] = array_map( 'trim', explode( ":", $string, 2 ) );
+    /**
+     * Stores a HTTP header
+     * @param string $string Header to output
+     * @param bool $replace Replace current similar header
+     * @param null|int $http_response_code Forces the HTTP response code to the specified value.
+     */
+    public function header($string, $replace = true, $http_response_code = null)
+    {
+        if (substr($string, 0, 5) == 'HTTP/') {
+            $parts = explode(' ', $string, 3);
+            $this->code = intval($parts[1]);
+        } else {
+            [$key, $val] = array_map('trim', explode(":", $string, 2));
 
-			$key = strtoupper( $key );
+            $key = strtoupper($key);
 
-			if ( $replace || !isset( $this->headers[$key] ) ) {
-				$this->headers[$key] = $val;
-			}
-		}
+            if ($replace || !isset($this->headers[$key])) {
+                $this->headers[$key] = $val;
+            }
+        }
 
-		if ( $http_response_code !== null ) {
-			$this->code = intval( $http_response_code );
-		}
-	}
+        if ($http_response_code !== null) {
+            $this->code = intval($http_response_code);
+        }
+    }
 
-	/**
-	 * @since 1.26
-	 * @param int $code Status code
-	 */
-	public function statusHeader( $code ) {
-		$this->code = intval( $code );
-	}
+    /**
+     * @param int $code Status code
+     * @since 1.26
+     */
+    public function statusHeader($code)
+    {
+        $this->code = intval($code);
+    }
 
-	public function headersSent() {
-		return false;
-	}
+    public function headersSent()
+    {
+        return false;
+    }
 
-	/**
-	 * @param string $key The name of the header to get (case insensitive).
-	 * @return string|null The header value (if set); null otherwise.
-	 */
-	public function getHeader( $key ) {
-		$key = strtoupper( $key );
+    /**
+     * @param string $key The name of the header to get (case insensitive).
+     * @return string|null The header value (if set); null otherwise.
+     */
+    public function getHeader($key)
+    {
+        $key = strtoupper($key);
 
-		return $this->headers[$key] ?? null;
-	}
+        return $this->headers[$key] ?? null;
+    }
 
-	/**
-	 * Get the HTTP response code, null if not set
-	 *
-	 * @return int|null
-	 */
-	public function getStatusCode() {
-		return $this->code;
-	}
+    /**
+     * Get the HTTP response code, null if not set
+     *
+     * @return int|null
+     */
+    public function getStatusCode()
+    {
+        return $this->code;
+    }
 
-	/**
-	 * @return Config
-	 */
-	private function getCookieConfig(): Config {
-		if ( !$this->cookieConfig ) {
-			$this->cookieConfig = MediaWikiServices::getInstance()->getMainConfig();
-		}
-		return $this->cookieConfig;
-	}
+    /**
+     * @return Config
+     */
+    private function getCookieConfig(): Config
+    {
+        if (!$this->cookieConfig) {
+            $this->cookieConfig = MediaWikiServices::getInstance()->getMainConfig();
+        }
 
-	/**
-	 * @param Config $cookieConfig
-	 */
-	public function setCookieConfig( Config $cookieConfig ): void {
-		$this->cookieConfig = $cookieConfig;
-	}
+        return $this->cookieConfig;
+    }
 
-	/**
-	 * @param string $name The name of the cookie.
-	 * @param string $value The value to be stored in the cookie.
-	 * @param int|null $expire Ignored in this faux subclass.
-	 * @param array $options Ignored in this faux subclass.
-	 */
-	public function setCookie( $name, $value, $expire = 0, $options = [] ) {
-		$cookieConfig = $this->getCookieConfig();
-		$cookiePath = $cookieConfig->get( MainConfigNames::CookiePath );
-		$cookiePrefix = $cookieConfig->get( MainConfigNames::CookiePrefix );
-		$cookieDomain = $cookieConfig->get( MainConfigNames::CookieDomain );
-		$cookieSecure = $cookieConfig->get( MainConfigNames::CookieSecure );
-		$cookieExpiration = $cookieConfig->get( MainConfigNames::CookieExpiration );
-		$cookieHttpOnly = $cookieConfig->get( MainConfigNames::CookieHttpOnly );
-		$options = array_filter( $options, static function ( $a ) {
-			return $a !== null;
-		} ) + [
-			'prefix' => $cookiePrefix,
-			'domain' => $cookieDomain,
-			'path' => $cookiePath,
-			'secure' => $cookieSecure,
-			'httpOnly' => $cookieHttpOnly,
-			'raw' => false,
-		];
+    /**
+     * @param Config $cookieConfig
+     */
+    public function setCookieConfig(Config $cookieConfig): void
+    {
+        $this->cookieConfig = $cookieConfig;
+    }
 
-		if ( $expire === null ) {
-			$expire = 0; // Session cookie
-		} elseif ( $expire == 0 && $cookieExpiration != 0 ) {
-			$expire = time() + $cookieExpiration;
-		}
+    /**
+     * @param string $name The name of the cookie.
+     * @param string $value The value to be stored in the cookie.
+     * @param int|null $expire Ignored in this faux subclass.
+     * @param array $options Ignored in this faux subclass.
+     */
+    public function setCookie($name, $value, $expire = 0, $options = [])
+    {
+        $cookieConfig = $this->getCookieConfig();
+        $cookiePath = $cookieConfig->get(MainConfigNames::CookiePath);
+        $cookiePrefix = $cookieConfig->get(MainConfigNames::CookiePrefix);
+        $cookieDomain = $cookieConfig->get(MainConfigNames::CookieDomain);
+        $cookieSecure = $cookieConfig->get(MainConfigNames::CookieSecure);
+        $cookieExpiration = $cookieConfig->get(MainConfigNames::CookieExpiration);
+        $cookieHttpOnly = $cookieConfig->get(MainConfigNames::CookieHttpOnly);
+        $options = array_filter($options, static function ($a) {
+                return $a !== null;
+            }) + [
+                'prefix'   => $cookiePrefix,
+                'domain'   => $cookieDomain,
+                'path'     => $cookiePath,
+                'secure'   => $cookieSecure,
+                'httpOnly' => $cookieHttpOnly,
+                'raw'      => false,
+            ];
 
-		$this->cookies[$options['prefix'] . $name] = [
-			'value' => (string)$value,
-			'expire' => (int)$expire,
-			'path' => (string)$options['path'],
-			'domain' => (string)$options['domain'],
-			'secure' => (bool)$options['secure'],
-			'httpOnly' => (bool)$options['httpOnly'],
-			'raw' => (bool)$options['raw'],
-		];
-	}
+        if ($expire === null) {
+            $expire = 0; // Session cookie
+        } elseif ($expire == 0 && $cookieExpiration != 0) {
+            $expire = time() + $cookieExpiration;
+        }
 
-	/**
-	 * @param string $name
-	 * @return string|null
-	 */
-	public function getCookie( $name ) {
-		if ( isset( $this->cookies[$name] ) ) {
-			return $this->cookies[$name]['value'];
-		}
-		return null;
-	}
+        $this->cookies[$options['prefix'] . $name] = [
+            'value'    => (string)$value,
+            'expire'   => (int)$expire,
+            'path'     => (string)$options['path'],
+            'domain'   => (string)$options['domain'],
+            'secure'   => (bool)$options['secure'],
+            'httpOnly' => (bool)$options['httpOnly'],
+            'raw'      => (bool)$options['raw'],
+        ];
+    }
 
-	/**
-	 * @param string $name
-	 * @return array|null
-	 */
-	public function getCookieData( $name ) {
-		return $this->cookies[$name] ?? null;
-	}
+    /**
+     * @param string $name
+     * @return string|null
+     */
+    public function getCookie($name)
+    {
+        if (isset($this->cookies[$name])) {
+            return $this->cookies[$name]['value'];
+        }
 
-	/**
-	 * @return array[]
-	 */
-	public function getCookies() {
-		return $this->cookies;
-	}
+        return null;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function hasCookies() {
-		return count( $this->cookies ) > 0;
-	}
+    /**
+     * @param string $name
+     * @return array|null
+     */
+    public function getCookieData($name)
+    {
+        return $this->cookies[$name] ?? null;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getCookies()
+    {
+        return $this->cookies;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function hasCookies()
+    {
+        return count($this->cookies) > 0;
+    }
 
 }

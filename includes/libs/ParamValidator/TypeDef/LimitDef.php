@@ -15,66 +15,72 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @since 1.34
  * @unstable
  */
-class LimitDef extends IntegerDef {
+class LimitDef extends IntegerDef
+{
 
-	/**
-	 * @inheritDoc
-	 *
-	 * Additional `$options` accepted:
-	 *  - 'parse-limit': (bool) Default true, set false to return 'max' rather
-	 *    than determining the effective value.
-	 */
-	public function validate( $name, $value, array $settings, array $options ) {
-		if ( $value === 'max' ) {
-			if ( $options['parse-limit'] ?? true ) {
-				$value = $this->callbacks->useHighLimits( $options )
-					? $settings[self::PARAM_MAX2] ?? $settings[self::PARAM_MAX] ?? PHP_INT_MAX
-					: $settings[self::PARAM_MAX] ?? PHP_INT_MAX;
-			}
-			return $value;
-		}
+    /**
+     * @inheritDoc
+     *
+     * Additional `$options` accepted:
+     *  - 'parse-limit': (bool) Default true, set false to return 'max' rather
+     *    than determining the effective value.
+     */
+    public function validate($name, $value, array $settings, array $options)
+    {
+        if ($value === 'max') {
+            if ($options['parse-limit'] ?? true) {
+                $value = $this->callbacks->useHighLimits($options)
+                    ? $settings[self::PARAM_MAX2] ?? $settings[self::PARAM_MAX] ?? PHP_INT_MAX
+                    : $settings[self::PARAM_MAX] ?? PHP_INT_MAX;
+            }
 
-		return parent::validate( $name, $value, $settings, $options );
-	}
+            return $value;
+        }
 
-	public function normalizeSettings( array $settings ) {
-		$settings += [
-			self::PARAM_MIN => 0,
-		];
+        return parent::validate($name, $value, $settings, $options);
+    }
 
-		// Cannot be multi-valued
-		$settings[ParamValidator::PARAM_ISMULTI] = false;
+    public function normalizeSettings(array $settings)
+    {
+        $settings += [
+            self::PARAM_MIN => 0,
+        ];
 
-		return parent::normalizeSettings( $settings );
-	}
+        // Cannot be multi-valued
+        $settings[ParamValidator::PARAM_ISMULTI] = false;
 
-	public function checkSettings( string $name, $settings, array $options, array $ret ): array {
-		$ret = parent::checkSettings( $name, $settings, $options, $ret );
+        return parent::normalizeSettings($settings);
+    }
 
-		if ( !empty( $settings[ParamValidator::PARAM_ISMULTI] ) &&
-			!isset( $ret['issues'][ParamValidator::PARAM_ISMULTI] )
-		) {
-			$ret['issues'][ParamValidator::PARAM_ISMULTI] =
-				'PARAM_ISMULTI cannot be used for limit-type parameters';
-		}
+    public function checkSettings(string $name, $settings, array $options, array $ret): array
+    {
+        $ret = parent::checkSettings($name, $settings, $options, $ret);
 
-		if ( ( $settings[self::PARAM_MIN] ?? 0 ) < 0 ) {
-			$ret['issues'][] = 'PARAM_MIN must be greater than or equal to 0';
-		}
-		if ( !isset( $settings[self::PARAM_MAX] ) ) {
-			$ret['issues'][] = 'PARAM_MAX must be set';
-		}
+        if (!empty($settings[ParamValidator::PARAM_ISMULTI]) &&
+            !isset($ret['issues'][ParamValidator::PARAM_ISMULTI])
+        ) {
+            $ret['issues'][ParamValidator::PARAM_ISMULTI] =
+                'PARAM_ISMULTI cannot be used for limit-type parameters';
+        }
 
-		return $ret;
-	}
+        if (($settings[self::PARAM_MIN] ?? 0) < 0) {
+            $ret['issues'][] = 'PARAM_MIN must be greater than or equal to 0';
+        }
+        if (!isset($settings[self::PARAM_MAX])) {
+            $ret['issues'][] = 'PARAM_MAX must be set';
+        }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+        return $ret;
+    }
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new( 'paramvalidator-help-type-limit' )
-			->params( 1 );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		return $info;
-	}
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new('paramvalidator-help-type-limit')
+            ->params(1);
+
+        return $info;
+    }
 
 }

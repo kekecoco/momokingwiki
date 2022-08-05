@@ -25,48 +25,52 @@
  *
  * @since 1.24
  */
-class MultiConfig implements Config {
+class MultiConfig implements Config
+{
 
-	/**
-	 * Array of Config objects to use
-	 * Order matters, the Config objects
-	 * will be checked in order to see
-	 * whether they have the requested setting
-	 *
-	 * @var Config[]
-	 */
-	private $configs;
+    /**
+     * Array of Config objects to use
+     * Order matters, the Config objects
+     * will be checked in order to see
+     * whether they have the requested setting
+     *
+     * @var Config[]
+     */
+    private $configs;
 
-	/**
-	 * @param Config[] $configs
-	 */
-	public function __construct( array $configs ) {
-		$this->configs = $configs;
-	}
+    /**
+     * @param Config[] $configs
+     */
+    public function __construct(array $configs)
+    {
+        $this->configs = $configs;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function get( $name ) {
-		foreach ( $this->configs as $config ) {
-			if ( $config->has( $name ) ) {
-				return $config->get( $name );
-			}
-		}
+    /**
+     * @inheritDoc
+     */
+    public function get($name)
+    {
+        foreach ($this->configs as $config) {
+            if ($config->has($name)) {
+                return $config->get($name);
+            }
+        }
 
-		throw new ConfigException( __METHOD__ . ": undefined option: '$name'" );
-	}
+        throw new ConfigException(__METHOD__ . ": undefined option: '$name'");
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function has( $name ) {
-		foreach ( $this->configs as $config ) {
-			if ( $config->has( $name ) ) {
-				return true;
-			}
-		}
+    /**
+     * @inheritDoc
+     */
+    public function has($name)
+    {
+        foreach ($this->configs as $config) {
+            if ($config->has($name)) {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 }

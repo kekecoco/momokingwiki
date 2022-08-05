@@ -12,11 +12,13 @@ use MediaWiki\MediaWikiServices;
  *
  * @since 1.36
  */
-class PurgeMessageBlobStore extends Maintenance {
-	public function execute() {
-		$blobStore = MediaWikiServices::getInstance()->getResourceLoader()->getMessageBlobStore();
-		$blobStore->clear();
-	}
+class PurgeMessageBlobStore extends Maintenance
+{
+    public function execute()
+    {
+        $blobStore = MediaWikiServices::getInstance()->getResourceLoader()->getMessageBlobStore();
+        $blobStore->clear();
+    }
 }
 
 $maintClass = PurgeMessageBlobStore::class;

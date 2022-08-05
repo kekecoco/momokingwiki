@@ -29,74 +29,79 @@ use Wikimedia\Assert\PreconditionException;
  * Helper trait for {@link WikiAwareEntity implementations}
  * @package MediaWiki\DAO
  */
-trait WikiAwareEntityTrait {
+trait WikiAwareEntityTrait
+{
 
-	/**
-	 * Get the ID of the wiki this entity belongs to.
-	 *
-	 * @since 1.36
-	 *
-	 * @see RevisionRecord::getWikiId()
-	 * @see UserIdentity::getWikiId()
-	 * @see PageIdentity::getWikiId()
-	 * @see Block::getWikiId()
-	 *
-	 * @return string|false The wiki's logical name or WikiAwareEntity::LOCAL for the local wiki
-	 */
-	abstract public function getWikiId();
+    /**
+     * Get the ID of the wiki this entity belongs to.
+     *
+     * @return string|false The wiki's logical name or WikiAwareEntity::LOCAL for the local wiki
+     * @see RevisionRecord::getWikiId()
+     * @see UserIdentity::getWikiId()
+     * @see PageIdentity::getWikiId()
+     * @see Block::getWikiId()
+     *
+     * @since 1.36
+     *
+     */
+    abstract public function getWikiId();
 
-	/**
-	 * Throws if $wikiId is not the same as this entity wiki.
-	 *
-	 * @param string|false $wikiId The wiki ID expected by the caller.
-	 *
-	 * @throws PreconditionException
-	 */
-	public function assertWiki( $wikiId ) {
-		if ( $wikiId !== $this->getWikiId() ) {
-			$expected = $this->wikiIdToString( $wikiId );
-			$actual = $this->wikiIdToString( $this->getWikiId() );
-			throw new PreconditionException(
-				"Expected " . __CLASS__ . " to belong to $expected, but it belongs to $actual"
-			);
-		}
-	}
+    /**
+     * Throws if $wikiId is not the same as this entity wiki.
+     *
+     * @param string|false $wikiId The wiki ID expected by the caller.
+     *
+     * @throws PreconditionException
+     */
+    public function assertWiki($wikiId)
+    {
+        if ($wikiId !== $this->getWikiId()) {
+            $expected = $this->wikiIdToString($wikiId);
+            $actual = $this->wikiIdToString($this->getWikiId());
+            throw new PreconditionException(
+                "Expected " . __CLASS__ . " to belong to $expected, but it belongs to $actual"
+            );
+        }
+    }
 
-	/**
-	 * Emits a deprecation warning $since version if $wikiId is not the same as this wiki.
-	 *
-	 * @param string|false $wikiId
-	 * @param string $since
-	 */
-	protected function deprecateInvalidCrossWiki( $wikiId, string $since ) {
-		if ( $wikiId !== $this->getWikiId() ) {
-			$expected = $this->wikiIdToString( $wikiId );
-			$actual = $this->wikiIdToString( $this->getWikiId() );
-			wfDeprecatedMsg(
-				'Deprecated cross-wiki access to ' . __CLASS__ . '. ' .
-				"Expected: {$expected}, Actual: {$actual}. " .
-				"Pass expected \$wikiId.",
-				$since
-			);
-		}
-	}
+    /**
+     * Emits a deprecation warning $since version if $wikiId is not the same as this wiki.
+     *
+     * @param string|false $wikiId
+     * @param string $since
+     */
+    protected function deprecateInvalidCrossWiki($wikiId, string $since)
+    {
+        if ($wikiId !== $this->getWikiId()) {
+            $expected = $this->wikiIdToString($wikiId);
+            $actual = $this->wikiIdToString($this->getWikiId());
+            wfDeprecatedMsg(
+                'Deprecated cross-wiki access to ' . __CLASS__ . '. ' .
+                "Expected: {$expected}, Actual: {$actual}. " .
+                "Pass expected \$wikiId.",
+                $since
+            );
+        }
+    }
 
-	/**
-	 * Asserts correct $wikiId parameter was passed.
-	 *
-	 * @param string|false $wikiId
-	 */
-	protected function assertWikiIdParam( $wikiId ) {
-		Assert::parameterType( [ 'string', 'false' ], $wikiId, '$wikiId' );
-	}
+    /**
+     * Asserts correct $wikiId parameter was passed.
+     *
+     * @param string|false $wikiId
+     */
+    protected function assertWikiIdParam($wikiId)
+    {
+        Assert::parameterType(['string', 'false'], $wikiId, '$wikiId');
+    }
 
-	/**
-	 * Convert $wikiId to a string for logging.
-	 *
-	 * @param string|false $wikiId
-	 * @return string
-	 */
-	private function wikiIdToString( $wikiId ): string {
-		return $wikiId === WikiAwareEntity::LOCAL ? 'the local wiki' : "'{$wikiId}'";
-	}
+    /**
+     * Convert $wikiId to a string for logging.
+     *
+     * @param string|false $wikiId
+     * @return string
+     */
+    private function wikiIdToString($wikiId): string
+    {
+        return $wikiId === WikiAwareEntity::LOCAL ? 'the local wiki' : "'{$wikiId}'";
+    }
 }

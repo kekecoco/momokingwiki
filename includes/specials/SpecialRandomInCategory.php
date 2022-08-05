@@ -49,277 +49,293 @@ use Wikimedia\RequestTimeout\TimeoutException;
  *
  * @ingroup SpecialPage
  */
-class SpecialRandomInCategory extends FormSpecialPage {
-	/** @var string[] */
-	protected $extra = []; // Extra SQL statements
-	/** @var Title|false */
-	protected $category = false; // Title object of category
-	/** @var int */
-	protected $maxOffset = 30; // Max amount to fudge randomness by.
-	/** @var int|null */
-	private $maxTimestamp = null;
-	/** @var int|null */
-	private $minTimestamp = null;
+class SpecialRandomInCategory extends FormSpecialPage
+{
+    /** @var string[] */
+    protected $extra = []; // Extra SQL statements
+    /** @var Title|false */
+    protected $category = false; // Title object of category
+    /** @var int */
+    protected $maxOffset = 30; // Max amount to fudge randomness by.
+    /** @var int|null */
+    private $maxTimestamp = null;
+    /** @var int|null */
+    private $minTimestamp = null;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct( ILoadBalancer $loadBalancer ) {
-		parent::__construct( 'RandomInCategory' );
-		$this->loadBalancer = $loadBalancer;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(ILoadBalancer $loadBalancer)
+    {
+        parent::__construct('RandomInCategory');
+        $this->loadBalancer = $loadBalancer;
+    }
 
-	/**
-	 * Set which category to use.
-	 * @param Title $cat
-	 */
-	public function setCategory( Title $cat ) {
-		$this->category = $cat;
-		$this->maxTimestamp = null;
-		$this->minTimestamp = null;
-	}
+    /**
+     * Set which category to use.
+     * @param Title $cat
+     */
+    public function setCategory(Title $cat)
+    {
+        $this->category = $cat;
+        $this->maxTimestamp = null;
+        $this->minTimestamp = null;
+    }
 
-	protected function getFormFields() {
-		$this->addHelpLink( 'Help:RandomInCategory' );
+    protected function getFormFields()
+    {
+        $this->addHelpLink('Help:RandomInCategory');
 
-		return [
-			'category' => [
-				'type' => 'title',
-				'namespace' => NS_CATEGORY,
-				'relative' => true,
-				'label-message' => 'randomincategory-category',
-				'required' => true,
-			]
-		];
-	}
+        return [
+            'category' => [
+                'type'          => 'title',
+                'namespace'     => NS_CATEGORY,
+                'relative'      => true,
+                'label-message' => 'randomincategory-category',
+                'required'      => true,
+            ]
+        ];
+    }
 
-	public function requiresWrite() {
-		return false;
-	}
+    public function requiresWrite()
+    {
+        return false;
+    }
 
-	public function requiresUnblock() {
-		return false;
-	}
+    public function requiresUnblock()
+    {
+        return false;
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-	protected function alterForm( HTMLForm $form ) {
-		$form->setSubmitTextMsg( 'randomincategory-submit' );
-	}
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->setSubmitTextMsg('randomincategory-submit');
+    }
 
-	protected function setParameter( $par ) {
-		// if subpage present, fake form submission
-		$this->onSubmit( [ 'category' => $par ] );
-	}
+    protected function setParameter($par)
+    {
+        // if subpage present, fake form submission
+        $this->onSubmit(['category' => $par]);
+    }
 
-	public function onSubmit( array $data ) {
-		$cat = false;
+    public function onSubmit(array $data)
+    {
+        $cat = false;
 
-		$categoryStr = $data['category'];
+        $categoryStr = $data['category'];
 
-		if ( $categoryStr ) {
-			$cat = Title::newFromText( $categoryStr, NS_CATEGORY );
-		}
+        if ($categoryStr) {
+            $cat = Title::newFromText($categoryStr, NS_CATEGORY);
+        }
 
-		if ( $cat && $cat->getNamespace() !== NS_CATEGORY ) {
-			// Someone searching for something like "Wikipedia:Foo"
-			$cat = Title::makeTitleSafe( NS_CATEGORY, $categoryStr );
-		}
+        if ($cat && $cat->getNamespace() !== NS_CATEGORY) {
+            // Someone searching for something like "Wikipedia:Foo"
+            $cat = Title::makeTitleSafe(NS_CATEGORY, $categoryStr);
+        }
 
-		if ( $cat ) {
-			$this->setCategory( $cat );
-		}
+        if ($cat) {
+            $this->setCategory($cat);
+        }
 
-		if ( !$this->category && $categoryStr ) {
-			$msg = $this->msg( 'randomincategory-invalidcategory',
-				wfEscapeWikiText( $categoryStr ) );
+        if (!$this->category && $categoryStr) {
+            $msg = $this->msg('randomincategory-invalidcategory',
+                wfEscapeWikiText($categoryStr));
 
-			return Status::newFatal( $msg );
+            return Status::newFatal($msg);
 
-		} elseif ( !$this->category ) {
-			return false; // no data sent
-		}
+        } elseif (!$this->category) {
+            return false; // no data sent
+        }
 
-		$title = $this->getRandomTitle();
+        $title = $this->getRandomTitle();
 
-		if ( $title === null ) {
-			$msg = $this->msg( 'randomincategory-nopages',
-				$this->category->getText() );
+        if ($title === null) {
+            $msg = $this->msg('randomincategory-nopages',
+                $this->category->getText());
 
-			return Status::newFatal( $msg );
-		}
+            return Status::newFatal($msg);
+        }
 
-		$query = $this->getRequest()->getQueryValues();
-		unset( $query['title'] );
-		$this->getOutput()->redirect( $title->getFullURL( $query ) );
-	}
+        $query = $this->getRequest()->getQueryValues();
+        unset($query['title']);
+        $this->getOutput()->redirect($title->getFullURL($query));
+    }
 
-	/**
-	 * Choose a random title.
-	 * @return Title|null Title object (or null if nothing to choose from)
-	 */
-	public function getRandomTitle() {
-		// Convert to float, since we do math with the random number.
-		$rand = (float)wfRandom();
+    /**
+     * Choose a random title.
+     * @return Title|null Title object (or null if nothing to choose from)
+     */
+    public function getRandomTitle()
+    {
+        // Convert to float, since we do math with the random number.
+        $rand = (float)wfRandom();
 
-		// Given that timestamps are rather unevenly distributed, we also
-		// use an offset between 0 and 30 to make any biases less noticeable.
-		$offset = mt_rand( 0, $this->maxOffset );
+        // Given that timestamps are rather unevenly distributed, we also
+        // use an offset between 0 and 30 to make any biases less noticeable.
+        $offset = mt_rand(0, $this->maxOffset);
 
-		if ( mt_rand( 0, 1 ) ) {
-			$up = true;
-		} else {
-			$up = false;
-		}
+        if (mt_rand(0, 1)) {
+            $up = true;
+        } else {
+            $up = false;
+        }
 
-		$row = $this->selectRandomPageFromDB( $rand, $offset, $up, __METHOD__ );
+        $row = $this->selectRandomPageFromDB($rand, $offset, $up, __METHOD__);
 
-		// Try again without the timestamp offset (wrap around the end)
-		if ( !$row ) {
-			$row = $this->selectRandomPageFromDB( false, $offset, $up, __METHOD__ );
-		}
+        // Try again without the timestamp offset (wrap around the end)
+        if (!$row) {
+            $row = $this->selectRandomPageFromDB(false, $offset, $up, __METHOD__);
+        }
 
-		// Maybe the category is really small and offset too high
-		if ( !$row ) {
-			$row = $this->selectRandomPageFromDB( $rand, 0, $up, __METHOD__ );
-		}
+        // Maybe the category is really small and offset too high
+        if (!$row) {
+            $row = $this->selectRandomPageFromDB($rand, 0, $up, __METHOD__);
+        }
 
-		// Just get the first entry.
-		if ( !$row ) {
-			$row = $this->selectRandomPageFromDB( false, 0, true, __METHOD__ );
-		}
+        // Just get the first entry.
+        if (!$row) {
+            $row = $this->selectRandomPageFromDB(false, 0, true, __METHOD__);
+        }
 
-		if ( $row ) {
-			return Title::makeTitle( $row->page_namespace, $row->page_title );
-		}
+        if ($row) {
+            return Title::makeTitle($row->page_namespace, $row->page_title);
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * @param float|false $rand Random number between 0 and 1
-	 * @param int $offset Extra offset to fudge randomness
-	 * @param bool $up True to get the result above the random number, false for below
-	 * @return array Query information.
-	 * @throws MWException
-	 * @note The $up parameter is supposed to counteract what would happen if there
-	 *   was a large gap in the distribution of cl_timestamp values. This way instead
-	 *   of things to the right of the gap being favoured, both sides of the gap
-	 *   are favoured.
-	 */
-	protected function getQueryInfo( $rand, $offset, $up ) {
-		$op = $up ? '>=' : '<=';
-		$dir = $up ? 'ASC' : 'DESC';
-		if ( !$this->category instanceof Title ) {
-			throw new MWException( 'No category set' );
-		}
-		$qi = [
-			'tables' => [ 'categorylinks', 'page' ],
-			'fields' => [ 'page_title', 'page_namespace' ],
-			'conds' => array_merge( [
-				'cl_to' => $this->category->getDBkey(),
-			], $this->extra ),
-			'options' => [
-				'ORDER BY' => 'cl_timestamp ' . $dir,
-				'LIMIT' => 1,
-				'OFFSET' => $offset
-			],
-			'join_conds' => [
-				'page' => [ 'JOIN', 'cl_from = page_id' ]
-			]
-		];
+    /**
+     * @param float|false $rand Random number between 0 and 1
+     * @param int $offset Extra offset to fudge randomness
+     * @param bool $up True to get the result above the random number, false for below
+     * @return array Query information.
+     * @throws MWException
+     * @note The $up parameter is supposed to counteract what would happen if there
+     *   was a large gap in the distribution of cl_timestamp values. This way instead
+     *   of things to the right of the gap being favoured, both sides of the gap
+     *   are favoured.
+     */
+    protected function getQueryInfo($rand, $offset, $up)
+    {
+        $op = $up ? '>=' : '<=';
+        $dir = $up ? 'ASC' : 'DESC';
+        if (!$this->category instanceof Title) {
+            throw new MWException('No category set');
+        }
+        $qi = [
+            'tables'     => ['categorylinks', 'page'],
+            'fields'     => ['page_title', 'page_namespace'],
+            'conds'      => array_merge([
+                'cl_to' => $this->category->getDBkey(),
+            ], $this->extra),
+            'options'    => [
+                'ORDER BY' => 'cl_timestamp ' . $dir,
+                'LIMIT'    => 1,
+                'OFFSET'   => $offset
+            ],
+            'join_conds' => [
+                'page' => ['JOIN', 'cl_from = page_id']
+            ]
+        ];
 
-		$dbr = $this->loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-		$minClTime = $this->getTimestampOffset( $rand );
-		if ( $minClTime ) {
-			$qi['conds'][] = 'cl_timestamp ' . $op . ' ' .
-				$dbr->addQuotes( $dbr->timestamp( $minClTime ) );
-		}
+        $dbr = $this->loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+        $minClTime = $this->getTimestampOffset($rand);
+        if ($minClTime) {
+            $qi['conds'][] = 'cl_timestamp ' . $op . ' ' .
+                $dbr->addQuotes($dbr->timestamp($minClTime));
+        }
 
-		return $qi;
-	}
+        return $qi;
+    }
 
-	/**
-	 * @param float|false $rand Random number between 0 and 1
-	 *
-	 * @return int|false A random (unix) timestamp from the range of the category or false on failure
-	 */
-	protected function getTimestampOffset( $rand ) {
-		if ( $rand === false ) {
-			return false;
-		}
-		if ( !$this->minTimestamp || !$this->maxTimestamp ) {
-			try {
-				list( $this->minTimestamp, $this->maxTimestamp ) = $this->getMinAndMaxForCat( $this->category );
-			} catch ( TimeoutException $e ) {
-				throw $e;
-			} catch ( Exception $e ) {
-				// Possibly no entries in category.
-				return false;
-			}
-		}
+    /**
+     * @param float|false $rand Random number between 0 and 1
+     *
+     * @return int|false A random (unix) timestamp from the range of the category or false on failure
+     */
+    protected function getTimestampOffset($rand)
+    {
+        if ($rand === false) {
+            return false;
+        }
+        if (!$this->minTimestamp || !$this->maxTimestamp) {
+            try {
+                [$this->minTimestamp, $this->maxTimestamp] = $this->getMinAndMaxForCat($this->category);
+            } catch (TimeoutException $e) {
+                throw $e;
+            } catch (Exception $e) {
+                // Possibly no entries in category.
+                return false;
+            }
+        }
 
-		$ts = ( $this->maxTimestamp - $this->minTimestamp ) * $rand + $this->minTimestamp;
+        $ts = ($this->maxTimestamp - $this->minTimestamp) * $rand + $this->minTimestamp;
 
-		return intval( $ts );
-	}
+        return intval($ts);
+    }
 
-	/**
-	 * Get the lowest and highest timestamp for a category.
-	 *
-	 * @param Title $category
-	 * @return array The lowest and highest timestamp
-	 * @throws MWException If category has no entries.
-	 */
-	protected function getMinAndMaxForCat( Title $category ) {
-		$dbr = $this->loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-		$res = $dbr->selectRow(
-			'categorylinks',
-			[
-				'low' => 'MIN( cl_timestamp )',
-				'high' => 'MAX( cl_timestamp )'
-			],
-			[
-				'cl_to' => $this->category->getDBkey(),
-			],
-			__METHOD__
-		);
-		if ( !$res ) {
-			throw new MWException( 'No entries in category' );
-		}
+    /**
+     * Get the lowest and highest timestamp for a category.
+     *
+     * @param Title $category
+     * @return array The lowest and highest timestamp
+     * @throws MWException If category has no entries.
+     */
+    protected function getMinAndMaxForCat(Title $category)
+    {
+        $dbr = $this->loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+        $res = $dbr->selectRow(
+            'categorylinks',
+            [
+                'low'  => 'MIN( cl_timestamp )',
+                'high' => 'MAX( cl_timestamp )'
+            ],
+            [
+                'cl_to' => $this->category->getDBkey(),
+            ],
+            __METHOD__
+        );
+        if (!$res) {
+            throw new MWException('No entries in category');
+        }
 
-		return [ (int)wfTimestamp( TS_UNIX, $res->low ), (int)wfTimestamp( TS_UNIX, $res->high ) ];
-	}
+        return [(int)wfTimestamp(TS_UNIX, $res->low), (int)wfTimestamp(TS_UNIX, $res->high)];
+    }
 
-	/**
-	 * @param float|false $rand A random number that is converted to a random timestamp
-	 * @param int $offset A small offset to make the result seem more "random"
-	 * @param bool $up Get the result above the random value
-	 * @param string $fname The name of the calling method
-	 * @return stdClass|false Info for the title selected.
-	 */
-	private function selectRandomPageFromDB( $rand, $offset, $up, $fname = __METHOD__ ) {
-		$dbr = $this->loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
+    /**
+     * @param float|false $rand A random number that is converted to a random timestamp
+     * @param int $offset A small offset to make the result seem more "random"
+     * @param bool $up Get the result above the random value
+     * @param string $fname The name of the calling method
+     * @return stdClass|false Info for the title selected.
+     */
+    private function selectRandomPageFromDB($rand, $offset, $up, $fname = __METHOD__)
+    {
+        $dbr = $this->loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
 
-		$query = $this->getQueryInfo( $rand, $offset, $up );
-		$res = $dbr->select(
-			$query['tables'],
-			$query['fields'],
-			$query['conds'],
-			$fname,
-			$query['options'],
-			$query['join_conds']
-		);
+        $query = $this->getQueryInfo($rand, $offset, $up);
+        $res = $dbr->select(
+            $query['tables'],
+            $query['fields'],
+            $query['conds'],
+            $fname,
+            $query['options'],
+            $query['join_conds']
+        );
 
-		return $res->fetchObject();
-	}
+        return $res->fetchObject();
+    }
 
-	protected function getGroupName() {
-		return 'redirects';
-	}
+    protected function getGroupName()
+    {
+        return 'redirects';
+    }
 }

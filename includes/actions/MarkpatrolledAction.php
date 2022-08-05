@@ -27,132 +27,148 @@ use MediaWiki\Linker\LinkRenderer;
  *
  * @ingroup Actions
  */
-class MarkpatrolledAction extends FormAction {
+class MarkpatrolledAction extends FormAction
+{
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
+    /** @var LinkRenderer */
+    private $linkRenderer;
 
-	/**
-	 * @param Page $page
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 */
-	public function __construct(
-		Page $page,
-		IContextSource $context,
-		LinkRenderer $linkRenderer
-	) {
-		parent::__construct( $page, $context );
-		$this->linkRenderer = $linkRenderer;
-	}
+    /**
+     * @param Page $page
+     * @param IContextSource $context
+     * @param LinkRenderer $linkRenderer
+     */
+    public function __construct(
+        Page $page,
+        IContextSource $context,
+        LinkRenderer $linkRenderer
+    )
+    {
+        parent::__construct($page, $context);
+        $this->linkRenderer = $linkRenderer;
+    }
 
-	public function getName() {
-		return 'markpatrolled';
-	}
+    public function getName()
+    {
+        return 'markpatrolled';
+    }
 
-	protected function getDescription() {
-		// Disable default header "subtitle"
-		return '';
-	}
+    protected function getDescription()
+    {
+        // Disable default header "subtitle"
+        return '';
+    }
 
-	public function getRestriction() {
-		return 'patrol';
-	}
+    public function getRestriction()
+    {
+        return 'patrol';
+    }
 
-	protected function usesOOUI() {
-		return true;
-	}
+    protected function usesOOUI()
+    {
+        return true;
+    }
 
-	protected function getRecentChange( $data = null ) {
-		$rc = null;
-		// Note: This works both on initial GET url and after submitting the form
-		$rcId = $data ? intval( $data['rcid'] ) : $this->getRequest()->getInt( 'rcid' );
-		if ( $rcId ) {
-			$rc = RecentChange::newFromId( $rcId );
-		}
-		if ( !$rc ) {
-			throw new ErrorPageError( 'markedaspatrollederror', 'markedaspatrollederrortext' );
-		}
-		return $rc;
-	}
+    protected function getRecentChange($data = null)
+    {
+        $rc = null;
+        // Note: This works both on initial GET url and after submitting the form
+        $rcId = $data ? intval($data['rcid']) : $this->getRequest()->getInt('rcid');
+        if ($rcId) {
+            $rc = RecentChange::newFromId($rcId);
+        }
+        if (!$rc) {
+            throw new ErrorPageError('markedaspatrollederror', 'markedaspatrollederrortext');
+        }
 
-	protected function preText() {
-		$rc = $this->getRecentChange();
-		$title = $rc->getTitle();
+        return $rc;
+    }
 
-		// Based on logentry-patrol-patrol (see PatrolLogFormatter)
-		$revId = $rc->getAttribute( 'rc_this_oldid' );
-		$query = [
-			'curid' => $rc->getAttribute( 'rc_cur_id' ),
-			'diff' => $revId,
-			'oldid' => $rc->getAttribute( 'rc_last_oldid' )
-		];
-		$revlink = $this->linkRenderer->makeLink( $title, $revId, [], $query );
-		$pagelink = $this->linkRenderer->makeLink( $title, $title->getPrefixedText() );
+    protected function preText()
+    {
+        $rc = $this->getRecentChange();
+        $title = $rc->getTitle();
 
-		return $this->msg( 'confirm-markpatrolled-top' )->params(
-			$title->getPrefixedText(),
-			// Provide pre-rendered link as parser would render [[:$1]] as bold non-link
-			Message::rawParam( $pagelink ),
-			Message::rawParam( $revlink )
-		)->parse();
-	}
+        // Based on logentry-patrol-patrol (see PatrolLogFormatter)
+        $revId = $rc->getAttribute('rc_this_oldid');
+        $query = [
+            'curid' => $rc->getAttribute('rc_cur_id'),
+            'diff'  => $revId,
+            'oldid' => $rc->getAttribute('rc_last_oldid')
+        ];
+        $revlink = $this->linkRenderer->makeLink($title, $revId, [], $query);
+        $pagelink = $this->linkRenderer->makeLink($title, $title->getPrefixedText());
 
-	protected function alterForm( HTMLForm $form ) {
-		$form->addHiddenField( 'rcid', $this->getRequest()->getInt( 'rcid' ) );
-		$form->setTokenSalt( 'patrol' );
-		$form->setSubmitTextMsg( 'confirm-markpatrolled-button' );
-	}
+        return $this->msg('confirm-markpatrolled-top')->params(
+            $title->getPrefixedText(),
+            // Provide pre-rendered link as parser would render [[:$1]] as bold non-link
+            Message::rawParam($pagelink),
+            Message::rawParam($revlink)
+        )->parse();
+    }
 
-	/**
-	 * @param array $data
-	 * @return bool|array True for success, false for didn't-try, array of errors on failure
-	 */
-	public function onSubmit( $data ) {
-		$rc = $this->getRecentChange( $data );
-		$errors = $rc->doMarkPatrolled( $this->getAuthority() );
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->addHiddenField('rcid', $this->getRequest()->getInt('rcid'));
+        $form->setTokenSalt('patrol');
+        $form->setSubmitTextMsg('confirm-markpatrolled-button');
+    }
 
-		if ( in_array( [ 'rcpatroldisabled' ], $errors ) ) {
-			throw new ErrorPageError( 'rcpatroldisabled', 'rcpatroldisabledtext' );
-		}
+    /**
+     * @param array $data
+     * @return bool|array True for success, false for didn't-try, array of errors on failure
+     */
+    public function onSubmit($data)
+    {
+        $rc = $this->getRecentChange($data);
+        $errors = $rc->doMarkPatrolled($this->getAuthority());
 
-		// Guess where the user came from
-		// TODO: Would be nice to see where the user actually came from
-		if ( $rc->getAttribute( 'rc_type' ) == RC_NEW ) {
-			$returnTo = 'Newpages';
-		} elseif ( $rc->getAttribute( 'rc_log_type' ) == 'upload' ) {
-			$returnTo = 'Newfiles';
-		} else {
-			$returnTo = 'Recentchanges';
-		}
-		$return = SpecialPage::getTitleFor( $returnTo );
+        if (in_array(['rcpatroldisabled'], $errors)) {
+            throw new ErrorPageError('rcpatroldisabled', 'rcpatroldisabledtext');
+        }
 
-		if ( in_array( [ 'markedaspatrollederror-noautopatrol' ], $errors ) ) {
-			$this->getOutput()->setPageTitle( $this->msg( 'markedaspatrollederror' ) );
-			$this->getOutput()->addWikiMsg( 'markedaspatrollederror-noautopatrol' );
-			$this->getOutput()->returnToMain( null, $return );
-			return true;
-		}
+        // Guess where the user came from
+        // TODO: Would be nice to see where the user actually came from
+        if ($rc->getAttribute('rc_type') == RC_NEW) {
+            $returnTo = 'Newpages';
+        } elseif ($rc->getAttribute('rc_log_type') == 'upload') {
+            $returnTo = 'Newfiles';
+        } else {
+            $returnTo = 'Recentchanges';
+        }
+        $return = SpecialPage::getTitleFor($returnTo);
 
-		if ( $errors ) {
-			if ( !in_array( [ 'hookaborted' ], $errors ) ) {
-				throw new PermissionsError( 'patrol', $errors );
-			}
-			// The hook itself has handled any output
-			return $errors;
-		}
+        if (in_array(['markedaspatrollederror-noautopatrol'], $errors)) {
+            $this->getOutput()->setPageTitle($this->msg('markedaspatrollederror'));
+            $this->getOutput()->addWikiMsg('markedaspatrollederror-noautopatrol');
+            $this->getOutput()->returnToMain(null, $return);
 
-		$this->getOutput()->setPageTitle( $this->msg( 'markedaspatrolled' ) );
-		$this->getOutput()->addWikiMsg( 'markedaspatrolledtext', $rc->getTitle()->getPrefixedText() );
-		$this->getOutput()->returnToMain( null, $return );
-		return true;
-	}
+            return true;
+        }
 
-	public function onSuccess() {
-		// Required by parent class. Redundant as our onSubmit handles output already.
-	}
+        if ($errors) {
+            if (!in_array(['hookaborted'], $errors)) {
+                throw new PermissionsError('patrol', $errors);
+            }
 
-	public function doesWrites() {
-		return true;
-	}
+            // The hook itself has handled any output
+            return $errors;
+        }
+
+        $this->getOutput()->setPageTitle($this->msg('markedaspatrolled'));
+        $this->getOutput()->addWikiMsg('markedaspatrolledtext', $rc->getTitle()->getPrefixedText());
+        $this->getOutput()->returnToMain(null, $return);
+
+        return true;
+    }
+
+    public function onSuccess()
+    {
+        // Required by parent class. Redundant as our onSubmit handles output already.
+    }
+
+    public function doesWrites()
+    {
+        return true;
+    }
 }

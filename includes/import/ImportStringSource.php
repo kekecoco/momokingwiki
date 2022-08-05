@@ -31,35 +31,40 @@
  *
  * @ingroup SpecialPage
  */
-class ImportStringSource implements ImportSource {
-	/** @var string */
-	private $mString;
+class ImportStringSource implements ImportSource
+{
+    /** @var string */
+    private $mString;
 
-	/** @var bool */
-	private $mRead = false;
+    /** @var bool */
+    private $mRead = false;
 
-	/**
-	 * @param string $string
-	 */
-	public function __construct( $string ) {
-		$this->mString = $string;
-	}
+    /**
+     * @param string $string
+     */
+    public function __construct($string)
+    {
+        $this->mString = $string;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function atEnd() {
-		return $this->mRead;
-	}
+    /**
+     * @return bool
+     */
+    public function atEnd()
+    {
+        return $this->mRead;
+    }
 
-	/**
-	 * @return bool|string
-	 */
-	public function readChunk() {
-		if ( $this->atEnd() ) {
-			return false;
-		}
-		$this->mRead = true;
-		return $this->mString;
-	}
+    /**
+     * @return bool|string
+     */
+    public function readChunk()
+    {
+        if ($this->atEnd()) {
+            return false;
+        }
+        $this->mRead = true;
+
+        return $this->mString;
+    }
 }

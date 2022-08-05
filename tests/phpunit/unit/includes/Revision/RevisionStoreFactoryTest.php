@@ -29,146 +29,156 @@ use Wikimedia\Rdbms\ILBFactory;
 use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\TestingAccessWrapper;
 
-class RevisionStoreFactoryTest extends MediaWikiUnitTestCase {
+class RevisionStoreFactoryTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @covers \MediaWiki\Revision\RevisionStoreFactory::__construct
-	 */
-	public function testValidConstruction_doesntCauseErrors() {
-		new RevisionStoreFactory(
-			$this->getMockLoadBalancerFactory(),
-			$this->getMockBlobStoreFactory(),
-			$this->getNameTableStoreFactory(),
-			$this->createMock( SlotRoleRegistry::class ),
-			$this->getHashWANObjectCache(),
-			new HashBagOStuff(),
-			$this->createMock( CommentStore::class ),
-			$this->createMock( ActorMigration::class ),
-			$this->getMockActorStoreFactory(),
-			new NullLogger(),
-			$this->createMock( IContentHandlerFactory::class ),
-			$this->getPageStoreFactory(),
-			$this->createMock( TitleFactory::class ),
-			$this->createHookContainer()
-		);
-		$this->assertTrue( true );
-	}
+    /**
+     * @covers \MediaWiki\Revision\RevisionStoreFactory::__construct
+     */
+    public function testValidConstruction_doesntCauseErrors()
+    {
+        new RevisionStoreFactory(
+            $this->getMockLoadBalancerFactory(),
+            $this->getMockBlobStoreFactory(),
+            $this->getNameTableStoreFactory(),
+            $this->createMock(SlotRoleRegistry::class),
+            $this->getHashWANObjectCache(),
+            new HashBagOStuff(),
+            $this->createMock(CommentStore::class),
+            $this->createMock(ActorMigration::class),
+            $this->getMockActorStoreFactory(),
+            new NullLogger(),
+            $this->createMock(IContentHandlerFactory::class),
+            $this->getPageStoreFactory(),
+            $this->createMock(TitleFactory::class),
+            $this->createHookContainer()
+        );
+        $this->assertTrue(true);
+    }
 
-	public function provideWikiIds() {
-		yield [ false ];
-		yield [ 'somewiki' ];
-	}
+    public function provideWikiIds()
+    {
+        yield [false];
+        yield ['somewiki'];
+    }
 
-	/**
-	 * @dataProvider provideWikiIds
-	 * @covers \MediaWiki\Revision\RevisionStoreFactory::getRevisionStore
-	 */
-	public function testGetRevisionStore( $wikiId ) {
-		$cache = $this->getHashWANObjectCache();
-		$commentStore = $this->createMock( CommentStore::class );
-		$actorMigration = $this->createMock( ActorMigration::class );
+    /**
+     * @dataProvider provideWikiIds
+     * @covers       \MediaWiki\Revision\RevisionStoreFactory::getRevisionStore
+     */
+    public function testGetRevisionStore($wikiId)
+    {
+        $cache = $this->getHashWANObjectCache();
+        $commentStore = $this->createMock(CommentStore::class);
+        $actorMigration = $this->createMock(ActorMigration::class);
 
-		$factory = new RevisionStoreFactory(
-			$this->getMockLoadBalancerFactory(),
-			$this->getMockBlobStoreFactory(),
-			$this->getNameTableStoreFactory(),
-			$this->createMock( SlotRoleRegistry::class ),
-			$cache,
-			new HashBagOStuff(),
-			$commentStore,
-			$actorMigration,
-			$this->getMockActorStoreFactory(),
-			new NullLogger(),
-			$this->createMock( IContentHandlerFactory::class ),
-			$this->getPageStoreFactory(),
-			$this->createMock( TitleFactory::class ),
-			$this->createHookContainer()
-		);
+        $factory = new RevisionStoreFactory(
+            $this->getMockLoadBalancerFactory(),
+            $this->getMockBlobStoreFactory(),
+            $this->getNameTableStoreFactory(),
+            $this->createMock(SlotRoleRegistry::class),
+            $cache,
+            new HashBagOStuff(),
+            $commentStore,
+            $actorMigration,
+            $this->getMockActorStoreFactory(),
+            new NullLogger(),
+            $this->createMock(IContentHandlerFactory::class),
+            $this->getPageStoreFactory(),
+            $this->createMock(TitleFactory::class),
+            $this->createHookContainer()
+        );
 
-		$store = $factory->getRevisionStore( $wikiId );
-		$wrapper = TestingAccessWrapper::newFromObject( $store );
+        $store = $factory->getRevisionStore($wikiId);
+        $wrapper = TestingAccessWrapper::newFromObject($store);
 
-		// ensure the correct object type is returned
-		$this->assertInstanceOf( RevisionStore::class, $store );
+        // ensure the correct object type is returned
+        $this->assertInstanceOf(RevisionStore::class, $store);
 
-		// ensure the RevisionStore is for the given wikiId
-		$this->assertSame( $wikiId, $wrapper->wikiId );
+        // ensure the RevisionStore is for the given wikiId
+        $this->assertSame($wikiId, $wrapper->wikiId);
 
-		// ensure all other required services are correctly set
-		$this->assertSame( $cache, $wrapper->cache );
-		$this->assertSame( $commentStore, $wrapper->commentStore );
-		$this->assertSame( $actorMigration, $wrapper->actorMigration );
+        // ensure all other required services are correctly set
+        $this->assertSame($cache, $wrapper->cache);
+        $this->assertSame($commentStore, $wrapper->commentStore);
+        $this->assertSame($actorMigration, $wrapper->actorMigration);
 
-		$this->assertInstanceOf( ILoadBalancer::class, $wrapper->loadBalancer );
-		$this->assertInstanceOf( BlobStore::class, $wrapper->blobStore );
-		$this->assertInstanceOf( NameTableStore::class, $wrapper->contentModelStore );
-		$this->assertInstanceOf( NameTableStore::class, $wrapper->slotRoleStore );
-		$this->assertInstanceOf( LoggerInterface::class, $wrapper->logger );
-		$this->assertInstanceOf( UserIdentityLookup::class, $wrapper->actorStore );
-	}
+        $this->assertInstanceOf(ILoadBalancer::class, $wrapper->loadBalancer);
+        $this->assertInstanceOf(BlobStore::class, $wrapper->blobStore);
+        $this->assertInstanceOf(NameTableStore::class, $wrapper->contentModelStore);
+        $this->assertInstanceOf(NameTableStore::class, $wrapper->slotRoleStore);
+        $this->assertInstanceOf(LoggerInterface::class, $wrapper->logger);
+        $this->assertInstanceOf(UserIdentityLookup::class, $wrapper->actorStore);
+    }
 
-	/**
-	 * @return MockObject|ILBFactory
-	 */
-	private function getMockLoadBalancerFactory() {
-		$mock = $this->createMock( ILBFactory::class );
-		$mock->method( 'getMainLB' )
-			->willReturn( $this->createMock( ILoadBalancer::class ) );
+    /**
+     * @return MockObject|ILBFactory
+     */
+    private function getMockLoadBalancerFactory()
+    {
+        $mock = $this->createMock(ILBFactory::class);
+        $mock->method('getMainLB')
+            ->willReturn($this->createMock(ILoadBalancer::class));
 
-		return $mock;
-	}
+        return $mock;
+    }
 
-	/**
-	 * @return MockObject|BlobStoreFactory
-	 */
-	private function getMockBlobStoreFactory() {
-		$mock = $this->createMock( BlobStoreFactory::class );
+    /**
+     * @return MockObject|BlobStoreFactory
+     */
+    private function getMockBlobStoreFactory()
+    {
+        $mock = $this->createMock(BlobStoreFactory::class);
 
-		$mock->method( 'newSqlBlobStore' )
-			->willReturn( $this->createMock( SqlBlobStore::class ) );
+        $mock->method('newSqlBlobStore')
+            ->willReturn($this->createMock(SqlBlobStore::class));
 
-		return $mock;
-	}
+        return $mock;
+    }
 
-	/**
-	 * @return PageStoreFactory|MockObject
-	 */
-	private function getPageStoreFactory(): PageStoreFactory {
-		$mock = $this->createMock( PageStoreFactory::class );
+    /**
+     * @return PageStoreFactory|MockObject
+     */
+    private function getPageStoreFactory(): PageStoreFactory
+    {
+        $mock = $this->createMock(PageStoreFactory::class);
 
-		$mock->method( 'getPageStore' )
-			->willReturn( $this->createMock( PageStore::class ) );
+        $mock->method('getPageStore')
+            ->willReturn($this->createMock(PageStore::class));
 
-		return $mock;
-	}
+        return $mock;
+    }
 
-	/**
-	 * @return NameTableStoreFactory
-	 */
-	private function getNameTableStoreFactory() {
-		return new NameTableStoreFactory(
-			$this->getMockLoadBalancerFactory(),
-			$this->getHashWANObjectCache(),
-			new NullLogger()
-		);
-	}
+    /**
+     * @return NameTableStoreFactory
+     */
+    private function getNameTableStoreFactory()
+    {
+        return new NameTableStoreFactory(
+            $this->getMockLoadBalancerFactory(),
+            $this->getHashWANObjectCache(),
+            new NullLogger()
+        );
+    }
 
-	/**
-	 * @return WANObjectCache
-	 */
-	private function getHashWANObjectCache() {
-		return new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
-	}
+    /**
+     * @return WANObjectCache
+     */
+    private function getHashWANObjectCache()
+    {
+        return new WANObjectCache(['cache' => new HashBagOStuff()]);
+    }
 
-	/**
-	 * @return ActorStoreFactory|MockObject
-	 */
-	private function getMockActorStoreFactory() {
-		$mock = $this->createMock( ActorStoreFactory::class );
+    /**
+     * @return ActorStoreFactory|MockObject
+     */
+    private function getMockActorStoreFactory()
+    {
+        $mock = $this->createMock(ActorStoreFactory::class);
 
-		$mock->method( 'getActorStore' )
-			->willReturn( $this->createMock( ActorStore::class ) );
+        $mock->method('getActorStore')
+            ->willReturn($this->createMock(ActorStore::class));
 
-		return $mock;
-	}
+        return $mock;
+    }
 }

@@ -11,15 +11,16 @@ use User;
  * @stable to implement
  * @ingroup Hooks
  */
-interface UserIsBotHook {
-	/**
-	 * Use this hook to establish whether a user is a bot account.
-	 *
-	 * @since 1.35
-	 *
-	 * @param User $user
-	 * @param bool &$isBot Whether this is user a bot or not (boolean)
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onUserIsBot( $user, &$isBot );
+interface UserIsBotHook
+{
+    /**
+     * Use this hook to establish whether a user is a bot account.
+     *
+     * @param User $user
+     * @param bool &$isBot Whether this is user a bot or not (boolean)
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onUserIsBot($user, &$isBot);
 }

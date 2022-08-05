@@ -24,21 +24,26 @@
 /**
  * A default PoolCounter, which provides no locking.
  */
-class PoolCounterNull extends PoolCounter {
+class PoolCounterNull extends PoolCounter
+{
 
-	public function __construct() {
-		/* No parameters needed */
-	}
+    public function __construct()
+    {
+        /* No parameters needed */
+    }
 
-	public function acquireForMe( $timeout = null ) {
-		return Status::newGood( PoolCounter::LOCKED );
-	}
+    public function acquireForMe($timeout = null)
+    {
+        return Status::newGood(PoolCounter::LOCKED);
+    }
 
-	public function acquireForAnyone( $timeout = null ) {
-		return Status::newGood( PoolCounter::LOCKED );
-	}
+    public function acquireForAnyone($timeout = null)
+    {
+        return Status::newGood(PoolCounter::LOCKED);
+    }
 
-	public function release() {
-		return Status::newGood( PoolCounter::RELEASED );
-	}
+    public function release()
+    {
+        return Status::newGood(PoolCounter::RELEASED);
+    }
 }

@@ -29,131 +29,144 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-class ApiResetPassword extends ApiBase {
+class ApiResetPassword extends ApiBase
+{
 
-	/** @var PasswordReset */
-	private $passwordReset;
+    /** @var PasswordReset */
+    private $passwordReset;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param PasswordReset $passwordReset
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		PasswordReset $passwordReset
-	) {
-		parent::__construct( $main, $action );
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param PasswordReset $passwordReset
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        PasswordReset $passwordReset
+    )
+    {
+        parent::__construct($main, $action);
 
-		$this->passwordReset = $passwordReset;
-	}
+        $this->passwordReset = $passwordReset;
+    }
 
-	/** @var bool */
-	private $hasAnyRoutes = null;
+    /** @var bool */
+    private $hasAnyRoutes = null;
 
-	/**
-	 * Determine whether any reset routes are available.
-	 * @return bool
-	 */
-	private function hasAnyRoutes() {
-		if ( $this->hasAnyRoutes === null ) {
-			$resetRoutes = $this->getConfig()->get( MainConfigNames::PasswordResetRoutes );
-			$this->hasAnyRoutes = !empty( $resetRoutes['username'] ) || !empty( $resetRoutes['email'] );
-		}
-		return $this->hasAnyRoutes;
-	}
+    /**
+     * Determine whether any reset routes are available.
+     * @return bool
+     */
+    private function hasAnyRoutes()
+    {
+        if ($this->hasAnyRoutes === null) {
+            $resetRoutes = $this->getConfig()->get(MainConfigNames::PasswordResetRoutes);
+            $this->hasAnyRoutes = !empty($resetRoutes['username']) || !empty($resetRoutes['email']);
+        }
 
-	protected function getExtendedDescription() {
-		if ( !$this->hasAnyRoutes() ) {
-			return 'apihelp-resetpassword-extended-description-noroutes';
-		}
-		return parent::getExtendedDescription();
-	}
+        return $this->hasAnyRoutes;
+    }
 
-	public function execute() {
-		if ( !$this->hasAnyRoutes() ) {
-			$this->dieWithError( 'apihelp-resetpassword-description-noroutes', 'moduledisabled' );
-		}
+    protected function getExtendedDescription()
+    {
+        if (!$this->hasAnyRoutes()) {
+            return 'apihelp-resetpassword-extended-description-noroutes';
+        }
 
-		$params = $this->extractRequestParams() + [
-			// Make sure the keys exist even if getAllowedParams didn't define them
-			'user' => null,
-			'email' => null,
-		];
+        return parent::getExtendedDescription();
+    }
 
-		$this->requireOnlyOneParameter( $params, 'user', 'email' );
+    public function execute()
+    {
+        if (!$this->hasAnyRoutes()) {
+            $this->dieWithError('apihelp-resetpassword-description-noroutes', 'moduledisabled');
+        }
 
-		$status = $this->passwordReset->isAllowed( $this->getUser() );
-		if ( !$status->isOK() ) {
-			$this->dieStatus( Status::wrap( $status ) );
-		}
+        $params = $this->extractRequestParams() + [
+                // Make sure the keys exist even if getAllowedParams didn't define them
+                'user'  => null,
+                'email' => null,
+            ];
 
-		$status = $this->passwordReset->execute(
-			$this->getUser(), $params['user'], $params['email']
-		);
-		if ( !$status->isOK() ) {
-			$status->value = null;
-			$this->dieStatus( Status::wrap( $status ) );
-		}
+        $this->requireOnlyOneParameter($params, 'user', 'email');
 
-		$result = $this->getResult();
-		$result->addValue( [ 'resetpassword' ], 'status', 'success' );
-	}
+        $status = $this->passwordReset->isAllowed($this->getUser());
+        if (!$status->isOK()) {
+            $this->dieStatus(Status::wrap($status));
+        }
 
-	public function isWriteMode() {
-		return $this->hasAnyRoutes();
-	}
+        $status = $this->passwordReset->execute(
+            $this->getUser(), $params['user'], $params['email']
+        );
+        if (!$status->isOK()) {
+            $status->value = null;
+            $this->dieStatus(Status::wrap($status));
+        }
 
-	public function needsToken() {
-		if ( !$this->hasAnyRoutes() ) {
-			return false;
-		}
-		return 'csrf';
-	}
+        $result = $this->getResult();
+        $result->addValue(['resetpassword'], 'status', 'success');
+    }
 
-	public function getAllowedParams() {
-		if ( !$this->hasAnyRoutes() ) {
-			return [];
-		}
+    public function isWriteMode()
+    {
+        return $this->hasAnyRoutes();
+    }
 
-		$ret = [
-			'user' => [
-				ParamValidator::PARAM_TYPE => 'user',
-				UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name' ],
-			],
-			'email' => [
-				ParamValidator::PARAM_TYPE => 'string',
-			],
-		];
+    public function needsToken()
+    {
+        if (!$this->hasAnyRoutes()) {
+            return false;
+        }
 
-		$resetRoutes = $this->getConfig()->get( MainConfigNames::PasswordResetRoutes );
-		if ( empty( $resetRoutes['username'] ) ) {
-			unset( $ret['user'] );
-		}
-		if ( empty( $resetRoutes['email'] ) ) {
-			unset( $ret['email'] );
-		}
+        return 'csrf';
+    }
 
-		return $ret;
-	}
+    public function getAllowedParams()
+    {
+        if (!$this->hasAnyRoutes()) {
+            return [];
+        }
 
-	protected function getExamplesMessages() {
-		$ret = [];
-		$resetRoutes = $this->getConfig()->get( MainConfigNames::PasswordResetRoutes );
+        $ret = [
+            'user'  => [
+                ParamValidator::PARAM_TYPE        => 'user',
+                UserDef::PARAM_ALLOWED_USER_TYPES => ['name'],
+            ],
+            'email' => [
+                ParamValidator::PARAM_TYPE => 'string',
+            ],
+        ];
 
-		if ( !empty( $resetRoutes['username'] ) ) {
-			$ret['action=resetpassword&user=Example&token=123ABC'] = 'apihelp-resetpassword-example-user';
-		}
-		if ( !empty( $resetRoutes['email'] ) ) {
-			$ret['action=resetpassword&user=user@example.com&token=123ABC'] =
-				'apihelp-resetpassword-example-email';
-		}
+        $resetRoutes = $this->getConfig()->get(MainConfigNames::PasswordResetRoutes);
+        if (empty($resetRoutes['username'])) {
+            unset($ret['user']);
+        }
+        if (empty($resetRoutes['email'])) {
+            unset($ret['email']);
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Manage_authentication_data';
-	}
+    protected function getExamplesMessages()
+    {
+        $ret = [];
+        $resetRoutes = $this->getConfig()->get(MainConfigNames::PasswordResetRoutes);
+
+        if (!empty($resetRoutes['username'])) {
+            $ret['action=resetpassword&user=Example&token=123ABC'] = 'apihelp-resetpassword-example-user';
+        }
+        if (!empty($resetRoutes['email'])) {
+            $ret['action=resetpassword&user=user@example.com&token=123ABC'] =
+                'apihelp-resetpassword-example-email';
+        }
+
+        return $ret;
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Manage_authentication_data';
+    }
 }

@@ -8,17 +8,18 @@ namespace Wikimedia\Rdbms;
  * @experimental
  * @unstable
  */
-interface SchemaChangeBuilder {
+interface SchemaChangeBuilder
+{
 
-	/**
-	 * An example of $schema value:
-	 * [
-	 * 'comment' => 'Adding foo field',
-	 * 'before' => <Before snapshot of the abstract schema>
-	 * 'after' => <After snapshot of the abstract schema>
-	 * ],
-	 * @param array $schemaChangeSpec
-	 * @return string[]
-	 */
-	public function getSchemaChangeSql( array $schemaChangeSpec ): array;
+    /**
+     * An example of $schema value:
+     * [
+     * 'comment' => 'Adding foo field',
+     * 'before' => <Before snapshot of the abstract schema>
+     * 'after' => <After snapshot of the abstract schema>
+     * ],
+     * @param array $schemaChangeSpec
+     * @return string[]
+     */
+    public function getSchemaChangeSql(array $schemaChangeSpec): array;
 }

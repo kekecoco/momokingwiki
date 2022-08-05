@@ -23,62 +23,67 @@
  * update in `updatelog` so we can later skip it
  * @ingroup Maintenance
  */
-abstract class LoggedUpdateMaintenance extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( 'force', 'Run the update even if it was completed already' );
-		$this->setBatchSize( 200 );
-	}
+abstract class LoggedUpdateMaintenance extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption('force', 'Run the update even if it was completed already');
+        $this->setBatchSize(200);
+    }
 
-	public function execute() {
-		$db = $this->getDB( DB_PRIMARY );
-		$key = $this->getUpdateKey();
+    public function execute()
+    {
+        $db = $this->getDB(DB_PRIMARY);
+        $key = $this->getUpdateKey();
 
-		if ( !$this->hasOption( 'force' )
-			&& $db->selectRow( 'updatelog', '1', [ 'ul_key' => $key ], __METHOD__ )
-		) {
-			$this->output( "..." . $this->updateSkippedMessage() . "\n" );
+        if (!$this->hasOption('force')
+            && $db->selectRow('updatelog', '1', ['ul_key' => $key], __METHOD__)
+        ) {
+            $this->output("..." . $this->updateSkippedMessage() . "\n");
 
-			return true;
-		}
+            return true;
+        }
 
-		if ( !$this->doDBUpdates() ) {
-			return false;
-		}
+        if (!$this->doDBUpdates()) {
+            return false;
+        }
 
-		$db->insert( 'updatelog', [ 'ul_key' => $key ], __METHOD__, [ 'IGNORE' ] );
+        $db->insert('updatelog', ['ul_key' => $key], __METHOD__, ['IGNORE']);
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * Sets whether a run of this maintenance script has the force parameter set
-	 * @param bool $forced
-	 */
-	public function setForce( $forced = true ) {
-		$this->mOptions['force'] = $forced;
-	}
+    /**
+     * Sets whether a run of this maintenance script has the force parameter set
+     * @param bool $forced
+     */
+    public function setForce($forced = true)
+    {
+        $this->mOptions['force'] = $forced;
+    }
 
-	/**
-	 * Message to show that the update was done already and was just skipped
-	 * @return string
-	 */
-	protected function updateSkippedMessage() {
-		$key = $this->getUpdateKey();
+    /**
+     * Message to show that the update was done already and was just skipped
+     * @return string
+     */
+    protected function updateSkippedMessage()
+    {
+        $key = $this->getUpdateKey();
 
-		return "Update '{$key}' already logged as completed. Use --force to run it again.";
-	}
+        return "Update '{$key}' already logged as completed. Use --force to run it again.";
+    }
 
-	/**
-	 * Do the actual work. All child classes will need to implement this.
-	 * Return true to log the update as done or false (usually on failure).
-	 * @return bool
-	 */
-	abstract protected function doDBUpdates();
+    /**
+     * Do the actual work. All child classes will need to implement this.
+     * Return true to log the update as done or false (usually on failure).
+     * @return bool
+     */
+    abstract protected function doDBUpdates();
 
-	/**
-	 * Get the update key name to go in the update log table
-	 * @return string
-	 */
-	abstract protected function getUpdateKey();
+    /**
+     * Get the update key name to go in the update log table
+     * @return string
+     */
+    abstract protected function getUpdateKey();
 }

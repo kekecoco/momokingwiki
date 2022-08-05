@@ -27,65 +27,71 @@
  *
  * @since 1.25
  */
-class MergeLogFormatter extends LogFormatter {
-	public function getPreloadTitles() {
-		$params = $this->extractParameters();
+class MergeLogFormatter extends LogFormatter
+{
+    public function getPreloadTitles()
+    {
+        $params = $this->extractParameters();
 
-		return [ Title::newFromText( $params[3] ) ];
-	}
+        return [Title::newFromText($params[3])];
+    }
 
-	protected function getMessageParameters() {
-		$params = parent::getMessageParameters();
-		$oldname = $this->makePageLink( $this->entry->getTarget(), [ 'redirect' => 'no' ] );
-		$newname = $this->makePageLink( Title::newFromText( $params[3] ) );
-		$params[2] = Message::rawParam( $oldname );
-		$params[3] = Message::rawParam( $newname );
-		$params[4] = $this->context->getLanguage()
-			->userTimeAndDate( $params[4], $this->context->getUser() );
-		return $params;
-	}
+    protected function getMessageParameters()
+    {
+        $params = parent::getMessageParameters();
+        $oldname = $this->makePageLink($this->entry->getTarget(), ['redirect' => 'no']);
+        $newname = $this->makePageLink(Title::newFromText($params[3]));
+        $params[2] = Message::rawParam($oldname);
+        $params[3] = Message::rawParam($newname);
+        $params[4] = $this->context->getLanguage()
+            ->userTimeAndDate($params[4], $this->context->getUser());
 
-	public function getActionLinks() {
-		if ( $this->entry->isDeleted( LogPage::DELETED_ACTION ) // Action is hidden
-			|| !$this->context->getAuthority()->isAllowed( 'mergehistory' )
-		) {
-			return '';
-		}
+        return $params;
+    }
 
-		// Show unmerge link
-		$params = $this->extractParameters();
-		$revert = $this->getLinkRenderer()->makeKnownLink(
-			SpecialPage::getTitleFor( 'MergeHistory' ),
-			$this->msg( 'revertmerge' )->text(),
-			[],
-			[
-				'target' => $params[3],
-				'dest' => $this->entry->getTarget()->getPrefixedDBkey(),
-				'mergepoint' => $params[4],
-				'submitted' => 1 // show the revisions immediately
-			]
-		);
+    public function getActionLinks()
+    {
+        if ($this->entry->isDeleted(LogPage::DELETED_ACTION) // Action is hidden
+            || !$this->context->getAuthority()->isAllowed('mergehistory')
+        ) {
+            return '';
+        }
 
-		return $this->msg( 'parentheses' )->rawParams( $revert )->escaped();
-	}
+        // Show unmerge link
+        $params = $this->extractParameters();
+        $revert = $this->getLinkRenderer()->makeKnownLink(
+            SpecialPage::getTitleFor('MergeHistory'),
+            $this->msg('revertmerge')->text(),
+            [],
+            [
+                'target'     => $params[3],
+                'dest'       => $this->entry->getTarget()->getPrefixedDBkey(),
+                'mergepoint' => $params[4],
+                'submitted'  => 1 // show the revisions immediately
+            ]
+        );
 
-	protected function getParametersForApi() {
-		$entry = $this->entry;
-		$params = $entry->getParameters();
+        return $this->msg('parentheses')->rawParams($revert)->escaped();
+    }
 
-		static $map = [
-			'4:title:dest',
-			'5:timestamp:mergepoint',
-			'4::dest' => '4:title:dest',
-			'5::mergepoint' => '5:timestamp:mergepoint',
-		];
-		foreach ( $map as $index => $key ) {
-			if ( isset( $params[$index] ) ) {
-				$params[$key] = $params[$index];
-				unset( $params[$index] );
-			}
-		}
+    protected function getParametersForApi()
+    {
+        $entry = $this->entry;
+        $params = $entry->getParameters();
 
-		return $params;
-	}
+        static $map = [
+            '4:title:dest',
+            '5:timestamp:mergepoint',
+            '4::dest'       => '4:title:dest',
+            '5::mergepoint' => '5:timestamp:mergepoint',
+        ];
+        foreach ($map as $index => $key) {
+            if (isset($params[$index])) {
+                $params[$key] = $params[$index];
+                unset($params[$index]);
+            }
+        }
+
+        return $params;
+    }
 }

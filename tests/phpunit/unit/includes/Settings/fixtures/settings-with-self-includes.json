@@ -1,5 +1,5 @@
 {
-	"includes": [
-		"settings-with-self-includes.json"
-	]
+  "includes": [
+    "settings-with-self-includes.json"
+  ]
 }

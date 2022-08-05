@@ -22,17 +22,20 @@
 /**
  * Trait that provides methods to check if group annotations are valid.
  */
-trait MediaWikiGroupValidator {
+trait MediaWikiGroupValidator
+{
 
-	/**
-	 * @return bool
-	 * @throws ReflectionException
-	 * @since 1.34
-	 */
-	public function isTestInDatabaseGroup() {
-		// If the test class says it belongs to the Database group, it needs the database.
-		// NOTE: This ONLY checks for the group in the class level doc comment.
-		$rc = new ReflectionClass( $this );
-		return (bool)preg_match( '/@group +Database/im', $rc->getDocComment() );
-	}
+    /**
+     * @return bool
+     * @throws ReflectionException
+     * @since 1.34
+     */
+    public function isTestInDatabaseGroup()
+    {
+        // If the test class says it belongs to the Database group, it needs the database.
+        // NOTE: This ONLY checks for the group in the class level doc comment.
+        $rc = new ReflectionClass($this);
+
+        return (bool)preg_match('/@group +Database/im', $rc->getDocComment());
+    }
 }

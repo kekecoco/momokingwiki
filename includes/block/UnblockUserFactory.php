@@ -27,19 +27,20 @@ use MediaWiki\User\UserIdentity;
 /**
  * @since 1.36
  */
-interface UnblockUserFactory {
-	/**
-	 * @param UserIdentity|string $target
-	 * @param Authority $performer
-	 * @param string $reason
-	 * @param string[] $tags
-	 *
-	 * @return UnblockUser
-	 */
-	public function newUnblockUser(
-		$target,
-		Authority $performer,
-		string $reason,
-		array $tags = []
-	): UnblockUser;
+interface UnblockUserFactory
+{
+    /**
+     * @param UserIdentity|string $target
+     * @param Authority $performer
+     * @param string $reason
+     * @param string[] $tags
+     *
+     * @return UnblockUser
+     */
+    public function newUnblockUser(
+        $target,
+        Authority $performer,
+        string $reason,
+        array $tags = []
+    ): UnblockUser;
 }

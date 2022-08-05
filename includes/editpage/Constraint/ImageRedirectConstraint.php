@@ -33,60 +33,66 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class ImageRedirectConstraint implements IEditConstraint {
+class ImageRedirectConstraint implements IEditConstraint
+{
 
-	/** @var Content */
-	private $newContent;
+    /** @var Content */
+    private $newContent;
 
-	/** @var LinkTarget */
-	private $title;
+    /** @var LinkTarget */
+    private $title;
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param Content $newContent
-	 * @param LinkTarget $title
-	 * @param Authority $performer
-	 */
-	public function __construct(
-		Content $newContent,
-		LinkTarget $title,
-		Authority $performer
-	) {
-		$this->newContent = $newContent;
-		$this->title = $title;
-		$this->performer = $performer;
-	}
+    /**
+     * @param Content $newContent
+     * @param LinkTarget $title
+     * @param Authority $performer
+     */
+    public function __construct(
+        Content $newContent,
+        LinkTarget $title,
+        Authority $performer
+    )
+    {
+        $this->newContent = $newContent;
+        $this->title = $title;
+        $this->performer = $performer;
+    }
 
-	public function checkConstraint(): string {
-		// Check isn't simple enough to just repeat when getting the status
-		if ( $this->title->getNamespace() === NS_FILE &&
-			$this->newContent->isRedirect() &&
-			!$this->performer->isAllowed( 'upload' )
-		) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+    public function checkConstraint(): string
+    {
+        // Check isn't simple enough to just repeat when getting the status
+        if ($this->title->getNamespace() === NS_FILE &&
+            $this->newContent->isRedirect() &&
+            !$this->performer->isAllowed('upload')
+        ) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        $this->result = self::CONSTRAINT_PASSED;
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$errorCode = $this->performer->getUser()->isRegistered() ?
-				self::AS_IMAGE_REDIRECT_LOGGED :
-				self::AS_IMAGE_REDIRECT_ANON;
-			$statusValue->setResult( false, $errorCode );
-		}
+        return self::CONSTRAINT_PASSED;
+    }
 
-		return $statusValue;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $errorCode = $this->performer->getUser()->isRegistered() ?
+                self::AS_IMAGE_REDIRECT_LOGGED :
+                self::AS_IMAGE_REDIRECT_ANON;
+            $statusValue->setResult(false, $errorCode);
+        }
+
+        return $statusValue;
+    }
 
 }

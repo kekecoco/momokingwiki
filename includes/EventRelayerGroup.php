@@ -23,40 +23,43 @@
  *
  * @since 1.27
  */
-class EventRelayerGroup {
-	/** @var array[] */
-	protected $configByChannel = [];
+class EventRelayerGroup
+{
+    /** @var array[] */
+    protected $configByChannel = [];
 
-	/** @var EventRelayer[] */
-	protected $relayers = [];
+    /** @var EventRelayer[] */
+    protected $relayers = [];
 
-	/**
-	 * @param array[] $config Channel configuration
-	 */
-	public function __construct( array $config ) {
-		$this->configByChannel = $config;
-	}
+    /**
+     * @param array[] $config Channel configuration
+     */
+    public function __construct(array $config)
+    {
+        $this->configByChannel = $config;
+    }
 
-	/**
-	 * @param string $channel
-	 * @return EventRelayer Relayer instance that handles the given channel
-	 */
-	public function getRelayer( $channel ) {
-		$channelKey = isset( $this->configByChannel[$channel] )
-			? $channel
-			: 'default';
+    /**
+     * @param string $channel
+     * @return EventRelayer Relayer instance that handles the given channel
+     */
+    public function getRelayer($channel)
+    {
+        $channelKey = isset($this->configByChannel[$channel])
+            ? $channel
+            : 'default';
 
-		if ( !isset( $this->relayers[$channelKey] ) ) {
-			if ( !isset( $this->configByChannel[$channelKey] ) ) {
-				throw new UnexpectedValueException( "No config for '$channelKey'" );
-			}
+        if (!isset($this->relayers[$channelKey])) {
+            if (!isset($this->configByChannel[$channelKey])) {
+                throw new UnexpectedValueException("No config for '$channelKey'");
+            }
 
-			$config = $this->configByChannel[$channelKey];
-			$class = $config['class'];
+            $config = $this->configByChannel[$channelKey];
+            $class = $config['class'];
 
-			$this->relayers[$channelKey] = new $class( $config );
-		}
+            $this->relayers[$channelKey] = new $class($config);
+        }
 
-		return $this->relayers[$channelKey];
-	}
+        return $this->relayers[$channelKey];
+    }
 }

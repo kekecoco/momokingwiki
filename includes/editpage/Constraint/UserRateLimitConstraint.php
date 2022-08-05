@@ -31,63 +31,67 @@ use User;
  * @internal
  * @author DannyS712
  */
-class UserRateLimitConstraint implements IEditConstraint {
+class UserRateLimitConstraint implements IEditConstraint
+{
 
-	/** @var User */
-	private $user;
+    /** @var User */
+    private $user;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var string */
-	private $newContentModel;
+    /** @var string */
+    private $newContentModel;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param User $user
-	 * @param Title $title
-	 * @param string $newContentModel
-	 */
-	public function __construct(
-		User $user,
-		Title $title,
-		string $newContentModel
-	) {
-		$this->user = $user;
-		$this->title = $title;
-		$this->newContentModel = $newContentModel;
-	}
+    /**
+     * @param User $user
+     * @param Title $title
+     * @param string $newContentModel
+     */
+    public function __construct(
+        User $user,
+        Title $title,
+        string $newContentModel
+    )
+    {
+        $this->user = $user;
+        $this->title = $title;
+        $this->newContentModel = $newContentModel;
+    }
 
-	public function checkConstraint(): string {
-		// Need to check for rate limits on `editcontentmodel` if it is changing
-		$contentModelChange = ( $this->newContentModel !== $this->title->getContentModel() );
+    public function checkConstraint(): string
+    {
+        // Need to check for rate limits on `editcontentmodel` if it is changing
+        $contentModelChange = ($this->newContentModel !== $this->title->getContentModel());
 
-		// TODO inject and use a ThrottleStore once available, see T261744
-		// Checking if the user is rate limited increments the counts, so we cannot perform
-		// the check again when getting the status; thus, store the result
-		if ( $this->user->pingLimiter()
-			|| $this->user->pingLimiter( 'linkpurge', 0 ) // only counted after the fact
-			|| ( $contentModelChange && $this->user->pingLimiter( 'editcontentmodel' ) )
-		) {
-			$this->result = self::CONSTRAINT_FAILED;
-		} else {
-			$this->result = self::CONSTRAINT_PASSED;
-		}
+        // TODO inject and use a ThrottleStore once available, see T261744
+        // Checking if the user is rate limited increments the counts, so we cannot perform
+        // the check again when getting the status; thus, store the result
+        if ($this->user->pingLimiter()
+            || $this->user->pingLimiter('linkpurge', 0) // only counted after the fact
+            || ($contentModelChange && $this->user->pingLimiter('editcontentmodel'))
+        ) {
+            $this->result = self::CONSTRAINT_FAILED;
+        } else {
+            $this->result = self::CONSTRAINT_PASSED;
+        }
 
-		return $this->result;
-	}
+        return $this->result;
+    }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->fatal( 'actionthrottledtext' );
-			$statusValue->value = self::AS_RATE_LIMITED;
-		}
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->fatal('actionthrottledtext');
+            $statusValue->value = self::AS_RATE_LIMITED;
+        }
 
-		return $statusValue;
-	}
+        return $statusValue;
+    }
 
 }

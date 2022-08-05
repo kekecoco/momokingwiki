@@ -24,25 +24,25 @@
 
 use MediaWiki\MainConfigSchema;
 
-if ( PHP_SAPI !== 'cli' ) {
-	die( 'This file is only meant to be executed indirectly by PHPUnit\'s bootstrap process!' );
+if (PHP_SAPI !== 'cli') {
+    die('This file is only meant to be executed indirectly by PHPUnit\'s bootstrap process!');
 }
 
-define( 'MEDIAWIKI', true );
-define( 'MW_PHPUNIT_TEST', true );
-define( 'MW_ENTRY_POINT', 'cli' );
+define('MEDIAWIKI', true);
+define('MW_PHPUNIT_TEST', true);
+define('MW_ENTRY_POINT', 'cli');
 
 /** @internal Should only be used in MediaWikiIntegrationTestCase::initializeForStandardPhpunitEntrypointIfNeeded() */
-define( 'MW_PHPUNIT_UNIT', true );
+define('MW_PHPUNIT_UNIT', true);
 
-$IP = realpath( __DIR__ . '/../../' );
+$IP = realpath(__DIR__ . '/../../');
 require_once "$IP/tests/common/TestSetup.php";
 
 // We don't use a settings file here but some code still assumes that one exists
-TestSetup::requireOnceInGlobalScope( "$IP/includes/BootstrapHelperFunctions.php" );
+TestSetup::requireOnceInGlobalScope("$IP/includes/BootstrapHelperFunctions.php");
 
 $IP = wfDetectInstallPath(); // ensure MW_INSTALL_PATH is defined
-wfDetectLocalSettingsFile( $IP );
+wfDetectLocalSettingsFile($IP);
 
 // these variables must be defined before setup runs
 $GLOBALS['IP'] = $IP;
@@ -54,18 +54,18 @@ $GLOBALS['wgCommandLineMode'] = true;
 $GLOBALS['wgAutoloadClasses'] = [];
 $GLOBALS['wgBaseDirectory'] = MW_INSTALL_PATH;
 
-TestSetup::requireOnceInGlobalScope( "$IP/includes/AutoLoader.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/tests/common/TestsAutoLoader.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/includes/Defines.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/includes/GlobalFunctions.php" );
+TestSetup::requireOnceInGlobalScope("$IP/includes/AutoLoader.php");
+TestSetup::requireOnceInGlobalScope("$IP/tests/common/TestsAutoLoader.php");
+TestSetup::requireOnceInGlobalScope("$IP/includes/Defines.php");
+TestSetup::requireOnceInGlobalScope("$IP/includes/GlobalFunctions.php");
 
 // Extract the defaults into global variables.
 // NOTE: this does not apply any dynamic defaults.
-foreach ( MainConfigSchema::listDefaultValues( 'wg' ) as $var => $value ) {
-	$GLOBALS[$var] = $value;
+foreach (MainConfigSchema::listDefaultValues('wg') as $var => $value) {
+    $GLOBALS[$var] = $value;
 }
 
-TestSetup::requireOnceInGlobalScope( "$IP/includes/DevelopmentSettings.php" );
+TestSetup::requireOnceInGlobalScope("$IP/includes/DevelopmentSettings.php");
 
 TestSetup::applyInitialConfig();
 MediaWikiCliOptions::initialize();
@@ -77,20 +77,20 @@ $GLOBALS['wgStyleDirectory'] = "$IP/skins";
 
 // Populate classes and namespaces from extensions and skins present in filesystem.
 $directoryToJsonMap = [
-	$GLOBALS['wgExtensionDirectory'] => 'extension*.json',
-	$GLOBALS['wgStyleDirectory'] => 'skin*.json'
+    $GLOBALS['wgExtensionDirectory'] => 'extension*.json',
+    $GLOBALS['wgStyleDirectory']     => 'skin*.json'
 ];
 
 $extensionProcessor = new ExtensionProcessor();
 
-foreach ( $directoryToJsonMap as $directory => $jsonFilePattern ) {
-	foreach ( new GlobIterator( $directory . '/*/' . $jsonFilePattern ) as $iterator ) {
-		$jsonPath = $iterator->getPathname();
-		$extensionProcessor->extractInfoFromFile( $jsonPath );
-	}
+foreach ($directoryToJsonMap as $directory => $jsonFilePattern) {
+    foreach (new GlobIterator($directory . '/*/' . $jsonFilePattern) as $iterator) {
+        $jsonPath = $iterator->getPathname();
+        $extensionProcessor->extractInfoFromFile($jsonPath);
+    }
 }
 
-$autoload = $extensionProcessor->getExtractedAutoloadInfo( true );
-AutoLoader::loadFiles( $autoload['files'] );
-AutoLoader::registerClasses( $autoload['classes'] );
-AutoLoader::registerNamespaces( $autoload['namespaces'] );
+$autoload = $extensionProcessor->getExtractedAutoloadInfo(true);
+AutoLoader::loadFiles($autoload['files']);
+AutoLoader::registerClasses($autoload['classes']);
+AutoLoader::registerNamespaces($autoload['namespaces']);

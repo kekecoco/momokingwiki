@@ -39,137 +39,143 @@ require_once __DIR__ . '/TableCleanup.php';
  *
  * @ingroup Maintenance
  */
-class CleanupCaps extends TableCleanup {
+class CleanupCaps extends TableCleanup
+{
 
-	private $user;
-	private $namespace;
+    private $user;
+    private $namespace;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Script to cleanup capitalization' );
-		$this->addOption( 'namespace', 'Namespace number to run caps cleanup on', false, true );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Script to cleanup capitalization');
+        $this->addOption('namespace', 'Namespace number to run caps cleanup on', false, true);
+    }
 
-	public function execute() {
-		$this->user = User::newSystemUser( 'Conversion script', [ 'steal' => true ] );
+    public function execute()
+    {
+        $this->user = User::newSystemUser('Conversion script', ['steal' => true]);
 
-		$this->namespace = intval( $this->getOption( 'namespace', 0 ) );
+        $this->namespace = intval($this->getOption('namespace', 0));
 
-		if (
-			MediaWikiServices::getInstance()->getNamespaceInfo()->
-				isCapitalized( $this->namespace )
-		) {
-			$this->output( "Will be moving pages to first letter capitalized titles" );
-			$callback = 'processRowToUppercase';
-		} else {
-			$this->output( "Will be moving pages to first letter lowercase titles" );
-			$callback = 'processRowToLowercase';
-		}
+        if (
+        MediaWikiServices::getInstance()->getNamespaceInfo()->
+        isCapitalized($this->namespace)
+        ) {
+            $this->output("Will be moving pages to first letter capitalized titles");
+            $callback = 'processRowToUppercase';
+        } else {
+            $this->output("Will be moving pages to first letter lowercase titles");
+            $callback = 'processRowToLowercase';
+        }
 
-		$this->dryrun = $this->hasOption( 'dry-run' );
+        $this->dryrun = $this->hasOption('dry-run');
 
-		$this->runTable( [
-			'table' => 'page',
-			'conds' => [ 'page_namespace' => $this->namespace ],
-			'index' => 'page_id',
-			'callback' => $callback ] );
-	}
+        $this->runTable([
+            'table'    => 'page',
+            'conds'    => ['page_namespace' => $this->namespace],
+            'index'    => 'page_id',
+            'callback' => $callback]);
+    }
 
-	protected function processRowToUppercase( $row ) {
-		$current = Title::makeTitle( $row->page_namespace, $row->page_title );
-		$display = $current->getPrefixedText();
-		$lower = $row->page_title;
-		$upper = MediaWikiServices::getInstance()->getContentLanguage()->ucfirst( $row->page_title );
-		if ( $upper == $lower ) {
-			$this->output( "\"$display\" already uppercase.\n" );
+    protected function processRowToUppercase($row)
+    {
+        $current = Title::makeTitle($row->page_namespace, $row->page_title);
+        $display = $current->getPrefixedText();
+        $lower = $row->page_title;
+        $upper = MediaWikiServices::getInstance()->getContentLanguage()->ucfirst($row->page_title);
+        if ($upper == $lower) {
+            $this->output("\"$display\" already uppercase.\n");
 
-			return $this->progress( 0 );
-		}
+            return $this->progress(0);
+        }
 
-		$target = Title::makeTitle( $row->page_namespace, $upper );
-		if ( $target->exists() ) {
-			// Prefix "CapsCleanup" to bypass the conflict
-			$target = Title::newFromText( 'CapsCleanup/' . $display );
-		}
-		$ok = $this->movePage(
-			$current,
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable target is always valid
-			$target,
-			'Converting page title to first-letter uppercase',
-			false
-		);
-		if ( $ok ) {
-			$this->progress( 1 );
-			if ( $row->page_namespace == $this->namespace ) {
-				$talk = $target->getTalkPage();
-				$row->page_namespace = $talk->getNamespace();
-				if ( $talk->exists() ) {
-					return $this->processRowToUppercase( $row );
-				}
-			}
-		}
+        $target = Title::makeTitle($row->page_namespace, $upper);
+        if ($target->exists()) {
+            // Prefix "CapsCleanup" to bypass the conflict
+            $target = Title::newFromText('CapsCleanup/' . $display);
+        }
+        $ok = $this->movePage(
+            $current,
+            // @phan-suppress-next-line PhanTypeMismatchArgumentNullable target is always valid
+            $target,
+            'Converting page title to first-letter uppercase',
+            false
+        );
+        if ($ok) {
+            $this->progress(1);
+            if ($row->page_namespace == $this->namespace) {
+                $talk = $target->getTalkPage();
+                $row->page_namespace = $talk->getNamespace();
+                if ($talk->exists()) {
+                    return $this->processRowToUppercase($row);
+                }
+            }
+        }
 
-		return $this->progress( 0 );
-	}
+        return $this->progress(0);
+    }
 
-	protected function processRowToLowercase( $row ) {
-		$current = Title::makeTitle( $row->page_namespace, $row->page_title );
-		$display = $current->getPrefixedText();
-		$upper = $row->page_title;
-		$lower = MediaWikiServices::getInstance()->getContentLanguage()->lcfirst( $row->page_title );
-		if ( $upper == $lower ) {
-			$this->output( "\"$display\" already lowercase.\n" );
+    protected function processRowToLowercase($row)
+    {
+        $current = Title::makeTitle($row->page_namespace, $row->page_title);
+        $display = $current->getPrefixedText();
+        $upper = $row->page_title;
+        $lower = MediaWikiServices::getInstance()->getContentLanguage()->lcfirst($row->page_title);
+        if ($upper == $lower) {
+            $this->output("\"$display\" already lowercase.\n");
 
-			return $this->progress( 0 );
-		}
+            return $this->progress(0);
+        }
 
-		$target = Title::makeTitle( $row->page_namespace, $lower );
-		if ( $target->exists() ) {
-			$targetDisplay = $target->getPrefixedText();
-			$this->output( "\"$display\" skipped; \"$targetDisplay\" already exists\n" );
+        $target = Title::makeTitle($row->page_namespace, $lower);
+        if ($target->exists()) {
+            $targetDisplay = $target->getPrefixedText();
+            $this->output("\"$display\" skipped; \"$targetDisplay\" already exists\n");
 
-			return $this->progress( 0 );
-		}
+            return $this->progress(0);
+        }
 
-		$ok = $this->movePage( $current, $target, 'Converting page titles to lowercase', true );
-		if ( $ok === true ) {
-			$this->progress( 1 );
-			if ( $row->page_namespace == $this->namespace ) {
-				$talk = $target->getTalkPage();
-				$row->page_namespace = $talk->getNamespace();
-				if ( $talk->exists() ) {
-					return $this->processRowToLowercase( $row );
-				}
-			}
-		}
+        $ok = $this->movePage($current, $target, 'Converting page titles to lowercase', true);
+        if ($ok === true) {
+            $this->progress(1);
+            if ($row->page_namespace == $this->namespace) {
+                $talk = $target->getTalkPage();
+                $row->page_namespace = $talk->getNamespace();
+                if ($talk->exists()) {
+                    return $this->processRowToLowercase($row);
+                }
+            }
+        }
 
-		return $this->progress( 0 );
-	}
+        return $this->progress(0);
+    }
 
-	/**
-	 * @param Title $current
-	 * @param Title $target
-	 * @param string $reason
-	 * @param bool $createRedirect
-	 * @return bool Success
-	 */
-	private function movePage( Title $current, Title $target, $reason, $createRedirect ) {
-		$display = $current->getPrefixedText();
-		$targetDisplay = $target->getPrefixedText();
+    /**
+     * @param Title $current
+     * @param Title $target
+     * @param string $reason
+     * @param bool $createRedirect
+     * @return bool Success
+     */
+    private function movePage(Title $current, Title $target, $reason, $createRedirect)
+    {
+        $display = $current->getPrefixedText();
+        $targetDisplay = $target->getPrefixedText();
 
-		if ( $this->dryrun ) {
-			$this->output( "\"$display\" -> \"$targetDisplay\": DRY RUN, NOT MOVED\n" );
-			$ok = 'OK';
-		} else {
-			$mp = MediaWikiServices::getInstance()->getMovePageFactory()
-				->newMovePage( $current, $target );
-			$status = $mp->move( $this->user, $reason, $createRedirect );
-			$ok = $status->isOK() ? 'OK' : $status->getMessage( false, false, 'en' )->text();
-			$this->output( "\"$display\" -> \"$targetDisplay\": $ok\n" );
-		}
+        if ($this->dryrun) {
+            $this->output("\"$display\" -> \"$targetDisplay\": DRY RUN, NOT MOVED\n");
+            $ok = 'OK';
+        } else {
+            $mp = MediaWikiServices::getInstance()->getMovePageFactory()
+                ->newMovePage($current, $target);
+            $status = $mp->move($this->user, $reason, $createRedirect);
+            $ok = $status->isOK() ? 'OK' : $status->getMessage(false, false, 'en')->text();
+            $this->output("\"$display\" -> \"$targetDisplay\": $ok\n");
+        }
 
-		return $ok === 'OK';
-	}
+        return $ok === 'OK';
+    }
 }
 
 $maintClass = CleanupCaps::class;

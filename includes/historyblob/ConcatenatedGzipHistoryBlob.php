@@ -24,125 +24,140 @@
  * Concatenated gzip (CGZ) storage
  * Improves compression ratio by concatenating like objects before gzipping
  */
-class ConcatenatedGzipHistoryBlob implements HistoryBlob {
-	/** @var int */
-	public $mVersion = 0;
-	/** @var bool */
-	public $mCompressed = false;
-	/** @var string[]|string Array if uncompressed, string if compressed */
-	public $mItems = [];
-	/** @var string */
-	public $mDefaultHash = '';
-	/** @var int */
-	public $mSize = 0;
-	/** @var int */
-	public $mMaxSize = 10000000;
-	/** @var int */
-	public $mMaxCount = 100;
+class ConcatenatedGzipHistoryBlob implements HistoryBlob
+{
+    /** @var int */
+    public $mVersion = 0;
+    /** @var bool */
+    public $mCompressed = false;
+    /** @var string[]|string Array if uncompressed, string if compressed */
+    public $mItems = [];
+    /** @var string */
+    public $mDefaultHash = '';
+    /** @var int */
+    public $mSize = 0;
+    /** @var int */
+    public $mMaxSize = 10000000;
+    /** @var int */
+    public $mMaxCount = 100;
 
-	public function __construct() {
-		if ( !function_exists( 'gzdeflate' ) ) {
-			throw new MWException( "Need zlib support to read or write this "
-				. "kind of history object (ConcatenatedGzipHistoryBlob)\n" );
-		}
-	}
+    public function __construct()
+    {
+        if (!function_exists('gzdeflate')) {
+            throw new MWException("Need zlib support to read or write this "
+                . "kind of history object (ConcatenatedGzipHistoryBlob)\n");
+        }
+    }
 
-	/**
-	 * @param string $text
-	 * @return string
-	 */
-	public function addItem( $text ) {
-		$this->uncompress();
-		$hash = md5( $text );
-		if ( !isset( $this->mItems[$hash] ) ) {
-			$this->mItems[$hash] = $text;
-			$this->mSize += strlen( $text );
-		}
-		return $hash;
-	}
+    /**
+     * @param string $text
+     * @return string
+     */
+    public function addItem($text)
+    {
+        $this->uncompress();
+        $hash = md5($text);
+        if (!isset($this->mItems[$hash])) {
+            $this->mItems[$hash] = $text;
+            $this->mSize += strlen($text);
+        }
 
-	/**
-	 * @param string $hash
-	 * @return string|false
-	 */
-	public function getItem( $hash ) {
-		$this->uncompress();
-		if ( array_key_exists( $hash, $this->mItems ) ) {
-			return $this->mItems[$hash];
-		} else {
-			return false;
-		}
-	}
+        return $hash;
+    }
 
-	/**
-	 * @param string $text
-	 * @return void
-	 */
-	public function setText( $text ) {
-		$this->uncompress();
-		$this->mDefaultHash = $this->addItem( $text );
-	}
+    /**
+     * @param string $hash
+     * @return string|false
+     */
+    public function getItem($hash)
+    {
+        $this->uncompress();
+        if (array_key_exists($hash, $this->mItems)) {
+            return $this->mItems[$hash];
+        } else {
+            return false;
+        }
+    }
 
-	/**
-	 * @return string|false
-	 */
-	public function getText() {
-		$this->uncompress();
-		return $this->getItem( $this->mDefaultHash );
-	}
+    /**
+     * @param string $text
+     * @return void
+     */
+    public function setText($text)
+    {
+        $this->uncompress();
+        $this->mDefaultHash = $this->addItem($text);
+    }
 
-	/**
-	 * Remove an item
-	 *
-	 * @param string $hash
-	 */
-	public function removeItem( $hash ) {
-		$this->mSize -= strlen( $this->mItems[$hash] );
-		unset( $this->mItems[$hash] );
-	}
+    /**
+     * @return string|false
+     */
+    public function getText()
+    {
+        $this->uncompress();
 
-	/**
-	 * Compress the bulk data in the object
-	 */
-	public function compress() {
-		if ( !$this->mCompressed ) {
-			$this->mItems = gzdeflate( serialize( $this->mItems ) );
-			$this->mCompressed = true;
-		}
-	}
+        return $this->getItem($this->mDefaultHash);
+    }
 
-	/**
-	 * Uncompress bulk data
-	 */
-	public function uncompress() {
-		if ( $this->mCompressed ) {
-			$this->mItems = unserialize( gzinflate( $this->mItems ) );
-			$this->mCompressed = false;
-		}
-	}
+    /**
+     * Remove an item
+     *
+     * @param string $hash
+     */
+    public function removeItem($hash)
+    {
+        $this->mSize -= strlen($this->mItems[$hash]);
+        unset($this->mItems[$hash]);
+    }
 
-	/**
-	 * @return array
-	 */
-	public function __sleep() {
-		$this->compress();
-		return [ 'mVersion', 'mCompressed', 'mItems', 'mDefaultHash' ];
-	}
+    /**
+     * Compress the bulk data in the object
+     */
+    public function compress()
+    {
+        if (!$this->mCompressed) {
+            $this->mItems = gzdeflate(serialize($this->mItems));
+            $this->mCompressed = true;
+        }
+    }
 
-	public function __wakeup() {
-		$this->uncompress();
-	}
+    /**
+     * Uncompress bulk data
+     */
+    public function uncompress()
+    {
+        if ($this->mCompressed) {
+            $this->mItems = unserialize(gzinflate($this->mItems));
+            $this->mCompressed = false;
+        }
+    }
 
-	/**
-	 * Helper function for compression jobs
-	 * Returns true until the object is "full" and ready to be committed
-	 *
-	 * @return bool
-	 */
-	public function isHappy() {
-		return $this->mSize < $this->mMaxSize
-			&& count( $this->mItems ) < $this->mMaxCount;
-	}
+    /**
+     * @return array
+     */
+    public function __sleep()
+    {
+        $this->compress();
+
+        return ['mVersion', 'mCompressed', 'mItems', 'mDefaultHash'];
+    }
+
+    public function __wakeup()
+    {
+        $this->uncompress();
+    }
+
+    /**
+     * Helper function for compression jobs
+     * Returns true until the object is "full" and ready to be committed
+     *
+     * @return bool
+     */
+    public function isHappy()
+    {
+        return $this->mSize < $this->mMaxSize
+            && count($this->mItems) < $this->mMaxCount;
+    }
 }
 
 // Blobs generated by MediaWiki < 1.5 on PHP 4 were serialized with the

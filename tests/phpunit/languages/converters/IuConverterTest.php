@@ -4,38 +4,41 @@
  * @group Language
  * @covers IuConverter
  */
-class IuConverterTest extends MediaWikiIntegrationTestCase {
+class IuConverterTest extends MediaWikiIntegrationTestCase
+{
 
-	use LanguageConverterTestTrait;
+    use LanguageConverterTestTrait;
 
-	/**
-	 * @dataProvider provideAutoConvertToAllVariants
-	 * @covers IuConverter::autoConvertToAllVariants
-	 */
-	public function testAutoConvertToAllVariants( $result, $value ) {
-		$this->assertEquals( $result, $this->getLanguageConverter()->autoConvertToAllVariants( $value ) );
-	}
+    /**
+     * @dataProvider provideAutoConvertToAllVariants
+     * @covers       IuConverter::autoConvertToAllVariants
+     */
+    public function testAutoConvertToAllVariants($result, $value)
+    {
+        $this->assertEquals($result, $this->getLanguageConverter()->autoConvertToAllVariants($value));
+    }
 
-	public static function provideAutoConvertToAllVariants() {
-		return [
-			// ike-cans
-			[
-				[
-					'ike-cans' => 'ᐴ',
-					'ike-latn' => 'PUU',
-					'iu' => 'PUU',
-				],
-				'PUU'
-			],
-			// ike-latn
-			[
-				[
-					'ike-cans' => 'ᐴ',
-					'ike-latn' => 'puu',
-					'iu' => 'ᐴ',
-				],
-				'ᐴ'
-			],
-		];
-	}
+    public static function provideAutoConvertToAllVariants()
+    {
+        return [
+            // ike-cans
+            [
+                [
+                    'ike-cans' => 'ᐴ',
+                    'ike-latn' => 'PUU',
+                    'iu'       => 'PUU',
+                ],
+                'PUU'
+            ],
+            // ike-latn
+            [
+                [
+                    'ike-cans' => 'ᐴ',
+                    'ike-latn' => 'puu',
+                    'iu'       => 'ᐴ',
+                ],
+                'ᐴ'
+            ],
+        ];
+    }
 }

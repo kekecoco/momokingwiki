@@ -21,84 +21,95 @@
 /**
  * Wrapper around strtr() that holds replacements
  */
-class ReplacementArray {
-	private $data;
+class ReplacementArray
+{
+    private $data;
 
-	/**
-	 * Create an object with the specified replacement array
-	 * The array should have the same form as the replacement array for strtr()
-	 * @param array $data
-	 */
-	public function __construct( array $data = [] ) {
-		$this->data = $data;
-	}
+    /**
+     * Create an object with the specified replacement array
+     * The array should have the same form as the replacement array for strtr()
+     * @param array $data
+     */
+    public function __construct(array $data = [])
+    {
+        $this->data = $data;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function __sleep() {
-		return [ 'data' ];
-	}
+    /**
+     * @return array
+     */
+    public function __sleep()
+    {
+        return ['data'];
+    }
 
-	/**
-	 * Set the whole replacement array at once
-	 * @param array $data
-	 */
-	public function setArray( array $data ) {
-		$this->data = $data;
-	}
+    /**
+     * Set the whole replacement array at once
+     * @param array $data
+     */
+    public function setArray(array $data)
+    {
+        $this->data = $data;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getArray() {
-		return $this->data;
-	}
+    /**
+     * @return array
+     */
+    public function getArray()
+    {
+        return $this->data;
+    }
 
-	/**
-	 * Set an element of the replacement array
-	 * @param string $from
-	 * @param string $to
-	 */
-	public function setPair( $from, $to ) {
-		$this->data[$from] = $to;
-	}
+    /**
+     * Set an element of the replacement array
+     * @param string $from
+     * @param string $to
+     */
+    public function setPair($from, $to)
+    {
+        $this->data[$from] = $to;
+    }
 
-	/**
-	 * @param array $data
-	 */
-	public function mergeArray( $data ) {
-		$this->data = $data + $this->data;
-	}
+    /**
+     * @param array $data
+     */
+    public function mergeArray($data)
+    {
+        $this->data = $data + $this->data;
+    }
 
-	/**
-	 * @param ReplacementArray $other
-	 */
-	public function merge( ReplacementArray $other ) {
-		$this->data = $other->data + $this->data;
-	}
+    /**
+     * @param ReplacementArray $other
+     */
+    public function merge(ReplacementArray $other)
+    {
+        $this->data = $other->data + $this->data;
+    }
 
-	/**
-	 * @param string $from
-	 */
-	public function removePair( $from ) {
-		unset( $this->data[$from] );
-	}
+    /**
+     * @param string $from
+     */
+    public function removePair($from)
+    {
+        unset($this->data[$from]);
+    }
 
-	/**
-	 * @param array $data
-	 */
-	public function removeArray( $data ) {
-		foreach ( $data as $from => $to ) {
-			$this->removePair( $from );
-		}
-	}
+    /**
+     * @param array $data
+     */
+    public function removeArray($data)
+    {
+        foreach ($data as $from => $to) {
+            $this->removePair($from);
+        }
+    }
 
-	/**
-	 * @param string $subject
-	 * @return string
-	 */
-	public function replace( $subject ) {
-		return strtr( $subject, $this->data );
-	}
+    /**
+     * @param string $subject
+     * @return string
+     */
+    public function replace($subject)
+    {
+        return strtr($subject, $this->data);
+    }
 }

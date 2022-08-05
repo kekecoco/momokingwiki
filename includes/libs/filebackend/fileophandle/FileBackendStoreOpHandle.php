@@ -29,21 +29,23 @@
  *
  * @stable to extend
  */
-abstract class FileBackendStoreOpHandle {
-	/** @var array */
-	public $params = []; // params to caller functions
-	/** @var FileBackendStore */
-	public $backend;
-	/** @var array */
-	public $resourcesToClose = [];
-	/** @var callable name that identifies the function called */
-	public $call;
+abstract class FileBackendStoreOpHandle
+{
+    /** @var array */
+    public $params = []; // params to caller functions
+    /** @var FileBackendStore */
+    public $backend;
+    /** @var array */
+    public $resourcesToClose = [];
+    /** @var callable name that identifies the function called */
+    public $call;
 
-	/**
-	 * Close all open file handles
-	 */
-	public function closeResources() {
-		// @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
-		array_map( 'fclose', $this->resourcesToClose );
-	}
+    /**
+     * Close all open file handles
+     */
+    public function closeResources()
+    {
+        // @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
+        array_map('fclose', $this->resourcesToClose);
+    }
 }

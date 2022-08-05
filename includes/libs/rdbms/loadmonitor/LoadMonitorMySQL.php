@@ -30,42 +30,45 @@ use WANObjectCache;
  *
  * @ingroup Database
  */
-class LoadMonitorMySQL extends LoadMonitor {
-	/** @var float What buffer pool use ratio counts as "warm" (e.g. 0.5 for 50% usage) */
-	private $warmCacheRatio;
+class LoadMonitorMySQL extends LoadMonitor
+{
+    /** @var float What buffer pool use ratio counts as "warm" (e.g. 0.5 for 50% usage) */
+    private $warmCacheRatio;
 
-	public function __construct(
-		ILoadBalancer $lb, BagOStuff $srvCache, WANObjectCache $wCache, array $options = []
-	) {
-		parent::__construct( $lb, $srvCache, $wCache, $options );
+    public function __construct(
+        ILoadBalancer $lb, BagOStuff $srvCache, WANObjectCache $wCache, array $options = []
+    )
+    {
+        parent::__construct($lb, $srvCache, $wCache, $options);
 
-		$this->warmCacheRatio = $options['warmCacheRatio'] ?? 0.0;
-	}
+        $this->warmCacheRatio = $options['warmCacheRatio'] ?? 0.0;
+    }
 
-	protected function getWeightScale( $index, IDatabase $conn = null ) {
-		if ( $conn === null ) {
-			return parent::getWeightScale( $index, $conn );
-		}
+    protected function getWeightScale($index, IDatabase $conn = null)
+    {
+        if ($conn === null) {
+            return parent::getWeightScale($index, $conn);
+        }
 
-		$weight = 1.0;
-		if ( $this->warmCacheRatio > 0 ) {
-			$res = $conn->query( 'SHOW STATUS', __METHOD__ );
-			$s = $res ? $res->fetchObject() : false;
-			if ( $s === false ) {
-				$host = $this->lb->getServerName( $index );
-				$this->replLogger->error( __METHOD__ . ": could not get status for $host" );
-			} else {
-				// https://dev.mysql.com/doc/refman/5.7/en/server-status-variables.html
-				if ( $s->Innodb_buffer_pool_pages_total > 0 ) {
-					$ratio = $s->Innodb_buffer_pool_pages_data / $s->Innodb_buffer_pool_pages_total;
-				} else {
-					$ratio = 1.0;
-				}
-				// Stop caring once $ratio >= $this->warmCacheRatio
-				$weight *= min( $ratio / $this->warmCacheRatio, 1.0 );
-			}
-		}
+        $weight = 1.0;
+        if ($this->warmCacheRatio > 0) {
+            $res = $conn->query('SHOW STATUS', __METHOD__);
+            $s = $res ? $res->fetchObject() : false;
+            if ($s === false) {
+                $host = $this->lb->getServerName($index);
+                $this->replLogger->error(__METHOD__ . ": could not get status for $host");
+            } else {
+                // https://dev.mysql.com/doc/refman/5.7/en/server-status-variables.html
+                if ($s->Innodb_buffer_pool_pages_total > 0) {
+                    $ratio = $s->Innodb_buffer_pool_pages_data / $s->Innodb_buffer_pool_pages_total;
+                } else {
+                    $ratio = 1.0;
+                }
+                // Stop caring once $ratio >= $this->warmCacheRatio
+                $weight *= min($ratio / $this->warmCacheRatio, 1.0);
+            }
+        }
 
-		return $weight;
-	}
+        return $weight;
+    }
 }

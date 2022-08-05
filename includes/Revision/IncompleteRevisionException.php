@@ -29,6 +29,7 @@ namespace MediaWiki\Revision;
  * @since 1.31
  * @since 1.32 Renamed from MediaWiki\Storage\IncompleteRevisionException
  */
-class IncompleteRevisionException extends RevisionAccessException {
+class IncompleteRevisionException extends RevisionAccessException
+{
 
 }

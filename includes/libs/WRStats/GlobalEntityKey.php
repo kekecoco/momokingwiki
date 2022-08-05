@@ -8,8 +8,10 @@ namespace Wikimedia\WRStats;
  * @newable
  * @since 1.39
  */
-class GlobalEntityKey extends EntityKey {
-	public function isGlobal() {
-		return true;
-	}
+class GlobalEntityKey extends EntityKey
+{
+    public function isGlobal()
+    {
+        return true;
+    }
 }

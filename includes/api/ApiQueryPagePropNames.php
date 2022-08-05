@@ -30,84 +30,91 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * @ingroup API
  * @since 1.21
  */
-class ApiQueryPagePropNames extends ApiQueryBase {
+class ApiQueryPagePropNames extends ApiQueryBase
+{
 
-	public function __construct( ApiQuery $query, $moduleName ) {
-		parent::__construct( $query, $moduleName, 'ppn' );
-	}
+    public function __construct(ApiQuery $query, $moduleName)
+    {
+        parent::__construct($query, $moduleName, 'ppn');
+    }
 
-	public function getCacheMode( $params ) {
-		return 'public';
-	}
+    public function getCacheMode($params)
+    {
+        return 'public';
+    }
 
-	public function execute() {
-		$params = $this->extractRequestParams();
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
 
-		$this->addTables( 'page_props' );
-		$this->addFields( 'pp_propname' );
-		$this->addOption( 'DISTINCT' );
-		$this->addOption( 'ORDER BY', 'pp_propname' );
+        $this->addTables('page_props');
+        $this->addFields('pp_propname');
+        $this->addOption('DISTINCT');
+        $this->addOption('ORDER BY', 'pp_propname');
 
-		if ( $params['continue'] ) {
-			$cont = explode( '|', $params['continue'] );
-			$this->dieContinueUsageIf( count( $cont ) != 1 );
+        if ($params['continue']) {
+            $cont = explode('|', $params['continue']);
+            $this->dieContinueUsageIf(count($cont) != 1);
 
-			// Add a WHERE clause
-			$this->addWhereRange( 'pp_propname', 'newer', $cont[0], null );
-		}
+            // Add a WHERE clause
+            $this->addWhereRange('pp_propname', 'newer', $cont[0], null);
+        }
 
-		$limit = $params['limit'];
+        $limit = $params['limit'];
 
-		// mysql has issues with limit in loose index T115825
-		if ( $this->getDB()->getType() !== 'mysql' ) {
-			$this->addOption( 'LIMIT', $limit + 1 );
-		}
+        // mysql has issues with limit in loose index T115825
+        if ($this->getDB()->getType() !== 'mysql') {
+            $this->addOption('LIMIT', $limit + 1);
+        }
 
-		$result = $this->getResult();
-		$count = 0;
-		foreach ( $this->select( __METHOD__ ) as $row ) {
-			if ( ++$count > $limit ) {
-				// We've reached the one extra which shows that there are
-				// additional pages to be had. Stop here...
-				$this->setContinueEnumParameter( 'continue', $row->pp_propname );
-				break;
-			}
+        $result = $this->getResult();
+        $count = 0;
+        foreach ($this->select(__METHOD__) as $row) {
+            if (++$count > $limit) {
+                // We've reached the one extra which shows that there are
+                // additional pages to be had. Stop here...
+                $this->setContinueEnumParameter('continue', $row->pp_propname);
+                break;
+            }
 
-			$vals = [];
-			$vals['propname'] = $row->pp_propname;
-			$fit = $result->addValue( [ 'query', $this->getModuleName() ], null, $vals );
-			if ( !$fit ) {
-				$this->setContinueEnumParameter( 'continue', $row->pp_propname );
-				break;
-			}
-		}
+            $vals = [];
+            $vals['propname'] = $row->pp_propname;
+            $fit = $result->addValue(['query', $this->getModuleName()], null, $vals);
+            if (!$fit) {
+                $this->setContinueEnumParameter('continue', $row->pp_propname);
+                break;
+            }
+        }
 
-		$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'p' );
-	}
+        $result->addIndexedTagName(['query', $this->getModuleName()], 'p');
+    }
 
-	public function getAllowedParams() {
-		return [
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-			'limit' => [
-				ParamValidator::PARAM_TYPE => 'limit',
-				ParamValidator::PARAM_DEFAULT => 10,
-				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
-				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2
-			],
-		];
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'continue' => [
+                ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+            ],
+            'limit'    => [
+                ParamValidator::PARAM_TYPE    => 'limit',
+                ParamValidator::PARAM_DEFAULT => 10,
+                IntegerDef::PARAM_MIN         => 1,
+                IntegerDef::PARAM_MAX         => ApiBase::LIMIT_BIG1,
+                IntegerDef::PARAM_MAX2        => ApiBase::LIMIT_BIG2
+            ],
+        ];
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&list=pagepropnames'
-				=> 'apihelp-query+pagepropnames-example-simple',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&list=pagepropnames'
+            => 'apihelp-query+pagepropnames-example-simple',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Pagepropnames';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Pagepropnames';
+    }
 }

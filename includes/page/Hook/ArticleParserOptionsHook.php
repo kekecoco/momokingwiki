@@ -12,20 +12,21 @@ use ParserOptions;
  * @stable to implement
  * @ingroup Hooks
  */
-interface ArticleParserOptionsHook {
-	/**
-	 * This hook is called before parsing wikitext for an article, and allows
-	 * setting particular parser options based on title, user preferences,
-	 * etc.
-	 *
-	 * @since 1.36
-	 *
-	 * @param Article $article Article about to be parsed
-	 * @param ParserOptions $popts Mutable parser options
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onArticleParserOptions(
-		Article $article, ParserOptions $popts
-	);
+interface ArticleParserOptionsHook
+{
+    /**
+     * This hook is called before parsing wikitext for an article, and allows
+     * setting particular parser options based on title, user preferences,
+     * etc.
+     *
+     * @param Article $article Article about to be parsed
+     * @param ParserOptions $popts Mutable parser options
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.36
+     *
+     */
+    public function onArticleParserOptions(
+        Article $article, ParserOptions $popts
+    );
 
 }

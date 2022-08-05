@@ -10,26 +10,29 @@ namespace Wikimedia\WRStats;
  *
  * @since 1.39
  */
-abstract class EntityKey {
-	/** @var array */
-	private $components;
+abstract class EntityKey
+{
+    /** @var array */
+    private $components;
 
-	/**
-	 * @param array $components Array of elements, each convertible to string.
-	 */
-	public function __construct( array $components = [] ) {
-		$this->components = $components;
-	}
+    /**
+     * @param array $components Array of elements, each convertible to string.
+     */
+    public function __construct(array $components = [])
+    {
+        $this->components = $components;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getComponents() {
-		return $this->components;
-	}
+    /**
+     * @return array
+     */
+    public function getComponents()
+    {
+        return $this->components;
+    }
 
-	/**
-	 * @return bool
-	 */
-	abstract public function isGlobal();
+    /**
+     * @return bool
+     */
+    abstract public function isGlobal();
 }

@@ -20,6 +20,7 @@
  * @file
  * @ingroup SpecialPage
  */
+
 use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Content\IContentHandlerFactory;
 use Wikimedia\Rdbms\IDatabase;
@@ -32,229 +33,242 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup SpecialPage
  */
-class SpecialDoubleRedirects extends QueryPage {
+class SpecialDoubleRedirects extends QueryPage
+{
 
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
+    /** @var IContentHandlerFactory */
+    private $contentHandlerFactory;
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/** @var IDatabase */
-	private $dbr;
+    /** @var IDatabase */
+    private $dbr;
 
-	/**
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct(
-		IContentHandlerFactory $contentHandlerFactory,
-		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer
-	) {
-		parent::__construct( 'DoubleRedirects' );
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->dbr = $loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-	}
+    /**
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(
+        IContentHandlerFactory $contentHandlerFactory,
+        LinkBatchFactory $linkBatchFactory,
+        ILoadBalancer $loadBalancer
+    )
+    {
+        parent::__construct('DoubleRedirects');
+        $this->contentHandlerFactory = $contentHandlerFactory;
+        $this->linkBatchFactory = $linkBatchFactory;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->dbr = $loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	protected function getPageHeader() {
-		return $this->msg( 'doubleredirectstext' )->parseAsBlock();
-	}
+    protected function getPageHeader()
+    {
+        return $this->msg('doubleredirectstext')->parseAsBlock();
+    }
 
-	private function reallyGetQueryInfo( $namespace = null, $title = null ) {
-		$limitToTitle = !( $namespace === null && $title === null );
-		$retval = [
-			'tables' => [
-				'ra' => 'redirect',
-				'rb' => 'redirect',
-				'pa' => 'page',
-				'pb' => 'page'
-			],
-			'fields' => [
-				'namespace' => 'pa.page_namespace',
-				'title' => 'pa.page_title',
+    private function reallyGetQueryInfo($namespace = null, $title = null)
+    {
+        $limitToTitle = !($namespace === null && $title === null);
+        $retval = [
+            'tables' => [
+                'ra' => 'redirect',
+                'rb' => 'redirect',
+                'pa' => 'page',
+                'pb' => 'page'
+            ],
+            'fields' => [
+                'namespace' => 'pa.page_namespace',
+                'title'     => 'pa.page_title',
 
-				'b_namespace' => 'pb.page_namespace',
-				'b_title' => 'pb.page_title',
-				'b_fragment' => 'ra.rd_fragment',
+                'b_namespace' => 'pb.page_namespace',
+                'b_title'     => 'pb.page_title',
+                'b_fragment'  => 'ra.rd_fragment',
 
-				// Select fields from redirect instead of page. Because there may
-				// not actually be a page table row for this target (e.g. for interwiki redirects)
-				'c_namespace' => 'rb.rd_namespace',
-				'c_title' => 'rb.rd_title',
-				'c_fragment' => 'rb.rd_fragment',
-				'c_interwiki' => 'rb.rd_interwiki',
-			],
-			'conds' => [
-				'ra.rd_from = pa.page_id',
+                // Select fields from redirect instead of page. Because there may
+                // not actually be a page table row for this target (e.g. for interwiki redirects)
+                'c_namespace' => 'rb.rd_namespace',
+                'c_title'     => 'rb.rd_title',
+                'c_fragment'  => 'rb.rd_fragment',
+                'c_interwiki' => 'rb.rd_interwiki',
+            ],
+            'conds'  => [
+                'ra.rd_from = pa.page_id',
 
-				// Filter out redirects where the target goes interwiki (T42353).
-				// This isn't an optimization, it is required for correct results,
-				// otherwise a non-double redirect like Bar -> w:Foo will show up
-				// like "Bar -> Foo -> w:Foo".
+                // Filter out redirects where the target goes interwiki (T42353).
+                // This isn't an optimization, it is required for correct results,
+                // otherwise a non-double redirect like Bar -> w:Foo will show up
+                // like "Bar -> Foo -> w:Foo".
 
-				// Need to check both NULL and "" for some reason,
-				// apparently either can be stored for non-iw entries.
-				'ra.rd_interwiki IS NULL OR ra.rd_interwiki = ' . $this->dbr->addQuotes( '' ),
+                // Need to check both NULL and "" for some reason,
+                // apparently either can be stored for non-iw entries.
+                'ra.rd_interwiki IS NULL OR ra.rd_interwiki = ' . $this->dbr->addQuotes(''),
 
-				'pb.page_namespace = ra.rd_namespace',
-				'pb.page_title = ra.rd_title',
+                'pb.page_namespace = ra.rd_namespace',
+                'pb.page_title = ra.rd_title',
 
-				'rb.rd_from = pb.page_id',
-			]
-		];
+                'rb.rd_from = pb.page_id',
+            ]
+        ];
 
-		if ( $limitToTitle ) {
-			$retval['conds']['pa.page_namespace'] = $namespace;
-			$retval['conds']['pa.page_title'] = $title;
-		}
+        if ($limitToTitle) {
+            $retval['conds']['pa.page_namespace'] = $namespace;
+            $retval['conds']['pa.page_title'] = $title;
+        }
 
-		return $retval;
-	}
+        return $retval;
+    }
 
-	public function getQueryInfo() {
-		return $this->reallyGetQueryInfo();
-	}
+    public function getQueryInfo()
+    {
+        return $this->reallyGetQueryInfo();
+    }
 
-	protected function getOrderFields() {
-		return [ 'ra.rd_namespace', 'ra.rd_title' ];
-	}
+    protected function getOrderFields()
+    {
+        return ['ra.rd_namespace', 'ra.rd_title'];
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		// If no Title B or C is in the query, it means this came from
-		// querycache (which only saves the 3 columns for title A).
-		// That does save the bulk of the query cost, but now we need to
-		// get a little more detail about each individual entry quickly
-		// using the filter of reallyGetQueryInfo.
-		$deep = false;
-		if ( $result ) {
-			if ( isset( $result->b_namespace ) ) {
-				$deep = $result;
-			} else {
-				$qi = $this->reallyGetQueryInfo(
-					$result->namespace,
-					$result->title
-				);
-				$deep = $this->dbr->selectRow(
-					$qi['tables'],
-					$qi['fields'],
-					$qi['conds'],
-					__METHOD__
-				);
-			}
-		}
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        // If no Title B or C is in the query, it means this came from
+        // querycache (which only saves the 3 columns for title A).
+        // That does save the bulk of the query cost, but now we need to
+        // get a little more detail about each individual entry quickly
+        // using the filter of reallyGetQueryInfo.
+        $deep = false;
+        if ($result) {
+            if (isset($result->b_namespace)) {
+                $deep = $result;
+            } else {
+                $qi = $this->reallyGetQueryInfo(
+                    $result->namespace,
+                    $result->title
+                );
+                $deep = $this->dbr->selectRow(
+                    $qi['tables'],
+                    $qi['fields'],
+                    $qi['conds'],
+                    __METHOD__
+                );
+            }
+        }
 
-		$titleA = Title::makeTitle( $result->namespace, $result->title );
+        $titleA = Title::makeTitle($result->namespace, $result->title);
 
-		$linkRenderer = $this->getLinkRenderer();
-		if ( !$deep ) {
-			return '<del>' . $linkRenderer->makeLink( $titleA, null, [], [ 'redirect' => 'no' ] ) . '</del>';
-		}
+        $linkRenderer = $this->getLinkRenderer();
+        if (!$deep) {
+            return '<del>' . $linkRenderer->makeLink($titleA, null, [], ['redirect' => 'no']) . '</del>';
+        }
 
-		// if the page is editable, add an edit link
-		if (
-			// check user permissions
-			$this->getAuthority()->isAllowed( 'edit' ) &&
-			// check, if the content model is editable through action=edit
-			$this->contentHandlerFactory->getContentHandler( $titleA->getContentModel() )
-				->supportsDirectEditing()
-		) {
-			$edit = $linkRenderer->makeKnownLink(
-				$titleA,
-				$this->msg( 'parentheses', $this->msg( 'editlink' )->text() )->text(),
-				[],
-				[ 'action' => 'edit' ]
-			);
-		} else {
-			$edit = '';
-		}
+        // if the page is editable, add an edit link
+        if (
+            // check user permissions
+            $this->getAuthority()->isAllowed('edit') &&
+            // check, if the content model is editable through action=edit
+            $this->contentHandlerFactory->getContentHandler($titleA->getContentModel())
+                ->supportsDirectEditing()
+        ) {
+            $edit = $linkRenderer->makeKnownLink(
+                $titleA,
+                $this->msg('parentheses', $this->msg('editlink')->text())->text(),
+                [],
+                ['action' => 'edit']
+            );
+        } else {
+            $edit = '';
+        }
 
-		$linkA = $linkRenderer->makeKnownLink(
-			$titleA,
-			null,
-			[],
-			[ 'redirect' => 'no' ]
-		);
+        $linkA = $linkRenderer->makeKnownLink(
+            $titleA,
+            null,
+            [],
+            ['redirect' => 'no']
+        );
 
-		$titleB = Title::makeTitle( $deep->b_namespace, $deep->b_title );
-		// We show fragment, but don't link to it, as it probably doesn't exist anymore.
-		$titleBFrag = Title::makeTitle( $deep->b_namespace, $deep->b_title, $deep->b_fragment );
-		$linkB = $linkRenderer->makeKnownLink(
-			$titleB,
-			$titleBFrag->getFullText(),
-			[],
-			[ 'redirect' => 'no' ]
-		);
+        $titleB = Title::makeTitle($deep->b_namespace, $deep->b_title);
+        // We show fragment, but don't link to it, as it probably doesn't exist anymore.
+        $titleBFrag = Title::makeTitle($deep->b_namespace, $deep->b_title, $deep->b_fragment);
+        $linkB = $linkRenderer->makeKnownLink(
+            $titleB,
+            $titleBFrag->getFullText(),
+            [],
+            ['redirect' => 'no']
+        );
 
-		$titleC = Title::makeTitle(
-			$deep->c_namespace,
-			$deep->c_title,
-			$deep->c_fragment,
-			$deep->c_interwiki
-		);
-		$linkC = $linkRenderer->makeKnownLink( $titleC, $titleC->getFullText() );
+        $titleC = Title::makeTitle(
+            $deep->c_namespace,
+            $deep->c_title,
+            $deep->c_fragment,
+            $deep->c_interwiki
+        );
+        $linkC = $linkRenderer->makeKnownLink($titleC, $titleC->getFullText());
 
-		$lang = $this->getLanguage();
-		$arr = $lang->getArrow() . $lang->getDirMark();
+        $lang = $this->getLanguage();
+        $arr = $lang->getArrow() . $lang->getDirMark();
 
-		return ( "{$linkA} {$edit} {$arr} {$linkB} {$arr} {$linkC}" );
-	}
+        return ("{$linkA} {$edit} {$arr} {$linkB} {$arr} {$linkC}");
+    }
 
-	public function execute( $par ) {
-		$this->addHelpLink( 'Help:Redirects' );
-		parent::execute( $par );
-	}
+    public function execute($par)
+    {
+        $this->addHelpLink('Help:Redirects');
+        parent::execute($par);
+    }
 
-	/**
-	 * Cache page content model and gender distinction for performance
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		if ( !$res->numRows() ) {
-			return;
-		}
+    /**
+     * Cache page content model and gender distinction for performance
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        if (!$res->numRows()) {
+            return;
+        }
 
-		$batch = $this->linkBatchFactory->newLinkBatch();
-		foreach ( $res as $row ) {
-			$batch->add( $row->namespace, $row->title );
-			if ( isset( $row->b_namespace ) ) {
-				// lazy loaded when using cached results
-				$batch->add( $row->b_namespace, $row->b_title );
-			}
-			if ( isset( $row->c_interwiki ) && !$row->c_interwiki ) {
-				// lazy loaded when using cached result, not added when interwiki link
-				$batch->add( $row->c_namespace, $row->c_title );
-			}
-		}
-		$batch->execute();
+        $batch = $this->linkBatchFactory->newLinkBatch();
+        foreach ($res as $row) {
+            $batch->add($row->namespace, $row->title);
+            if (isset($row->b_namespace)) {
+                // lazy loaded when using cached results
+                $batch->add($row->b_namespace, $row->b_title);
+            }
+            if (isset($row->c_interwiki) && !$row->c_interwiki) {
+                // lazy loaded when using cached result, not added when interwiki link
+                $batch->add($row->c_namespace, $row->c_title);
+            }
+        }
+        $batch->execute();
 
-		// Back to start for display
-		$res->seek( 0 );
-	}
+        // Back to start for display
+        $res->seek(0);
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

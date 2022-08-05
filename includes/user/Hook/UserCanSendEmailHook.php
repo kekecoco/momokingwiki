@@ -11,16 +11,17 @@ use User;
  * @stable to implement
  * @ingroup Hooks
  */
-interface UserCanSendEmailHook {
-	/**
-	 * Use this hook to override User::canSendEmail() permission check.
-	 *
-	 * @since 1.35
-	 *
-	 * @param User $user User (object) whose permission is being checked
-	 * @param bool|string|array &$hookErr Out-param for the error. Passed as the parameters to
-	 *   OutputPage::showErrorPage.
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onUserCanSendEmail( $user, &$hookErr );
+interface UserCanSendEmailHook
+{
+    /**
+     * Use this hook to override User::canSendEmail() permission check.
+     *
+     * @param User $user User (object) whose permission is being checked
+     * @param bool|string|array &$hookErr Out-param for the error. Passed as the parameters to
+     *   OutputPage::showErrorPage.
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onUserCanSendEmail($user, &$hookErr);
 }

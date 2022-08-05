@@ -27,35 +27,40 @@
 /**
  * A License class for use on Special:Upload (represents a single type of license).
  */
-class License {
-	/** @var string */
-	public $template;
+class License
+{
+    /** @var string */
+    public $template;
 
-	/** @var string */
-	public $text;
+    /** @var string */
+    public $text;
 
-	/**
-	 * @param string $str
-	 */
-	public function __construct( $str ) {
-		$str = $this->parse( $str );
-		list( $this->template, $this->text ) = $this->split( $str );
-	}
+    /**
+     * @param string $str
+     */
+    public function __construct($str)
+    {
+        $str = $this->parse($str);
+        [$this->template, $this->text] = $this->split($str);
+    }
 
-	/**
-	 * @param string $str
-	 * @return string
-	 */
-	protected function parse( $str ) {
-		return $str;
-	}
+    /**
+     * @param string $str
+     * @return string
+     */
+    protected function parse($str)
+    {
+        return $str;
+    }
 
-	/**
-	 * @param string $str
-	 * @return string[] Array with [template, text]
-	 */
-	protected function split( $str ) {
-		list( $text, $template ) = explode( '|', strrev( $str ), 2 );
-		return [ strrev( $template ), strrev( $text ) ];
-	}
+    /**
+     * @param string $str
+     * @return string[] Array with [template, text]
+     */
+    protected function split($str)
+    {
+        [$text, $template] = explode('|', strrev($str), 2);
+
+        return [strrev($template), strrev($text)];
+    }
 }

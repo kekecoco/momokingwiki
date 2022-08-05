@@ -3,67 +3,68 @@
 /**
  * @since 1.31
  */
-interface ImportableUploadRevision {
+interface ImportableUploadRevision
+{
 
-	/**
-	 * @since 1.31
-	 * @return string Archive name of a revision if archived.
-	 */
-	public function getArchiveName();
+    /**
+     * @return string Archive name of a revision if archived.
+     * @since 1.31
+     */
+    public function getArchiveName();
 
-	/**
-	 * @since 1.31
-	 * @return Title
-	 */
-	public function getTitle();
+    /**
+     * @return Title
+     * @since 1.31
+     */
+    public function getTitle();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getTimestamp();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getTimestamp();
 
-	/**
-	 * @since 1.31
-	 * @return string|null HTTP source of revision to be used for downloading.
-	 */
-	public function getSrc();
+    /**
+     * @return string|null HTTP source of revision to be used for downloading.
+     * @since 1.31
+     */
+    public function getSrc();
 
-	/**
-	 * @since 1.31
-	 * @return string Local file source of the revision.
-	 */
-	public function getFileSrc();
+    /**
+     * @return string Local file source of the revision.
+     * @since 1.31
+     */
+    public function getFileSrc();
 
-	/**
-	 * @since 1.31
-	 * @return bool Is the return of getFileSrc only temporary?
-	 */
-	public function isTempSrc();
+    /**
+     * @return bool Is the return of getFileSrc only temporary?
+     * @since 1.31
+     */
+    public function isTempSrc();
 
-	/**
-	 * @since 1.31
-	 * @return string|bool sha1 of the revision, false if not set or errors occur.
-	 */
-	public function getSha1();
+    /**
+     * @return string|bool sha1 of the revision, false if not set or errors occur.
+     * @since 1.31
+     */
+    public function getSha1();
 
-	/**
-	 * @deprecated since 1.39, use {@see getUser} instead; this is almost always null anyway
-	 * @since 1.31
-	 * @return User|null Typically null, use {@see getUser} instead
-	 */
-	public function getUserObj();
+    /**
+     * @return User|null Typically null, use {@see getUser} instead
+     * @since 1.31
+     * @deprecated since 1.39, use {@see getUser} instead; this is almost always null anyway
+     */
+    public function getUserObj();
 
-	/**
-	 * @since 1.31
-	 * @return string The username of the user that created this revision
-	 */
-	public function getUser();
+    /**
+     * @return string The username of the user that created this revision
+     * @since 1.31
+     */
+    public function getUser();
 
-	/**
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getComment();
+    /**
+     * @return string
+     * @since 1.31
+     */
+    public function getComment();
 
 }

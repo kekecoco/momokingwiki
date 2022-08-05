@@ -19,95 +19,99 @@
  * @ingroup Installer
  */
 
-class WebInstallerUpgrade extends WebInstallerPage {
+class WebInstallerUpgrade extends WebInstallerPage
+{
 
-	/**
-	 * @return bool Always true.
-	 */
-	public function isSlow() {
-		return true;
-	}
+    /**
+     * @return bool Always true.
+     */
+    public function isSlow()
+    {
+        return true;
+    }
 
-	/**
-	 * @return string|null
-	 */
-	public function execute() {
-		if ( $this->getVar( '_UpgradeDone' ) ) {
-			// Allow regeneration of LocalSettings.php, unless we are working
-			// from a pre-existing LocalSettings.php file and we want to avoid
-			// leaking its contents
-			if ( $this->parent->request->wasPosted() && !$this->getVar( '_ExistingDBSettings' ) ) {
-				// Done message acknowledged
-				return 'continue';
-			}
-			// Back button click
-			// Show the done message again
-			// Make them click back again if they want to do the upgrade again
-			$this->showDoneMessage();
+    /**
+     * @return string|null
+     */
+    public function execute()
+    {
+        if ($this->getVar('_UpgradeDone')) {
+            // Allow regeneration of LocalSettings.php, unless we are working
+            // from a pre-existing LocalSettings.php file and we want to avoid
+            // leaking its contents
+            if ($this->parent->request->wasPosted() && !$this->getVar('_ExistingDBSettings')) {
+                // Done message acknowledged
+                return 'continue';
+            }
+            // Back button click
+            // Show the done message again
+            // Make them click back again if they want to do the upgrade again
+            $this->showDoneMessage();
 
-			return 'output';
-		}
+            return 'output';
+        }
 
-		// wgDBtype is generally valid here because otherwise the previous page
-		// (connect) wouldn't have declared its happiness
-		$type = $this->getVar( 'wgDBtype' );
-		$installer = $this->parent->getDBInstaller( $type );
+        // wgDBtype is generally valid here because otherwise the previous page
+        // (connect) wouldn't have declared its happiness
+        $type = $this->getVar('wgDBtype');
+        $installer = $this->parent->getDBInstaller($type);
 
-		if ( !$installer->needsUpgrade() ) {
-			return 'skip';
-		}
+        if (!$installer->needsUpgrade()) {
+            return 'skip';
+        }
 
-		if ( $this->parent->request->wasPosted() ) {
-			$installer->preUpgrade();
+        if ($this->parent->request->wasPosted()) {
+            $installer->preUpgrade();
 
-			$this->startLiveBox();
-			$result = $installer->doUpgrade();
-			$this->endLiveBox();
+            $this->startLiveBox();
+            $result = $installer->doUpgrade();
+            $this->endLiveBox();
 
-			if ( $result ) {
-				// If they're going to possibly regenerate LocalSettings, we
-				// need to create the upgrade/secret keys. T28481
-				if ( !$this->getVar( '_ExistingDBSettings' ) ) {
-					$this->parent->generateKeys();
-				}
-				$this->setVar( '_UpgradeDone', true );
-				$this->showDoneMessage();
-			} else {
-				$this->startForm();
-				$this->parent->showError( 'config-upgrade-error' );
-				$this->endForm();
-			}
+            if ($result) {
+                // If they're going to possibly regenerate LocalSettings, we
+                // need to create the upgrade/secret keys. T28481
+                if (!$this->getVar('_ExistingDBSettings')) {
+                    $this->parent->generateKeys();
+                }
+                $this->setVar('_UpgradeDone', true);
+                $this->showDoneMessage();
+            } else {
+                $this->startForm();
+                $this->parent->showError('config-upgrade-error');
+                $this->endForm();
+            }
 
-			return 'output';
-		}
+            return 'output';
+        }
 
-		$this->startForm();
-		$this->addHTML( $this->parent->getInfoBox(
-			wfMessage( 'config-can-upgrade', MW_VERSION )->plain() ) );
-		$this->endForm();
+        $this->startForm();
+        $this->addHTML($this->parent->getInfoBox(
+            wfMessage('config-can-upgrade', MW_VERSION)->plain()));
+        $this->endForm();
 
-		return null;
-	}
+        return null;
+    }
 
-	public function showDoneMessage() {
-		$this->startForm();
-		$regenerate = !$this->getVar( '_ExistingDBSettings' );
-		if ( $regenerate ) {
-			$msg = 'config-upgrade-done';
-		} else {
-			$msg = 'config-upgrade-done-no-regenerate';
-		}
-		$this->parent->disableLinkPopups();
-		$this->addHTML(
-			$this->parent->getInfoBox(
-				wfMessage( $msg,
-					$this->getVar( 'wgServer' ) .
-					$this->getVar( 'wgScriptPath' ) . '/index.php'
-				)->plain(), 'tick-32.png'
-			)
-		);
-		$this->parent->restoreLinkPopups();
-		$this->endForm( $regenerate ? 'regenerate' : false, false );
-	}
+    public function showDoneMessage()
+    {
+        $this->startForm();
+        $regenerate = !$this->getVar('_ExistingDBSettings');
+        if ($regenerate) {
+            $msg = 'config-upgrade-done';
+        } else {
+            $msg = 'config-upgrade-done-no-regenerate';
+        }
+        $this->parent->disableLinkPopups();
+        $this->addHTML(
+            $this->parent->getInfoBox(
+                wfMessage($msg,
+                    $this->getVar('wgServer') .
+                    $this->getVar('wgScriptPath') . '/index.php'
+                )->plain(), 'tick-32.png'
+            )
+        );
+        $this->parent->restoreLinkPopups();
+        $this->endForm($regenerate ? 'regenerate' : false, false);
+    }
 
 }

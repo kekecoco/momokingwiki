@@ -24,23 +24,26 @@ namespace MediaWiki\ResourceLoader;
  * @ingroup ResourceLoader
  * @internal
  */
-class MwUrlModule {
-	/**
-	 * @param string $content JavaScript RegExp content with additional whitespace
-	 *  and named capturing group allowed, which will be stripped.
-	 * @return string JavaScript code
-	 */
-	public static function makeJsFromExtendedRegExp( string $content ): string {
-		// Remove whitespace.
-		$content = preg_replace( '/\s+/', '', $content );
-		// Remove named capturing groups.
-		// This allows long regexes to be self-documenting, which we allow for
-		// developer convenience, but this syntax is invalid JavaScript ES5.
-		$content = preg_replace( '/\?<\w+?>/', '', $content );
-		// Format as a valid JavaScript import.
-		return 'module.exports = /' . strtr( $content, [ '/' => '\/' ] ) . '/;';
-	}
+class MwUrlModule
+{
+    /**
+     * @param string $content JavaScript RegExp content with additional whitespace
+     *  and named capturing group allowed, which will be stripped.
+     * @return string JavaScript code
+     */
+    public static function makeJsFromExtendedRegExp(string $content): string
+    {
+        // Remove whitespace.
+        $content = preg_replace('/\s+/', '', $content);
+        // Remove named capturing groups.
+        // This allows long regexes to be self-documenting, which we allow for
+        // developer convenience, but this syntax is invalid JavaScript ES5.
+        $content = preg_replace('/\?<\w+?>/', '', $content);
+
+        // Format as a valid JavaScript import.
+        return 'module.exports = /' . strtr($content, ['/' => '\/']) . '/;';
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( MwUrlModule::class, 'ResourceLoaderMwUrlModule' );
+class_alias(MwUrlModule::class, 'ResourceLoaderMwUrlModule');

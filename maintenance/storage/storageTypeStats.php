@@ -21,24 +21,26 @@
 
 require_once __DIR__ . '/../Maintenance.php';
 
-class StorageTypeStats extends Maintenance {
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
+class StorageTypeStats extends Maintenance
+{
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
 
-		$endId = $dbr->selectField( 'text', 'MAX(old_id)', '', __METHOD__ );
-		if ( !$endId ) {
-			$this->fatalError( 'No text rows!' );
-		}
+        $endId = $dbr->selectField('text', 'MAX(old_id)', '', __METHOD__);
+        if (!$endId) {
+            $this->fatalError('No text rows!');
+        }
 
-		$binSize = intval( 10 ** ( floor( log10( $endId ) ) - 3 ) );
-		if ( $binSize < 100 ) {
-			$binSize = 100;
-		}
-		echo "Using bin size of $binSize\n";
+        $binSize = intval(10 ** (floor(log10($endId)) - 3));
+        if ($binSize < 100) {
+            $binSize = 100;
+        }
+        echo "Using bin size of $binSize\n";
 
-		$stats = [];
+        $stats = [];
 
-		$classSql = <<<SQL
+        $classSql = <<<SQL
 			IF(old_flags LIKE '%external%',
 				IF(old_text REGEXP '^DB://[[:alnum:]]+/[0-9]+/[0-9a-f]{32}$',
 					'CGZ pointer',
@@ -57,58 +59,58 @@ class StorageTypeStats extends Maintenance {
 			)
 SQL;
 
-		for ( $rangeStart = 0; $rangeStart < $endId; $rangeStart += $binSize ) {
-			if ( $rangeStart / $binSize % 10 == 0 ) {
-				echo "$rangeStart\r";
-			}
-			$res = $dbr->select(
-				'text',
-				[
-					'old_flags',
-					'class' => $classSql,
-					'count' => 'COUNT(*)',
-				],
-				[
-					'old_id >= ' . intval( $rangeStart ),
-					'old_id < ' . intval( $rangeStart + $binSize )
-				],
-				__METHOD__,
-				[ 'GROUP BY' => [ 'old_flags', 'class' ] ]
-			);
+        for ($rangeStart = 0; $rangeStart < $endId; $rangeStart += $binSize) {
+            if ($rangeStart / $binSize % 10 == 0) {
+                echo "$rangeStart\r";
+            }
+            $res = $dbr->select(
+                'text',
+                [
+                    'old_flags',
+                    'class' => $classSql,
+                    'count' => 'COUNT(*)',
+                ],
+                [
+                    'old_id >= ' . intval($rangeStart),
+                    'old_id < ' . intval($rangeStart + $binSize)
+                ],
+                __METHOD__,
+                ['GROUP BY' => ['old_flags', 'class']]
+            );
 
-			foreach ( $res as $row ) {
-				$flags = $row->old_flags;
-				if ( $flags === '' ) {
-					$flags = '[none]';
-				}
-				$class = $row->class;
-				$count = $row->count;
-				// @phan-suppress-next-line PhanImpossibleConditionInLoop,PhanPossiblyUndeclaredVariable False positive
-				if ( !isset( $stats[$flags][$class] ) ) {
-					$stats[$flags][$class] = [
-						'count' => 0,
-						'first' => $rangeStart,
-						'last' => 0
-					];
-				}
-				$entry =& $stats[$flags][$class];
-				$entry['count'] += $count;
-				$entry['last'] = max( $entry['last'], $rangeStart + $binSize );
-				unset( $entry );
-			}
-		}
-		echo "\n\n";
+            foreach ($res as $row) {
+                $flags = $row->old_flags;
+                if ($flags === '') {
+                    $flags = '[none]';
+                }
+                $class = $row->class;
+                $count = $row->count;
+                // @phan-suppress-next-line PhanImpossibleConditionInLoop,PhanPossiblyUndeclaredVariable False positive
+                if (!isset($stats[$flags][$class])) {
+                    $stats[$flags][$class] = [
+                        'count' => 0,
+                        'first' => $rangeStart,
+                        'last'  => 0
+                    ];
+                }
+                $entry =& $stats[$flags][$class];
+                $entry['count'] += $count;
+                $entry['last'] = max($entry['last'], $rangeStart + $binSize);
+                unset($entry);
+            }
+        }
+        echo "\n\n";
 
-		$format = "%-29s %-39s %-19s %-29s\n";
-		printf( $format, "Flags", "Class", "Count", "old_id range" );
-		echo str_repeat( '-', 120 ) . "\n";
-		foreach ( $stats as $flags => $flagStats ) {
-			foreach ( $flagStats as $class => $entry ) {
-				printf( $format, $flags, $class, $entry['count'],
-					sprintf( "%-13d - %-13d", $entry['first'], $entry['last'] ) );
-			}
-		}
-	}
+        $format = "%-29s %-39s %-19s %-29s\n";
+        printf($format, "Flags", "Class", "Count", "old_id range");
+        echo str_repeat('-', 120) . "\n";
+        foreach ($stats as $flags => $flagStats) {
+            foreach ($flagStats as $class => $entry) {
+                printf($format, $flags, $class, $entry['count'],
+                    sprintf("%-13d - %-13d", $entry['first'], $entry['last']));
+            }
+        }
+    }
 }
 
 $maintClass = StorageTypeStats::class;

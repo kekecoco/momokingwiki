@@ -4,7 +4,7 @@
  * Do not modify this file manually, edit includes/MainConfigSchema.php instead.
  */
 // phpcs:disable
-throw new LogicException( 'Do not load config-vars.php, it exists as a documentation stub only' );
+throw new LogicException('Do not load config-vars.php, it exists as a documentation stub only');
 
 /**
  * Config variable stub for the ConfigRegistry setting, for use by phpdoc and IDEs.

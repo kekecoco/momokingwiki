@@ -23,19 +23,22 @@ use MediaWiki\MediaWikiServices;
  * @file
  * @ingroup JobQueue
  */
+class UserGroupExpiryJob extends Job implements GenericParameterJob
+{
+    public function __construct(array $params)
+    {
+        parent::__construct('userGroupExpiry', $params);
+        $this->removeDuplicates = true;
+    }
 
-class UserGroupExpiryJob extends Job implements GenericParameterJob {
-	public function __construct( array $params ) {
-		parent::__construct( 'userGroupExpiry', $params );
-		$this->removeDuplicates = true;
-	}
+    /**
+     * Run the job
+     * @return bool Success
+     */
+    public function run()
+    {
+        MediaWikiServices::getInstance()->getUserGroupManager()->purgeExpired();
 
-	/**
-	 * Run the job
-	 * @return bool Success
-	 */
-	public function run() {
-		MediaWikiServices::getInstance()->getUserGroupManager()->purgeExpired();
-		return true;
-	}
+        return true;
+    }
 }

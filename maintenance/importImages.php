@@ -37,499 +37,507 @@ require_once __DIR__ . '/Maintenance.php';
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 
-class ImportImages extends Maintenance {
+class ImportImages extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
+    public function __construct()
+    {
+        parent::__construct();
 
-		$this->addDescription( 'Imports images and other media files into the wiki' );
-		$this->addArg( 'dir', 'Path to the directory containing images to be imported' );
+        $this->addDescription('Imports images and other media files into the wiki');
+        $this->addArg('dir', 'Path to the directory containing images to be imported');
 
-		$this->addOption( 'extensions',
-			'Comma-separated list of allowable extensions, defaults to $wgFileExtensions',
-			false,
-			true
-		);
-		$this->addOption( 'overwrite',
-			'Overwrite existing images with the same name (default is to skip them)' );
-		$this->addOption( 'limit',
-			'Limit the number of images to process. Ignored or skipped images are not counted',
-			false,
-			true
-		);
-		$this->addOption( 'from',
-			"Ignore all files until the one with the given name. Useful for resuming aborted "
-				. "imports. The name should be the file's canonical database form.",
-			false,
-			true
-		);
-		$this->addOption( 'skip-dupes',
-			'Skip images that were already uploaded under a different name (check SHA1)' );
-		$this->addOption( 'search-recursively', 'Search recursively for files in subdirectories' );
-		$this->addOption( 'sleep',
-			'Sleep between files. Useful mostly for debugging',
-			false,
-			true
-		);
-		$this->addOption( 'user',
-			"Set username of uploader, default 'Maintenance script'",
-			false,
-			true
-		);
-		// This parameter can optionally have an argument. If none specified, getOption()
-		// returns 1 which is precisely what we need.
-		$this->addOption( 'check-userblock', 'Check if the user got blocked during import' );
-		$this->addOption( 'comment',
-			"Set file description, default 'Importing file'",
-			false,
-			true
-		);
-		$this->addOption( 'comment-file',
-			'Set description to the content of this file',
-			false,
-			true
-		);
-		$this->addOption( 'comment-ext',
-			'Causes the description for each file to be loaded from a file with the same name, but '
-				. 'the extension provided. If a global description is also given, it is appended.',
-			false,
-			true
-		);
-		$this->addOption( 'summary',
-			'Upload summary, description will be used if not provided',
-			false,
-			true
-		);
-		$this->addOption( 'license',
-			'Use an optional license template',
-			false,
-			true
-		);
-		$this->addOption( 'timestamp',
-			'Override upload time/date, all MediaWiki timestamp formats are accepted',
-			false,
-			true
-		);
-		$this->addOption( 'protect',
-			'Specify the protect value (autoconfirmed,sysop)',
-			false,
-			true
-		);
-		$this->addOption( 'unprotect', 'Unprotects all uploaded images' );
-		$this->addOption( 'source-wiki-url',
-			'If specified, take User and Comment data for each imported file from this URL. '
-				. 'For example, --source-wiki-url="http://en.wikipedia.org/',
-			false,
-			true
-		);
-		$this->addOption( 'dry', "Dry run, don't import anything" );
-	}
+        $this->addOption('extensions',
+            'Comma-separated list of allowable extensions, defaults to $wgFileExtensions',
+            false,
+            true
+        );
+        $this->addOption('overwrite',
+            'Overwrite existing images with the same name (default is to skip them)');
+        $this->addOption('limit',
+            'Limit the number of images to process. Ignored or skipped images are not counted',
+            false,
+            true
+        );
+        $this->addOption('from',
+            "Ignore all files until the one with the given name. Useful for resuming aborted "
+            . "imports. The name should be the file's canonical database form.",
+            false,
+            true
+        );
+        $this->addOption('skip-dupes',
+            'Skip images that were already uploaded under a different name (check SHA1)');
+        $this->addOption('search-recursively', 'Search recursively for files in subdirectories');
+        $this->addOption('sleep',
+            'Sleep between files. Useful mostly for debugging',
+            false,
+            true
+        );
+        $this->addOption('user',
+            "Set username of uploader, default 'Maintenance script'",
+            false,
+            true
+        );
+        // This parameter can optionally have an argument. If none specified, getOption()
+        // returns 1 which is precisely what we need.
+        $this->addOption('check-userblock', 'Check if the user got blocked during import');
+        $this->addOption('comment',
+            "Set file description, default 'Importing file'",
+            false,
+            true
+        );
+        $this->addOption('comment-file',
+            'Set description to the content of this file',
+            false,
+            true
+        );
+        $this->addOption('comment-ext',
+            'Causes the description for each file to be loaded from a file with the same name, but '
+            . 'the extension provided. If a global description is also given, it is appended.',
+            false,
+            true
+        );
+        $this->addOption('summary',
+            'Upload summary, description will be used if not provided',
+            false,
+            true
+        );
+        $this->addOption('license',
+            'Use an optional license template',
+            false,
+            true
+        );
+        $this->addOption('timestamp',
+            'Override upload time/date, all MediaWiki timestamp formats are accepted',
+            false,
+            true
+        );
+        $this->addOption('protect',
+            'Specify the protect value (autoconfirmed,sysop)',
+            false,
+            true
+        );
+        $this->addOption('unprotect', 'Unprotects all uploaded images');
+        $this->addOption('source-wiki-url',
+            'If specified, take User and Comment data for each imported file from this URL. '
+            . 'For example, --source-wiki-url="http://en.wikipedia.org/',
+            false,
+            true
+        );
+        $this->addOption('dry', "Dry run, don't import anything");
+    }
 
-	public function execute() {
-		$services = MediaWikiServices::getInstance();
-		$permissionManager = $services->getPermissionManager();
+    public function execute()
+    {
+        $services = MediaWikiServices::getInstance();
+        $permissionManager = $services->getPermissionManager();
 
-		$processed = $added = $ignored = $skipped = $overwritten = $failed = 0;
+        $processed = $added = $ignored = $skipped = $overwritten = $failed = 0;
 
-		$this->output( "Importing Files\n\n" );
+        $this->output("Importing Files\n\n");
 
-		$dir = $this->getArg( 0 );
+        $dir = $this->getArg(0);
 
-		# Check Protection
-		if ( $this->hasOption( 'protect' ) && $this->hasOption( 'unprotect' ) ) {
-			$this->fatalError( "Cannot specify both protect and unprotect.  Only 1 is allowed.\n" );
-		}
+        # Check Protection
+        if ($this->hasOption('protect') && $this->hasOption('unprotect')) {
+            $this->fatalError("Cannot specify both protect and unprotect.  Only 1 is allowed.\n");
+        }
 
-		if ( $this->hasOption( 'protect' ) && trim( $this->getOption( 'protect' ) ) ) {
-			$this->fatalError( "You must specify a protection option.\n" );
-		}
+        if ($this->hasOption('protect') && trim($this->getOption('protect'))) {
+            $this->fatalError("You must specify a protection option.\n");
+        }
 
-		# Prepare the list of allowed extensions
-		$extensions = $this->hasOption( 'extensions' )
-			? explode( ',', strtolower( $this->getOption( 'extensions' ) ) )
-			: $this->getConfig()->get( MainConfigNames::FileExtensions );
+        # Prepare the list of allowed extensions
+        $extensions = $this->hasOption('extensions')
+            ? explode(',', strtolower($this->getOption('extensions')))
+            : $this->getConfig()->get(MainConfigNames::FileExtensions);
 
-		# Search the path provided for candidates for import
-		$files = $this->findFiles( $dir, $extensions, $this->hasOption( 'search-recursively' ) );
-		if ( !$files ) {
-			$this->output( "No suitable files could be found for import.\n" );
-			return;
-		}
+        # Search the path provided for candidates for import
+        $files = $this->findFiles($dir, $extensions, $this->hasOption('search-recursively'));
+        if (!$files) {
+            $this->output("No suitable files could be found for import.\n");
 
-		# Initialise the user for this operation
-		$user = $this->hasOption( 'user' )
-			? User::newFromName( $this->getOption( 'user' ) )
-			: User::newSystemUser( User::MAINTENANCE_SCRIPT_USER, [ 'steal' => true ] );
-		if ( !$user instanceof User ) {
-			$user = User::newSystemUser( User::MAINTENANCE_SCRIPT_USER, [ 'steal' => true ] );
-		}
-		'@phan-var User $user';
-		StubGlobalUser::setUser( $user );
+            return;
+        }
 
-		# Get block check. If a value is given, this specified how often the check is performed
-		$checkUserBlock = (int)$this->getOption( 'check-userblock' );
+        # Initialise the user for this operation
+        $user = $this->hasOption('user')
+            ? User::newFromName($this->getOption('user'))
+            : User::newSystemUser(User::MAINTENANCE_SCRIPT_USER, ['steal' => true]);
+        if (!$user instanceof User) {
+            $user = User::newSystemUser(User::MAINTENANCE_SCRIPT_USER, ['steal' => true]);
+        }
+        '@phan-var User $user';
+        StubGlobalUser::setUser($user);
 
-		$from = $this->getOption( 'from' );
-		$sleep = (int)$this->getOption( 'sleep' );
-		$limit = (int)$this->getOption( 'limit' );
-		$timestamp = $this->getOption( 'timestamp', false );
+        # Get block check. If a value is given, this specified how often the check is performed
+        $checkUserBlock = (int)$this->getOption('check-userblock');
 
-		# Get the upload comment. Provide a default one in case there's no comment given.
-		$commentFile = $this->getOption( 'comment-file' );
-		if ( $commentFile !== null ) {
-			$comment = file_get_contents( $commentFile );
-			if ( $comment === false || $comment === null ) {
-				$this->fatalError( "failed to read comment file: {$commentFile}\n" );
-			}
-		} else {
-			$comment = $this->getOption( 'comment', 'Importing file' );
-		}
-		$commentExt = $this->getOption( 'comment-ext' );
-		$summary = $this->getOption( 'summary', '' );
+        $from = $this->getOption('from');
+        $sleep = (int)$this->getOption('sleep');
+        $limit = (int)$this->getOption('limit');
+        $timestamp = $this->getOption('timestamp', false);
 
-		$license = $this->getOption( 'license', '' );
+        # Get the upload comment. Provide a default one in case there's no comment given.
+        $commentFile = $this->getOption('comment-file');
+        if ($commentFile !== null) {
+            $comment = file_get_contents($commentFile);
+            if ($comment === false || $comment === null) {
+                $this->fatalError("failed to read comment file: {$commentFile}\n");
+            }
+        } else {
+            $comment = $this->getOption('comment', 'Importing file');
+        }
+        $commentExt = $this->getOption('comment-ext');
+        $summary = $this->getOption('summary', '');
 
-		$sourceWikiUrl = $this->getOption( 'source-wiki-url' );
+        $license = $this->getOption('license', '');
 
-		$tags = in_array( ChangeTags::TAG_SERVER_SIDE_UPLOAD, ChangeTags::getSoftwareTags() )
-			? [ ChangeTags::TAG_SERVER_SIDE_UPLOAD ]
-			: [];
+        $sourceWikiUrl = $this->getOption('source-wiki-url');
 
-		# Batch "upload" operation
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$restrictionStore = $services->getRestrictionStore();
-		foreach ( $files as $file ) {
-			if ( $sleep && ( $processed > 0 ) ) {
-				sleep( $sleep );
-			}
+        $tags = in_array(ChangeTags::TAG_SERVER_SIDE_UPLOAD, ChangeTags::getSoftwareTags())
+            ? [ChangeTags::TAG_SERVER_SIDE_UPLOAD]
+            : [];
 
-			$base = UtfNormal\Validator::cleanUp( wfBaseName( $file ) );
+        # Batch "upload" operation
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $restrictionStore = $services->getRestrictionStore();
+        foreach ($files as $file) {
+            if ($sleep && ($processed > 0)) {
+                sleep($sleep);
+            }
 
-			# Validate a title
-			$title = Title::makeTitleSafe( NS_FILE, $base );
-			if ( !is_object( $title ) ) {
-				$this->output(
-					"{$base} could not be imported; a valid title cannot be produced\n"
-				);
-				continue;
-			}
+            $base = UtfNormal\Validator::cleanUp(wfBaseName($file));
 
-			if ( $from ) {
-				if ( $from == $title->getDBkey() ) {
-					$from = null;
-				} else {
-					$ignored++;
-					continue;
-				}
-			}
+            # Validate a title
+            $title = Title::makeTitleSafe(NS_FILE, $base);
+            if (!is_object($title)) {
+                $this->output(
+                    "{$base} could not be imported; a valid title cannot be produced\n"
+                );
+                continue;
+            }
 
-			if ( $checkUserBlock && ( ( $processed % $checkUserBlock ) == 0 ) ) {
-				$user->clearInstanceCache( 'name' ); // reload from DB!
-				if ( $permissionManager->isBlockedFrom( $user, $title ) ) {
-					$this->output(
-						"{$user->getName()} is blocked from {$title->getPrefixedText()}! skipping.\n"
-					);
-					$skipped++;
-					continue;
-				}
-			}
+            if ($from) {
+                if ($from == $title->getDBkey()) {
+                    $from = null;
+                } else {
+                    $ignored++;
+                    continue;
+                }
+            }
 
-			# Check existence
-			$image = $services->getRepoGroup()->getLocalRepo()
-				->newFile( $title );
-			if ( $image->exists() ) {
-				if ( $this->hasOption( 'overwrite' ) ) {
-					$this->output( "{$base} exists, overwriting..." );
-					$svar = 'overwritten';
-				} else {
-					$this->output( "{$base} exists, skipping\n" );
-					$skipped++;
-					continue;
-				}
-			} else {
-				if ( $this->hasOption( 'skip-dupes' ) ) {
-					$repo = $image->getRepo();
-					# XXX: we end up calculating this again when actually uploading. that sucks.
-					$sha1 = FSFile::getSha1Base36FromPath( $file );
+            if ($checkUserBlock && (($processed % $checkUserBlock) == 0)) {
+                $user->clearInstanceCache('name'); // reload from DB!
+                if ($permissionManager->isBlockedFrom($user, $title)) {
+                    $this->output(
+                        "{$user->getName()} is blocked from {$title->getPrefixedText()}! skipping.\n"
+                    );
+                    $skipped++;
+                    continue;
+                }
+            }
 
-					$dupes = $repo->findBySha1( $sha1 );
+            # Check existence
+            $image = $services->getRepoGroup()->getLocalRepo()
+                ->newFile($title);
+            if ($image->exists()) {
+                if ($this->hasOption('overwrite')) {
+                    $this->output("{$base} exists, overwriting...");
+                    $svar = 'overwritten';
+                } else {
+                    $this->output("{$base} exists, skipping\n");
+                    $skipped++;
+                    continue;
+                }
+            } else {
+                if ($this->hasOption('skip-dupes')) {
+                    $repo = $image->getRepo();
+                    # XXX: we end up calculating this again when actually uploading. that sucks.
+                    $sha1 = FSFile::getSha1Base36FromPath($file);
 
-					if ( $dupes ) {
-						$this->output(
-							"{$base} already exists as {$dupes[0]->getName()}, skipping\n"
-						);
-						$skipped++;
-						continue;
-					}
-				}
+                    $dupes = $repo->findBySha1($sha1);
 
-				$this->output( "Importing {$base}..." );
-				$svar = 'added';
-			}
+                    if ($dupes) {
+                        $this->output(
+                            "{$base} already exists as {$dupes[0]->getName()}, skipping\n"
+                        );
+                        $skipped++;
+                        continue;
+                    }
+                }
 
-			if ( $sourceWikiUrl ) {
-				/* find comment text directly from source wiki, through MW's API */
-				$real_comment = $this->getFileCommentFromSourceWiki( $sourceWikiUrl, $base );
-				if ( $real_comment === false ) {
-					$commentText = $comment;
-				} else {
-					$commentText = $real_comment;
-				}
+                $this->output("Importing {$base}...");
+                $svar = 'added';
+            }
 
-				/* find user directly from source wiki, through MW's API */
-				$real_user = $this->getFileUserFromSourceWiki( $sourceWikiUrl, $base );
-				if ( $real_user === false ) {
-					// don't change $wgUser
-				} else {
-					$realUser = User::newFromName( $real_user );
-					if ( $realUser === false ) {
-						# user does not exist in target wiki
-						$this->output(
-							"failed: user '$real_user' does not exist in target wiki."
-						);
-						continue;
-					}
-					StubGlobalUser::setUser( $realUser );
-					$user = $realUser;
-				}
-			} else {
-				# Find comment text
-				$commentText = false;
+            if ($sourceWikiUrl) {
+                /* find comment text directly from source wiki, through MW's API */
+                $real_comment = $this->getFileCommentFromSourceWiki($sourceWikiUrl, $base);
+                if ($real_comment === false) {
+                    $commentText = $comment;
+                } else {
+                    $commentText = $real_comment;
+                }
 
-				if ( $commentExt ) {
-					$f = $this->findAuxFile( $file, $commentExt );
-					if ( !$f ) {
-						$this->output( " No comment file with extension {$commentExt} found "
-							. "for {$file}, using default comment." );
-					} else {
-						$commentText = file_get_contents( $f );
-						if ( !$commentText ) {
-							$this->output(
-								" Failed to load comment file {$f}, using default comment."
-							);
-						}
-					}
-				}
+                /* find user directly from source wiki, through MW's API */
+                $real_user = $this->getFileUserFromSourceWiki($sourceWikiUrl, $base);
+                if ($real_user === false) {
+                    // don't change $wgUser
+                } else {
+                    $realUser = User::newFromName($real_user);
+                    if ($realUser === false) {
+                        # user does not exist in target wiki
+                        $this->output(
+                            "failed: user '$real_user' does not exist in target wiki."
+                        );
+                        continue;
+                    }
+                    StubGlobalUser::setUser($realUser);
+                    $user = $realUser;
+                }
+            } else {
+                # Find comment text
+                $commentText = false;
 
-				if ( !$commentText ) {
-					$commentText = $comment;
-				}
-			}
+                if ($commentExt) {
+                    $f = $this->findAuxFile($file, $commentExt);
+                    if (!$f) {
+                        $this->output(" No comment file with extension {$commentExt} found "
+                            . "for {$file}, using default comment.");
+                    } else {
+                        $commentText = file_get_contents($f);
+                        if (!$commentText) {
+                            $this->output(
+                                " Failed to load comment file {$f}, using default comment."
+                            );
+                        }
+                    }
+                }
 
-			# Import the file
-			if ( $this->hasOption( 'dry' ) ) {
-				$this->output(
-					" publishing {$file} by '{$user->getName()}', comment '$commentText'..."
-				);
-			} else {
-				$mwProps = new MWFileProps( $services->getMimeAnalyzer() );
-				$props = $mwProps->getPropsFromPath( $file, true );
-				$flags = 0;
-				$publishOptions = [];
-				$handler = MediaHandler::getHandler( $props['mime'] );
-				if ( $handler ) {
-					$publishOptions['headers'] = $handler->getContentHeaders( $props['metadata'] );
-				} else {
-					$publishOptions['headers'] = [];
-				}
-				$archive = $image->publish( $file, $flags, $publishOptions );
-				if ( !$archive->isGood() ) {
-					$this->output( "failed. (" .
-						$archive->getMessage( false, false, 'en' )->text() .
-						")\n" );
-					$failed++;
-					continue;
-				}
-			}
+                if (!$commentText) {
+                    $commentText = $comment;
+                }
+            }
 
-			$commentText = SpecialUpload::getInitialPageText( $commentText, $license );
-			if ( !$this->hasOption( 'summary' ) ) {
-				$summary = $commentText;
-			}
+            # Import the file
+            if ($this->hasOption('dry')) {
+                $this->output(
+                    " publishing {$file} by '{$user->getName()}', comment '$commentText'..."
+                );
+            } else {
+                $mwProps = new MWFileProps($services->getMimeAnalyzer());
+                $props = $mwProps->getPropsFromPath($file, true);
+                $flags = 0;
+                $publishOptions = [];
+                $handler = MediaHandler::getHandler($props['mime']);
+                if ($handler) {
+                    $publishOptions['headers'] = $handler->getContentHeaders($props['metadata']);
+                } else {
+                    $publishOptions['headers'] = [];
+                }
+                $archive = $image->publish($file, $flags, $publishOptions);
+                if (!$archive->isGood()) {
+                    $this->output("failed. (" .
+                        $archive->getMessage(false, false, 'en')->text() .
+                        ")\n");
+                    $failed++;
+                    continue;
+                }
+            }
 
-			if ( $this->hasOption( 'dry' ) ) {
-				$this->output( "done.\n" );
-			} elseif ( $image->recordUpload3(
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
-				$archive->value,
-				$summary,
-				$commentText,
-				$user,
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable
-				$props,
-				$timestamp,
-				$tags
-			)->isOK() ) {
-				$this->output( "done.\n" );
+            $commentText = SpecialUpload::getInitialPageText($commentText, $license);
+            if (!$this->hasOption('summary')) {
+                $summary = $commentText;
+            }
 
-				$doProtect = false;
+            if ($this->hasOption('dry')) {
+                $this->output("done.\n");
+            } elseif ($image->recordUpload3(
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable
+                $archive->value,
+                $summary,
+                $commentText,
+                $user,
+                // @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable
+                $props,
+                $timestamp,
+                $tags
+            )->isOK()) {
+                $this->output("done.\n");
 
-				$protectLevel = $this->getOption( 'protect' );
-				$restrictionLevels = $this->getConfig()->get( MainConfigNames::RestrictionLevels );
+                $doProtect = false;
 
-				if ( $protectLevel && in_array( $protectLevel, $restrictionLevels ) ) {
-					$doProtect = true;
-				}
-				if ( $this->hasOption( 'unprotect' ) ) {
-					$protectLevel = '';
-					$doProtect = true;
-				}
+                $protectLevel = $this->getOption('protect');
+                $restrictionLevels = $this->getConfig()->get(MainConfigNames::RestrictionLevels);
 
-				if ( $doProtect ) {
-					# Protect the file
-					$this->output( "\nWaiting for replica DBs...\n" );
-					// Wait for replica DBs.
-					sleep( 2 ); # Why this sleep?
-					$lbFactory->waitForReplication();
+                if ($protectLevel && in_array($protectLevel, $restrictionLevels)) {
+                    $doProtect = true;
+                }
+                if ($this->hasOption('unprotect')) {
+                    $protectLevel = '';
+                    $doProtect = true;
+                }
 
-					$this->output( "\nSetting image restrictions ..." );
+                if ($doProtect) {
+                    # Protect the file
+                    $this->output("\nWaiting for replica DBs...\n");
+                    // Wait for replica DBs.
+                    sleep(2); # Why this sleep?
+                    $lbFactory->waitForReplication();
 
-					$cascade = false;
-					$restrictions = [];
-					foreach ( $restrictionStore->listApplicableRestrictionTypes( $title ) as $type ) {
-						$restrictions[$type] = $protectLevel;
-					}
+                    $this->output("\nSetting image restrictions ...");
 
-					$page = $services->getWikiPageFactory()->newFromTitle( $title );
-					$status = $page->doUpdateRestrictions( $restrictions, [], $cascade, '', $user );
-					$this->output( ( $status->isOK() ? 'done' : 'failed' ) . "\n" );
-				}
-			} else {
-				$this->output( "failed. (at recordUpload stage)\n" );
-				$svar = 'failed';
-			}
+                    $cascade = false;
+                    $restrictions = [];
+                    foreach ($restrictionStore->listApplicableRestrictionTypes($title) as $type) {
+                        $restrictions[$type] = $protectLevel;
+                    }
 
-			$$svar++;
-			$processed++;
+                    $page = $services->getWikiPageFactory()->newFromTitle($title);
+                    $status = $page->doUpdateRestrictions($restrictions, [], $cascade, '', $user);
+                    $this->output(($status->isOK() ? 'done' : 'failed') . "\n");
+                }
+            } else {
+                $this->output("failed. (at recordUpload stage)\n");
+                $svar = 'failed';
+            }
 
-			if ( $limit && $processed >= $limit ) {
-				break;
-			}
-		}
+            $$svar++;
+            $processed++;
 
-		# Print out some statistics
-		$this->output( "\n" );
-		foreach (
-			[
-				'Found' => count( $files ),
-				'Limit' => $limit,
-				'Ignored' => $ignored,
-				'Added' => $added,
-				'Skipped' => $skipped,
-				'Overwritten' => $overwritten,
-				'Failed' => $failed,
-			] as $desc => $number
-		) {
-			if ( $number > 0 ) {
-				$this->output( "{$desc}: {$number}\n" );
-			}
-		}
-	}
+            if ($limit && $processed >= $limit) {
+                break;
+            }
+        }
 
-	/**
-	 * Search a directory for files with one of a set of extensions
-	 *
-	 * @param string $dir Path to directory to search
-	 * @param array $exts Array of extensions to search for
-	 * @param bool $recurse Search subdirectories recursively
-	 * @return array|bool Array of filenames on success, or false on failure
-	 */
-	private function findFiles( $dir, $exts, $recurse = false ) {
-		if ( !is_dir( $dir ) ) {
-			return [];
-		}
+        # Print out some statistics
+        $this->output("\n");
+        foreach (
+            [
+                'Found'       => count($files),
+                'Limit'       => $limit,
+                'Ignored'     => $ignored,
+                'Added'       => $added,
+                'Skipped'     => $skipped,
+                'Overwritten' => $overwritten,
+                'Failed'      => $failed,
+            ] as $desc => $number
+        ) {
+            if ($number > 0) {
+                $this->output("{$desc}: {$number}\n");
+            }
+        }
+    }
 
-		$dhl = opendir( $dir );
-		if ( !$dhl ) {
-			return [];
-		}
+    /**
+     * Search a directory for files with one of a set of extensions
+     *
+     * @param string $dir Path to directory to search
+     * @param array $exts Array of extensions to search for
+     * @param bool $recurse Search subdirectories recursively
+     * @return array|bool Array of filenames on success, or false on failure
+     */
+    private function findFiles($dir, $exts, $recurse = false)
+    {
+        if (!is_dir($dir)) {
+            return [];
+        }
 
-		$files = [];
-		while ( ( $file = readdir( $dhl ) ) !== false ) {
-			if ( is_file( $dir . '/' . $file ) ) {
-				$ext = pathinfo( $file, PATHINFO_EXTENSION );
-				if ( in_array( strtolower( $ext ), $exts ) ) {
-					$files[] = $dir . '/' . $file;
-				}
-			} elseif ( $recurse && is_dir( $dir . '/' . $file ) && $file !== '..' && $file !== '.' ) {
-				$files = array_merge( $files, $this->findFiles( $dir . '/' . $file, $exts, true ) );
-			}
-		}
+        $dhl = opendir($dir);
+        if (!$dhl) {
+            return [];
+        }
 
-		return $files;
-	}
+        $files = [];
+        while (($file = readdir($dhl)) !== false) {
+            if (is_file($dir . '/' . $file)) {
+                $ext = pathinfo($file, PATHINFO_EXTENSION);
+                if (in_array(strtolower($ext), $exts)) {
+                    $files[] = $dir . '/' . $file;
+                }
+            } elseif ($recurse && is_dir($dir . '/' . $file) && $file !== '..' && $file !== '.') {
+                $files = array_merge($files, $this->findFiles($dir . '/' . $file, $exts, true));
+            }
+        }
 
-	/**
-	 * Find an auxiliary file with the given extension, matching
-	 * the give base file path. $maxStrip determines how many extensions
-	 * may be stripped from the original file name before appending the
-	 * new extension. For example, with $maxStrip = 1 (the default),
-	 * file files acme.foo.bar.txt and acme.foo.txt would be auxilliary
-	 * files for acme.foo.bar and the extension ".txt". With $maxStrip = 2,
-	 * acme.txt would also be acceptable.
-	 *
-	 * @param string $file Base path
-	 * @param string $auxExtension The extension to be appended to the base path
-	 * @param int $maxStrip The maximum number of extensions to strip from the base path (default: 1)
-	 * @return string|bool
-	 */
-	private function findAuxFile( $file, $auxExtension, $maxStrip = 1 ) {
-		if ( strpos( $auxExtension, '.' ) !== 0 ) {
-			$auxExtension = '.' . $auxExtension;
-		}
+        return $files;
+    }
 
-		$d = dirname( $file );
-		$n = basename( $file );
+    /**
+     * Find an auxiliary file with the given extension, matching
+     * the give base file path. $maxStrip determines how many extensions
+     * may be stripped from the original file name before appending the
+     * new extension. For example, with $maxStrip = 1 (the default),
+     * file files acme.foo.bar.txt and acme.foo.txt would be auxilliary
+     * files for acme.foo.bar and the extension ".txt". With $maxStrip = 2,
+     * acme.txt would also be acceptable.
+     *
+     * @param string $file Base path
+     * @param string $auxExtension The extension to be appended to the base path
+     * @param int $maxStrip The maximum number of extensions to strip from the base path (default: 1)
+     * @return string|bool
+     */
+    private function findAuxFile($file, $auxExtension, $maxStrip = 1)
+    {
+        if (strpos($auxExtension, '.') !== 0) {
+            $auxExtension = '.' . $auxExtension;
+        }
 
-		while ( $maxStrip >= 0 ) {
-			$f = $d . '/' . $n . $auxExtension;
+        $d = dirname($file);
+        $n = basename($file);
 
-			if ( file_exists( $f ) ) {
-				return $f;
-			}
+        while ($maxStrip >= 0) {
+            $f = $d . '/' . $n . $auxExtension;
 
-			$idx = strrpos( $n, '.' );
-			if ( !$idx ) {
-				break;
-			}
+            if (file_exists($f)) {
+                return $f;
+            }
 
-			$n = substr( $n, 0, $idx );
-			$maxStrip -= 1;
-		}
+            $idx = strrpos($n, '.');
+            if (!$idx) {
+                break;
+            }
 
-		return false;
-	}
+            $n = substr($n, 0, $idx);
+            $maxStrip -= 1;
+        }
 
-	/**
-	 * @todo FIXME: Access the api in a better way and performing just one query
-	 * (preferably batching files too).
-	 *
-	 * @param string $wiki_host
-	 * @param string $file
-	 *
-	 * @return string|bool
-	 */
-	private function getFileCommentFromSourceWiki( $wiki_host, $file ) {
-		$url = $wiki_host . '/api.php?action=query&format=xml&titles=File:'
-			. rawurlencode( $file ) . '&prop=imageinfo&&iiprop=comment';
-		$body = MediaWikiServices::getInstance()->getHttpRequestFactory()->get( $url, [], __METHOD__ );
-		if ( preg_match( '#<ii comment="([^"]*)" />#', $body, $matches ) == 0 ) {
-			return false;
-		}
+        return false;
+    }
 
-		return html_entity_decode( $matches[1] );
-	}
+    /**
+     * @param string $wiki_host
+     * @param string $file
+     *
+     * @return string|bool
+     * @todo FIXME: Access the api in a better way and performing just one query
+     * (preferably batching files too).
+     *
+     */
+    private function getFileCommentFromSourceWiki($wiki_host, $file)
+    {
+        $url = $wiki_host . '/api.php?action=query&format=xml&titles=File:'
+            . rawurlencode($file) . '&prop=imageinfo&&iiprop=comment';
+        $body = MediaWikiServices::getInstance()->getHttpRequestFactory()->get($url, [], __METHOD__);
+        if (preg_match('#<ii comment="([^"]*)" />#', $body, $matches) == 0) {
+            return false;
+        }
 
-	private function getFileUserFromSourceWiki( $wiki_host, $file ) {
-		$url = $wiki_host . '/api.php?action=query&format=xml&titles=File:'
-			. rawurlencode( $file ) . '&prop=imageinfo&&iiprop=user';
-		$body = MediaWikiServices::getInstance()->getHttpRequestFactory()->get( $url, [], __METHOD__ );
-		if ( preg_match( '#<ii user="([^"]*)" />#', $body, $matches ) == 0 ) {
-			return false;
-		}
+        return html_entity_decode($matches[1]);
+    }
 
-		return html_entity_decode( $matches[1] );
-	}
+    private function getFileUserFromSourceWiki($wiki_host, $file)
+    {
+        $url = $wiki_host . '/api.php?action=query&format=xml&titles=File:'
+            . rawurlencode($file) . '&prop=imageinfo&&iiprop=user';
+        $body = MediaWikiServices::getInstance()->getHttpRequestFactory()->get($url, [], __METHOD__);
+        if (preg_match('#<ii user="([^"]*)" />#', $body, $matches) == 0) {
+            return false;
+        }
+
+        return html_entity_decode($matches[1]);
+    }
 
 }
 

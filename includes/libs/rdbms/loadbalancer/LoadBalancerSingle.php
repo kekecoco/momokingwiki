@@ -28,69 +28,74 @@ use InvalidArgumentException;
 /**
  * Trivial LoadBalancer that always returns an injected connection handle.
  */
-class LoadBalancerSingle extends LoadBalancer {
-	/** @var IDatabase */
-	private $db;
+class LoadBalancerSingle extends LoadBalancer
+{
+    /** @var IDatabase */
+    private $db;
 
-	/**
-	 * You probably want to use {@link newFromConnection} instead.
-	 *
-	 * @param array $params An associative array with one member:
-	 *   - connection: An IDatabase connection object
-	 */
-	public function __construct( array $params ) {
-		/** @var IDatabase $conn */
-		$conn = $params['connection'] ?? null;
-		if ( !$conn ) {
-			throw new InvalidArgumentException( "Missing 'connection' argument." );
-		}
+    /**
+     * You probably want to use {@link newFromConnection} instead.
+     *
+     * @param array $params An associative array with one member:
+     *   - connection: An IDatabase connection object
+     */
+    public function __construct(array $params)
+    {
+        /** @var IDatabase $conn */
+        $conn = $params['connection'] ?? null;
+        if (!$conn) {
+            throw new InvalidArgumentException("Missing 'connection' argument.");
+        }
 
-		$this->db = $conn;
+        $this->db = $conn;
 
-		parent::__construct( [
-			'servers' => [ [
-				'type' => $conn->getType(),
-				'host' => $conn->getServer(),
-				'dbname' => $conn->getDBname(),
-				'load' => 1,
-			] ],
-			'trxProfiler' => $params['trxProfiler'] ?? null,
-			'srvCache' => $params['srvCache'] ?? null,
-			'wanCache' => $params['wanCache'] ?? null,
-			'localDomain' => $params['localDomain'] ?? $this->db->getDomainID(),
-			'readOnlyReason' => $params['readOnlyReason'] ?? false,
-			'clusterName' => $params['clusterName'] ?? null,
-		] );
+        parent::__construct([
+            'servers'        => [[
+                'type'   => $conn->getType(),
+                'host'   => $conn->getServer(),
+                'dbname' => $conn->getDBname(),
+                'load'   => 1,
+            ]],
+            'trxProfiler'    => $params['trxProfiler'] ?? null,
+            'srvCache'       => $params['srvCache'] ?? null,
+            'wanCache'       => $params['wanCache'] ?? null,
+            'localDomain'    => $params['localDomain'] ?? $this->db->getDomainID(),
+            'readOnlyReason' => $params['readOnlyReason'] ?? false,
+            'clusterName'    => $params['clusterName'] ?? null,
+        ]);
 
-		if ( isset( $params['readOnlyReason'] ) ) {
-			$conn->setLBInfo( $conn::LB_READ_ONLY_REASON, $params['readOnlyReason'] );
-		}
-	}
+        if (isset($params['readOnlyReason'])) {
+            $conn->setLBInfo($conn::LB_READ_ONLY_REASON, $params['readOnlyReason']);
+        }
+    }
 
-	/**
-	 * @param IDatabase $db Live connection handle
-	 * @param array $params Parameter map to LoadBalancerSingle::__constructs()
-	 * @return LoadBalancerSingle
-	 * @since 1.28
-	 */
-	public static function newFromConnection( IDatabase $db, array $params = [] ) {
-		return new static( array_merge(
-			[ 'localDomain' => $db->getDomainID() ],
-			$params,
-			[ 'connection' => $db ]
-		) );
-	}
+    /**
+     * @param IDatabase $db Live connection handle
+     * @param array $params Parameter map to LoadBalancerSingle::__constructs()
+     * @return LoadBalancerSingle
+     * @since 1.28
+     */
+    public static function newFromConnection(IDatabase $db, array $params = [])
+    {
+        return new static(array_merge(
+            ['localDomain' => $db->getDomainID()],
+            $params,
+            ['connection' => $db]
+        ));
+    }
 
-	protected function reallyOpenConnection( $i, DatabaseDomain $domain, array $lbInfo = [] ) {
-		return $this->db;
-	}
+    protected function reallyOpenConnection($i, DatabaseDomain $domain, array $lbInfo = [])
+    {
+        return $this->db;
+    }
 
-	public function __destruct() {
-		// do nothing since the connection was injected
-	}
+    public function __destruct()
+    {
+        // do nothing since the connection was injected
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( LoadBalancerSingle::class, 'LoadBalancerSingle' );
+class_alias(LoadBalancerSingle::class, 'LoadBalancerSingle');

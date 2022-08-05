@@ -36,207 +36,237 @@ use Wikimedia\Parsoid\Config\PageContent as IPageContent;
  *  this directly instead.
  * @since 1.39
  */
-class PageConfig extends IPageConfig {
+class PageConfig extends IPageConfig
+{
 
-	/** @var ParserOptions */
-	private $parserOptions;
+    /** @var ParserOptions */
+    private $parserOptions;
 
-	/** @var SlotRoleHandler */
-	private $slotRoleHandler;
+    /** @var SlotRoleHandler */
+    private $slotRoleHandler;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var ?RevisionRecord */
-	private $revision;
+    /** @var ?RevisionRecord */
+    private $revision;
 
-	/** @var string|null */
-	private $pagelanguage;
+    /** @var string|null */
+    private $pagelanguage;
 
-	/** @var string|null */
-	private $pagelanguageDir;
+    /** @var string|null */
+    private $pagelanguageDir;
 
-	/**
-	 * @param ParserOptions $parserOptions
-	 * @param SlotRoleHandler $slotRoleHandler
-	 * @param Title $title Title being parsed
-	 * @param ?RevisionRecord $revision
-	 * @param ?string $pagelanguage
-	 * @param ?string $pagelanguageDir
-	 */
-	public function __construct(
-		ParserOptions $parserOptions,
-		SlotRoleHandler $slotRoleHandler,
-		Title $title,
-		?RevisionRecord $revision = null,
-		?string $pagelanguage = null,
-		?string $pagelanguageDir = null
-	) {
-		$this->parserOptions = $parserOptions;
-		$this->slotRoleHandler = $slotRoleHandler;
-		$this->title = $title;
-		$this->revision = $revision;
-		$this->pagelanguage = $pagelanguage;
-		$this->pagelanguageDir = $pagelanguageDir;
-	}
+    /**
+     * @param ParserOptions $parserOptions
+     * @param SlotRoleHandler $slotRoleHandler
+     * @param Title $title Title being parsed
+     * @param ?RevisionRecord $revision
+     * @param ?string $pagelanguage
+     * @param ?string $pagelanguageDir
+     */
+    public function __construct(
+        ParserOptions $parserOptions,
+        SlotRoleHandler $slotRoleHandler,
+        Title $title,
+        ?RevisionRecord $revision = null,
+        ?string $pagelanguage = null,
+        ?string $pagelanguageDir = null
+    )
+    {
+        $this->parserOptions = $parserOptions;
+        $this->slotRoleHandler = $slotRoleHandler;
+        $this->title = $title;
+        $this->revision = $revision;
+        $this->pagelanguage = $pagelanguage;
+        $this->pagelanguageDir = $pagelanguageDir;
+    }
 
-	/**
-	 * Get content model
-	 * @return string
-	 */
-	public function getContentModel(): string {
-		// @todo Check just the main slot, or all slots, or what?
-		$rev = $this->getRevision();
-		if ( $rev ) {
-			$content = $rev->getContent( SlotRecord::MAIN );
-			if ( $content ) {
-				return $content->getModel();
-			} else {
-				// The page does have a content model but we can't see it. Returning the
-				// default model is not really correct. But we can't see the content either
-				// so it won't matter much what we do here.
-				return $this->slotRoleHandler->getDefaultModel( $this->title );
-			}
-		} else {
-			return $this->slotRoleHandler->getDefaultModel( $this->title );
-		}
-	}
+    /**
+     * Get content model
+     * @return string
+     */
+    public function getContentModel(): string
+    {
+        // @todo Check just the main slot, or all slots, or what?
+        $rev = $this->getRevision();
+        if ($rev) {
+            $content = $rev->getContent(SlotRecord::MAIN);
+            if ($content) {
+                return $content->getModel();
+            } else {
+                // The page does have a content model but we can't see it. Returning the
+                // default model is not really correct. But we can't see the content either
+                // so it won't matter much what we do here.
+                return $this->slotRoleHandler->getDefaultModel($this->title);
+            }
+        } else {
+            return $this->slotRoleHandler->getDefaultModel($this->title);
+        }
+    }
 
-	public function hasLintableContentModel(): bool {
-		// @todo Check just the main slot, or all slots, or what?
-		$content = $this->getRevisionContent();
-		$model = $content ? $content->getModel( SlotRecord::MAIN ) : null;
-		return $content && ( $model === CONTENT_MODEL_WIKITEXT || $model === 'proofread-page' );
-	}
+    public function hasLintableContentModel(): bool
+    {
+        // @todo Check just the main slot, or all slots, or what?
+        $content = $this->getRevisionContent();
+        $model = $content ? $content->getModel(SlotRecord::MAIN) : null;
 
-	/** @inheritDoc */
-	public function getTitle(): string {
-		return $this->title->getPrefixedText();
-	}
+        return $content && ($model === CONTENT_MODEL_WIKITEXT || $model === 'proofread-page');
+    }
 
-	/** @inheritDoc */
-	public function getNs(): int {
-		return $this->title->getNamespace();
-	}
+    /** @inheritDoc */
+    public function getTitle(): string
+    {
+        return $this->title->getPrefixedText();
+    }
 
-	/** @inheritDoc */
-	public function getPageId(): int {
-		return $this->title->getArticleID();
-	}
+    /** @inheritDoc */
+    public function getNs(): int
+    {
+        return $this->title->getNamespace();
+    }
 
-	/** @inheritDoc */
-	public function getPageLanguage(): string {
-		return $this->pagelanguage ??
-			$this->title->getPageLanguage()->getCode();
-	}
+    /** @inheritDoc */
+    public function getPageId(): int
+    {
+        return $this->title->getArticleID();
+    }
 
-	/**
-	 * Helper function: get the Language object corresponding to
-	 * PageConfig::getPageLanguage()
-	 * @return Language
-	 */
-	private function getPageLanguageObject(): Language {
-		return $this->pagelanguage ?
-			MediaWikiServices::getInstance()->getLanguageFactory()
-				->getLanguage( $this->pagelanguage ) :
-			$this->title->getPageLanguage();
-	}
+    /** @inheritDoc */
+    public function getPageLanguage(): string
+    {
+        return $this->pagelanguage ??
+            $this->title->getPageLanguage()->getCode();
+    }
 
-	/** @inheritDoc */
-	public function getPageLanguageDir(): string {
-		return $this->pagelanguageDir ??
-			$this->getPageLanguageObject()->getDir();
-	}
+    /**
+     * Helper function: get the Language object corresponding to
+     * PageConfig::getPageLanguage()
+     * @return Language
+     */
+    private function getPageLanguageObject(): Language
+    {
+        return $this->pagelanguage ?
+            MediaWikiServices::getInstance()->getLanguageFactory()
+                ->getLanguage($this->pagelanguage) :
+            $this->title->getPageLanguage();
+    }
 
-	/**
-	 * @return ParserOptions
-	 */
-	public function getParserOptions(): ParserOptions {
-		return $this->parserOptions;
-	}
+    /** @inheritDoc */
+    public function getPageLanguageDir(): string
+    {
+        return $this->pagelanguageDir ??
+            $this->getPageLanguageObject()->getDir();
+    }
 
-	/**
-	 * Use ParserOptions::getTemplateCallback() to fetch the correct
-	 * (usually latest) RevisionRecord for the given title.
-	 *
-	 * @param Title $title
-	 * @return ?RevisionRecord
-	 */
-	public function fetchRevisionRecordOfTemplate( Title $title ): ?RevisionRecord {
-		// See Parser::fetchTemplateAndTitle(), but stateless
-		// (Parsoid will track dependencies, etc, itself.)
-		// The callback defaults to Parser::statelessFetchTemplate()
-		$templateCb = $this->parserOptions->getTemplateCallback();
-		$stuff = call_user_func( $templateCb, $title, $this );
-		if ( isset( $stuff['revision-record'] ) ) {
-			$revRecord = $stuff['revision-record'];
-		} else {
-			$revRecord = null;
-		}
-		return $revRecord;
-	}
+    /**
+     * @return ParserOptions
+     */
+    public function getParserOptions(): ParserOptions
+    {
+        return $this->parserOptions;
+    }
 
-	/**
-	 * @return ?RevisionRecord
-	 */
-	private function getRevision(): ?RevisionRecord {
-		return $this->revision;
-	}
+    /**
+     * Use ParserOptions::getTemplateCallback() to fetch the correct
+     * (usually latest) RevisionRecord for the given title.
+     *
+     * @param Title $title
+     * @return ?RevisionRecord
+     */
+    public function fetchRevisionRecordOfTemplate(Title $title): ?RevisionRecord
+    {
+        // See Parser::fetchTemplateAndTitle(), but stateless
+        // (Parsoid will track dependencies, etc, itself.)
+        // The callback defaults to Parser::statelessFetchTemplate()
+        $templateCb = $this->parserOptions->getTemplateCallback();
+        $stuff = call_user_func($templateCb, $title, $this);
+        if (isset($stuff['revision-record'])) {
+            $revRecord = $stuff['revision-record'];
+        } else {
+            $revRecord = null;
+        }
 
-	/** @inheritDoc */
-	public function getRevisionId(): ?int {
-		$rev = $this->getRevision();
-		return $rev ? $rev->getId() : null;
-	}
+        return $revRecord;
+    }
 
-	/** @inheritDoc */
-	public function getParentRevisionId(): ?int {
-		$rev = $this->getRevision();
-		return $rev ? $rev->getParentId() : null;
-	}
+    /**
+     * @return ?RevisionRecord
+     */
+    private function getRevision(): ?RevisionRecord
+    {
+        return $this->revision;
+    }
 
-	/** @inheritDoc */
-	public function getRevisionTimestamp(): ?string {
-		$rev = $this->getRevision();
-		return $rev ? $rev->getTimestamp() : null;
-	}
+    /** @inheritDoc */
+    public function getRevisionId(): ?int
+    {
+        $rev = $this->getRevision();
 
-	/** @inheritDoc */
-	public function getRevisionUser(): ?string {
-		$rev = $this->getRevision();
-		$user = $rev ? $rev->getUser() : null;
-		return $user ? $user->getName() : null;
-	}
+        return $rev ? $rev->getId() : null;
+    }
 
-	/** @inheritDoc */
-	public function getRevisionUserId(): ?int {
-		$rev = $this->getRevision();
-		$user = $rev ? $rev->getUser() : null;
-		return $user ? $user->getId() : null;
-	}
+    /** @inheritDoc */
+    public function getParentRevisionId(): ?int
+    {
+        $rev = $this->getRevision();
 
-	/** @inheritDoc */
-	public function getRevisionSha1(): ?string {
-		$rev = $this->getRevision();
-		if ( $rev ) {
-			// This matches what the Parsoid/JS gets from the API
-			// FIXME: Maybe we don't need to do this in the future?
-			return \Wikimedia\base_convert( $rev->getSha1(), 36, 16, 40 );
-		} else {
-			return null;
-		}
-	}
+        return $rev ? $rev->getParentId() : null;
+    }
 
-	/** @inheritDoc */
-	public function getRevisionSize(): ?int {
-		$rev = $this->getRevision();
-		return $rev ? $rev->getSize() : null;
-	}
+    /** @inheritDoc */
+    public function getRevisionTimestamp(): ?string
+    {
+        $rev = $this->getRevision();
 
-	/** @inheritDoc */
-	public function getRevisionContent(): ?IPageContent {
-		$rev = $this->getRevision();
-		return $rev ? new PageContent( $rev ) : null;
-	}
+        return $rev ? $rev->getTimestamp() : null;
+    }
+
+    /** @inheritDoc */
+    public function getRevisionUser(): ?string
+    {
+        $rev = $this->getRevision();
+        $user = $rev ? $rev->getUser() : null;
+
+        return $user ? $user->getName() : null;
+    }
+
+    /** @inheritDoc */
+    public function getRevisionUserId(): ?int
+    {
+        $rev = $this->getRevision();
+        $user = $rev ? $rev->getUser() : null;
+
+        return $user ? $user->getId() : null;
+    }
+
+    /** @inheritDoc */
+    public function getRevisionSha1(): ?string
+    {
+        $rev = $this->getRevision();
+        if ($rev) {
+            // This matches what the Parsoid/JS gets from the API
+            // FIXME: Maybe we don't need to do this in the future?
+            return \Wikimedia\base_convert($rev->getSha1(), 36, 16, 40);
+        } else {
+            return null;
+        }
+    }
+
+    /** @inheritDoc */
+    public function getRevisionSize(): ?int
+    {
+        $rev = $this->getRevision();
+
+        return $rev ? $rev->getSize() : null;
+    }
+
+    /** @inheritDoc */
+    public function getRevisionContent(): ?IPageContent
+    {
+        $rev = $this->getRevision();
+
+        return $rev ? new PageContent($rev) : null;
+    }
 
 }

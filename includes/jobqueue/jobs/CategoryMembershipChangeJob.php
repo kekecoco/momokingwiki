@@ -19,6 +19,7 @@
  *
  * @file
  */
+
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageIdentity;
@@ -40,253 +41,265 @@ use Wikimedia\Rdbms\LBFactory;
  *
  * @since 1.27
  */
-class CategoryMembershipChangeJob extends Job {
-	/** @var int|null */
-	private $ticket;
+class CategoryMembershipChangeJob extends Job
+{
+    /** @var int|null */
+    private $ticket;
 
-	private const ENQUEUE_FUDGE_SEC = 60;
+    private const ENQUEUE_FUDGE_SEC = 60;
 
-	/**
-	 * @param PageIdentity $page the page for which to update category membership.
-	 * @param string $revisionTimestamp The timestamp of the new revision that triggered the job.
-	 * @return JobSpecification
-	 */
-	public static function newSpec( PageIdentity $page, $revisionTimestamp ) {
-		return new JobSpecification(
-			'categoryMembershipChange',
-			[
-				'pageId' => $page->getId(),
-				'revTimestamp' => $revisionTimestamp,
-			],
-			[
-				'removeDuplicates' => true,
-				'removeDuplicatesIgnoreParams' => [ 'revTimestamp' ]
-			],
-			$page
-		);
-	}
+    /**
+     * @param PageIdentity $page the page for which to update category membership.
+     * @param string $revisionTimestamp The timestamp of the new revision that triggered the job.
+     * @return JobSpecification
+     */
+    public static function newSpec(PageIdentity $page, $revisionTimestamp)
+    {
+        return new JobSpecification(
+            'categoryMembershipChange',
+            [
+                'pageId'       => $page->getId(),
+                'revTimestamp' => $revisionTimestamp,
+            ],
+            [
+                'removeDuplicates'             => true,
+                'removeDuplicatesIgnoreParams' => ['revTimestamp']
+            ],
+            $page
+        );
+    }
 
-	/**
-	 * Constructor for use by the Job Queue infrastructure.
-	 * @note Don't call this when queueing a new instance, use newSpec() instead.
-	 * @param PageIdentity $page the categorized page.
-	 * @param array $params Such latest revision instance of the categorized page.
-	 */
-	public function __construct( PageIdentity $page, array $params ) {
-		parent::__construct( 'categoryMembershipChange', $page, $params );
-		// Only need one job per page. Note that ENQUEUE_FUDGE_SEC handles races where an
-		// older revision job gets inserted while the newer revision job is de-duplicated.
-		$this->removeDuplicates = true;
-	}
+    /**
+     * Constructor for use by the Job Queue infrastructure.
+     * @note Don't call this when queueing a new instance, use newSpec() instead.
+     * @param PageIdentity $page the categorized page.
+     * @param array $params Such latest revision instance of the categorized page.
+     */
+    public function __construct(PageIdentity $page, array $params)
+    {
+        parent::__construct('categoryMembershipChange', $page, $params);
+        // Only need one job per page. Note that ENQUEUE_FUDGE_SEC handles races where an
+        // older revision job gets inserted while the newer revision job is de-duplicated.
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$lb = $lbFactory->getMainLB();
-		$dbw = $lb->getConnectionRef( DB_PRIMARY );
+    public function run()
+    {
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $lb = $lbFactory->getMainLB();
+        $dbw = $lb->getConnectionRef(DB_PRIMARY);
 
-		$this->ticket = $lbFactory->getEmptyTransactionTicket( __METHOD__ );
+        $this->ticket = $lbFactory->getEmptyTransactionTicket(__METHOD__);
 
-		$page = $services->getWikiPageFactory()->newFromID( $this->params['pageId'], WikiPage::READ_LATEST );
-		if ( !$page ) {
-			$this->setLastError( "Could not find page #{$this->params['pageId']}" );
-			return false; // deleted?
-		}
+        $page = $services->getWikiPageFactory()->newFromID($this->params['pageId'], WikiPage::READ_LATEST);
+        if (!$page) {
+            $this->setLastError("Could not find page #{$this->params['pageId']}");
 
-		// Cut down on the time spent in waitForPrimaryPos() in the critical section
-		$dbr = $lb->getConnectionRef( DB_REPLICA, [ 'recentchanges' ] );
-		if ( !$lb->waitForPrimaryPos( $dbr ) ) {
-			$this->setLastError( "Timed out while pre-waiting for replica DB to catch up" );
-			return false;
-		}
+            return false; // deleted?
+        }
 
-		// Use a named lock so that jobs for this page see each others' changes
-		$lockKey = "{$dbw->getDomainID()}:CategoryMembershipChange:{$page->getId()}"; // per-wiki
-		$scopedLock = $dbw->getScopedLockAndFlush( $lockKey, __METHOD__, 3 );
-		if ( !$scopedLock ) {
-			$this->setLastError( "Could not acquire lock '$lockKey'" );
-			return false;
-		}
+        // Cut down on the time spent in waitForPrimaryPos() in the critical section
+        $dbr = $lb->getConnectionRef(DB_REPLICA, ['recentchanges']);
+        if (!$lb->waitForPrimaryPos($dbr)) {
+            $this->setLastError("Timed out while pre-waiting for replica DB to catch up");
 
-		// Wait till replica DB is caught up so that jobs for this page see each others' changes
-		if ( !$lb->waitForPrimaryPos( $dbr ) ) {
-			$this->setLastError( "Timed out while waiting for replica DB to catch up" );
-			return false;
-		}
-		// Clear any stale REPEATABLE-READ snapshot
-		$dbr->flushSnapshot( __METHOD__ );
+            return false;
+        }
 
-		$cutoffUnix = wfTimestamp( TS_UNIX, $this->params['revTimestamp'] );
-		// Using ENQUEUE_FUDGE_SEC handles jobs inserted out of revision order due to the delay
-		// between COMMIT and actual enqueueing of the CategoryMembershipChangeJob job.
-		$cutoffUnix -= self::ENQUEUE_FUDGE_SEC;
+        // Use a named lock so that jobs for this page see each others' changes
+        $lockKey = "{$dbw->getDomainID()}:CategoryMembershipChange:{$page->getId()}"; // per-wiki
+        $scopedLock = $dbw->getScopedLockAndFlush($lockKey, __METHOD__, 3);
+        if (!$scopedLock) {
+            $this->setLastError("Could not acquire lock '$lockKey'");
 
-		// Get the newest page revision that has a SRC_CATEGORIZE row.
-		// Assume that category changes before it were already handled.
-		$row = $dbr->selectRow(
-			'revision',
-			[ 'rev_timestamp', 'rev_id' ],
-			[
-				'rev_page' => $page->getId(),
-				'rev_timestamp >= ' . $dbr->addQuotes( $dbr->timestamp( $cutoffUnix ) ),
-				'EXISTS (' . $dbr->selectSQLText(
-					'recentchanges',
-					'1',
-					[
-						'rc_this_oldid = rev_id',
-						'rc_source' => RecentChange::SRC_CATEGORIZE,
-					],
-					__METHOD__
-				) . ')'
-			],
-			__METHOD__,
-			[ 'ORDER BY' => [ 'rev_timestamp DESC', 'rev_id DESC' ] ]
-		);
-		// Only consider revisions newer than any such revision
-		if ( $row ) {
-			$cutoffUnix = wfTimestamp( TS_UNIX, $row->rev_timestamp );
-			$lastRevId = (int)$row->rev_id;
-		} else {
-			$lastRevId = 0;
-		}
+            return false;
+        }
 
-		// Find revisions to this page made around and after this revision which lack category
-		// notifications in recent changes. This lets jobs pick up were the last one left off.
-		$encCutoff = $dbr->addQuotes( $dbr->timestamp( $cutoffUnix ) );
-		$revisionStore = $services->getRevisionStore();
-		$revQuery = $revisionStore->getQueryInfo();
-		$res = $dbr->select(
-			$revQuery['tables'],
-			$revQuery['fields'],
-			[
-				'rev_page' => $page->getId(),
-				"rev_timestamp > $encCutoff" .
-					" OR (rev_timestamp = $encCutoff AND rev_id > $lastRevId)"
-			],
-			__METHOD__,
-			[ 'ORDER BY' => [ 'rev_timestamp ASC', 'rev_id ASC' ] ],
-			$revQuery['joins']
-		);
+        // Wait till replica DB is caught up so that jobs for this page see each others' changes
+        if (!$lb->waitForPrimaryPos($dbr)) {
+            $this->setLastError("Timed out while waiting for replica DB to catch up");
 
-		// Apply all category updates in revision timestamp order
-		foreach ( $res as $row ) {
-			$this->notifyUpdatesForRevision( $lbFactory, $page, $revisionStore->newRevisionFromRow( $row ) );
-		}
+            return false;
+        }
+        // Clear any stale REPEATABLE-READ snapshot
+        $dbr->flushSnapshot(__METHOD__);
 
-		return true;
-	}
+        $cutoffUnix = wfTimestamp(TS_UNIX, $this->params['revTimestamp']);
+        // Using ENQUEUE_FUDGE_SEC handles jobs inserted out of revision order due to the delay
+        // between COMMIT and actual enqueueing of the CategoryMembershipChangeJob job.
+        $cutoffUnix -= self::ENQUEUE_FUDGE_SEC;
 
-	/**
-	 * @param LBFactory $lbFactory
-	 * @param WikiPage $page
-	 * @param RevisionRecord $newRev
-	 * @throws MWException
-	 */
-	protected function notifyUpdatesForRevision(
-		LBFactory $lbFactory, WikiPage $page, RevisionRecord $newRev
-	) {
-		$title = $page->getTitle();
+        // Get the newest page revision that has a SRC_CATEGORIZE row.
+        // Assume that category changes before it were already handled.
+        $row = $dbr->selectRow(
+            'revision',
+            ['rev_timestamp', 'rev_id'],
+            [
+                'rev_page' => $page->getId(),
+                'rev_timestamp >= ' . $dbr->addQuotes($dbr->timestamp($cutoffUnix)),
+                'EXISTS (' . $dbr->selectSQLText(
+                    'recentchanges',
+                    '1',
+                    [
+                        'rc_this_oldid = rev_id',
+                        'rc_source' => RecentChange::SRC_CATEGORIZE,
+                    ],
+                    __METHOD__
+                ) . ')'
+            ],
+            __METHOD__,
+            ['ORDER BY' => ['rev_timestamp DESC', 'rev_id DESC']]
+        );
+        // Only consider revisions newer than any such revision
+        if ($row) {
+            $cutoffUnix = wfTimestamp(TS_UNIX, $row->rev_timestamp);
+            $lastRevId = (int)$row->rev_id;
+        } else {
+            $lastRevId = 0;
+        }
 
-		// Get the new revision
-		if ( $newRev->isDeleted( RevisionRecord::DELETED_TEXT ) ) {
-			return;
-		}
+        // Find revisions to this page made around and after this revision which lack category
+        // notifications in recent changes. This lets jobs pick up were the last one left off.
+        $encCutoff = $dbr->addQuotes($dbr->timestamp($cutoffUnix));
+        $revisionStore = $services->getRevisionStore();
+        $revQuery = $revisionStore->getQueryInfo();
+        $res = $dbr->select(
+            $revQuery['tables'],
+            $revQuery['fields'],
+            [
+                'rev_page' => $page->getId(),
+                "rev_timestamp > $encCutoff" .
+                " OR (rev_timestamp = $encCutoff AND rev_id > $lastRevId)"
+            ],
+            __METHOD__,
+            ['ORDER BY' => ['rev_timestamp ASC', 'rev_id ASC']],
+            $revQuery['joins']
+        );
 
-		$services = MediaWikiServices::getInstance();
-		// Get the prior revision (the same for null edits)
-		if ( $newRev->getParentId() ) {
-			$oldRev = $services->getRevisionLookup()
-				->getRevisionById( $newRev->getParentId(), RevisionLookup::READ_LATEST );
-			if ( !$oldRev || $oldRev->isDeleted( RevisionRecord::DELETED_TEXT ) ) {
-				return;
-			}
-		} else {
-			$oldRev = null;
-		}
+        // Apply all category updates in revision timestamp order
+        foreach ($res as $row) {
+            $this->notifyUpdatesForRevision($lbFactory, $page, $revisionStore->newRevisionFromRow($row));
+        }
 
-		// Parse the new revision and get the categories
-		$categoryChanges = $this->getExplicitCategoriesChanges( $page, $newRev, $oldRev );
-		list( $categoryInserts, $categoryDeletes ) = $categoryChanges;
-		if ( !$categoryInserts && !$categoryDeletes ) {
-			return; // nothing to do
-		}
+        return true;
+    }
 
-		$blc = $services->getBacklinkCacheFactory()->getBacklinkCache( $title );
-		$catMembChange = new CategoryMembershipChange( $title, $blc, $newRev );
-		$catMembChange->checkTemplateLinks();
+    /**
+     * @param LBFactory $lbFactory
+     * @param WikiPage $page
+     * @param RevisionRecord $newRev
+     * @throws MWException
+     */
+    protected function notifyUpdatesForRevision(
+        LBFactory $lbFactory, WikiPage $page, RevisionRecord $newRev
+    )
+    {
+        $title = $page->getTitle();
 
-		$batchSize = $services->getMainConfig()->get( MainConfigNames::UpdateRowsPerQuery );
-		$insertCount = 0;
+        // Get the new revision
+        if ($newRev->isDeleted(RevisionRecord::DELETED_TEXT)) {
+            return;
+        }
 
-		foreach ( $categoryInserts as $categoryName ) {
-			$categoryTitle = Title::makeTitle( NS_CATEGORY, $categoryName );
-			$catMembChange->triggerCategoryAddedNotification( $categoryTitle );
-			if ( $insertCount++ && ( $insertCount % $batchSize ) == 0 ) {
-				$lbFactory->commitAndWaitForReplication( __METHOD__, $this->ticket );
-			}
-		}
+        $services = MediaWikiServices::getInstance();
+        // Get the prior revision (the same for null edits)
+        if ($newRev->getParentId()) {
+            $oldRev = $services->getRevisionLookup()
+                ->getRevisionById($newRev->getParentId(), RevisionLookup::READ_LATEST);
+            if (!$oldRev || $oldRev->isDeleted(RevisionRecord::DELETED_TEXT)) {
+                return;
+            }
+        } else {
+            $oldRev = null;
+        }
 
-		foreach ( $categoryDeletes as $categoryName ) {
-			$categoryTitle = Title::makeTitle( NS_CATEGORY, $categoryName );
-			$catMembChange->triggerCategoryRemovedNotification( $categoryTitle );
-			if ( $insertCount++ && ( $insertCount++ % $batchSize ) == 0 ) {
-				$lbFactory->commitAndWaitForReplication( __METHOD__, $this->ticket );
-			}
-		}
-	}
+        // Parse the new revision and get the categories
+        $categoryChanges = $this->getExplicitCategoriesChanges($page, $newRev, $oldRev);
+        [$categoryInserts, $categoryDeletes] = $categoryChanges;
+        if (!$categoryInserts && !$categoryDeletes) {
+            return; // nothing to do
+        }
 
-	private function getExplicitCategoriesChanges(
-		WikiPage $page, RevisionRecord $newRev, RevisionRecord $oldRev = null
-	) {
-		// Inject the same timestamp for both revision parses to avoid seeing category changes
-		// due to time-based parser functions. Inject the same page title for the parses too.
-		// Note that REPEATABLE-READ makes template/file pages appear unchanged between parses.
-		$parseTimestamp = $newRev->getTimestamp();
-		// Parse the old rev and get the categories. Do not use link tables as that
-		// assumes these updates are perfectly FIFO and that link tables are always
-		// up to date, neither of which are true.
-		$oldCategories = $oldRev
-			? $this->getCategoriesAtRev( $page, $oldRev, $parseTimestamp )
-			: [];
-		// Parse the new revision and get the categories
-		$newCategories = $this->getCategoriesAtRev( $page, $newRev, $parseTimestamp );
+        $blc = $services->getBacklinkCacheFactory()->getBacklinkCache($title);
+        $catMembChange = new CategoryMembershipChange($title, $blc, $newRev);
+        $catMembChange->checkTemplateLinks();
 
-		$categoryInserts = array_values( array_diff( $newCategories, $oldCategories ) );
-		$categoryDeletes = array_values( array_diff( $oldCategories, $newCategories ) );
+        $batchSize = $services->getMainConfig()->get(MainConfigNames::UpdateRowsPerQuery);
+        $insertCount = 0;
 
-		return [ $categoryInserts, $categoryDeletes ];
-	}
+        foreach ($categoryInserts as $categoryName) {
+            $categoryTitle = Title::makeTitle(NS_CATEGORY, $categoryName);
+            $catMembChange->triggerCategoryAddedNotification($categoryTitle);
+            if ($insertCount++ && ($insertCount % $batchSize) == 0) {
+                $lbFactory->commitAndWaitForReplication(__METHOD__, $this->ticket);
+            }
+        }
 
-	/**
-	 * @param WikiPage $page
-	 * @param RevisionRecord $rev
-	 * @param string $parseTimestamp TS_MW
-	 *
-	 * @return string[] category names
-	 */
-	private function getCategoriesAtRev( WikiPage $page, RevisionRecord $rev, $parseTimestamp ) {
-		$services = MediaWikiServices::getInstance();
-		$options = $page->makeParserOptions( 'canonical' );
-		$options->setTimestamp( $parseTimestamp );
+        foreach ($categoryDeletes as $categoryName) {
+            $categoryTitle = Title::makeTitle(NS_CATEGORY, $categoryName);
+            $catMembChange->triggerCategoryRemovedNotification($categoryTitle);
+            if ($insertCount++ && ($insertCount++ % $batchSize) == 0) {
+                $lbFactory->commitAndWaitForReplication(__METHOD__, $this->ticket);
+            }
+        }
+    }
 
-		$output = $rev instanceof RevisionStoreRecord && $rev->isCurrent()
-			? $services->getParserCache()->get( $page, $options )
-			: null;
+    private function getExplicitCategoriesChanges(
+        WikiPage $page, RevisionRecord $newRev, RevisionRecord $oldRev = null
+    )
+    {
+        // Inject the same timestamp for both revision parses to avoid seeing category changes
+        // due to time-based parser functions. Inject the same page title for the parses too.
+        // Note that REPEATABLE-READ makes template/file pages appear unchanged between parses.
+        $parseTimestamp = $newRev->getTimestamp();
+        // Parse the old rev and get the categories. Do not use link tables as that
+        // assumes these updates are perfectly FIFO and that link tables are always
+        // up to date, neither of which are true.
+        $oldCategories = $oldRev
+            ? $this->getCategoriesAtRev($page, $oldRev, $parseTimestamp)
+            : [];
+        // Parse the new revision and get the categories
+        $newCategories = $this->getCategoriesAtRev($page, $newRev, $parseTimestamp);
 
-		if ( !$output || $output->getCacheRevisionId() !== $rev->getId() ) {
-			$output = $services->getRevisionRenderer()->getRenderedRevision( $rev, $options )
-				->getRevisionParserOutput();
-		}
+        $categoryInserts = array_values(array_diff($newCategories, $oldCategories));
+        $categoryDeletes = array_values(array_diff($oldCategories, $newCategories));
 
-		// array keys will cast numeric category names to ints
-		// so we need to cast them back to strings to avoid breaking things!
-		return array_map( 'strval', array_keys( $output->getCategories() ) );
-	}
+        return [$categoryInserts, $categoryDeletes];
+    }
 
-	public function getDeduplicationInfo() {
-		$info = parent::getDeduplicationInfo();
-		unset( $info['params']['revTimestamp'] ); // first job wins
+    /**
+     * @param WikiPage $page
+     * @param RevisionRecord $rev
+     * @param string $parseTimestamp TS_MW
+     *
+     * @return string[] category names
+     */
+    private function getCategoriesAtRev(WikiPage $page, RevisionRecord $rev, $parseTimestamp)
+    {
+        $services = MediaWikiServices::getInstance();
+        $options = $page->makeParserOptions('canonical');
+        $options->setTimestamp($parseTimestamp);
 
-		return $info;
-	}
+        $output = $rev instanceof RevisionStoreRecord && $rev->isCurrent()
+            ? $services->getParserCache()->get($page, $options)
+            : null;
+
+        if (!$output || $output->getCacheRevisionId() !== $rev->getId()) {
+            $output = $services->getRevisionRenderer()->getRenderedRevision($rev, $options)
+                ->getRevisionParserOutput();
+        }
+
+        // array keys will cast numeric category names to ints
+        // so we need to cast them back to strings to avoid breaking things!
+        return array_map('strval', array_keys($output->getCategories()));
+    }
+
+    public function getDeduplicationInfo()
+    {
+        $info = parent::getDeduplicationInfo();
+        unset($info['params']['revTimestamp']); // first job wins
+
+        return $info;
+    }
 }

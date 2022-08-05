@@ -34,25 +34,27 @@
  * global variable by that name existed before) so debugging MediaWikis globals-based
  * configuration settings is less cumbersome, and behavior is closer to that of eval.php.
  */
-class CodeCleanerGlobalsPass extends \Psy\CodeCleaner\CodeCleanerPass {
-	private static $superglobals = [
-		'GLOBALS', '_SERVER', '_ENV', '_FILES', '_COOKIE', '_POST', '_GET', '_SESSION'
-	];
+class CodeCleanerGlobalsPass extends \Psy\CodeCleaner\CodeCleanerPass
+{
+    private static $superglobals = [
+        'GLOBALS', '_SERVER', '_ENV', '_FILES', '_COOKIE', '_POST', '_GET', '_SESSION'
+    ];
 
-	public function beforeTraverse( array $nodes ) {
-		$globalVars = array_diff( array_keys( $GLOBALS ), self::$superglobals );
-		$validGlobalVars = array_filter( $globalVars, static function ( string $name ) {
-			// https://www.php.net/manual/en/language.variables.basics.php
-			return preg_match( '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $name );
-		} );
+    public function beforeTraverse(array $nodes)
+    {
+        $globalVars = array_diff(array_keys($GLOBALS), self::$superglobals);
+        $validGlobalVars = array_filter($globalVars, static function (string $name) {
+            // https://www.php.net/manual/en/language.variables.basics.php
+            return preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $name);
+        });
 
-		if ( $validGlobalVars ) {
-			$globalCommand = new \PhpParser\Node\Stmt\Global_( array_map( static function ( string $name ) {
-				return new \PhpParser\Node\Expr\Variable( $name );
-			}, $validGlobalVars ) );
-			array_unshift( $nodes, $globalCommand );
-		}
+        if ($validGlobalVars) {
+            $globalCommand = new \PhpParser\Node\Stmt\Global_(array_map(static function (string $name) {
+                return new \PhpParser\Node\Expr\Variable($name);
+            }, $validGlobalVars));
+            array_unshift($nodes, $globalCommand);
+        }
 
-		return $nodes;
-	}
+        return $nodes;
+    }
 }

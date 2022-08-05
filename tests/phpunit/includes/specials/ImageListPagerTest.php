@@ -9,27 +9,29 @@
  *
  * @group Database
  */
-class ImageListPagerTest extends MediaWikiIntegrationTestCase {
-	/**
-	 * @covers ImageListPager::formatValue
-	 */
-	public function testFormatValuesThrowException() {
-		$services = $this->getServiceContainer();
-		$page = new ImageListPager(
-			RequestContext::getMain(),
-			$services->getCommentStore(),
-			$services->getLinkRenderer(),
-			$services->getDBLoadBalancer(),
-			$services->getRepoGroup(),
-			$services->getUserCache(),
-			$services->getUserNameUtils(),
-			null,
-			'',
-			false,
-			false
-		);
-		$this->expectException( MWException::class );
-		$this->expectExceptionMessage( "invalid_field" );
-		$page->formatValue( 'invalid_field', 'invalid_value' );
-	}
+class ImageListPagerTest extends MediaWikiIntegrationTestCase
+{
+    /**
+     * @covers ImageListPager::formatValue
+     */
+    public function testFormatValuesThrowException()
+    {
+        $services = $this->getServiceContainer();
+        $page = new ImageListPager(
+            RequestContext::getMain(),
+            $services->getCommentStore(),
+            $services->getLinkRenderer(),
+            $services->getDBLoadBalancer(),
+            $services->getRepoGroup(),
+            $services->getUserCache(),
+            $services->getUserNameUtils(),
+            null,
+            '',
+            false,
+            false
+        );
+        $this->expectException(MWException::class);
+        $this->expectExceptionMessage("invalid_field");
+        $page->formatValue('invalid_field', 'invalid_value');
+    }
 }

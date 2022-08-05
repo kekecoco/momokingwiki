@@ -33,69 +33,83 @@
  * @ingroup HTTP
  * @since 1.19
  */
-class DerivativeRequest extends FauxRequest {
-	private $base;
-	private $ip;
+class DerivativeRequest extends FauxRequest
+{
+    private $base;
+    private $ip;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param WebRequest $base
-	 * @param array $data Array of *non*-urlencoded key => value pairs, the
-	 *   fake GET/POST values
-	 * @param bool $wasPosted Whether to treat the data as POST
-	 */
-	public function __construct( WebRequest $base, $data, $wasPosted = false ) {
-		$this->base = $base;
-		parent::__construct( $data, $wasPosted );
-	}
+    /**
+     * @stable to call
+     *
+     * @param WebRequest $base
+     * @param array $data Array of *non*-urlencoded key => value pairs, the
+     *   fake GET/POST values
+     * @param bool $wasPosted Whether to treat the data as POST
+     */
+    public function __construct(WebRequest $base, $data, $wasPosted = false)
+    {
+        $this->base = $base;
+        parent::__construct($data, $wasPosted);
+    }
 
-	public function getCookie( $key, $prefix = null, $default = null ) {
-		return $this->base->getCookie( $key, $prefix, $default );
-	}
+    public function getCookie($key, $prefix = null, $default = null)
+    {
+        return $this->base->getCookie($key, $prefix, $default);
+    }
 
-	public function getHeader( $name, $flags = 0 ) {
-		return $this->base->getHeader( $name, $flags );
-	}
+    public function getHeader($name, $flags = 0)
+    {
+        return $this->base->getHeader($name, $flags);
+    }
 
-	public function getAllHeaders() {
-		return $this->base->getAllHeaders();
-	}
+    public function getAllHeaders()
+    {
+        return $this->base->getAllHeaders();
+    }
 
-	public function getSession() {
-		return $this->base->getSession();
-	}
+    public function getSession()
+    {
+        return $this->base->getSession();
+    }
 
-	public function getSessionData( $key ) {
-		return $this->base->getSessionData( $key );
-	}
+    public function getSessionData($key)
+    {
+        return $this->base->getSessionData($key);
+    }
 
-	public function setSessionData( $key, $data ) {
-		$this->base->setSessionData( $key, $data );
-	}
+    public function setSessionData($key, $data)
+    {
+        $this->base->setSessionData($key, $data);
+    }
 
-	public function getAcceptLang() {
-		return $this->base->getAcceptLang();
-	}
+    public function getAcceptLang()
+    {
+        return $this->base->getAcceptLang();
+    }
 
-	public function getIP() {
-		return $this->ip ?: $this->base->getIP();
-	}
+    public function getIP()
+    {
+        return $this->ip ?: $this->base->getIP();
+    }
 
-	public function setIP( $ip ) {
-		$this->ip = $ip;
-	}
+    public function setIP($ip)
+    {
+        $this->ip = $ip;
+    }
 
-	public function getProtocol() {
-		return $this->base->getProtocol();
-	}
+    public function getProtocol()
+    {
+        return $this->base->getProtocol();
+    }
 
-	public function getUpload( $key ) {
-		// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
-		return $this->base->getUpload( $key );
-	}
+    public function getUpload($key)
+    {
+        // @phan-suppress-next-line PhanTypeMismatchReturnSuperType
+        return $this->base->getUpload($key);
+    }
 
-	public function getElapsedTime() {
-		return $this->base->getElapsedTime();
-	}
+    public function getElapsedTime()
+    {
+        return $this->base->getElapsedTime();
+    }
 }

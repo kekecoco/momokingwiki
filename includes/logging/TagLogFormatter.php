@@ -29,65 +29,68 @@
  *
  * @since 1.25
  */
-class TagLogFormatter extends LogFormatter {
+class TagLogFormatter extends LogFormatter
+{
 
-	protected function getMessageParameters() {
-		$params = parent::getMessageParameters();
+    protected function getMessageParameters()
+    {
+        $params = parent::getMessageParameters();
 
-		$isRevLink = !empty( $params[3] );
-		if ( $isRevLink ) {
-			$id = $params[3];
-			$target = $this->entry->getTarget();
-			$query = [
-				'oldid' => $id,
-				'diff' => 'prev'
-			];
-		} else {
-			$id = $params[4];
-			$target = SpecialPage::getTitleValueFor( 'Log' );
-			$query = [
-				'logid' => $id,
-			];
-		}
+        $isRevLink = !empty($params[3]);
+        if ($isRevLink) {
+            $id = $params[3];
+            $target = $this->entry->getTarget();
+            $query = [
+                'oldid' => $id,
+                'diff'  => 'prev'
+            ];
+        } else {
+            $id = $params[4];
+            $target = SpecialPage::getTitleValueFor('Log');
+            $query = [
+                'logid' => $id,
+            ];
+        }
 
-		$formattedNumber = $this->context->getLanguage()->formatNumNoSeparators( $id );
-		if ( $this->plaintext ) {
-			$link = $formattedNumber;
-		} elseif ( !$isRevLink || $target->exists() ) {
-			$link = $this->getLinkRenderer()->makeKnownLink(
-				$target, $formattedNumber, [], $query );
-		} else {
-			$link = htmlspecialchars( $formattedNumber );
-		}
+        $formattedNumber = $this->context->getLanguage()->formatNumNoSeparators($id);
+        if ($this->plaintext) {
+            $link = $formattedNumber;
+        } elseif (!$isRevLink || $target->exists()) {
+            $link = $this->getLinkRenderer()->makeKnownLink(
+                $target, $formattedNumber, [], $query);
+        } else {
+            $link = htmlspecialchars($formattedNumber);
+        }
 
-		if ( $isRevLink ) {
-			$params[3] = Message::rawParam( $link );
-		} else {
-			$params[4] = Message::rawParam( $link );
-		}
+        if ($isRevLink) {
+            $params[3] = Message::rawParam($link);
+        } else {
+            $params[4] = Message::rawParam($link);
+        }
 
-		return $params;
-	}
+        return $params;
+    }
 
-	protected function getMessageKey() {
-		$key = parent::getMessageKey();
-		$params = $this->getMessageParameters();
+    protected function getMessageKey()
+    {
+        $key = parent::getMessageKey();
+        $params = $this->getMessageParameters();
 
-		$add = ( isset( $params[6] ) && isset( $params[6]['num'] ) && $params[6]['num'] );
-		$remove = ( isset( $params[8] ) && isset( $params[8]['num'] ) && $params[8]['num'] );
-		$key .= ( $remove ? ( $add ? '' : '-remove' ) : '-add' );
+        $add = (isset($params[6]) && isset($params[6]['num']) && $params[6]['num']);
+        $remove = (isset($params[8]) && isset($params[8]['num']) && $params[8]['num']);
+        $key .= ($remove ? ($add ? '' : '-remove') : '-add');
 
-		if ( isset( $params[3] ) && $params[3] ) {
-			// Messages: logentry-tag-update-add-revision, logentry-tag-update-remove-revision,
-			// logentry-tag-update-revision
-			$key .= '-revision';
-		} else {
-			// Messages: logentry-tag-update-add-logentry, logentry-tag-update-remove-logentry,
-			// logentry-tag-update-logentry
-			$key .= '-logentry';
-		}
+        if (isset($params[3]) && $params[3]) {
+            // Messages: logentry-tag-update-add-revision, logentry-tag-update-remove-revision,
+            // logentry-tag-update-revision
+            $key .= '-revision';
+        } else {
+            // Messages: logentry-tag-update-add-logentry, logentry-tag-update-remove-logentry,
+            // logentry-tag-update-logentry
+            $key .= '-logentry';
+        }
 
-		return $key;
-	}
+        return $key;
+    }
 
 }

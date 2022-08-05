@@ -9,198 +9,215 @@ use Wikimedia\Rdbms\IResultWrapper;
 /**
  * @covers Wikimedia\Rdbms\DBConnRef
  */
-class DBConnRefTest extends PHPUnit\Framework\TestCase {
+class DBConnRefTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	/**
-	 * @return ILoadBalancer
-	 */
-	private function getLoadBalancerMock() {
-		$lb = $this->createMock( ILoadBalancer::class );
-		$lb->method( 'getConnection' )->willReturn( $this->getDatabaseMock() );
-		$lb->method( 'getConnectionInternal' )->willReturn( $this->getDatabaseMock() );
+    /**
+     * @return ILoadBalancer
+     */
+    private function getLoadBalancerMock()
+    {
+        $lb = $this->createMock(ILoadBalancer::class);
+        $lb->method('getConnection')->willReturn($this->getDatabaseMock());
+        $lb->method('getConnectionInternal')->willReturn($this->getDatabaseMock());
 
-		$lb->method( 'getConnectionRef' )->willReturnCallback(
-			function () use ( $lb ) {
-				return $this->getDBConnRef( $lb );
-			}
-		);
+        $lb->method('getConnectionRef')->willReturnCallback(
+            function () use ($lb) {
+                return $this->getDBConnRef($lb);
+            }
+        );
 
-		return $lb;
-	}
+        return $lb;
+    }
 
-	/**
-	 * @return IDatabase
-	 */
-	private function getDatabaseMock() {
-		$db = $this->createMock( IDatabase::class );
+    /**
+     * @return IDatabase
+     */
+    private function getDatabaseMock()
+    {
+        $db = $this->createMock(IDatabase::class);
 
-		$open = true;
-		$db->method( 'select' )->willReturnCallback( static function () use ( &$open ) {
-			if ( !$open ) {
-				throw new LogicException( "Not open" );
-			}
+        $open = true;
+        $db->method('select')->willReturnCallback(static function () use (&$open) {
+            if (!$open) {
+                throw new LogicException("Not open");
+            }
 
-			return new FakeResultWrapper( [] );
-		} );
-		$db->method( 'close' )->willReturnCallback( static function () use ( &$open ) {
-			$open = false;
+            return new FakeResultWrapper([]);
+        });
+        $db->method('close')->willReturnCallback(static function () use (&$open) {
+            $open = false;
 
-			return true;
-		} );
-		$db->method( 'isOpen' )->willReturnCallback( static function () use ( &$open ) {
-			return $open;
-		} );
+            return true;
+        });
+        $db->method('isOpen')->willReturnCallback(static function () use (&$open) {
+            return $open;
+        });
 
-		return $db;
-	}
+        return $db;
+    }
 
-	/**
-	 * @param ILoadBalancer|null $lb
-	 * @return IDatabase
-	 */
-	private function getDBConnRef( ILoadBalancer $lb = null ) {
-		$lb = $lb ?: $this->getLoadBalancerMock();
-		return new DBConnRef( $lb, $this->getDatabaseMock(), DB_PRIMARY );
-	}
+    /**
+     * @param ILoadBalancer|null $lb
+     * @return IDatabase
+     */
+    private function getDBConnRef(ILoadBalancer $lb = null)
+    {
+        $lb = $lb ?: $this->getLoadBalancerMock();
 
-	public function testConstruct() {
-		$lb = $this->getLoadBalancerMock();
-		$ref = new DBConnRef( $lb, $this->getDatabaseMock(), DB_PRIMARY );
+        return new DBConnRef($lb, $this->getDatabaseMock(), DB_PRIMARY);
+    }
 
-		$this->assertInstanceOf( IResultWrapper::class, $ref->select( 'whatever', '*' ) );
-	}
+    public function testConstruct()
+    {
+        $lb = $this->getLoadBalancerMock();
+        $ref = new DBConnRef($lb, $this->getDatabaseMock(), DB_PRIMARY);
 
-	public function testConstruct_params() {
-		$lb = $this->createMock( ILoadBalancer::class );
+        $this->assertInstanceOf(IResultWrapper::class, $ref->select('whatever', '*'));
+    }
 
-		$lb->expects( $this->once() )
-			->method( 'getConnectionInternal' )
-			->with( DB_PRIMARY, [ 'test' ], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT )
-			->willReturn( $this->getDatabaseMock() );
+    public function testConstruct_params()
+    {
+        $lb = $this->createMock(ILoadBalancer::class);
 
-		$ref = new DBConnRef(
-			$lb,
-			[ DB_PRIMARY, [ 'test' ], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT ],
-			DB_PRIMARY
-		);
+        $lb->expects($this->once())
+            ->method('getConnectionInternal')
+            ->with(DB_PRIMARY, ['test'], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT)
+            ->willReturn($this->getDatabaseMock());
 
-		$this->assertInstanceOf( IResultWrapper::class, $ref->select( 'whatever', '*' ) );
-		$this->assertEquals( DB_PRIMARY, $ref->getReferenceRole() );
+        $ref = new DBConnRef(
+            $lb,
+            [DB_PRIMARY, ['test'], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT],
+            DB_PRIMARY
+        );
 
-		$ref2 = new DBConnRef(
-			$lb,
-			[ DB_PRIMARY, [ 'test' ], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT ],
-			DB_REPLICA
-		);
-		$this->assertEquals( DB_REPLICA, $ref2->getReferenceRole() );
-	}
+        $this->assertInstanceOf(IResultWrapper::class, $ref->select('whatever', '*'));
+        $this->assertEquals(DB_PRIMARY, $ref->getReferenceRole());
 
-	public function testDestruct() {
-		$lb = $this->getLoadBalancerMock();
+        $ref2 = new DBConnRef(
+            $lb,
+            [DB_PRIMARY, ['test'], 'dummy', ILoadBalancer::CONN_TRX_AUTOCOMMIT],
+            DB_REPLICA
+        );
+        $this->assertEquals(DB_REPLICA, $ref2->getReferenceRole());
+    }
 
-		$lb->expects( $this->once() )
-			->method( 'reuseConnectionInternal' );
+    public function testDestruct()
+    {
+        $lb = $this->getLoadBalancerMock();
 
-		$this->innerMethodForTestDestruct( $lb );
-	}
+        $lb->expects($this->once())
+            ->method('reuseConnectionInternal');
 
-	private function innerMethodForTestDestruct( ILoadBalancer $lb ) {
-		$ref = $lb->getConnectionRef( DB_REPLICA );
+        $this->innerMethodForTestDestruct($lb);
+    }
 
-		$this->assertInstanceOf( IResultWrapper::class, $ref->select( 'whatever', '*' ) );
-	}
+    private function innerMethodForTestDestruct(ILoadBalancer $lb)
+    {
+        $ref = $lb->getConnectionRef(DB_REPLICA);
 
-	public function testConstruct_failure() {
-		$this->expectException( InvalidArgumentException::class );
+        $this->assertInstanceOf(IResultWrapper::class, $ref->select('whatever', '*'));
+    }
 
-		$lb = $this->getLoadBalancerMock();
-		new DBConnRef( $lb, 17, DB_REPLICA ); // bad constructor argument
-	}
+    public function testConstruct_failure()
+    {
+        $this->expectException(InvalidArgumentException::class);
 
-	/**
-	 * @covers Wikimedia\Rdbms\DBConnRef::getDomainId
-	 */
-	public function testGetDomainID() {
-		$lb = $this->createMock( ILoadBalancer::class );
+        $lb = $this->getLoadBalancerMock();
+        new DBConnRef($lb, 17, DB_REPLICA); // bad constructor argument
+    }
 
-		// getDomainID is optimized to not create a connection
-		$lb->expects( $this->never() )
-			->method( 'getConnection' );
+    /**
+     * @covers Wikimedia\Rdbms\DBConnRef::getDomainId
+     */
+    public function testGetDomainID()
+    {
+        $lb = $this->createMock(ILoadBalancer::class);
 
-		$ref = new DBConnRef( $lb, [ DB_REPLICA, [], 'dummy', 0 ], DB_REPLICA );
+        // getDomainID is optimized to not create a connection
+        $lb->expects($this->never())
+            ->method('getConnection');
 
-		$this->assertSame( 'dummy', $ref->getDomainID() );
-	}
+        $ref = new DBConnRef($lb, [DB_REPLICA, [], 'dummy', 0], DB_REPLICA);
 
-	/**
-	 * @covers Wikimedia\Rdbms\DBConnRef::select
-	 */
-	public function testSelect() {
-		// select should get passed through normally
-		$ref = $this->getDBConnRef();
-		$this->assertInstanceOf( IResultWrapper::class, $ref->select( 'whatever', '*' ) );
-	}
+        $this->assertSame('dummy', $ref->getDomainID());
+    }
 
-	public function testToString() {
-		$ref = $this->getDBConnRef();
-		$this->assertIsString( $ref->__toString() );
+    /**
+     * @covers Wikimedia\Rdbms\DBConnRef::select
+     */
+    public function testSelect()
+    {
+        // select should get passed through normally
+        $ref = $this->getDBConnRef();
+        $this->assertInstanceOf(IResultWrapper::class, $ref->select('whatever', '*'));
+    }
 
-		$lb = $this->getLoadBalancerMock();
-		$ref = new DBConnRef( $lb, [ DB_PRIMARY, [], 'test', 0 ], DB_PRIMARY );
-		$this->assertIsString( $ref->__toString() );
-	}
+    public function testToString()
+    {
+        $ref = $this->getDBConnRef();
+        $this->assertIsString($ref->__toString());
 
-	/**
-	 * @covers Wikimedia\Rdbms\DBConnRef::close
-	 */
-	public function testClose() {
-		$lb = $this->getLoadBalancerMock();
-		$ref = new DBConnRef( $lb, [ DB_REPLICA, [], 'dummy', 0 ], DB_PRIMARY );
-		$this->expectException( \Wikimedia\Rdbms\DBUnexpectedError::class );
-		$ref->close();
-	}
+        $lb = $this->getLoadBalancerMock();
+        $ref = new DBConnRef($lb, [DB_PRIMARY, [], 'test', 0], DB_PRIMARY);
+        $this->assertIsString($ref->__toString());
+    }
 
-	/**
-	 * @covers Wikimedia\Rdbms\DBConnRef::getReferenceRole
-	 */
-	public function testGetReferenceRole() {
-		$lb = $this->getLoadBalancerMock();
-		$ref = new DBConnRef( $lb, [ DB_REPLICA, [], 'dummy', 0 ], DB_REPLICA );
-		$this->assertSame( DB_REPLICA, $ref->getReferenceRole() );
+    /**
+     * @covers Wikimedia\Rdbms\DBConnRef::close
+     */
+    public function testClose()
+    {
+        $lb = $this->getLoadBalancerMock();
+        $ref = new DBConnRef($lb, [DB_REPLICA, [], 'dummy', 0], DB_PRIMARY);
+        $this->expectException(\Wikimedia\Rdbms\DBUnexpectedError::class);
+        $ref->close();
+    }
 
-		$ref = new DBConnRef( $lb, [ DB_PRIMARY, [], 'dummy', 0 ], DB_PRIMARY );
-		$this->assertSame( DB_PRIMARY, $ref->getReferenceRole() );
+    /**
+     * @covers Wikimedia\Rdbms\DBConnRef::getReferenceRole
+     */
+    public function testGetReferenceRole()
+    {
+        $lb = $this->getLoadBalancerMock();
+        $ref = new DBConnRef($lb, [DB_REPLICA, [], 'dummy', 0], DB_REPLICA);
+        $this->assertSame(DB_REPLICA, $ref->getReferenceRole());
 
-		$ref = new DBConnRef( $lb, [ 1, [], 'dummy', 0 ], DB_REPLICA );
-		$this->assertSame( DB_REPLICA, $ref->getReferenceRole() );
+        $ref = new DBConnRef($lb, [DB_PRIMARY, [], 'dummy', 0], DB_PRIMARY);
+        $this->assertSame(DB_PRIMARY, $ref->getReferenceRole());
 
-		$ref = new DBConnRef( $lb, [ 0, [], 'dummy', 0 ], DB_PRIMARY );
-		$this->assertSame( DB_PRIMARY, $ref->getReferenceRole() );
-	}
+        $ref = new DBConnRef($lb, [1, [], 'dummy', 0], DB_REPLICA);
+        $this->assertSame(DB_REPLICA, $ref->getReferenceRole());
 
-	/**
-	 * @covers Wikimedia\Rdbms\DBConnRef::getReferenceRole
-	 * @dataProvider provideRoleExceptions
-	 */
-	public function testRoleExceptions( $method, $args ) {
-		$lb = $this->getLoadBalancerMock();
-		$ref = new DBConnRef( $lb, [ DB_REPLICA, [], 'dummy', 0 ], DB_REPLICA );
-		$this->expectException( Wikimedia\Rdbms\DBReadOnlyRoleError::class );
-		$ref->$method( ...$args );
-	}
+        $ref = new DBConnRef($lb, [0, [], 'dummy', 0], DB_PRIMARY);
+        $this->assertSame(DB_PRIMARY, $ref->getReferenceRole());
+    }
 
-	public function provideRoleExceptions() {
-		return [
-			[ 'insert', [ 'table', [ 'a' => 1 ] ] ],
-			[ 'update', [ 'table', [ 'a' => 1 ], [ 'a' => 2 ] ] ],
-			[ 'delete', [ 'table', [ 'a' => 1 ] ] ],
-			[ 'replace', [ 'table', [ 'a' ], [ 'a' => 1 ] ] ],
-			[ 'upsert', [ 'table', [ 'a' => 1 ], [ 'a' ], [ 'a = a + 1' ] ] ],
-			[ 'lock', [ 'k', 'method' ] ],
-			[ 'unlock', [ 'k', 'method' ] ],
-			[ 'getScopedLockAndFlush', [ 'k', 'method', 1 ] ]
-		];
-	}
+    /**
+     * @covers       Wikimedia\Rdbms\DBConnRef::getReferenceRole
+     * @dataProvider provideRoleExceptions
+     */
+    public function testRoleExceptions($method, $args)
+    {
+        $lb = $this->getLoadBalancerMock();
+        $ref = new DBConnRef($lb, [DB_REPLICA, [], 'dummy', 0], DB_REPLICA);
+        $this->expectException(Wikimedia\Rdbms\DBReadOnlyRoleError::class);
+        $ref->$method(...$args);
+    }
+
+    public function provideRoleExceptions()
+    {
+        return [
+            ['insert', ['table', ['a' => 1]]],
+            ['update', ['table', ['a' => 1], ['a' => 2]]],
+            ['delete', ['table', ['a' => 1]]],
+            ['replace', ['table', ['a'], ['a' => 1]]],
+            ['upsert', ['table', ['a' => 1], ['a'], ['a = a + 1']]],
+            ['lock', ['k', 'method']],
+            ['unlock', ['k', 'method']],
+            ['getScopedLockAndFlush', ['k', 'method', 1]]
+        ];
+    }
 }

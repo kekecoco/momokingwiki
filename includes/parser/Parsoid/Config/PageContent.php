@@ -29,62 +29,75 @@ use Wikimedia\Parsoid\Config\PageContent as IPageContent;
  *
  * @since 1.39
  */
-class PageContent extends IPageContent {
+class PageContent extends IPageContent
+{
 
-	/** @var RevisionRecord */
-	private $rev;
+    /** @var RevisionRecord */
+    private $rev;
 
-	/**
-	 * @param RevisionRecord $rev
-	 */
-	public function __construct( RevisionRecord $rev ) {
-		$this->rev = $rev;
-	}
+    /**
+     * @param RevisionRecord $rev
+     */
+    public function __construct(RevisionRecord $rev)
+    {
+        $this->rev = $rev;
+    }
 
-	/** @inheritDoc */
-	public function getRoles(): array {
-		return $this->rev->getSlotRoles();
-	}
+    /** @inheritDoc */
+    public function getRoles(): array
+    {
+        return $this->rev->getSlotRoles();
+    }
 
-	/** @inheritDoc */
-	public function hasRole( string $role ): bool {
-		return $this->rev->hasSlot( $role );
-	}
+    /** @inheritDoc */
+    public function hasRole(string $role): bool
+    {
+        return $this->rev->hasSlot($role);
+    }
 
-	/**
-	 * Throw if the revision doesn't have the named role
-	 * @param string $role
-	 * @throws InvalidArgumentException
-	 */
-	private function checkRole( string $role ): void {
-		if ( !$this->rev->hasSlot( $role ) ) {
-			throw new InvalidArgumentException( "PageContent does not have role '$role'" );
-		}
-	}
+    /**
+     * Throw if the revision doesn't have the named role
+     * @param string $role
+     * @throws InvalidArgumentException
+     */
+    private function checkRole(string $role): void
+    {
+        if (!$this->rev->hasSlot($role)) {
+            throw new InvalidArgumentException("PageContent does not have role '$role'");
+        }
+    }
 
-	/** @inheritDoc */
-	public function getModel( string $role ): string {
-		$this->checkRole( $role );
-		return $this->rev->getContent( $role )->getModel();
-	}
+    /** @inheritDoc */
+    public function getModel(string $role): string
+    {
+        $this->checkRole($role);
 
-	/** @inheritDoc */
-	public function getFormat( string $role ): string {
-		$this->checkRole( $role );
-		return $this->rev->getContent( $role )->getDefaultFormat();
-	}
+        return $this->rev->getContent($role)->getModel();
+    }
 
-	/** @inheritDoc */
-	public function getContent( string $role ): string {
-		$this->checkRole( $role );
-		return $this->rev->getContent( $role )->serialize();
-	}
+    /** @inheritDoc */
+    public function getFormat(string $role): string
+    {
+        $this->checkRole($role);
 
-	/** @inheritDoc */
-	public function getRedirectTarget(): ?string {
-		$content = $this->rev->getContent( 'main' );
-		$target = $content ? $content->getRedirectTarget() : null;
-		return $target ? $target->getPrefixedDBkey() : null;
-	}
+        return $this->rev->getContent($role)->getDefaultFormat();
+    }
+
+    /** @inheritDoc */
+    public function getContent(string $role): string
+    {
+        $this->checkRole($role);
+
+        return $this->rev->getContent($role)->serialize();
+    }
+
+    /** @inheritDoc */
+    public function getRedirectTarget(): ?string
+    {
+        $content = $this->rev->getContent('main');
+        $target = $content ? $content->getRedirectTarget() : null;
+
+        return $target ? $target->getPrefixedDBkey() : null;
+    }
 
 }

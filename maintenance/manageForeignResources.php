@@ -27,10 +27,12 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.32
  */
-class ManageForeignResources extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( <<<TEXT
+class ManageForeignResources extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(<<<TEXT
 Manage foreign resources registered with ResourceLoader.
 
 This helps developers with downloading, verifying, and updating local copies of upstream
@@ -48,42 +50,43 @@ one themselves. Add or update the urls foreign-resources.yaml as needed, but omi
 leave empty) the "integrity" key. Then, run the "make-sri" action for the module and
 copy the integrity into the file. Then, you can use "verify" or "update" normally.
 TEXT
-		);
-		$this->addArg( 'action', 'One of "update", "verify" or "make-sri"', true );
-		$this->addArg( 'module', 'Name of a single module (Default: all)', false );
-		$this->addOption( 'verbose', 'Be verbose', false, false, 'v' );
-	}
+        );
+        $this->addArg('action', 'One of "update", "verify" or "make-sri"', true);
+        $this->addArg('module', 'Name of a single module (Default: all)', false);
+        $this->addOption('verbose', 'Be verbose', false, false, 'v');
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function execute() {
-		global $IP;
-		$frm = new ForeignResourceManager(
-			"{$IP}/resources/lib/foreign-resources.yaml",
-			"{$IP}/resources/lib",
-			function ( $text ) {
-				$this->output( $text );
-			},
-			function ( $text ) {
-				$this->error( $text );
-			},
-			function ( $text ) {
-				if ( $this->hasOption( 'verbose' ) ) {
-					$this->output( $text );
-				}
-			}
-		);
+    /**
+     * @return bool
+     */
+    public function execute()
+    {
+        global $IP;
+        $frm = new ForeignResourceManager(
+            "{$IP}/resources/lib/foreign-resources.yaml",
+            "{$IP}/resources/lib",
+            function ($text) {
+                $this->output($text);
+            },
+            function ($text) {
+                $this->error($text);
+            },
+            function ($text) {
+                if ($this->hasOption('verbose')) {
+                    $this->output($text);
+                }
+            }
+        );
 
-		$action = $this->getArg( 0 );
-		$module = $this->getArg( 1, 'all' );
+        $action = $this->getArg(0);
+        $module = $this->getArg(1, 'all');
 
-		try {
-			return $frm->run( $action, $module );
-		} catch ( Exception $e ) {
-			$this->fatalError( "Error: {$e->getMessage()}" );
-		}
-	}
+        try {
+            return $frm->run($action, $module);
+        } catch (Exception $e) {
+            $this->fatalError("Error: {$e->getMessage()}");
+        }
+    }
 }
 
 $maintClass = ManageForeignResources::class;

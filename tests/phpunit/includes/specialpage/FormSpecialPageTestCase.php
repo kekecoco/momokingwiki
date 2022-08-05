@@ -25,67 +25,72 @@ use MediaWiki\DAO\WikiAwareEntity;
  *
  * @group SpecialPage
  */
-abstract class FormSpecialPageTestCase extends SpecialPageTestBase {
+abstract class FormSpecialPageTestCase extends SpecialPageTestBase
+{
 
-	/**
-	 * @covers FormSpecialPage::checkExecutePermissions
-	 */
-	public function testCheckExecutePermissionsSitewideBlock() {
-		$special = $this->newSpecialPage();
-		$checkExecutePermissions = $this->getMethod( $special, 'checkExecutePermissions' );
+    /**
+     * @covers FormSpecialPage::checkExecutePermissions
+     */
+    public function testCheckExecutePermissionsSitewideBlock()
+    {
+        $special = $this->newSpecialPage();
+        $checkExecutePermissions = $this->getMethod($special, 'checkExecutePermissions');
 
-		$user = $this->getMockBuilder( User::class )
-			->onlyMethods( [ 'getBlock', 'getWikiId' ] )
-			->getMock();
-		$user->method( 'getWikiId' )->willReturn( WikiAwareEntity::LOCAL );
-		$user->method( 'getBlock' )
-			->willReturn( new DatabaseBlock( [
-				'address' => '127.0.8.1',
-				'by' => $user,
-				'reason' => 'sitewide block',
-				'timestamp' => time(),
-				'sitewide' => true,
-				'expiry' => 10,
-			] ) );
+        $user = $this->getMockBuilder(User::class)
+            ->onlyMethods(['getBlock', 'getWikiId'])
+            ->getMock();
+        $user->method('getWikiId')->willReturn(WikiAwareEntity::LOCAL);
+        $user->method('getBlock')
+            ->willReturn(new DatabaseBlock([
+                'address'   => '127.0.8.1',
+                'by'        => $user,
+                'reason'    => 'sitewide block',
+                'timestamp' => time(),
+                'sitewide'  => true,
+                'expiry'    => 10,
+            ]));
 
-		$this->expectException( UserBlockedError::class );
-		$checkExecutePermissions( $user );
-	}
+        $this->expectException(UserBlockedError::class);
+        $checkExecutePermissions($user);
+    }
 
-	/**
-	 * @covers FormSpecialPage::checkExecutePermissions
-	 */
-	public function testCheckExecutePermissionsPartialBlock() {
-		$special = $this->newSpecialPage();
-		$checkExecutePermissions = $this->getMethod( $special, 'checkExecutePermissions' );
+    /**
+     * @covers FormSpecialPage::checkExecutePermissions
+     */
+    public function testCheckExecutePermissionsPartialBlock()
+    {
+        $special = $this->newSpecialPage();
+        $checkExecutePermissions = $this->getMethod($special, 'checkExecutePermissions');
 
-		$user = $this->getMockBuilder( User::class )
-			->onlyMethods( [ 'getBlock', 'getWikiId' ] )
-			->getMock();
-		$user->method( 'getWikiId' )->willReturn( WikiAwareEntity::LOCAL );
-		$user->method( 'getBlock' )
-			->willReturn( new DatabaseBlock( [
-				'address' => '127.0.8.1',
-				'by' => $user,
-				'reason' => 'partial block',
-				'timestamp' => time(),
-				'sitewide' => false,
-				'expiry' => 10,
-			] ) );
+        $user = $this->getMockBuilder(User::class)
+            ->onlyMethods(['getBlock', 'getWikiId'])
+            ->getMock();
+        $user->method('getWikiId')->willReturn(WikiAwareEntity::LOCAL);
+        $user->method('getBlock')
+            ->willReturn(new DatabaseBlock([
+                'address'   => '127.0.8.1',
+                'by'        => $user,
+                'reason'    => 'partial block',
+                'timestamp' => time(),
+                'sitewide'  => false,
+                'expiry'    => 10,
+            ]));
 
-		$this->assertNull( $checkExecutePermissions( $user ) );
-	}
+        $this->assertNull($checkExecutePermissions($user));
+    }
 
-	/**
-	 * Get a protected/private method.
-	 *
-	 * @param object $obj
-	 * @param string $name
-	 * @return callable
-	 */
-	protected function getMethod( object $obj, $name ) {
-		$method = new ReflectionMethod( $obj, $name );
-		$method->setAccessible( true );
-		return $method->getClosure( $obj );
-	}
+    /**
+     * Get a protected/private method.
+     *
+     * @param object $obj
+     * @param string $name
+     * @return callable
+     */
+    protected function getMethod(object $obj, $name)
+    {
+        $method = new ReflectionMethod($obj, $name);
+        $method->setAccessible(true);
+
+        return $method->getClosure($obj);
+    }
 }

@@ -33,39 +33,43 @@ use UnexpectedValueException;
  * @newable
  * @since 1.27
  */
-class MetadataMergeException extends UnexpectedValueException {
-	/** @var array */
-	protected $context;
+class MetadataMergeException extends UnexpectedValueException
+{
+    /** @var array */
+    protected $context;
 
-	/**
-	 * @param string $message
-	 * @param int $code
-	 * @param Exception|null $previous
-	 * @param array $context Additional context data
-	 */
-	public function __construct(
-		$message = '',
-		$code = 0,
-		Exception $previous = null,
-		array $context = []
-	) {
-		parent::__construct( $message, $code, $previous );
-		$this->context = $context;
-	}
+    /**
+     * @param string $message
+     * @param int $code
+     * @param Exception|null $previous
+     * @param array $context Additional context data
+     */
+    public function __construct(
+        $message = '',
+        $code = 0,
+        Exception $previous = null,
+        array $context = []
+    )
+    {
+        parent::__construct($message, $code, $previous);
+        $this->context = $context;
+    }
 
-	/**
-	 * Get context data.
-	 * @return array
-	 */
-	public function getContext() {
-		return $this->context;
-	}
+    /**
+     * Get context data.
+     * @return array
+     */
+    public function getContext()
+    {
+        return $this->context;
+    }
 
-	/**
-	 * Set context data.
-	 * @param array $context
-	 */
-	public function setContext( array $context ) {
-		$this->context = $context;
-	}
+    /**
+     * Set context data.
+     * @param array $context
+     */
+    public function setContext(array $context)
+    {
+        $this->context = $context;
+    }
 }

@@ -7,24 +7,28 @@
  *
  * @since 1.29
  */
-class ChangesListStringOptionsFilter extends ChangesListFilter {
-	/**
-	 * @inheritDoc
-	 */
-	public function displaysOnUnstructuredUi() {
-		return false;
-	}
+class ChangesListStringOptionsFilter extends ChangesListFilter
+{
+    /**
+     * @inheritDoc
+     */
+    public function displaysOnUnstructuredUi()
+    {
+        return false;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function isSelected( FormOptions $opts ) {
-		$option = $opts[ $this->getGroup()->getName() ];
-		if ( $option === ChangesListStringOptionsFilterGroup::ALL ) {
-			return true;
-		}
+    /**
+     * @inheritDoc
+     */
+    public function isSelected(FormOptions $opts)
+    {
+        $option = $opts[$this->getGroup()->getName()];
+        if ($option === ChangesListStringOptionsFilterGroup::ALL) {
+            return true;
+        }
 
-		$values = explode( ChangesListStringOptionsFilterGroup::SEPARATOR, $option );
-		return in_array( $this->getName(), $values );
-	}
+        $values = explode(ChangesListStringOptionsFilterGroup::SEPARATOR, $option);
+
+        return in_array($this->getName(), $values);
+    }
 }

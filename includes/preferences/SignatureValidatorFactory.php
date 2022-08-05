@@ -31,60 +31,63 @@ use TitleFactory;
 /**
  * @since 1.38
  */
-class SignatureValidatorFactory {
-	/** @var ServiceOptions */
-	private $serviceOptions;
+class SignatureValidatorFactory
+{
+    /** @var ServiceOptions */
+    private $serviceOptions;
 
-	/** @var callable */
-	private $parserFactoryClosure;
+    /** @var callable */
+    private $parserFactoryClosure;
 
-	/** @var SpecialPageFactory */
-	private $specialPageFactory;
+    /** @var SpecialPageFactory */
+    private $specialPageFactory;
 
-	/** @var TitleFactory */
-	private $titleFactory;
+    /** @var TitleFactory */
+    private $titleFactory;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param callable $parserFactoryClosure A function which returns a ParserFactory.
-	 *   We use this instead of an actual ParserFactory to avoid a circular dependency,
-	 *   since Parser also needs a SignatureValidatorFactory for signature formatting.
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param TitleFactory $titleFactory
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		callable $parserFactoryClosure,
-		SpecialPageFactory $specialPageFactory,
-		TitleFactory $titleFactory
-	) {
-		// Configuration
-		$this->serviceOptions = $options;
-		$this->serviceOptions->assertRequiredOptions( SignatureValidator::CONSTRUCTOR_OPTIONS );
-		$this->parserFactoryClosure = $parserFactoryClosure;
-		$this->specialPageFactory = $specialPageFactory;
-		$this->titleFactory = $titleFactory;
-	}
+    /**
+     * @param ServiceOptions $options
+     * @param callable $parserFactoryClosure A function which returns a ParserFactory.
+     *   We use this instead of an actual ParserFactory to avoid a circular dependency,
+     *   since Parser also needs a SignatureValidatorFactory for signature formatting.
+     * @param SpecialPageFactory $specialPageFactory
+     * @param TitleFactory $titleFactory
+     */
+    public function __construct(
+        ServiceOptions $options,
+        callable $parserFactoryClosure,
+        SpecialPageFactory $specialPageFactory,
+        TitleFactory $titleFactory
+    )
+    {
+        // Configuration
+        $this->serviceOptions = $options;
+        $this->serviceOptions->assertRequiredOptions(SignatureValidator::CONSTRUCTOR_OPTIONS);
+        $this->parserFactoryClosure = $parserFactoryClosure;
+        $this->specialPageFactory = $specialPageFactory;
+        $this->titleFactory = $titleFactory;
+    }
 
-	/**
-	 * @param UserIdentity $user
-	 * @param MessageLocalizer|null $localizer
-	 * @param ParserOptions $popts
-	 * @return SignatureValidator
-	 */
-	public function newSignatureValidator(
-		UserIdentity $user,
-		?MessageLocalizer $localizer,
-		ParserOptions $popts
-	): SignatureValidator {
-		return new SignatureValidator(
-			$this->serviceOptions,
-			$user,
-			$localizer,
-			$popts,
-			( $this->parserFactoryClosure )(),
-			$this->specialPageFactory,
-			$this->titleFactory
-		);
-	}
+    /**
+     * @param UserIdentity $user
+     * @param MessageLocalizer|null $localizer
+     * @param ParserOptions $popts
+     * @return SignatureValidator
+     */
+    public function newSignatureValidator(
+        UserIdentity $user,
+        ?MessageLocalizer $localizer,
+        ParserOptions $popts
+    ): SignatureValidator
+    {
+        return new SignatureValidator(
+            $this->serviceOptions,
+            $user,
+            $localizer,
+            $popts,
+            ($this->parserFactoryClosure)(),
+            $this->specialPageFactory,
+            $this->titleFactory
+        );
+    }
 }

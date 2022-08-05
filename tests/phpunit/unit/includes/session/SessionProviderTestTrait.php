@@ -17,32 +17,34 @@ use Psr\Log\NullLogger;
  * @stable to use
  * @package MediaWiki\Session
  */
-trait SessionProviderTestTrait {
+trait SessionProviderTestTrait
+{
 
-	/**
-	 * Calls init() on an SessionProvider.
-	 *
-	 * @param SessionProvider $provider
-	 * @param LoggerInterface|null $logger
-	 * @param Config|null $config
-	 * @param SessionManager|null $manager
-	 * @param HookContainer|null $hookContainer
-	 * @param UserNameUtils|null $userNameUtils
-	 */
-	private function initProvider(
-		SessionProvider $provider,
-		LoggerInterface $logger = null,
-		Config $config = null,
-		SessionManager $manager = null,
-		HookContainer $hookContainer = null,
-		UserNameUtils $userNameUtils = null
-	) {
-		$provider->init(
-			$logger ?? new NullLogger(),
-			$config ?? new HashConfig(),
-			$manager ?? $this->createNoOpMock( SessionManager::class ),
-			$hookContainer ?? $this->createHookContainer(),
-			$userNameUtils ?? $this->createNoOpMock( UserNameUtils::class )
-		);
-	}
+    /**
+     * Calls init() on an SessionProvider.
+     *
+     * @param SessionProvider $provider
+     * @param LoggerInterface|null $logger
+     * @param Config|null $config
+     * @param SessionManager|null $manager
+     * @param HookContainer|null $hookContainer
+     * @param UserNameUtils|null $userNameUtils
+     */
+    private function initProvider(
+        SessionProvider $provider,
+        LoggerInterface $logger = null,
+        Config $config = null,
+        SessionManager $manager = null,
+        HookContainer $hookContainer = null,
+        UserNameUtils $userNameUtils = null
+    )
+    {
+        $provider->init(
+            $logger ?? new NullLogger(),
+            $config ?? new HashConfig(),
+            $manager ?? $this->createNoOpMock(SessionManager::class),
+            $hookContainer ?? $this->createHookContainer(),
+            $userNameUtils ?? $this->createNoOpMock(UserNameUtils::class)
+        );
+    }
 }

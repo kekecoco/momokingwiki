@@ -40,480 +40,487 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-class ApiQueryAllDeletedRevisions extends ApiQueryRevisionsBase {
+class ApiQueryAllDeletedRevisions extends ApiQueryRevisionsBase
+{
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/** @var NameTableStore */
-	private $changeTagDefStore;
+    /** @var NameTableStore */
+    private $changeTagDefStore;
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param RevisionStore $revisionStore
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param ParserFactory $parserFactory
-	 * @param SlotRoleRegistry $slotRoleRegistry
-	 * @param NameTableStore $changeTagDefStore
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ContentRenderer $contentRenderer
-	 * @param ContentTransformer $contentTransformer
-	 */
-	public function __construct(
-		ApiQuery $query,
-		$moduleName,
-		RevisionStore $revisionStore,
-		IContentHandlerFactory $contentHandlerFactory,
-		ParserFactory $parserFactory,
-		SlotRoleRegistry $slotRoleRegistry,
-		NameTableStore $changeTagDefStore,
-		NamespaceInfo $namespaceInfo,
-		ContentRenderer $contentRenderer,
-		ContentTransformer $contentTransformer
-	) {
-		parent::__construct(
-			$query,
-			$moduleName,
-			'adr',
-			$revisionStore,
-			$contentHandlerFactory,
-			$parserFactory,
-			$slotRoleRegistry,
-			$contentRenderer,
-			$contentTransformer
-		);
-		$this->revisionStore = $revisionStore;
-		$this->changeTagDefStore = $changeTagDefStore;
-		$this->namespaceInfo = $namespaceInfo;
-	}
+    /**
+     * @param ApiQuery $query
+     * @param string $moduleName
+     * @param RevisionStore $revisionStore
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param ParserFactory $parserFactory
+     * @param SlotRoleRegistry $slotRoleRegistry
+     * @param NameTableStore $changeTagDefStore
+     * @param NamespaceInfo $namespaceInfo
+     * @param ContentRenderer $contentRenderer
+     * @param ContentTransformer $contentTransformer
+     */
+    public function __construct(
+        ApiQuery $query,
+        $moduleName,
+        RevisionStore $revisionStore,
+        IContentHandlerFactory $contentHandlerFactory,
+        ParserFactory $parserFactory,
+        SlotRoleRegistry $slotRoleRegistry,
+        NameTableStore $changeTagDefStore,
+        NamespaceInfo $namespaceInfo,
+        ContentRenderer $contentRenderer,
+        ContentTransformer $contentTransformer
+    )
+    {
+        parent::__construct(
+            $query,
+            $moduleName,
+            'adr',
+            $revisionStore,
+            $contentHandlerFactory,
+            $parserFactory,
+            $slotRoleRegistry,
+            $contentRenderer,
+            $contentTransformer
+        );
+        $this->revisionStore = $revisionStore;
+        $this->changeTagDefStore = $changeTagDefStore;
+        $this->namespaceInfo = $namespaceInfo;
+    }
 
-	/**
-	 * @param ApiPageSet|null $resultPageSet
-	 * @return void
-	 */
-	protected function run( ApiPageSet $resultPageSet = null ) {
-		$db = $this->getDB();
-		$params = $this->extractRequestParams( false );
+    /**
+     * @param ApiPageSet|null $resultPageSet
+     * @return void
+     */
+    protected function run(ApiPageSet $resultPageSet = null)
+    {
+        $db = $this->getDB();
+        $params = $this->extractRequestParams(false);
 
-		$result = $this->getResult();
+        $result = $this->getResult();
 
-		// If the user wants no namespaces, they get no pages.
-		if ( $params['namespace'] === [] ) {
-			if ( $resultPageSet === null ) {
-				$result->addValue( 'query', $this->getModuleName(), [] );
-			}
-			return;
-		}
+        // If the user wants no namespaces, they get no pages.
+        if ($params['namespace'] === []) {
+            if ($resultPageSet === null) {
+                $result->addValue('query', $this->getModuleName(), []);
+            }
 
-		// This module operates in two modes:
-		// 'user': List deleted revs by a certain user
-		// 'all': List all deleted revs in NS
-		$mode = 'all';
-		if ( $params['user'] !== null ) {
-			$mode = 'user';
-		}
+            return;
+        }
 
-		if ( $mode == 'user' ) {
-			foreach ( [ 'from', 'to', 'prefix', 'excludeuser' ] as $param ) {
-				if ( $params[$param] !== null ) {
-					$p = $this->getModulePrefix();
-					$this->dieWithError(
-						[ 'apierror-invalidparammix-cannotusewith', $p . $param, "{$p}user" ],
-						'invalidparammix'
-					);
-				}
-			}
-		} else {
-			foreach ( [ 'start', 'end' ] as $param ) {
-				if ( $params[$param] !== null ) {
-					$p = $this->getModulePrefix();
-					$this->dieWithError(
-						[ 'apierror-invalidparammix-mustusewith', $p . $param, "{$p}user" ],
-						'invalidparammix'
-					);
-				}
-			}
-		}
+        // This module operates in two modes:
+        // 'user': List deleted revs by a certain user
+        // 'all': List all deleted revs in NS
+        $mode = 'all';
+        if ($params['user'] !== null) {
+            $mode = 'user';
+        }
 
-		// If we're generating titles only, we can use DISTINCT for a better
-		// query. But we can't do that in 'user' mode (wrong index), and we can
-		// only do it when sorting ASC (because MySQL apparently can't use an
-		// index backwards for grouping even though it can for ORDER BY, WTF?)
-		$dir = $params['dir'];
-		$optimizeGenerateTitles = false;
-		if ( $mode === 'all' && $params['generatetitles'] && $resultPageSet !== null ) {
-			if ( $dir === 'newer' ) {
-				$optimizeGenerateTitles = true;
-			} else {
-				$p = $this->getModulePrefix();
-				$this->addWarning( [ 'apiwarn-alldeletedrevisions-performance', $p ], 'performance' );
-			}
-		}
+        if ($mode == 'user') {
+            foreach (['from', 'to', 'prefix', 'excludeuser'] as $param) {
+                if ($params[$param] !== null) {
+                    $p = $this->getModulePrefix();
+                    $this->dieWithError(
+                        ['apierror-invalidparammix-cannotusewith', $p . $param, "{$p}user"],
+                        'invalidparammix'
+                    );
+                }
+            }
+        } else {
+            foreach (['start', 'end'] as $param) {
+                if ($params[$param] !== null) {
+                    $p = $this->getModulePrefix();
+                    $this->dieWithError(
+                        ['apierror-invalidparammix-mustusewith', $p . $param, "{$p}user"],
+                        'invalidparammix'
+                    );
+                }
+            }
+        }
 
-		if ( $resultPageSet === null ) {
-			$this->parseParameters( $params );
-			$arQuery = $this->revisionStore->getArchiveQueryInfo();
-			$this->addTables( $arQuery['tables'] );
-			$this->addJoinConds( $arQuery['joins'] );
-			$this->addFields( $arQuery['fields'] );
-			$this->addFields( [ 'ar_title', 'ar_namespace' ] );
-		} else {
-			$this->limit = $this->getParameter( 'limit' ) ?: 10;
-			$this->addTables( 'archive' );
-			$this->addFields( [ 'ar_title', 'ar_namespace' ] );
-			if ( $optimizeGenerateTitles ) {
-				$this->addOption( 'DISTINCT' );
-			} else {
-				$this->addFields( [ 'ar_timestamp', 'ar_rev_id', 'ar_id' ] );
-			}
-			if ( $params['user'] !== null || $params['excludeuser'] !== null ) {
-				$this->addTables( 'actor' );
-				$this->addJoinConds( [ 'actor' => 'actor_id=ar_actor' ] );
-			}
-		}
+        // If we're generating titles only, we can use DISTINCT for a better
+        // query. But we can't do that in 'user' mode (wrong index), and we can
+        // only do it when sorting ASC (because MySQL apparently can't use an
+        // index backwards for grouping even though it can for ORDER BY, WTF?)
+        $dir = $params['dir'];
+        $optimizeGenerateTitles = false;
+        if ($mode === 'all' && $params['generatetitles'] && $resultPageSet !== null) {
+            if ($dir === 'newer') {
+                $optimizeGenerateTitles = true;
+            } else {
+                $p = $this->getModulePrefix();
+                $this->addWarning(['apiwarn-alldeletedrevisions-performance', $p], 'performance');
+            }
+        }
 
-		if ( $this->fld_tags ) {
-			$this->addFields( [ 'ts_tags' => ChangeTags::makeTagSummarySubquery( 'archive' ) ] );
-		}
+        if ($resultPageSet === null) {
+            $this->parseParameters($params);
+            $arQuery = $this->revisionStore->getArchiveQueryInfo();
+            $this->addTables($arQuery['tables']);
+            $this->addJoinConds($arQuery['joins']);
+            $this->addFields($arQuery['fields']);
+            $this->addFields(['ar_title', 'ar_namespace']);
+        } else {
+            $this->limit = $this->getParameter('limit') ?: 10;
+            $this->addTables('archive');
+            $this->addFields(['ar_title', 'ar_namespace']);
+            if ($optimizeGenerateTitles) {
+                $this->addOption('DISTINCT');
+            } else {
+                $this->addFields(['ar_timestamp', 'ar_rev_id', 'ar_id']);
+            }
+            if ($params['user'] !== null || $params['excludeuser'] !== null) {
+                $this->addTables('actor');
+                $this->addJoinConds(['actor' => 'actor_id=ar_actor']);
+            }
+        }
 
-		if ( $params['tag'] !== null ) {
-			$this->addTables( 'change_tag' );
-			$this->addJoinConds(
-				[ 'change_tag' => [ 'JOIN', [ 'ar_rev_id=ct_rev_id' ] ] ]
-			);
-			try {
-				$this->addWhereFld( 'ct_tag_id', $this->changeTagDefStore->getId( $params['tag'] ) );
-			} catch ( NameTableAccessException $exception ) {
-				// Return nothing.
-				$this->addWhere( '1=0' );
-			}
-		}
+        if ($this->fld_tags) {
+            $this->addFields(['ts_tags' => ChangeTags::makeTagSummarySubquery('archive')]);
+        }
 
-		// This means stricter restrictions
-		if ( ( $this->fld_comment || $this->fld_parsedcomment ) &&
-			!$this->getAuthority()->isAllowed( 'deletedhistory' )
-		) {
-			$this->dieWithError( 'apierror-cantview-deleted-comment', 'permissiondenied' );
-		}
-		if ( $this->fetchContent &&
-			!$this->getAuthority()->isAllowedAny( 'deletedtext', 'undelete' )
-		) {
-			$this->dieWithError( 'apierror-cantview-deleted-revision-content', 'permissiondenied' );
-		}
+        if ($params['tag'] !== null) {
+            $this->addTables('change_tag');
+            $this->addJoinConds(
+                ['change_tag' => ['JOIN', ['ar_rev_id=ct_rev_id']]]
+            );
+            try {
+                $this->addWhereFld('ct_tag_id', $this->changeTagDefStore->getId($params['tag']));
+            } catch (NameTableAccessException $exception) {
+                // Return nothing.
+                $this->addWhere('1=0');
+            }
+        }
 
-		$miser_ns = null;
+        // This means stricter restrictions
+        if (($this->fld_comment || $this->fld_parsedcomment) &&
+            !$this->getAuthority()->isAllowed('deletedhistory')
+        ) {
+            $this->dieWithError('apierror-cantview-deleted-comment', 'permissiondenied');
+        }
+        if ($this->fetchContent &&
+            !$this->getAuthority()->isAllowedAny('deletedtext', 'undelete')
+        ) {
+            $this->dieWithError('apierror-cantview-deleted-revision-content', 'permissiondenied');
+        }
 
-		if ( $mode == 'all' ) {
-			$namespaces = $params['namespace'] ?? $this->namespaceInfo->getValidNamespaces();
-			$this->addWhereFld( 'ar_namespace', $namespaces );
+        $miser_ns = null;
 
-			// For from/to/prefix, we have to consider the potential
-			// transformations of the title in all specified namespaces.
-			// Generally there will be only one transformation, but wikis with
-			// some namespaces case-sensitive could have two.
-			if ( $params['from'] !== null || $params['to'] !== null ) {
-				$isDirNewer = ( $dir === 'newer' );
-				$after = ( $isDirNewer ? '>=' : '<=' );
-				$before = ( $isDirNewer ? '<=' : '>=' );
-				$where = [];
-				foreach ( $namespaces as $ns ) {
-					$w = [];
-					if ( $params['from'] !== null ) {
-						$w[] = 'ar_title' . $after .
-							$db->addQuotes( $this->titlePartToKey( $params['from'], $ns ) );
-					}
-					if ( $params['to'] !== null ) {
-						$w[] = 'ar_title' . $before .
-							$db->addQuotes( $this->titlePartToKey( $params['to'], $ns ) );
-					}
-					$w = $db->makeList( $w, LIST_AND );
-					$where[$w][] = $ns;
-				}
-				if ( count( $where ) == 1 ) {
-					$where = key( $where );
-					$this->addWhere( $where );
-				} else {
-					$where2 = [];
-					foreach ( $where as $w => $ns ) {
-						$where2[] = $db->makeList( [ $w, 'ar_namespace' => $ns ], LIST_AND );
-					}
-					$this->addWhere( $db->makeList( $where2, LIST_OR ) );
-				}
-			}
+        if ($mode == 'all') {
+            $namespaces = $params['namespace'] ?? $this->namespaceInfo->getValidNamespaces();
+            $this->addWhereFld('ar_namespace', $namespaces);
 
-			if ( isset( $params['prefix'] ) ) {
-				$where = [];
-				foreach ( $namespaces as $ns ) {
-					$w = 'ar_title' . $db->buildLike(
-						$this->titlePartToKey( $params['prefix'], $ns ),
-						$db->anyString() );
-					$where[$w][] = $ns;
-				}
-				if ( count( $where ) == 1 ) {
-					$where = key( $where );
-					$this->addWhere( $where );
-				} else {
-					$where2 = [];
-					foreach ( $where as $w => $ns ) {
-						$where2[] = $db->makeList( [ $w, 'ar_namespace' => $ns ], LIST_AND );
-					}
-					$this->addWhere( $db->makeList( $where2, LIST_OR ) );
-				}
-			}
-		} else {
-			if ( $this->getConfig()->get( MainConfigNames::MiserMode ) ) {
-				$miser_ns = $params['namespace'];
-			} else {
-				$this->addWhereFld( 'ar_namespace', $params['namespace'] );
-			}
-			$this->addTimestampWhereRange( 'ar_timestamp', $dir, $params['start'], $params['end'] );
-		}
+            // For from/to/prefix, we have to consider the potential
+            // transformations of the title in all specified namespaces.
+            // Generally there will be only one transformation, but wikis with
+            // some namespaces case-sensitive could have two.
+            if ($params['from'] !== null || $params['to'] !== null) {
+                $isDirNewer = ($dir === 'newer');
+                $after = ($isDirNewer ? '>=' : '<=');
+                $before = ($isDirNewer ? '<=' : '>=');
+                $where = [];
+                foreach ($namespaces as $ns) {
+                    $w = [];
+                    if ($params['from'] !== null) {
+                        $w[] = 'ar_title' . $after .
+                            $db->addQuotes($this->titlePartToKey($params['from'], $ns));
+                    }
+                    if ($params['to'] !== null) {
+                        $w[] = 'ar_title' . $before .
+                            $db->addQuotes($this->titlePartToKey($params['to'], $ns));
+                    }
+                    $w = $db->makeList($w, LIST_AND);
+                    $where[$w][] = $ns;
+                }
+                if (count($where) == 1) {
+                    $where = key($where);
+                    $this->addWhere($where);
+                } else {
+                    $where2 = [];
+                    foreach ($where as $w => $ns) {
+                        $where2[] = $db->makeList([$w, 'ar_namespace' => $ns], LIST_AND);
+                    }
+                    $this->addWhere($db->makeList($where2, LIST_OR));
+                }
+            }
 
-		if ( $params['user'] !== null ) {
-			// We could get the actor ID from the ActorStore, but it's probably
-			// uncached at this point, and the non-generator case needs an actor
-			// join anyway so adding this join here is normally free. This should
-			// use the ar_actor_timestamp index.
-			$this->addWhereFld( 'actor_name',  $params['user'] );
-		} elseif ( $params['excludeuser'] !== null ) {
-			$this->addWhere( 'actor_name<>' . $db->addQuotes( $params['excludeuser'] ) );
-		}
+            if (isset($params['prefix'])) {
+                $where = [];
+                foreach ($namespaces as $ns) {
+                    $w = 'ar_title' . $db->buildLike(
+                            $this->titlePartToKey($params['prefix'], $ns),
+                            $db->anyString());
+                    $where[$w][] = $ns;
+                }
+                if (count($where) == 1) {
+                    $where = key($where);
+                    $this->addWhere($where);
+                } else {
+                    $where2 = [];
+                    foreach ($where as $w => $ns) {
+                        $where2[] = $db->makeList([$w, 'ar_namespace' => $ns], LIST_AND);
+                    }
+                    $this->addWhere($db->makeList($where2, LIST_OR));
+                }
+            }
+        } else {
+            if ($this->getConfig()->get(MainConfigNames::MiserMode)) {
+                $miser_ns = $params['namespace'];
+            } else {
+                $this->addWhereFld('ar_namespace', $params['namespace']);
+            }
+            $this->addTimestampWhereRange('ar_timestamp', $dir, $params['start'], $params['end']);
+        }
 
-		if ( $params['user'] !== null || $params['excludeuser'] !== null ) {
-			// Paranoia: avoid brute force searches (T19342)
-			if ( !$this->getAuthority()->isAllowed( 'deletedhistory' ) ) {
-				$bitmask = RevisionRecord::DELETED_USER;
-			} elseif ( !$this->getAuthority()->isAllowedAny( 'suppressrevision', 'viewsuppressed' ) ) {
-				$bitmask = RevisionRecord::DELETED_USER | RevisionRecord::DELETED_RESTRICTED;
-			} else {
-				$bitmask = 0;
-			}
-			if ( $bitmask ) {
-				$this->addWhere( $db->bitAnd( 'ar_deleted', $bitmask ) . " != $bitmask" );
-			}
-		}
+        if ($params['user'] !== null) {
+            // We could get the actor ID from the ActorStore, but it's probably
+            // uncached at this point, and the non-generator case needs an actor
+            // join anyway so adding this join here is normally free. This should
+            // use the ar_actor_timestamp index.
+            $this->addWhereFld('actor_name', $params['user']);
+        } elseif ($params['excludeuser'] !== null) {
+            $this->addWhere('actor_name<>' . $db->addQuotes($params['excludeuser']));
+        }
 
-		if ( $params['continue'] !== null ) {
-			$cont = explode( '|', $params['continue'] );
-			$op = ( $dir == 'newer' ? '>' : '<' );
-			if ( $optimizeGenerateTitles ) {
-				$this->dieContinueUsageIf( count( $cont ) != 2 );
-				$ns = (int)$cont[0];
-				$this->dieContinueUsageIf( strval( $ns ) !== $cont[0] );
-				$title = $db->addQuotes( $cont[1] );
-				$this->addWhere( "ar_namespace $op $ns OR " .
-					"(ar_namespace = $ns AND ar_title $op= $title)" );
-			} elseif ( $mode == 'all' ) {
-				$this->dieContinueUsageIf( count( $cont ) != 4 );
-				$ns = (int)$cont[0];
-				$this->dieContinueUsageIf( strval( $ns ) !== $cont[0] );
-				$title = $db->addQuotes( $cont[1] );
-				$ts = $db->addQuotes( $db->timestamp( $cont[2] ) );
-				$ar_id = (int)$cont[3];
-				$this->dieContinueUsageIf( strval( $ar_id ) !== $cont[3] );
-				$this->addWhere( "ar_namespace $op $ns OR " .
-					"(ar_namespace = $ns AND " .
-					"(ar_title $op $title OR " .
-					"(ar_title = $title AND " .
-					"(ar_timestamp $op $ts OR " .
-					"(ar_timestamp = $ts AND " .
-					"ar_id $op= $ar_id)))))" );
-			} else {
-				$this->dieContinueUsageIf( count( $cont ) != 2 );
-				$ts = $db->addQuotes( $db->timestamp( $cont[0] ) );
-				$ar_id = (int)$cont[1];
-				$this->dieContinueUsageIf( strval( $ar_id ) !== $cont[1] );
-				$this->addWhere( "ar_timestamp $op $ts OR " .
-					"(ar_timestamp = $ts AND " .
-					"ar_id $op= $ar_id)" );
-			}
-		}
+        if ($params['user'] !== null || $params['excludeuser'] !== null) {
+            // Paranoia: avoid brute force searches (T19342)
+            if (!$this->getAuthority()->isAllowed('deletedhistory')) {
+                $bitmask = RevisionRecord::DELETED_USER;
+            } elseif (!$this->getAuthority()->isAllowedAny('suppressrevision', 'viewsuppressed')) {
+                $bitmask = RevisionRecord::DELETED_USER | RevisionRecord::DELETED_RESTRICTED;
+            } else {
+                $bitmask = 0;
+            }
+            if ($bitmask) {
+                $this->addWhere($db->bitAnd('ar_deleted', $bitmask) . " != $bitmask");
+            }
+        }
 
-		$this->addOption( 'LIMIT', $this->limit + 1 );
+        if ($params['continue'] !== null) {
+            $cont = explode('|', $params['continue']);
+            $op = ($dir == 'newer' ? '>' : '<');
+            if ($optimizeGenerateTitles) {
+                $this->dieContinueUsageIf(count($cont) != 2);
+                $ns = (int)$cont[0];
+                $this->dieContinueUsageIf(strval($ns) !== $cont[0]);
+                $title = $db->addQuotes($cont[1]);
+                $this->addWhere("ar_namespace $op $ns OR " .
+                    "(ar_namespace = $ns AND ar_title $op= $title)");
+            } elseif ($mode == 'all') {
+                $this->dieContinueUsageIf(count($cont) != 4);
+                $ns = (int)$cont[0];
+                $this->dieContinueUsageIf(strval($ns) !== $cont[0]);
+                $title = $db->addQuotes($cont[1]);
+                $ts = $db->addQuotes($db->timestamp($cont[2]));
+                $ar_id = (int)$cont[3];
+                $this->dieContinueUsageIf(strval($ar_id) !== $cont[3]);
+                $this->addWhere("ar_namespace $op $ns OR " .
+                    "(ar_namespace = $ns AND " .
+                    "(ar_title $op $title OR " .
+                    "(ar_title = $title AND " .
+                    "(ar_timestamp $op $ts OR " .
+                    "(ar_timestamp = $ts AND " .
+                    "ar_id $op= $ar_id)))))");
+            } else {
+                $this->dieContinueUsageIf(count($cont) != 2);
+                $ts = $db->addQuotes($db->timestamp($cont[0]));
+                $ar_id = (int)$cont[1];
+                $this->dieContinueUsageIf(strval($ar_id) !== $cont[1]);
+                $this->addWhere("ar_timestamp $op $ts OR " .
+                    "(ar_timestamp = $ts AND " .
+                    "ar_id $op= $ar_id)");
+            }
+        }
 
-		$sort = ( $dir == 'newer' ? '' : ' DESC' );
-		$orderby = [];
-		if ( $optimizeGenerateTitles ) {
-			// Targeting index ar_name_title_timestamp
-			if ( $params['namespace'] === null || count( array_unique( $params['namespace'] ) ) > 1 ) {
-				$orderby[] = "ar_namespace $sort";
-			}
-			$orderby[] = "ar_title $sort";
-		} elseif ( $mode == 'all' ) {
-			// Targeting index ar_name_title_timestamp
-			if ( $params['namespace'] === null || count( array_unique( $params['namespace'] ) ) > 1 ) {
-				$orderby[] = "ar_namespace $sort";
-			}
-			$orderby[] = "ar_title $sort";
-			$orderby[] = "ar_timestamp $sort";
-			$orderby[] = "ar_id $sort";
-		} else {
-			// Targeting index usertext_timestamp
-			// 'user' is always constant.
-			$orderby[] = "ar_timestamp $sort";
-			$orderby[] = "ar_id $sort";
-		}
-		$this->addOption( 'ORDER BY', $orderby );
+        $this->addOption('LIMIT', $this->limit + 1);
 
-		$res = $this->select( __METHOD__ );
+        $sort = ($dir == 'newer' ? '' : ' DESC');
+        $orderby = [];
+        if ($optimizeGenerateTitles) {
+            // Targeting index ar_name_title_timestamp
+            if ($params['namespace'] === null || count(array_unique($params['namespace'])) > 1) {
+                $orderby[] = "ar_namespace $sort";
+            }
+            $orderby[] = "ar_title $sort";
+        } elseif ($mode == 'all') {
+            // Targeting index ar_name_title_timestamp
+            if ($params['namespace'] === null || count(array_unique($params['namespace'])) > 1) {
+                $orderby[] = "ar_namespace $sort";
+            }
+            $orderby[] = "ar_title $sort";
+            $orderby[] = "ar_timestamp $sort";
+            $orderby[] = "ar_id $sort";
+        } else {
+            // Targeting index usertext_timestamp
+            // 'user' is always constant.
+            $orderby[] = "ar_timestamp $sort";
+            $orderby[] = "ar_id $sort";
+        }
+        $this->addOption('ORDER BY', $orderby);
 
-		if ( $resultPageSet === null ) {
-			$this->executeGenderCacheFromResultWrapper( $res, __METHOD__, 'ar' );
-		}
+        $res = $this->select(__METHOD__);
 
-		$pageMap = []; // Maps ns&title to array index
-		$count = 0;
-		$nextIndex = 0;
-		$generated = [];
-		foreach ( $res as $row ) {
-			if ( ++$count > $this->limit ) {
-				// We've had enough
-				if ( $optimizeGenerateTitles ) {
-					$this->setContinueEnumParameter( 'continue', "$row->ar_namespace|$row->ar_title" );
-				} elseif ( $mode == 'all' ) {
-					$this->setContinueEnumParameter( 'continue',
-						"$row->ar_namespace|$row->ar_title|$row->ar_timestamp|$row->ar_id"
-					);
-				} else {
-					$this->setContinueEnumParameter( 'continue', "$row->ar_timestamp|$row->ar_id" );
-				}
-				break;
-			}
+        if ($resultPageSet === null) {
+            $this->executeGenderCacheFromResultWrapper($res, __METHOD__, 'ar');
+        }
 
-			// Miser mode namespace check
-			if ( $miser_ns !== null && !in_array( $row->ar_namespace, $miser_ns ) ) {
-				continue;
-			}
+        $pageMap = []; // Maps ns&title to array index
+        $count = 0;
+        $nextIndex = 0;
+        $generated = [];
+        foreach ($res as $row) {
+            if (++$count > $this->limit) {
+                // We've had enough
+                if ($optimizeGenerateTitles) {
+                    $this->setContinueEnumParameter('continue', "$row->ar_namespace|$row->ar_title");
+                } elseif ($mode == 'all') {
+                    $this->setContinueEnumParameter('continue',
+                        "$row->ar_namespace|$row->ar_title|$row->ar_timestamp|$row->ar_id"
+                    );
+                } else {
+                    $this->setContinueEnumParameter('continue', "$row->ar_timestamp|$row->ar_id");
+                }
+                break;
+            }
 
-			if ( $resultPageSet !== null ) {
-				if ( $params['generatetitles'] ) {
-					$key = "{$row->ar_namespace}:{$row->ar_title}";
-					if ( !isset( $generated[$key] ) ) {
-						$generated[$key] = Title::makeTitle( $row->ar_namespace, $row->ar_title );
-					}
-				} else {
-					$generated[] = $row->ar_rev_id;
-				}
-			} else {
-				$revision = $this->revisionStore->newRevisionFromArchiveRow( $row );
-				$rev = $this->extractRevisionInfo( $revision, $row );
+            // Miser mode namespace check
+            if ($miser_ns !== null && !in_array($row->ar_namespace, $miser_ns)) {
+                continue;
+            }
 
-				if ( !isset( $pageMap[$row->ar_namespace][$row->ar_title] ) ) {
-					$index = $nextIndex++;
-					$pageMap[$row->ar_namespace][$row->ar_title] = $index;
-					$title = Title::newFromLinkTarget( $revision->getPageAsLinkTarget() );
-					$a = [
-						'pageid' => $title->getArticleID(),
-						'revisions' => [ $rev ],
-					];
-					ApiResult::setIndexedTagName( $a['revisions'], 'rev' );
-					ApiQueryBase::addTitleInfo( $a, $title );
-					$fit = $result->addValue( [ 'query', $this->getModuleName() ], $index, $a );
-				} else {
-					$index = $pageMap[$row->ar_namespace][$row->ar_title];
-					$fit = $result->addValue(
-						[ 'query', $this->getModuleName(), $index, 'revisions' ],
-						null, $rev );
-				}
-				if ( !$fit ) {
-					if ( $mode == 'all' ) {
-						$this->setContinueEnumParameter( 'continue',
-							"$row->ar_namespace|$row->ar_title|$row->ar_timestamp|$row->ar_id"
-						);
-					} else {
-						$this->setContinueEnumParameter( 'continue', "$row->ar_timestamp|$row->ar_id" );
-					}
-					break;
-				}
-			}
-		}
+            if ($resultPageSet !== null) {
+                if ($params['generatetitles']) {
+                    $key = "{$row->ar_namespace}:{$row->ar_title}";
+                    if (!isset($generated[$key])) {
+                        $generated[$key] = Title::makeTitle($row->ar_namespace, $row->ar_title);
+                    }
+                } else {
+                    $generated[] = $row->ar_rev_id;
+                }
+            } else {
+                $revision = $this->revisionStore->newRevisionFromArchiveRow($row);
+                $rev = $this->extractRevisionInfo($revision, $row);
 
-		if ( $resultPageSet !== null ) {
-			if ( $params['generatetitles'] ) {
-				$resultPageSet->populateFromTitles( $generated );
-			} else {
-				$resultPageSet->populateFromRevisionIDs( $generated );
-			}
-		} else {
-			$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'page' );
-		}
-	}
+                if (!isset($pageMap[$row->ar_namespace][$row->ar_title])) {
+                    $index = $nextIndex++;
+                    $pageMap[$row->ar_namespace][$row->ar_title] = $index;
+                    $title = Title::newFromLinkTarget($revision->getPageAsLinkTarget());
+                    $a = [
+                        'pageid'    => $title->getArticleID(),
+                        'revisions' => [$rev],
+                    ];
+                    ApiResult::setIndexedTagName($a['revisions'], 'rev');
+                    ApiQueryBase::addTitleInfo($a, $title);
+                    $fit = $result->addValue(['query', $this->getModuleName()], $index, $a);
+                } else {
+                    $index = $pageMap[$row->ar_namespace][$row->ar_title];
+                    $fit = $result->addValue(
+                        ['query', $this->getModuleName(), $index, 'revisions'],
+                        null, $rev);
+                }
+                if (!$fit) {
+                    if ($mode == 'all') {
+                        $this->setContinueEnumParameter('continue',
+                            "$row->ar_namespace|$row->ar_title|$row->ar_timestamp|$row->ar_id"
+                        );
+                    } else {
+                        $this->setContinueEnumParameter('continue', "$row->ar_timestamp|$row->ar_id");
+                    }
+                    break;
+                }
+            }
+        }
 
-	public function getAllowedParams() {
-		$ret = parent::getAllowedParams() + [
-			'user' => [
-				ParamValidator::PARAM_TYPE => 'user',
-				UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name', 'ip', 'id', 'interwiki' ],
-			],
-			'namespace' => [
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_TYPE => 'namespace',
-			],
-			'start' => [
-				ParamValidator::PARAM_TYPE => 'timestamp',
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'useronly' ] ],
-			],
-			'end' => [
-				ParamValidator::PARAM_TYPE => 'timestamp',
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'useronly' ] ],
-			],
-			'dir' => [
-				ParamValidator::PARAM_TYPE => [
-					'newer',
-					'older'
-				],
-				ParamValidator::PARAM_DEFAULT => 'older',
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-direction',
-			],
-			'from' => [
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'nonuseronly' ] ],
-			],
-			'to' => [
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'nonuseronly' ] ],
-			],
-			'prefix' => [
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'nonuseronly' ] ],
-			],
-			'excludeuser' => [
-				ParamValidator::PARAM_TYPE => 'user',
-				UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name', 'ip', 'id', 'interwiki' ],
-				ApiBase::PARAM_HELP_MSG_INFO => [ [ 'nonuseronly' ] ],
-			],
-			'tag' => null,
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-			'generatetitles' => [
-				ParamValidator::PARAM_DEFAULT => false
-			],
-		];
+        if ($resultPageSet !== null) {
+            if ($params['generatetitles']) {
+                $resultPageSet->populateFromTitles($generated);
+            } else {
+                $resultPageSet->populateFromRevisionIDs($generated);
+            }
+        } else {
+            $result->addIndexedTagName(['query', $this->getModuleName()], 'page');
+        }
+    }
 
-		if ( $this->getConfig()->get( MainConfigNames::MiserMode ) ) {
-			$ret['user'][ApiBase::PARAM_HELP_MSG_APPEND] = [
-				'apihelp-query+alldeletedrevisions-param-miser-user-namespace',
-			];
-			$ret['namespace'][ApiBase::PARAM_HELP_MSG_APPEND] = [
-				'apihelp-query+alldeletedrevisions-param-miser-user-namespace',
-			];
-		}
+    public function getAllowedParams()
+    {
+        $ret = parent::getAllowedParams() + [
+                'user'           => [
+                    ParamValidator::PARAM_TYPE        => 'user',
+                    UserDef::PARAM_ALLOWED_USER_TYPES => ['name', 'ip', 'id', 'interwiki'],
+                ],
+                'namespace'      => [
+                    ParamValidator::PARAM_ISMULTI => true,
+                    ParamValidator::PARAM_TYPE    => 'namespace',
+                ],
+                'start'          => [
+                    ParamValidator::PARAM_TYPE   => 'timestamp',
+                    ApiBase::PARAM_HELP_MSG_INFO => [['useronly']],
+                ],
+                'end'            => [
+                    ParamValidator::PARAM_TYPE   => 'timestamp',
+                    ApiBase::PARAM_HELP_MSG_INFO => [['useronly']],
+                ],
+                'dir'            => [
+                    ParamValidator::PARAM_TYPE    => [
+                        'newer',
+                        'older'
+                    ],
+                    ParamValidator::PARAM_DEFAULT => 'older',
+                    ApiBase::PARAM_HELP_MSG       => 'api-help-param-direction',
+                ],
+                'from'           => [
+                    ApiBase::PARAM_HELP_MSG_INFO => [['nonuseronly']],
+                ],
+                'to'             => [
+                    ApiBase::PARAM_HELP_MSG_INFO => [['nonuseronly']],
+                ],
+                'prefix'         => [
+                    ApiBase::PARAM_HELP_MSG_INFO => [['nonuseronly']],
+                ],
+                'excludeuser'    => [
+                    ParamValidator::PARAM_TYPE        => 'user',
+                    UserDef::PARAM_ALLOWED_USER_TYPES => ['name', 'ip', 'id', 'interwiki'],
+                    ApiBase::PARAM_HELP_MSG_INFO      => [['nonuseronly']],
+                ],
+                'tag'            => null,
+                'continue'       => [
+                    ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+                ],
+                'generatetitles' => [
+                    ParamValidator::PARAM_DEFAULT => false
+                ],
+            ];
 
-		return $ret;
-	}
+        if ($this->getConfig()->get(MainConfigNames::MiserMode)) {
+            $ret['user'][ApiBase::PARAM_HELP_MSG_APPEND] = [
+                'apihelp-query+alldeletedrevisions-param-miser-user-namespace',
+            ];
+            $ret['namespace'][ApiBase::PARAM_HELP_MSG_APPEND] = [
+                'apihelp-query+alldeletedrevisions-param-miser-user-namespace',
+            ];
+        }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&list=alldeletedrevisions&adruser=Example&adrlimit=50'
-				=> 'apihelp-query+alldeletedrevisions-example-user',
-			'action=query&list=alldeletedrevisions&adrdir=newer&adrnamespace=0&adrlimit=50'
-				=> 'apihelp-query+alldeletedrevisions-example-ns-main',
-		];
-	}
+        return $ret;
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Alldeletedrevisions';
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&list=alldeletedrevisions&adruser=Example&adrlimit=50'
+            => 'apihelp-query+alldeletedrevisions-example-user',
+            'action=query&list=alldeletedrevisions&adrdir=newer&adrnamespace=0&adrlimit=50'
+            => 'apihelp-query+alldeletedrevisions-example-ns-main',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Alldeletedrevisions';
+    }
 }

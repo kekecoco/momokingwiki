@@ -40,23 +40,26 @@ use MediaWiki\Page\PageReference;
  *
  * @ingroup Cache
  */
-abstract class CacheKeyHelper {
+abstract class CacheKeyHelper
+{
 
-	/**
-	 * Private constructor to defy instantiation.
-	 * @return never
-	 */
-	private function __construct() {
-		// we should never even get here...
-		throw new LogicException( 'Should not instantiate ' . __CLASS__ );
-	}
+    /**
+     * Private constructor to defy instantiation.
+     * @return never
+     */
+    private function __construct()
+    {
+        // we should never even get here...
+        throw new LogicException('Should not instantiate ' . __CLASS__);
+    }
 
-	/**
-	 * @param LinkTarget|PageReference $page
-	 *
-	 * @return string
-	 */
-	public static function getKeyForPage( $page ): string {
-		return 'ns' . $page->getNamespace() . ':' . $page->getDBkey();
-	}
+    /**
+     * @param LinkTarget|PageReference $page
+     *
+     * @return string
+     */
+    public static function getKeyForPage($page): string
+    {
+        return 'ns' . $page->getNamespace() . ':' . $page->getDBkey();
+    }
 }

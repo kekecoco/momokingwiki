@@ -32,111 +32,120 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialLonelyPages extends PageQueryPage {
+class SpecialLonelyPages extends PageQueryPage
+{
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var LinksMigration */
-	private $linksMigration;
+    /** @var LinksMigration */
+    private $linksMigration;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 * @param LinksMigration $linksMigration
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory,
-		LinksMigration $linksMigration
-	) {
-		parent::__construct( 'Lonelypages' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->setLanguageConverter( $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() ) );
-		$this->linksMigration = $linksMigration;
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     * @param LinksMigration $linksMigration
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory,
+        LinksMigration $linksMigration
+    )
+    {
+        parent::__construct('Lonelypages');
+        $this->namespaceInfo = $namespaceInfo;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->setLanguageConverter($languageConverterFactory->getLanguageConverter($this->getContentLanguage()));
+        $this->linksMigration = $linksMigration;
+    }
 
-	protected function getPageHeader() {
-		return $this->msg( 'lonelypagestext' )->parseAsBlock();
-	}
+    protected function getPageHeader()
+    {
+        return $this->msg('lonelypagestext')->parseAsBlock();
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		$queryInfo = $this->linksMigration->getQueryInfo(
-			'templatelinks',
-			'templatelinks',
-			'LEFT JOIN'
-		);
-		list( $ns, $title ) = $this->linksMigration->getTitleFields( 'templatelinks' );
-		$tables = array_merge( [ 'page', 'pagelinks' ], $queryInfo['tables'] );
-		$conds = [
-			'pl_namespace IS NULL',
-			'page_namespace' => $this->namespaceInfo->getContentNamespaces(),
-			'page_is_redirect' => 0,
-			'tl_from IS NULL'
-		];
-		$joinConds = [
-			'pagelinks' => [
-				'LEFT JOIN', [
-					'pl_namespace = page_namespace',
-					'pl_title = page_title'
-				]
-			],
-		];
-		$templatelinksJoin = [
-			'LEFT JOIN', [
-				"$ns = page_namespace",
-				"$title = page_title"
-			]
-		];
-		if ( in_array( 'linktarget', $tables ) ) {
-			$joinConds['linktarget'] = $templatelinksJoin;
-		} else {
-			$joinConds['templatelinks'] = $templatelinksJoin;
-		}
+    public function getQueryInfo()
+    {
+        $queryInfo = $this->linksMigration->getQueryInfo(
+            'templatelinks',
+            'templatelinks',
+            'LEFT JOIN'
+        );
+        [$ns, $title] = $this->linksMigration->getTitleFields('templatelinks');
+        $tables = array_merge(['page', 'pagelinks'], $queryInfo['tables']);
+        $conds = [
+            'pl_namespace IS NULL',
+            'page_namespace'   => $this->namespaceInfo->getContentNamespaces(),
+            'page_is_redirect' => 0,
+            'tl_from IS NULL'
+        ];
+        $joinConds = [
+            'pagelinks' => [
+                'LEFT JOIN', [
+                    'pl_namespace = page_namespace',
+                    'pl_title = page_title'
+                ]
+            ],
+        ];
+        $templatelinksJoin = [
+            'LEFT JOIN', [
+                "$ns = page_namespace",
+                "$title = page_title"
+            ]
+        ];
+        if (in_array('linktarget', $tables)) {
+            $joinConds['linktarget'] = $templatelinksJoin;
+        } else {
+            $joinConds['templatelinks'] = $templatelinksJoin;
+        }
 
-		// Allow extensions to modify the query
-		$this->getHookRunner()->onLonelyPagesQuery( $tables, $conds, $joinConds );
+        // Allow extensions to modify the query
+        $this->getHookRunner()->onLonelyPagesQuery($tables, $conds, $joinConds);
 
-		return [
-			'tables' => $tables,
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-			],
-			'conds' => $conds,
-			'join_conds' => array_merge( $joinConds, $queryInfo['joins'] )
-		];
-	}
+        return [
+            'tables'     => $tables,
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+            ],
+            'conds'      => $conds,
+            'join_conds' => array_merge($joinConds, $queryInfo['joins'])
+        ];
+    }
 
-	protected function getOrderFields() {
-		// For some crazy reason ordering by a constant
-		// causes a filesort in MySQL 5
-		if ( count( $this->namespaceInfo->getContentNamespaces() ) > 1 ) {
-			return [ 'page_namespace', 'page_title' ];
-		} else {
-			return [ 'page_title' ];
-		}
-	}
+    protected function getOrderFields()
+    {
+        // For some crazy reason ordering by a constant
+        // causes a filesort in MySQL 5
+        if (count($this->namespaceInfo->getContentNamespaces()) > 1) {
+            return ['page_namespace', 'page_title'];
+        } else {
+            return ['page_title'];
+        }
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

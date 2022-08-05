@@ -32,51 +32,56 @@ use StatusValue;
  * @unstable
  * @since 1.36
  */
-class PermissionStatus extends StatusValue {
+class PermissionStatus extends StatusValue
+{
 
-	/** @var ?Block */
-	private $block = null;
+    /** @var ?Block */
+    private $block = null;
 
-	/**
-	 * Returns the user block that contributed to permissions being denied,
-	 * if such a block was provided via setBlock().
-	 *
-	 * This is intended to be used to provide additional information to the user that
-	 * allows them to determine the reason for them being denied an action.
-	 *
-	 * @since 1.37
-	 *
-	 * @return ?Block
-	 */
-	public function getBlock(): ?Block {
-		return $this->block;
-	}
+    /**
+     * Returns the user block that contributed to permissions being denied,
+     * if such a block was provided via setBlock().
+     *
+     * This is intended to be used to provide additional information to the user that
+     * allows them to determine the reason for them being denied an action.
+     *
+     * @return ?Block
+     * @since 1.37
+     *
+     */
+    public function getBlock(): ?Block
+    {
+        return $this->block;
+    }
 
-	/**
-	 * @since 1.37
-	 * @internal
-	 * @param Block $block
-	 */
-	public function setBlock( Block $block ): void {
-		$this->block = $block;
-	}
+    /**
+     * @param Block $block
+     * @internal
+     * @since 1.37
+     */
+    public function setBlock(Block $block): void
+    {
+        $this->block = $block;
+    }
 
-	/**
-	 * @return static
-	 */
-	public static function newEmpty() {
-		return new static();
-	}
+    /**
+     * @return static
+     */
+    public static function newEmpty()
+    {
+        return new static();
+    }
 
-	/**
-	 * Returns this permission status in legacy error array format.
-	 *
-	 * @see PermissionManager::getPermissionErrors()
-	 *
-	 * @return array
-	 */
-	public function toLegacyErrorArray(): array {
-		return $this->getStatusArray();
-	}
+    /**
+     * Returns this permission status in legacy error array format.
+     *
+     * @return array
+     * @see PermissionManager::getPermissionErrors()
+     *
+     */
+    public function toLegacyErrorArray(): array
+    {
+        return $this->getStatusArray();
+    }
 
 }

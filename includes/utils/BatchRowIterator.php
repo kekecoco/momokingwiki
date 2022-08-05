@@ -30,296 +30,314 @@ use Wikimedia\Rdbms\IDatabase;
  *
  * @newable
  */
-class BatchRowIterator implements RecursiveIterator {
+class BatchRowIterator implements RecursiveIterator
+{
 
-	/**
-	 * @var IDatabase The database to read from
-	 */
-	protected $db;
+    /**
+     * @var IDatabase The database to read from
+     */
+    protected $db;
 
-	/**
-	 * @var string|array The name or names of the table to read from
-	 */
-	protected $table;
+    /**
+     * @var string|array The name or names of the table to read from
+     */
+    protected $table;
 
-	/**
-	 * @var array The name of the primary key(s)
-	 */
-	protected $primaryKey;
+    /**
+     * @var array The name of the primary key(s)
+     */
+    protected $primaryKey;
 
-	/**
-	 * @var int The number of rows to fetch per iteration
-	 */
-	protected $batchSize;
+    /**
+     * @var int The number of rows to fetch per iteration
+     */
+    protected $batchSize;
 
-	/**
-	 * @var array Array of strings containing SQL conditions to add to the query
-	 */
-	protected $conditions = [];
+    /**
+     * @var array Array of strings containing SQL conditions to add to the query
+     */
+    protected $conditions = [];
 
-	/**
-	 * @var array
-	 */
-	protected $joinConditions = [];
+    /**
+     * @var array
+     */
+    protected $joinConditions = [];
 
-	/**
-	 * @var array List of column names to select from the table suitable for use
-	 *  with IDatabase::select()
-	 */
-	protected $fetchColumns;
+    /**
+     * @var array List of column names to select from the table suitable for use
+     *  with IDatabase::select()
+     */
+    protected $fetchColumns;
 
-	/**
-	 * @var string SQL Order by condition generated from $this->primaryKey
-	 */
-	protected $orderBy;
+    /**
+     * @var string SQL Order by condition generated from $this->primaryKey
+     */
+    protected $orderBy;
 
-	/**
-	 * @var array The current iterator value
-	 */
-	private $current = [];
+    /**
+     * @var array The current iterator value
+     */
+    private $current = [];
 
-	/**
-	 * @var int 0-indexed number of pages fetched since self::reset()
-	 */
-	private $key = -1;
+    /**
+     * @var int 0-indexed number of pages fetched since self::reset()
+     */
+    private $key = -1;
 
-	/**
-	 * @var array Additional query options
-	 */
-	protected $options = [];
+    /**
+     * @var array Additional query options
+     */
+    protected $options = [];
 
-	/**
-	 * @var string|null For debugging which method is using this class.
-	 */
-	protected $caller;
+    /**
+     * @var string|null For debugging which method is using this class.
+     */
+    protected $caller;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param IDatabase $db The database to read from
-	 * @param string|array $table The name or names of the table to read from
-	 * @param string|array $primaryKey The name or names of the primary key columns
-	 * @param int $batchSize The number of rows to fetch per iteration
-	 * @throws InvalidArgumentException
-	 */
-	public function __construct( IDatabase $db, $table, $primaryKey, $batchSize ) {
-		if ( $batchSize < 1 ) {
-			throw new InvalidArgumentException( 'Batch size must be at least 1 row.' );
-		}
-		$this->db = $db;
-		$this->table = $table;
-		$this->primaryKey = (array)$primaryKey;
-		$this->fetchColumns = $this->primaryKey;
-		$this->orderBy = implode( ' ASC,', $this->primaryKey ) . ' ASC';
-		$this->batchSize = $batchSize;
-	}
+    /**
+     * @stable to call
+     *
+     * @param IDatabase $db The database to read from
+     * @param string|array $table The name or names of the table to read from
+     * @param string|array $primaryKey The name or names of the primary key columns
+     * @param int $batchSize The number of rows to fetch per iteration
+     * @throws InvalidArgumentException
+     */
+    public function __construct(IDatabase $db, $table, $primaryKey, $batchSize)
+    {
+        if ($batchSize < 1) {
+            throw new InvalidArgumentException('Batch size must be at least 1 row.');
+        }
+        $this->db = $db;
+        $this->table = $table;
+        $this->primaryKey = (array)$primaryKey;
+        $this->fetchColumns = $this->primaryKey;
+        $this->orderBy = implode(' ASC,', $this->primaryKey) . ' ASC';
+        $this->batchSize = $batchSize;
+    }
 
-	/**
-	 * @param array $conditions Query conditions suitable for use with
-	 *  IDatabase::select
-	 */
-	public function addConditions( array $conditions ) {
-		$this->conditions = array_merge( $this->conditions, $conditions );
-	}
+    /**
+     * @param array $conditions Query conditions suitable for use with
+     *  IDatabase::select
+     */
+    public function addConditions(array $conditions)
+    {
+        $this->conditions = array_merge($this->conditions, $conditions);
+    }
 
-	/**
-	 * @param array $options Query options suitable for use with
-	 *  IDatabase::select
-	 */
-	public function addOptions( array $options ) {
-		$this->options = array_merge( $this->options, $options );
-	}
+    /**
+     * @param array $options Query options suitable for use with
+     *  IDatabase::select
+     */
+    public function addOptions(array $options)
+    {
+        $this->options = array_merge($this->options, $options);
+    }
 
-	/**
-	 * @param array $conditions Query join conditions suitable for use
-	 *  with IDatabase::select
-	 */
-	public function addJoinConditions( array $conditions ) {
-		$this->joinConditions = array_merge( $this->joinConditions, $conditions );
-	}
+    /**
+     * @param array $conditions Query join conditions suitable for use
+     *  with IDatabase::select
+     */
+    public function addJoinConditions(array $conditions)
+    {
+        $this->joinConditions = array_merge($this->joinConditions, $conditions);
+    }
 
-	/**
-	 * @param array $columns List of column names to select from the
-	 *  table suitable for use with IDatabase::select()
-	 */
-	public function setFetchColumns( array $columns ) {
-		// If it's not the all column selector merge in the primary keys we need
-		if ( count( $columns ) === 1 && reset( $columns ) === '*' ) {
-			$this->fetchColumns = $columns;
-		} else {
-			$this->fetchColumns = array_unique( array_merge(
-				$this->primaryKey,
-				$columns
-			) );
-		}
-	}
+    /**
+     * @param array $columns List of column names to select from the
+     *  table suitable for use with IDatabase::select()
+     */
+    public function setFetchColumns(array $columns)
+    {
+        // If it's not the all column selector merge in the primary keys we need
+        if (count($columns) === 1 && reset($columns) === '*') {
+            $this->fetchColumns = $columns;
+        } else {
+            $this->fetchColumns = array_unique(array_merge(
+                $this->primaryKey,
+                $columns
+            ));
+        }
+    }
 
-	/**
-	 * Use ->setCaller( __METHOD__ ) to indicate which code is using this
-	 * class. Only used in debugging output.
-	 * @since 1.36
-	 *
-	 * @param string $caller
-	 * @return self
-	 */
-	public function setCaller( $caller ) {
-		$this->caller = $caller;
+    /**
+     * Use ->setCaller( __METHOD__ ) to indicate which code is using this
+     * class. Only used in debugging output.
+     * @param string $caller
+     * @return self
+     * @since 1.36
+     *
+     */
+    public function setCaller($caller)
+    {
+        $this->caller = $caller;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Extracts the primary key(s) from a database row.
-	 *
-	 * @param stdClass $row An individual database row from this iterator
-	 * @return array Map of primary key column to value within the row
-	 */
-	public function extractPrimaryKeys( $row ) {
-		$pk = [];
-		foreach ( $this->primaryKey as $alias => $column ) {
-			$name = is_numeric( $alias ) ? $column : $alias;
-			$pk[$name] = $row->{$name};
-		}
-		return $pk;
-	}
+    /**
+     * Extracts the primary key(s) from a database row.
+     *
+     * @param stdClass $row An individual database row from this iterator
+     * @return array Map of primary key column to value within the row
+     */
+    public function extractPrimaryKeys($row)
+    {
+        $pk = [];
+        foreach ($this->primaryKey as $alias => $column) {
+            $name = is_numeric($alias) ? $column : $alias;
+            $pk[$name] = $row->{$name};
+        }
 
-	/**
-	 * @return array The most recently fetched set of rows from the database
-	 */
-	public function current(): array {
-		return $this->current;
-	}
+        return $pk;
+    }
 
-	/**
-	 * @return int 0-indexed count of the page number fetched
-	 */
-	public function key(): int {
-		return $this->key;
-	}
+    /**
+     * @return array The most recently fetched set of rows from the database
+     */
+    public function current(): array
+    {
+        return $this->current;
+    }
 
-	/**
-	 * Reset the iterator to the beginning of the table.
-	 */
-	public function rewind(): void {
-		$this->key = -1; // self::next() will turn this into 0
-		$this->current = [];
-		$this->next();
-	}
+    /**
+     * @return int 0-indexed count of the page number fetched
+     */
+    public function key(): int
+    {
+        return $this->key;
+    }
 
-	/**
-	 * @return bool True when the iterator is in a valid state
-	 */
-	public function valid(): bool {
-		return (bool)$this->current;
-	}
+    /**
+     * Reset the iterator to the beginning of the table.
+     */
+    public function rewind(): void
+    {
+        $this->key = -1; // self::next() will turn this into 0
+        $this->current = [];
+        $this->next();
+    }
 
-	/**
-	 * @return bool True when this result set has rows
-	 */
-	public function hasChildren(): bool {
-		return $this->current && count( $this->current );
-	}
+    /**
+     * @return bool True when the iterator is in a valid state
+     */
+    public function valid(): bool
+    {
+        return (bool)$this->current;
+    }
 
-	/**
-	 * @return null|RecursiveIterator
-	 */
-	public function getChildren(): ?RecursiveIterator {
-		return new NotRecursiveIterator( new ArrayIterator( $this->current ) );
-	}
+    /**
+     * @return bool True when this result set has rows
+     */
+    public function hasChildren(): bool
+    {
+        return $this->current && count($this->current);
+    }
 
-	/**
-	 * Fetch the next set of rows from the database.
-	 */
-	public function next(): void {
-		$caller = __METHOD__;
-		if ( (string)$this->caller !== '' ) {
-			$caller .= " (for {$this->caller})";
-		}
+    /**
+     * @return null|RecursiveIterator
+     */
+    public function getChildren(): ?RecursiveIterator
+    {
+        return new NotRecursiveIterator(new ArrayIterator($this->current));
+    }
 
-		$res = $this->db->select(
-			$this->table,
-			$this->fetchColumns,
-			$this->buildConditions(),
-			$caller,
-			[
-				'LIMIT' => $this->batchSize,
-				'ORDER BY' => $this->orderBy,
-			] + $this->options,
-			$this->joinConditions
-		);
+    /**
+     * Fetch the next set of rows from the database.
+     */
+    public function next(): void
+    {
+        $caller = __METHOD__;
+        if ((string)$this->caller !== '') {
+            $caller .= " (for {$this->caller})";
+        }
 
-		// The iterator is converted to an array because in addition to
-		// returning it in self::current() we need to use the end value
-		// in self::buildConditions()
-		$this->current = iterator_to_array( $res );
-		$this->key++;
-	}
+        $res = $this->db->select(
+            $this->table,
+            $this->fetchColumns,
+            $this->buildConditions(),
+            $caller,
+            [
+                'LIMIT'    => $this->batchSize,
+                'ORDER BY' => $this->orderBy,
+            ] + $this->options,
+            $this->joinConditions
+        );
 
-	/**
-	 * Uses the primary key list and the maximal result row from the
-	 * previous iteration to build an SQL condition sufficient for
-	 * selecting the next page of results.  All except the final key use
-	 * `=` conditions while the final key uses a `>` condition
-	 *
-	 * Example output:
-	 *     [ '( foo = 42 AND bar > 7 ) OR ( foo > 42 )' ]
-	 *
-	 * @return array The SQL conditions necessary to select the next set
-	 *  of rows in the batched query
-	 */
-	protected function buildConditions() {
-		if ( !$this->current ) {
-			return $this->conditions;
-		}
+        // The iterator is converted to an array because in addition to
+        // returning it in self::current() we need to use the end value
+        // in self::buildConditions()
+        $this->current = iterator_to_array($res);
+        $this->key++;
+    }
 
-		$maxRow = end( $this->current );
-		$maximumValues = [];
-		foreach ( $this->primaryKey as $alias => $column ) {
-			$name = is_numeric( $alias ) ? $column : $alias;
-			$maximumValues[$column] = $this->db->addQuotes( $maxRow->{$name} );
-		}
+    /**
+     * Uses the primary key list and the maximal result row from the
+     * previous iteration to build an SQL condition sufficient for
+     * selecting the next page of results.  All except the final key use
+     * `=` conditions while the final key uses a `>` condition
+     *
+     * Example output:
+     *     [ '( foo = 42 AND bar > 7 ) OR ( foo > 42 )' ]
+     *
+     * @return array The SQL conditions necessary to select the next set
+     *  of rows in the batched query
+     */
+    protected function buildConditions()
+    {
+        if (!$this->current) {
+            return $this->conditions;
+        }
 
-		$pkConditions = [];
-		// For example: If we have 3 primary keys
-		// first run through will generate
-		//   col1 = 4 AND col2 = 7 AND col3 > 1
-		// second run through will generate
-		//   col1 = 4 AND col2 > 7
-		// and the final run through will generate
-		//   col1 > 4
-		while ( $maximumValues ) {
-			$pkConditions[] = $this->buildGreaterThanCondition( $maximumValues );
-			array_pop( $maximumValues );
-		}
+        $maxRow = end($this->current);
+        $maximumValues = [];
+        foreach ($this->primaryKey as $alias => $column) {
+            $name = is_numeric($alias) ? $column : $alias;
+            $maximumValues[$column] = $this->db->addQuotes($maxRow->{$name});
+        }
 
-		$conditions = $this->conditions;
-		$conditions[] = sprintf( '( %s )', implode( ' ) OR ( ', $pkConditions ) );
+        $pkConditions = [];
+        // For example: If we have 3 primary keys
+        // first run through will generate
+        //   col1 = 4 AND col2 = 7 AND col3 > 1
+        // second run through will generate
+        //   col1 = 4 AND col2 > 7
+        // and the final run through will generate
+        //   col1 > 4
+        while ($maximumValues) {
+            $pkConditions[] = $this->buildGreaterThanCondition($maximumValues);
+            array_pop($maximumValues);
+        }
 
-		return $conditions;
-	}
+        $conditions = $this->conditions;
+        $conditions[] = sprintf('( %s )', implode(' ) OR ( ', $pkConditions));
 
-	/**
-	 * Given an array of column names and their maximum value  generate
-	 * an SQL condition where all keys except the last match $quotedMaximumValues
-	 * exactly and the last column is greater than the matching value in
-	 * $quotedMaximumValues
-	 *
-	 * @param array $quotedMaximumValues The maximum values quoted with
-	 *  $this->db->addQuotes()
-	 * @return string An SQL condition that will select rows where all
-	 *  columns match the maximum value exactly except the last column
-	 *  which must be greater than the provided maximum value
-	 */
-	protected function buildGreaterThanCondition( array $quotedMaximumValues ) {
-		$keys = array_keys( $quotedMaximumValues );
-		$lastColumn = end( $keys );
-		$lastValue = array_pop( $quotedMaximumValues );
-		$conditions = [];
-		foreach ( $quotedMaximumValues as $column => $value ) {
-			$conditions[] = "$column = $value";
-		}
-		$conditions[] = "$lastColumn > $lastValue";
+        return $conditions;
+    }
 
-		return implode( ' AND ', $conditions );
-	}
+    /**
+     * Given an array of column names and their maximum value  generate
+     * an SQL condition where all keys except the last match $quotedMaximumValues
+     * exactly and the last column is greater than the matching value in
+     * $quotedMaximumValues
+     *
+     * @param array $quotedMaximumValues The maximum values quoted with
+     *  $this->db->addQuotes()
+     * @return string An SQL condition that will select rows where all
+     *  columns match the maximum value exactly except the last column
+     *  which must be greater than the provided maximum value
+     */
+    protected function buildGreaterThanCondition(array $quotedMaximumValues)
+    {
+        $keys = array_keys($quotedMaximumValues);
+        $lastColumn = end($keys);
+        $lastValue = array_pop($quotedMaximumValues);
+        $conditions = [];
+        foreach ($quotedMaximumValues as $column => $value) {
+            $conditions[] = "$column = $value";
+        }
+        $conditions[] = "$lastColumn > $lastValue";
+
+        return implode(' AND ', $conditions);
+    }
 }

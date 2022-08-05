@@ -29,156 +29,168 @@ use InvalidArgumentException;
  * @ingroup ResourceLoader
  * @internal
  */
-trait OOUIModule {
-	protected static $knownScriptsModules = [ 'core' ];
-	protected static $knownStylesModules = [ 'core', 'widgets', 'toolbars', 'windows' ];
-	protected static $knownImagesModules = [
-		'indicators',
-		// Extra icons
-		'icons-accessibility',
-		'icons-alerts',
-		'icons-content',
-		'icons-editing-advanced',
-		'icons-editing-citation',
-		'icons-editing-core',
-		'icons-editing-list',
-		'icons-editing-styling',
-		'icons-interactions',
-		'icons-layout',
-		'icons-location',
-		'icons-media',
-		'icons-moderation',
-		'icons-movement',
-		'icons-user',
-		'icons-wikimedia',
-	];
+trait OOUIModule
+{
+    protected static $knownScriptsModules = ['core'];
+    protected static $knownStylesModules = ['core', 'widgets', 'toolbars', 'windows'];
+    protected static $knownImagesModules = [
+        'indicators',
+        // Extra icons
+        'icons-accessibility',
+        'icons-alerts',
+        'icons-content',
+        'icons-editing-advanced',
+        'icons-editing-citation',
+        'icons-editing-core',
+        'icons-editing-list',
+        'icons-editing-styling',
+        'icons-interactions',
+        'icons-layout',
+        'icons-location',
+        'icons-media',
+        'icons-moderation',
+        'icons-movement',
+        'icons-user',
+        'icons-wikimedia',
+    ];
 
-	/** @var string[] Note that keys must be lowercase, values TitleCase. */
-	protected static $builtinSkinThemeMap = [
-		'default' => 'WikimediaUI',
-	];
+    /** @var string[] Note that keys must be lowercase, values TitleCase. */
+    protected static $builtinSkinThemeMap = [
+        'default' => 'WikimediaUI',
+    ];
 
-	/** @var string[][] Note that keys must be TitleCase. */
-	protected static $builtinThemePaths = [
-		'WikimediaUI' => [
-			'scripts' => 'resources/lib/ooui/oojs-ui-wikimediaui.js',
-			'styles' => 'resources/lib/ooui/oojs-ui-{module}-wikimediaui.css',
-			'images' => 'resources/lib/ooui/themes/wikimediaui/{module}.json',
-		],
-		'Apex' => [
-			'scripts' => 'resources/lib/ooui/oojs-ui-apex.js',
-			'styles' => 'resources/lib/ooui/oojs-ui-{module}-apex.css',
-			'images' => 'resources/lib/ooui/themes/apex/{module}.json',
-		],
-	];
+    /** @var string[][] Note that keys must be TitleCase. */
+    protected static $builtinThemePaths = [
+        'WikimediaUI' => [
+            'scripts' => 'resources/lib/ooui/oojs-ui-wikimediaui.js',
+            'styles'  => 'resources/lib/ooui/oojs-ui-{module}-wikimediaui.css',
+            'images'  => 'resources/lib/ooui/themes/wikimediaui/{module}.json',
+        ],
+        'Apex'        => [
+            'scripts' => 'resources/lib/ooui/oojs-ui-apex.js',
+            'styles'  => 'resources/lib/ooui/oojs-ui-{module}-apex.css',
+            'images'  => 'resources/lib/ooui/themes/apex/{module}.json',
+        ],
+    ];
 
-	/**
-	 * Return a map of skin names (in lowercase) to OOUI theme names, defining which theme a given
-	 * skin should use.
-	 *
-	 * @return array
-	 */
-	public static function getSkinThemeMap() {
-		$themeMap = self::$builtinSkinThemeMap;
-		$themeMap += ExtensionRegistry::getInstance()->getAttribute( 'SkinOOUIThemes' );
-		return $themeMap;
-	}
+    /**
+     * Return a map of skin names (in lowercase) to OOUI theme names, defining which theme a given
+     * skin should use.
+     *
+     * @return array
+     */
+    public static function getSkinThemeMap()
+    {
+        $themeMap = self::$builtinSkinThemeMap;
+        $themeMap += ExtensionRegistry::getInstance()->getAttribute('SkinOOUIThemes');
 
-	/**
-	 * Return a map of theme names to lists of paths from which a given theme should be loaded.
-	 *
-	 * Keys are theme names, values are associative arrays. Keys of the inner array are 'scripts',
-	 * 'styles', or 'images', and values are paths. Paths may be strings or FilePaths.
-	 *
-	 * Additionally, the string '{module}' in paths represents the name of the module to load.
-	 *
-	 * @return array
-	 */
-	protected static function getThemePaths() {
-		$themePaths = self::$builtinThemePaths;
-		$themePaths += ExtensionRegistry::getInstance()->getAttribute( 'OOUIThemePaths' );
+        return $themeMap;
+    }
 
-		list( $defaultLocalBasePath, $defaultRemoteBasePath ) =
-			FileModule::extractBasePaths();
+    /**
+     * Return a map of theme names to lists of paths from which a given theme should be loaded.
+     *
+     * Keys are theme names, values are associative arrays. Keys of the inner array are 'scripts',
+     * 'styles', or 'images', and values are paths. Paths may be strings or FilePaths.
+     *
+     * Additionally, the string '{module}' in paths represents the name of the module to load.
+     *
+     * @return array
+     */
+    protected static function getThemePaths()
+    {
+        $themePaths = self::$builtinThemePaths;
+        $themePaths += ExtensionRegistry::getInstance()->getAttribute('OOUIThemePaths');
 
-		// Allow custom themes' paths to be relative to the skin/extension that defines them,
-		// like with ResourceModuleSkinStyles
-		foreach ( $themePaths as $theme => &$paths ) {
-			list( $localBasePath, $remoteBasePath ) =
-				FileModule::extractBasePaths( $paths );
-			if ( $localBasePath !== $defaultLocalBasePath || $remoteBasePath !== $defaultRemoteBasePath ) {
-				foreach ( $paths as &$path ) {
-					$path = new FilePath( $path, $localBasePath, $remoteBasePath );
-				}
-			}
-		}
+        [$defaultLocalBasePath, $defaultRemoteBasePath] =
+            FileModule::extractBasePaths();
 
-		return $themePaths;
-	}
+        // Allow custom themes' paths to be relative to the skin/extension that defines them,
+        // like with ResourceModuleSkinStyles
+        foreach ($themePaths as $theme => &$paths) {
+            [$localBasePath, $remoteBasePath] =
+                FileModule::extractBasePaths($paths);
+            if ($localBasePath !== $defaultLocalBasePath || $remoteBasePath !== $defaultRemoteBasePath) {
+                foreach ($paths as &$path) {
+                    $path = new FilePath($path, $localBasePath, $remoteBasePath);
+                }
+            }
+        }
 
-	/**
-	 * Return a path to load given module of given theme from.
-	 *
-	 * The file at this path may not exist. This should be handled by the caller (throwing an error or
-	 * falling back to default theme).
-	 *
-	 * @param string $theme OOUI theme name, for example 'WikimediaUI' or 'Apex'
-	 * @param string $kind Kind of the module: 'scripts', 'styles', or 'images'
-	 * @param string $module Module name, for valid values see $knownScriptsModules,
-	 *     $knownStylesModules, $knownImagesModules
-	 * @return string|FilePath
-	 */
-	protected function getThemePath( $theme, $kind, $module ) {
-		$paths = self::getThemePaths();
-		$path = $paths[$theme][$kind];
-		if ( $path instanceof FilePath ) {
-			$path = new FilePath(
-				str_replace( '{module}', $module, $path->getPath() ),
-				$path->getLocalBasePath(),
-				$path->getRemoteBasePath()
-			);
-		} else {
-			$path = str_replace( '{module}', $module, $path );
-		}
-		return $path;
-	}
+        return $themePaths;
+    }
 
-	/**
-	 * @param string $theme See getThemePath()
-	 * @param string $module See getThemePath()
-	 * @return string|FilePath
-	 */
-	protected function getThemeScriptsPath( $theme, $module ) {
-		if ( !in_array( $module, self::$knownScriptsModules ) ) {
-			throw new InvalidArgumentException( "Invalid OOUI scripts module '$module'" );
-		}
-		return $this->getThemePath( $theme, 'scripts', $module );
-	}
+    /**
+     * Return a path to load given module of given theme from.
+     *
+     * The file at this path may not exist. This should be handled by the caller (throwing an error or
+     * falling back to default theme).
+     *
+     * @param string $theme OOUI theme name, for example 'WikimediaUI' or 'Apex'
+     * @param string $kind Kind of the module: 'scripts', 'styles', or 'images'
+     * @param string $module Module name, for valid values see $knownScriptsModules,
+     *     $knownStylesModules, $knownImagesModules
+     * @return string|FilePath
+     */
+    protected function getThemePath($theme, $kind, $module)
+    {
+        $paths = self::getThemePaths();
+        $path = $paths[$theme][$kind];
+        if ($path instanceof FilePath) {
+            $path = new FilePath(
+                str_replace('{module}', $module, $path->getPath()),
+                $path->getLocalBasePath(),
+                $path->getRemoteBasePath()
+            );
+        } else {
+            $path = str_replace('{module}', $module, $path);
+        }
 
-	/**
-	 * @param string $theme See getThemePath()
-	 * @param string $module See getThemePath()
-	 * @return string|FilePath
-	 */
-	protected function getThemeStylesPath( $theme, $module ) {
-		if ( !in_array( $module, self::$knownStylesModules ) ) {
-			throw new InvalidArgumentException( "Invalid OOUI styles module '$module'" );
-		}
-		return $this->getThemePath( $theme, 'styles', $module );
-	}
+        return $path;
+    }
 
-	/**
-	 * @param string $theme See getThemePath()
-	 * @param string $module See getThemePath()
-	 * @return string|FilePath
-	 */
-	protected function getThemeImagesPath( $theme, $module ) {
-		if ( !in_array( $module, self::$knownImagesModules ) ) {
-			throw new InvalidArgumentException( "Invalid OOUI images module '$module'" );
-		}
-		return $this->getThemePath( $theme, 'images', $module );
-	}
+    /**
+     * @param string $theme See getThemePath()
+     * @param string $module See getThemePath()
+     * @return string|FilePath
+     */
+    protected function getThemeScriptsPath($theme, $module)
+    {
+        if (!in_array($module, self::$knownScriptsModules)) {
+            throw new InvalidArgumentException("Invalid OOUI scripts module '$module'");
+        }
+
+        return $this->getThemePath($theme, 'scripts', $module);
+    }
+
+    /**
+     * @param string $theme See getThemePath()
+     * @param string $module See getThemePath()
+     * @return string|FilePath
+     */
+    protected function getThemeStylesPath($theme, $module)
+    {
+        if (!in_array($module, self::$knownStylesModules)) {
+            throw new InvalidArgumentException("Invalid OOUI styles module '$module'");
+        }
+
+        return $this->getThemePath($theme, 'styles', $module);
+    }
+
+    /**
+     * @param string $theme See getThemePath()
+     * @param string $module See getThemePath()
+     * @return string|FilePath
+     */
+    protected function getThemeImagesPath($theme, $module)
+    {
+        if (!in_array($module, self::$knownImagesModules)) {
+            throw new InvalidArgumentException("Invalid OOUI images module '$module'");
+        }
+
+        return $this->getThemePath($theme, 'images', $module);
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( OOUIModule::class, 'ResourceLoaderOOUIModule' );
+class_alias(OOUIModule::class, 'ResourceLoaderOOUIModule');

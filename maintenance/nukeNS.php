@@ -41,82 +41,85 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class NukeNS extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Remove pages with only 1 revision from any namespace' );
-		$this->addOption( 'delete', "Actually delete the page" );
-		$this->addOption( 'ns', 'Namespace to delete from, default NS_MEDIAWIKI', false, true );
-		$this->addOption( 'all', 'Delete everything regardless of revision count' );
-	}
+class NukeNS extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Remove pages with only 1 revision from any namespace');
+        $this->addOption('delete', "Actually delete the page");
+        $this->addOption('ns', 'Namespace to delete from, default NS_MEDIAWIKI', false, true);
+        $this->addOption('all', 'Delete everything regardless of revision count');
+    }
 
-	public function execute() {
-		$ns = $this->getOption( 'ns', NS_MEDIAWIKI );
-		$delete = $this->hasOption( 'delete' );
-		$all = $this->hasOption( 'all' );
-		$dbw = $this->getDB( DB_PRIMARY );
-		$this->beginTransaction( $dbw, __METHOD__ );
+    public function execute()
+    {
+        $ns = $this->getOption('ns', NS_MEDIAWIKI);
+        $delete = $this->hasOption('delete');
+        $all = $this->hasOption('all');
+        $dbw = $this->getDB(DB_PRIMARY);
+        $this->beginTransaction($dbw, __METHOD__);
 
-		$res = $dbw->select( 'page', 'page_title', [ 'page_namespace' => $ns ], __METHOD__ );
+        $res = $dbw->select('page', 'page_title', ['page_namespace' => $ns], __METHOD__);
 
-		$n_deleted = 0;
+        $n_deleted = 0;
 
-		foreach ( $res as $row ) {
-			// echo "$ns_name:".$row->page_title, "\n";
-			$title = Title::makeTitle( $ns, $row->page_title );
-			$id = $title->getArticleID();
+        foreach ($res as $row) {
+            // echo "$ns_name:".$row->page_title, "\n";
+            $title = Title::makeTitle($ns, $row->page_title);
+            $id = $title->getArticleID();
 
-			// Get corresponding revisions
-			$revs = $dbw->selectFieldValues(
-				'revision',
-				'rev_id',
-				[ 'rev_page' => $id ],
-				__METHOD__
-			);
-			$count = count( $revs );
+            // Get corresponding revisions
+            $revs = $dbw->selectFieldValues(
+                'revision',
+                'rev_id',
+                ['rev_page' => $id],
+                __METHOD__
+            );
+            $count = count($revs);
 
-			// skip anything that looks modified (i.e. multiple revs)
-			if ( $all || $count == 1 ) {
-				# echo $title->getPrefixedText(), "\t", $count, "\n";
-				$this->output( "delete: " . $title->getPrefixedText() . "\n" );
+            // skip anything that looks modified (i.e. multiple revs)
+            if ($all || $count == 1) {
+                # echo $title->getPrefixedText(), "\t", $count, "\n";
+                $this->output("delete: " . $title->getPrefixedText() . "\n");
 
-				// as much as I hate to cut & paste this, it's a little different, and
-				// I already have the id & revs
-				if ( $delete ) {
-					$dbw->delete( 'page', [ 'page_id' => $id ], __METHOD__ );
-					$this->commitTransaction( $dbw, __METHOD__ );
-					// Delete revisions as appropriate
-					/** @var NukePage $child */
-					$child = $this->runChild( NukePage::class, 'nukePage.php' );
-					'@phan-var NukePage $child';
-					$child->deleteRevisions( $revs );
-					$n_deleted++;
-				}
-			} else {
-				$this->output( "skip: " . $title->getPrefixedText() . "\n" );
-			}
-		}
-		$this->commitTransaction( $dbw, __METHOD__ );
+                // as much as I hate to cut & paste this, it's a little different, and
+                // I already have the id & revs
+                if ($delete) {
+                    $dbw->delete('page', ['page_id' => $id], __METHOD__);
+                    $this->commitTransaction($dbw, __METHOD__);
+                    // Delete revisions as appropriate
+                    /** @var NukePage $child */
+                    $child = $this->runChild(NukePage::class, 'nukePage.php');
+                    '@phan-var NukePage $child';
+                    $child->deleteRevisions($revs);
+                    $n_deleted++;
+                }
+            } else {
+                $this->output("skip: " . $title->getPrefixedText() . "\n");
+            }
+        }
+        $this->commitTransaction($dbw, __METHOD__);
 
-		if ( $n_deleted > 0 ) {
-			$this->purgeRedundantText( true );
+        if ($n_deleted > 0) {
+            $this->purgeRedundantText(true);
 
-			# update statistics - better to decrement existing count, or just count
-			# the page table?
-			$pages = $dbw->selectField( 'site_stats', 'ss_total_pages', [], __METHOD__ );
-			$pages -= $n_deleted;
-			$dbw->update(
-				'site_stats',
-				[ 'ss_total_pages' => $pages ],
-				[ 'ss_row_id' => 1 ],
-				__METHOD__
-			);
-		}
+            # update statistics - better to decrement existing count, or just count
+            # the page table?
+            $pages = $dbw->selectField('site_stats', 'ss_total_pages', [], __METHOD__);
+            $pages -= $n_deleted;
+            $dbw->update(
+                'site_stats',
+                ['ss_total_pages' => $pages],
+                ['ss_row_id' => 1],
+                __METHOD__
+            );
+        }
 
-		if ( !$delete ) {
-			$this->output( "To update the database, run the script with the --delete option.\n" );
-		}
-	}
+        if (!$delete) {
+            $this->output("To update the database, run the script with the --delete option.\n");
+        }
+    }
 }
 
 $maintClass = NukeNS::class;

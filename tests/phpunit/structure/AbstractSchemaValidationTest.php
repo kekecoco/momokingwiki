@@ -22,60 +22,66 @@ use MediaWiki\DB\AbstractSchemaValidator;
 /**
  * Validates all abstract schemas against the abstract-schema schemas in the docs/ folder.
  */
-class AbstractSchemaValidationTest extends PHPUnit\Framework\TestCase {
-	use MediaWikiCoversValidator;
+class AbstractSchemaValidationTest extends PHPUnit\Framework\TestCase
+{
+    use MediaWikiCoversValidator;
 
-	/**
-	 * @var AbstractSchemaValidator
-	 */
-	protected $validator;
+    /**
+     * @var AbstractSchemaValidator
+     */
+    protected $validator;
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->validator = new AbstractSchemaValidator( [ $this, 'markTestSkipped' ] );
-		$this->validator->checkDependencies();
-	}
+        $this->validator = new AbstractSchemaValidator([$this, 'markTestSkipped']);
+        $this->validator->checkDependencies();
+    }
 
-	public static function provideSchemas(): array {
-		return [
-			'maintenance/tables.json' => [ __DIR__ . '/../../../maintenance/tables.json' ]
-		];
-	}
+    public static function provideSchemas(): array
+    {
+        return [
+            'maintenance/tables.json' => [__DIR__ . '/../../../maintenance/tables.json']
+        ];
+    }
 
-	/**
-	 * @dataProvider provideSchemas
-	 * @param string $path Path to tables.json file
-	 */
-	public function testSchemasPassValidation( string $path ): void {
-		try {
-			$this->validator->validate( $path );
-			// All good
-			$this->assertTrue( true );
-		} catch ( AbstractSchemaValidationError $e ) {
-			$this->fail( $e->getMessage() );
-		}
-	}
+    /**
+     * @dataProvider provideSchemas
+     * @param string $path Path to tables.json file
+     */
+    public function testSchemasPassValidation(string $path): void
+    {
+        try {
+            $this->validator->validate($path);
+            // All good
+            $this->assertTrue(true);
+        } catch (AbstractSchemaValidationError $e) {
+            $this->fail($e->getMessage());
+        }
+    }
 
-	public static function provideSchemaChanges(): Generator {
-		foreach ( glob( __DIR__ . '/../../../maintenance/abstractSchemaChanges/*.json' ) as $schemaChange ) {
-			$fileName = pathinfo( $schemaChange, PATHINFO_BASENAME );
+    public static function provideSchemaChanges(): Generator
+    {
+        foreach (glob(__DIR__ . '/../../../maintenance/abstractSchemaChanges/*.json') as $schemaChange) {
+            $fileName = pathinfo($schemaChange, PATHINFO_BASENAME);
 
-			yield $fileName => [ $schemaChange ];
-		}
-	}
+            yield $fileName => [$schemaChange];
+        }
+    }
 
-	/**
-	 * @dataProvider provideSchemaChanges
-	 * @param string $path Path to tables.json file
-	 */
-	public function testSchemaChangesPassValidation( string $path ): void {
-		try {
-			$this->validator->validate( $path );
-			// All good
-			$this->assertTrue( true );
-		} catch ( AbstractSchemaValidationError $e ) {
-			$this->fail( $e->getMessage() );
-		}
-	}
+    /**
+     * @dataProvider provideSchemaChanges
+     * @param string $path Path to tables.json file
+     */
+    public function testSchemaChangesPassValidation(string $path): void
+    {
+        try {
+            $this->validator->validate($path);
+            // All good
+            $this->assertTrue(true);
+        } catch (AbstractSchemaValidationError $e) {
+            $this->fail($e->getMessage());
+        }
+    }
 }

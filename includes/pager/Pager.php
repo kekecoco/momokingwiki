@@ -31,8 +31,9 @@
  * @unstable for implementation, extensions should extend IndexPager or one of its subclasses.
  * @ingroup Pager
  */
-interface Pager {
-	public function getNavigationBar();
+interface Pager
+{
+    public function getNavigationBar();
 
-	public function getBody();
+    public function getBody();
 }

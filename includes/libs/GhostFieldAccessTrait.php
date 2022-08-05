@@ -33,37 +33,39 @@ namespace Wikimedia\Reflection;
  * @see https://www.php.net/manual/en/language.types.array.php#language.types.array.casting
  * @since 1.36
  */
-trait GhostFieldAccessTrait {
+trait GhostFieldAccessTrait
+{
 
-	/**
-	 * Get the value of the ghost field named $name,
-	 * or null if the field does not exist.
-	 *
-	 * @param string $name
-	 * @return mixed|null
-	 */
-	private function getGhostFieldValue( string $name ) {
-		if ( isset( $this->$name ) ) {
-			return $this->$name;
-		}
+    /**
+     * Get the value of the ghost field named $name,
+     * or null if the field does not exist.
+     *
+     * @param string $name
+     * @return mixed|null
+     */
+    private function getGhostFieldValue(string $name)
+    {
+        if (isset($this->$name)) {
+            return $this->$name;
+        }
 
-		$data = (array)$this;
+        $data = (array)$this;
 
-		// Protected variables have a '*' prepended to the variable name.
-		// These prepended values have null bytes on either side.
-		$protectedName = "\x00*\x00{$name}";
-		if ( isset( $data[$protectedName] ) ) {
-			return $data[$protectedName];
-		}
+        // Protected variables have a '*' prepended to the variable name.
+        // These prepended values have null bytes on either side.
+        $protectedName = "\x00*\x00{$name}";
+        if (isset($data[$protectedName])) {
+            return $data[$protectedName];
+        }
 
-		// Private variables have the class name prepended to the variable name.
-		// These prepended values have null bytes on either side.
-		$thisClass = get_class( $this );
-		$privateName = "\x00{$thisClass}\x00{$name}";
-		if ( isset( $data[$privateName] ) ) {
-			return $data[$privateName];
-		}
+        // Private variables have the class name prepended to the variable name.
+        // These prepended values have null bytes on either side.
+        $thisClass = get_class($this);
+        $privateName = "\x00{$thisClass}\x00{$name}";
+        if (isset($data[$privateName])) {
+            return $data[$privateName];
+        }
 
-		return null;
-	}
+        return null;
+    }
 }

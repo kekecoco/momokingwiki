@@ -32,14 +32,15 @@
  * @ingroup FileRepo
  * @stable to implement
  */
-interface IForeignRepoWithMWApi {
-	/**
-	 * Make an API query in the foreign repo, caching results
-	 *
-	 * @note action=query, format=json, redirects=true and uselang are automatically set.
-	 * @param array $query Fields to pass to the query
-	 * @return array|null
-	 * @since 1.38
-	 */
-	public function fetchImageQuery( $query );
+interface IForeignRepoWithMWApi
+{
+    /**
+     * Make an API query in the foreign repo, caching results
+     *
+     * @note action=query, format=json, redirects=true and uselang are automatically set.
+     * @param array $query Fields to pass to the query
+     * @return array|null
+     * @since 1.38
+     */
+    public function fetchImageQuery($query);
 }

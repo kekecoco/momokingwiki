@@ -37,40 +37,44 @@
  *
  * @since 1.17
  */
-class XmlJsCode {
-	public $value;
+class XmlJsCode
+{
+    public $value;
 
-	public function __construct( $value ) {
-		$this->value = $value;
-	}
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
 
-	/**
-	 * Encode an object containing XmlJsCode objects.
-	 *
-	 * This takes an object or associative array where (some of) the values are XmlJsCode objects,
-	 * and re-encodes it as a single XmlJsCode object.
-	 *
-	 * @since 1.33
-	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
-	 * @param object|array $obj Object or associative array to encode
-	 * @param bool $pretty If true, add non-significant whitespace to improve readability.
-	 * @return XmlJsCode
-	 */
-	public static function encodeObject( $obj, $pretty = false ) {
-		$parts = [];
-		foreach ( $obj as $key => $value ) {
-			$parts[] =
-				( $pretty ? '    ' : '' ) .
-				Xml::encodeJsVar( $key, $pretty ) .
-				( $pretty ? ': ' : ':' ) .
-				Xml::encodeJsVar( $value, $pretty );
-		}
-		return new self(
-			'{' .
-			( $pretty ? "\n" : '' ) .
-			implode( $pretty ? ",\n" : ',', $parts ) .
-			( $pretty ? "\n" : '' ) .
-			'}'
-		);
-	}
+    /**
+     * Encode an object containing XmlJsCode objects.
+     *
+     * This takes an object or associative array where (some of) the values are XmlJsCode objects,
+     * and re-encodes it as a single XmlJsCode object.
+     *
+     * @param object|array $obj Object or associative array to encode
+     * @param bool $pretty If true, add non-significant whitespace to improve readability.
+     * @return XmlJsCode
+     * @since 1.33
+     * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
+     */
+    public static function encodeObject($obj, $pretty = false)
+    {
+        $parts = [];
+        foreach ($obj as $key => $value) {
+            $parts[] =
+                ($pretty ? '    ' : '') .
+                Xml::encodeJsVar($key, $pretty) .
+                ($pretty ? ': ' : ':') .
+                Xml::encodeJsVar($value, $pretty);
+        }
+
+        return new self(
+            '{' .
+            ($pretty ? "\n" : '') .
+            implode($pretty ? ",\n" : ',', $parts) .
+            ($pretty ? "\n" : '') .
+            '}'
+        );
+    }
 }

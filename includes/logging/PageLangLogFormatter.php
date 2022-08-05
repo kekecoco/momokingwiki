@@ -30,35 +30,38 @@ use MediaWiki\MediaWikiServices;
  *
  * @since 1.24
  */
-class PageLangLogFormatter extends LogFormatter {
-	protected function getMessageParameters() {
-		// Get the user language for displaying language names
-		$userLang = $this->context->getLanguage()->getCode();
-		$params = parent::getMessageParameters();
+class PageLangLogFormatter extends LogFormatter
+{
+    protected function getMessageParameters()
+    {
+        // Get the user language for displaying language names
+        $userLang = $this->context->getLanguage()->getCode();
+        $params = parent::getMessageParameters();
 
-		// Get the language codes from log
-		$oldLang = $params[3];
-		$kOld = strrpos( $oldLang, '[' );
-		if ( $kOld ) {
-			$oldLang = substr( $oldLang, 0, $kOld );
-		}
+        // Get the language codes from log
+        $oldLang = $params[3];
+        $kOld = strrpos($oldLang, '[');
+        if ($kOld) {
+            $oldLang = substr($oldLang, 0, $kOld);
+        }
 
-		$newLang = $params[4];
-		$kNew = strrpos( $newLang, '[' );
-		if ( $kNew ) {
-			$newLang = substr( $newLang, 0, $kNew );
-		}
+        $newLang = $params[4];
+        $kNew = strrpos($newLang, '[');
+        if ($kNew) {
+            $newLang = substr($newLang, 0, $kNew);
+        }
 
-		// Convert language codes to names in user language
-		$languageNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
-		$logOld = $languageNameUtils->getLanguageName( $oldLang, $userLang )
-			. ' (' . $oldLang . ')';
-		$logNew = $languageNameUtils->getLanguageName( $newLang, $userLang )
-			. ' (' . $newLang . ')';
+        // Convert language codes to names in user language
+        $languageNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
+        $logOld = $languageNameUtils->getLanguageName($oldLang, $userLang)
+            . ' (' . $oldLang . ')';
+        $logNew = $languageNameUtils->getLanguageName($newLang, $userLang)
+            . ' (' . $newLang . ')';
 
-		// Add the default message to languages if required
-		$params[3] = !$kOld ? $logOld : $logOld . ' [' . $this->msg( 'default' ) . ']';
-		$params[4] = !$kNew ? $logNew : $logNew . ' [' . $this->msg( 'default' ) . ']';
-		return $params;
-	}
+        // Add the default message to languages if required
+        $params[3] = !$kOld ? $logOld : $logOld . ' [' . $this->msg('default') . ']';
+        $params[4] = !$kNew ? $logNew : $logNew . ' [' . $this->msg('default') . ']';
+
+        return $params;
+    }
 }

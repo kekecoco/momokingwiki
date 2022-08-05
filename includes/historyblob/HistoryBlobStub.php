@@ -25,130 +25,138 @@ use MediaWiki\MediaWikiServices;
 /**
  * Pointer object for an item within a CGZ blob stored in the text table.
  */
-class HistoryBlobStub {
-	/**
-	 * @var array One-step cache variable to hold base blobs; operations that
-	 * pull multiple revisions may often pull multiple times from the same
-	 * blob. By keeping the last-used one open, we avoid redundant
-	 * unserialization and decompression overhead.
-	 */
-	protected static $blobCache = [];
+class HistoryBlobStub
+{
+    /**
+     * @var array One-step cache variable to hold base blobs; operations that
+     * pull multiple revisions may often pull multiple times from the same
+     * blob. By keeping the last-used one open, we avoid redundant
+     * unserialization and decompression overhead.
+     */
+    protected static $blobCache = [];
 
-	/** @var int */
-	protected $mOldId;
+    /** @var int */
+    protected $mOldId;
 
-	/** @var string */
-	protected $mHash;
+    /** @var string */
+    protected $mHash;
 
-	/** @var string */
-	protected $mRef;
+    /** @var string */
+    protected $mRef;
 
-	/**
-	 * @param string $hash The content hash of the text
-	 * @param int $oldid The old_id for the CGZ object
-	 */
-	public function __construct( $hash = '', $oldid = 0 ) {
-		$this->mHash = $hash;
-	}
+    /**
+     * @param string $hash The content hash of the text
+     * @param int $oldid The old_id for the CGZ object
+     */
+    public function __construct($hash = '', $oldid = 0)
+    {
+        $this->mHash = $hash;
+    }
 
-	/**
-	 * Sets the location (old_id) of the main object to which this object
-	 * points
-	 * @param int $id
-	 */
-	public function setLocation( $id ) {
-		$this->mOldId = $id;
-	}
+    /**
+     * Sets the location (old_id) of the main object to which this object
+     * points
+     * @param int $id
+     */
+    public function setLocation($id)
+    {
+        $this->mOldId = $id;
+    }
 
-	/**
-	 * Gets the location of the main object
-	 * @return int
-	 */
-	public function getLocation() {
-		return $this->mOldId;
-	}
+    /**
+     * Gets the location of the main object
+     * @return int
+     */
+    public function getLocation()
+    {
+        return $this->mOldId;
+    }
 
-	/**
-	 * Sets the location (old_id) of the referring object
-	 * @param string $id
-	 */
-	public function setReferrer( $id ) {
-		$this->mRef = $id;
-	}
+    /**
+     * Sets the location (old_id) of the referring object
+     * @param string $id
+     */
+    public function setReferrer($id)
+    {
+        $this->mRef = $id;
+    }
 
-	/**
-	 * Gets the location of the referring object
-	 * @return string
-	 */
-	public function getReferrer() {
-		return $this->mRef;
-	}
+    /**
+     * Gets the location of the referring object
+     * @return string
+     */
+    public function getReferrer()
+    {
+        return $this->mRef;
+    }
 
-	/**
-	 * @return string|false
-	 */
-	public function getText() {
-		if ( isset( self::$blobCache[$this->mOldId] ) ) {
-			$obj = self::$blobCache[$this->mOldId];
-		} else {
-			$dbr = wfGetDB( DB_REPLICA );
-			$row = $dbr->selectRow(
-				'text',
-				[ 'old_flags', 'old_text' ],
-				[ 'old_id' => $this->mOldId ],
-				__METHOD__
-			);
+    /**
+     * @return string|false
+     */
+    public function getText()
+    {
+        if (isset(self::$blobCache[$this->mOldId])) {
+            $obj = self::$blobCache[$this->mOldId];
+        } else {
+            $dbr = wfGetDB(DB_REPLICA);
+            $row = $dbr->selectRow(
+                'text',
+                ['old_flags', 'old_text'],
+                ['old_id' => $this->mOldId],
+                __METHOD__
+            );
 
-			if ( !$row ) {
-				return false;
-			}
+            if (!$row) {
+                return false;
+            }
 
-			$flags = explode( ',', $row->old_flags );
-			if ( in_array( 'external', $flags ) ) {
-				$url = $row->old_text;
-				$parts = explode( '://', $url, 2 );
-				if ( !isset( $parts[1] ) || $parts[1] == '' ) {
-					return false;
-				}
-				$row->old_text = MediaWikiServices::getInstance()
-					->getExternalStoreAccess()
-					->fetchFromURL( $url );
-			}
+            $flags = explode(',', $row->old_flags);
+            if (in_array('external', $flags)) {
+                $url = $row->old_text;
+                $parts = explode('://', $url, 2);
+                if (!isset($parts[1]) || $parts[1] == '') {
+                    return false;
+                }
+                $row->old_text = MediaWikiServices::getInstance()
+                    ->getExternalStoreAccess()
+                    ->fetchFromURL($url);
+            }
 
-			if ( !in_array( 'object', $flags ) ) {
-				return false;
-			}
+            if (!in_array('object', $flags)) {
+                return false;
+            }
 
-			if ( in_array( 'gzip', $flags ) ) {
-				// This shouldn't happen, but a bug in the compress script
-				// may at times gzip-compress a HistoryBlob object row.
-				$obj = unserialize( gzinflate( $row->old_text ) );
-			} else {
-				$obj = unserialize( $row->old_text );
-			}
+            if (in_array('gzip', $flags)) {
+                // This shouldn't happen, but a bug in the compress script
+                // may at times gzip-compress a HistoryBlob object row.
+                $obj = unserialize(gzinflate($row->old_text));
+            } else {
+                $obj = unserialize($row->old_text);
+            }
 
-			if ( !is_object( $obj ) ) {
-				// Correct for old double-serialization bug.
-				$obj = unserialize( $obj );
-			}
+            if (!is_object($obj)) {
+                // Correct for old double-serialization bug.
+                $obj = unserialize($obj);
+            }
 
-			// Save this item for reference; if pulling many
-			// items in a row we'll likely use it again.
-			$obj->uncompress();
-			self::$blobCache = [ $this->mOldId => $obj ];
-		}
+            // Save this item for reference; if pulling many
+            // items in a row we'll likely use it again.
+            $obj->uncompress();
+            self::$blobCache = [$this->mOldId => $obj];
+        }
 
-		return $obj->getItem( $this->mHash );
-	}
+        return $obj->getItem($this->mHash);
+    }
 
-	/**
-	 * Get the content hash
-	 *
-	 * @return string
-	 */
-	public function getHash() {
-		return $this->mHash;
-	}
+    /**
+     * Get the content hash
+     *
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->mHash;
+    }
 }
 
 // Blobs generated by MediaWiki < 1.5 on PHP 4 were serialized with the

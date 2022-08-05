@@ -26,32 +26,37 @@ namespace MediaWiki\Interwiki;
  *
  * @since 1.31
  */
-class NullInterwikiLookup implements InterwikiLookup {
+class NullInterwikiLookup implements InterwikiLookup
+{
 
-	/**
-	 * @inheritDoc
-	 */
-	public function isValidInterwiki( $prefix ) {
-		return false;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function isValidInterwiki($prefix)
+    {
+        return false;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function fetch( $prefix ) {
-		return false;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function fetch($prefix)
+    {
+        return false;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getAllPrefixes( $local = null ) {
-		return [];
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getAllPrefixes($local = null)
+    {
+        return [];
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function invalidateCache( $prefix ) {
-	}
+    /**
+     * @inheritDoc
+     */
+    public function invalidateCache($prefix)
+    {
+    }
 }

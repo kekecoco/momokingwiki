@@ -30,101 +30,111 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialAncientPages extends QueryPage {
+class SpecialAncientPages extends QueryPage
+{
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var ILanguageConverter */
-	private $languageConverter;
+    /** @var ILanguageConverter */
+    private $languageConverter;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct( 'Ancientpages' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->languageConverter = $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() );
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct('Ancientpages');
+        $this->namespaceInfo = $namespaceInfo;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->languageConverter = $languageConverterFactory->getLanguageConverter($this->getContentLanguage());
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		$tables = [ 'page', 'revision' ];
-		$conds = [
-			'page_namespace' => $this->namespaceInfo->getContentNamespaces(),
-			'page_is_redirect' => 0
-		];
-		$joinConds = [
-			'revision' => [
-				'JOIN', [
-					'page_latest = rev_id'
-				]
-			],
-		];
+    public function getQueryInfo()
+    {
+        $tables = ['page', 'revision'];
+        $conds = [
+            'page_namespace'   => $this->namespaceInfo->getContentNamespaces(),
+            'page_is_redirect' => 0
+        ];
+        $joinConds = [
+            'revision' => [
+                'JOIN', [
+                    'page_latest = rev_id'
+                ]
+            ],
+        ];
 
-		// Allow extensions to modify the query
-		$this->getHookRunner()->onAncientPagesQuery( $tables, $conds, $joinConds );
+        // Allow extensions to modify the query
+        $this->getHookRunner()->onAncientPagesQuery($tables, $conds, $joinConds);
 
-		return [
-			'tables' => $tables,
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-				'value' => 'rev_timestamp'
-			],
-			'conds' => $conds,
-			'join_conds' => $joinConds
-		];
-	}
+        return [
+            'tables'     => $tables,
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+                'value'     => 'rev_timestamp'
+            ],
+            'conds'      => $conds,
+            'join_conds' => $joinConds
+        ];
+    }
 
-	public function usesTimestamps() {
-		return true;
-	}
+    public function usesTimestamps()
+    {
+        return true;
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$d = $this->getLanguage()->userTimeAndDate( $result->value, $this->getUser() );
-		$title = Title::makeTitle( $result->namespace, $result->title );
-		$linkRenderer = $this->getLinkRenderer();
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $d = $this->getLanguage()->userTimeAndDate($result->value, $this->getUser());
+        $title = Title::makeTitle($result->namespace, $result->title);
+        $linkRenderer = $this->getLinkRenderer();
 
-		$link = $linkRenderer->makeKnownLink(
-			$title,
-			new HtmlArmor( $this->languageConverter->convertHtml( $title->getPrefixedText() ) )
-		);
+        $link = $linkRenderer->makeKnownLink(
+            $title,
+            new HtmlArmor($this->languageConverter->convertHtml($title->getPrefixedText()))
+        );
 
-		return $this->getLanguage()->specialList( $link, htmlspecialchars( $d ) );
-	}
+        return $this->getLanguage()->specialList($link, htmlspecialchars($d));
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

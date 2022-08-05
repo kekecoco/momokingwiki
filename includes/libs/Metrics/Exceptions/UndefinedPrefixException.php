@@ -31,5 +31,6 @@ namespace Wikimedia\Metrics\Exceptions;
 
 use InvalidArgumentException;
 
-class UndefinedPrefixException extends InvalidArgumentException {
+class UndefinedPrefixException extends InvalidArgumentException
+{
 }

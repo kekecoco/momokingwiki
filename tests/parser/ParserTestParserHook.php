@@ -25,46 +25,54 @@
  * @author Ævar Arnfjörð Bjarmason <avarab@gmail.com>
  */
 
-class ParserTestParserHook {
+class ParserTestParserHook
+{
 
-	public static function setup( Parser $parser ) {
-		$parser->setHook( 'tag', [ __CLASS__, 'dumpHook' ] );
-		$parser->setHook( 'tåg', [ __CLASS__, 'dumpHook' ] );
-		$parser->setHook( 'statictag', [ __CLASS__, 'staticTagHook' ] );
-		$parser->setHook( 'asidetag', [ __CLASS__, 'asideTagHook' ] );
-		return true;
-	}
+    public static function setup(Parser $parser)
+    {
+        $parser->setHook('tag', [__CLASS__, 'dumpHook']);
+        $parser->setHook('tåg', [__CLASS__, 'dumpHook']);
+        $parser->setHook('statictag', [__CLASS__, 'staticTagHook']);
+        $parser->setHook('asidetag', [__CLASS__, 'asideTagHook']);
 
-	public static function dumpHook( $in, $argv ) {
-		// @phan-suppress-next-line SecurityCheck-XSS
-		return "<pre>\n" .
-			var_export( $in, true ) . "\n" .
-			var_export( $argv, true ) . "\n" .
-			"</pre>";
-	}
+        return true;
+    }
 
-	public static function staticTagHook( $in, $argv, $parser ) {
-		if ( !count( $argv ) ) {
-			$parser->static_tag_buf = $in;
-			return '';
-		} elseif ( count( $argv ) === 1 && isset( $argv['action'] )
-			&& $argv['action'] === 'flush' && $in === null
-		) {
-			// Clear the buffer, we probably don't need to
-			$tmp = $parser->static_tag_buf ?? '';
-			$parser->static_tag_buf = null;
-			// @phan-suppress-next-line SecurityCheck-XSS
-			return $tmp;
-		} else { // wtf?
-			// @phan-suppress-next-line SecurityCheck-XSS
-			return "\nCall this extension as <statictag>string</statictag> or as" .
-				" <statictag action=flush/>, not in any other way.\n" .
-				"text: " . var_export( $in, true ) . "\n" .
-				"argv: " . var_export( $argv, true ) . "\n";
-		}
-	}
+    public static function dumpHook($in, $argv)
+    {
+        // @phan-suppress-next-line SecurityCheck-XSS
+        return "<pre>\n" .
+            var_export($in, true) . "\n" .
+            var_export($argv, true) . "\n" .
+            "</pre>";
+    }
 
-	public static function asideTagHook(): string {
-		return Html::element( 'aside', [], 'Some aside content' );
-	}
+    public static function staticTagHook($in, $argv, $parser)
+    {
+        if (!count($argv)) {
+            $parser->static_tag_buf = $in;
+
+            return '';
+        } elseif (count($argv) === 1 && isset($argv['action'])
+            && $argv['action'] === 'flush' && $in === null
+        ) {
+            // Clear the buffer, we probably don't need to
+            $tmp = $parser->static_tag_buf ?? '';
+            $parser->static_tag_buf = null;
+
+            // @phan-suppress-next-line SecurityCheck-XSS
+            return $tmp;
+        } else { // wtf?
+            // @phan-suppress-next-line SecurityCheck-XSS
+            return "\nCall this extension as <statictag>string</statictag> or as" .
+                " <statictag action=flush/>, not in any other way.\n" .
+                "text: " . var_export($in, true) . "\n" .
+                "argv: " . var_export($argv, true) . "\n";
+        }
+    }
+
+    public static function asideTagHook(): string
+    {
+        return Html::element('aside', [], 'Some aside content');
+    }
 }

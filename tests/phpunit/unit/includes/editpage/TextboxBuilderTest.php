@@ -28,67 +28,72 @@ use MediaWikiUnitTestCase;
  *
  * @covers \MediaWiki\EditPage\TextboxBuilder
  */
-class TextboxBuilderTest extends MediaWikiUnitTestCase {
+class TextboxBuilderTest extends MediaWikiUnitTestCase
+{
 
-	public function provideAddNewLineAtEnd() {
-		return [
-			[ '', '' ],
-			[ 'foo', "foo\n" ],
-		];
-	}
+    public function provideAddNewLineAtEnd()
+    {
+        return [
+            ['', ''],
+            ['foo', "foo\n"],
+        ];
+    }
 
-	/**
-	 * @dataProvider provideAddNewLineAtEnd
-	 */
-	public function testAddNewLineAtEnd( $input, $expected ) {
-		$builder = new TextboxBuilder();
-		$this->assertSame( $expected, $builder->addNewLineAtEnd( $input ) );
-	}
+    /**
+     * @dataProvider provideAddNewLineAtEnd
+     */
+    public function testAddNewLineAtEnd($input, $expected)
+    {
+        $builder = new TextboxBuilder();
+        $this->assertSame($expected, $builder->addNewLineAtEnd($input));
+    }
 
-	public function provideMergeClassesIntoAttributes() {
-		return [
-			[
-				[],
-				[],
-				[],
-			],
-			[
-				[ 'mw-new-classname' ],
-				[],
-				[ 'class' => 'mw-new-classname' ],
-			],
-			[
-				[],
-				[ 'title' => 'My Title' ],
-				[ 'title' => 'My Title' ],
-			],
-			[
-				[ 'mw-new-classname' ],
-				[ 'title' => 'My Title' ],
-				[ 'title' => 'My Title', 'class' => 'mw-new-classname' ],
-			],
-			[
-				[ 'mw-new-classname' ],
-				[ 'class' => 'mw-existing-classname' ],
-				[ 'class' => 'mw-existing-classname mw-new-classname' ],
-			],
-			[
-				[ 'mw-new-classname', 'mw-existing-classname' ],
-				[ 'class' => 'mw-existing-classname' ],
-				[ 'class' => 'mw-existing-classname mw-new-classname' ],
-			],
-		];
-	}
+    public function provideMergeClassesIntoAttributes()
+    {
+        return [
+            [
+                [],
+                [],
+                [],
+            ],
+            [
+                ['mw-new-classname'],
+                [],
+                ['class' => 'mw-new-classname'],
+            ],
+            [
+                [],
+                ['title' => 'My Title'],
+                ['title' => 'My Title'],
+            ],
+            [
+                ['mw-new-classname'],
+                ['title' => 'My Title'],
+                ['title' => 'My Title', 'class' => 'mw-new-classname'],
+            ],
+            [
+                ['mw-new-classname'],
+                ['class' => 'mw-existing-classname'],
+                ['class' => 'mw-existing-classname mw-new-classname'],
+            ],
+            [
+                ['mw-new-classname', 'mw-existing-classname'],
+                ['class' => 'mw-existing-classname'],
+                ['class' => 'mw-existing-classname mw-new-classname'],
+            ],
+        ];
+    }
 
-	/**
-	 * @dataProvider provideMergeClassesIntoAttributes
-	 */
-	public function testMergeClassesIntoAttributes( $inputClasses, $inputAttributes, $expected ) {
-		$builder = new TextboxBuilder();
-		$this->assertSame(
-			$expected,
-			$builder->mergeClassesIntoAttributes( $inputClasses, $inputAttributes )
-		);
-	}
+    /**
+     * @dataProvider provideMergeClassesIntoAttributes
+     */
+    public function testMergeClassesIntoAttributes($inputClasses, $inputAttributes, $expected)
+    {
+        $builder = new TextboxBuilder();
+        $this->assertSame(
+            $expected,
+            $builder->mergeClassesIntoAttributes($inputClasses, $inputAttributes)
+        );
+    }
 
 }

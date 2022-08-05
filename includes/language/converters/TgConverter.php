@@ -23,121 +23,126 @@
  *
  * @ingroup Languages
  */
-class TgConverter extends LanguageConverter {
+class TgConverter extends LanguageConverter
+{
 
-	/**
-	 * @var array
-	 */
-	private $table = [
-		'а' => 'a',
-		'б' => 'b',
-		'в' => 'v',
-		'г' => 'g',
-		'д' => 'd',
-		'е' => 'e',
-		'ё' => 'jo',
-		'ж' => 'ƶ',
-		'з' => 'z',
-		'ии ' => 'iji ',
-		'и' => 'i',
-		'й' => 'j',
-		'к' => 'k',
-		'л' => 'l',
-		'м' => 'm',
-		'н' => 'n',
-		'о' => 'o',
-		'п' => 'p',
-		'р' => 'r',
-		'с' => 's',
-		'т' => 't',
-		'у' => 'u',
-		'ф' => 'f',
-		'х' => 'x',
-		'ч' => 'c',
-		'ш' => 'ş',
-		'ъ' => '\'',
-		'э' => 'e',
-		'ю' => 'ju',
-		'я' => 'ja',
-		'ғ' => 'ƣ',
-		'ӣ' => 'ī',
-		'қ' => 'q',
-		'ӯ' => 'ū',
-		'ҳ' => 'h',
-		'ҷ' => 'ç',
-		'ц' => 'ts',
-		'А' => 'A',
-		'Б' => 'B',
-		'В' => 'V',
-		'Г' => 'G',
-		'Д' => 'D',
-		'Е' => 'E',
-		'Ё' => 'Jo',
-		'Ж' => 'Ƶ',
-		'З' => 'Z',
-		'И' => 'I',
-		'Й' => 'J',
-		'К' => 'K',
-		'Л' => 'L',
-		'М' => 'M',
-		'Н' => 'N',
-		'О' => 'O',
-		'П' => 'P',
-		'Р' => 'R',
-		'С' => 'S',
-		'Т' => 'T',
-		'У' => 'U',
-		'Ф' => 'F',
-		'Х' => 'X',
-		'Ч' => 'C',
-		'Ш' => 'Ş',
-		'Ъ' => '\'',
-		'Э' => 'E',
-		'Ю' => 'Ju',
-		'Я' => 'Ja',
-		'Ғ' => 'Ƣ',
-		'Ӣ' => 'Ī',
-		'Қ' => 'Q',
-		'Ӯ' => 'Ū',
-		'Ҳ' => 'H',
-		'Ҷ' => 'Ç',
-		'Ц' => 'Ts',
-	];
+    /**
+     * @var array
+     */
+    private $table = [
+        'а'   => 'a',
+        'б'   => 'b',
+        'в'   => 'v',
+        'г'   => 'g',
+        'д'   => 'd',
+        'е'   => 'e',
+        'ё'   => 'jo',
+        'ж'   => 'ƶ',
+        'з'   => 'z',
+        'ии ' => 'iji ',
+        'и'   => 'i',
+        'й'   => 'j',
+        'к'   => 'k',
+        'л'   => 'l',
+        'м'   => 'm',
+        'н'   => 'n',
+        'о'   => 'o',
+        'п'   => 'p',
+        'р'   => 'r',
+        'с'   => 's',
+        'т'   => 't',
+        'у'   => 'u',
+        'ф'   => 'f',
+        'х'   => 'x',
+        'ч'   => 'c',
+        'ш'   => 'ş',
+        'ъ'   => '\'',
+        'э'   => 'e',
+        'ю'   => 'ju',
+        'я'   => 'ja',
+        'ғ'   => 'ƣ',
+        'ӣ'   => 'ī',
+        'қ'   => 'q',
+        'ӯ'   => 'ū',
+        'ҳ'   => 'h',
+        'ҷ'   => 'ç',
+        'ц'   => 'ts',
+        'А'   => 'A',
+        'Б'   => 'B',
+        'В'   => 'V',
+        'Г'   => 'G',
+        'Д'   => 'D',
+        'Е'   => 'E',
+        'Ё'   => 'Jo',
+        'Ж'   => 'Ƶ',
+        'З'   => 'Z',
+        'И'   => 'I',
+        'Й'   => 'J',
+        'К'   => 'K',
+        'Л'   => 'L',
+        'М'   => 'M',
+        'Н'   => 'N',
+        'О'   => 'O',
+        'П'   => 'P',
+        'Р'   => 'R',
+        'С'   => 'S',
+        'Т'   => 'T',
+        'У'   => 'U',
+        'Ф'   => 'F',
+        'Х'   => 'X',
+        'Ч'   => 'C',
+        'Ш'   => 'Ş',
+        'Ъ'   => '\'',
+        'Э'   => 'E',
+        'Ю'   => 'Ju',
+        'Я'   => 'Ja',
+        'Ғ'   => 'Ƣ',
+        'Ӣ'   => 'Ī',
+        'Қ'   => 'Q',
+        'Ӯ'   => 'Ū',
+        'Ҳ'   => 'H',
+        'Ҷ'   => 'Ç',
+        'Ц'   => 'Ts',
+    ];
 
-	/**
-	 * Get Main language code.
-	 * @since 1.36
-	 *
-	 * @return string
-	 */
-	public function getMainCode(): string {
-		return 'tg';
-	}
+    /**
+     * Get Main language code.
+     * @return string
+     * @since 1.36
+     *
+     */
+    public function getMainCode(): string
+    {
+        return 'tg';
+    }
 
-	/**
-	 * Get supported variants of the language.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getLanguageVariants(): array {
-		return [ 'tg', 'tg-latn' ];
-	}
+    /**
+     * Get supported variants of the language.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getLanguageVariants(): array
+    {
+        return ['tg', 'tg-latn'];
+    }
 
-	/**
-	 * Get language variants fallbacks.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getVariantsFallbacks(): array {
-		return [];
-	}
+    /**
+     * Get language variants fallbacks.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getVariantsFallbacks(): array
+    {
+        return [];
+    }
 
-	protected function loadDefaultTables() {
-		$this->mTables = [
-			'tg-latn' => new ReplacementArray( $this->table ),
-			'tg' => new ReplacementArray()
-		];
-	}
+    protected function loadDefaultTables()
+    {
+        $this->mTables = [
+            'tg-latn' => new ReplacementArray($this->table),
+            'tg'      => new ReplacementArray()
+        ];
+    }
 }

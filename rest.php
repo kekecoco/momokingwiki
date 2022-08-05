@@ -23,8 +23,8 @@
 
 use MediaWiki\Rest\EntryPoint;
 
-define( 'MW_REST_API', true );
-define( 'MW_ENTRY_POINT', 'rest' );
+define('MW_REST_API', true);
+define('MW_ENTRY_POINT', 'rest');
 
 require __DIR__ . '/includes/WebStart.php';
 

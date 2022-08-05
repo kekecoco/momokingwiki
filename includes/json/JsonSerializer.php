@@ -30,18 +30,19 @@ use InvalidArgumentException;
  * @since 1.36
  * @package MediaWiki\Json
  */
-interface JsonSerializer {
+interface JsonSerializer
+{
 
-	/**
-	 * Encode $value as JSON with an intent to use JsonUnserializer::unserialize
-	 * to decode it back.
-	 *
-	 * @param mixed|JsonUnserializable $value A value to encode. Can be any scalar,
-	 * array, stdClass, JsonUnserializable or any combination of them.
-	 * @throws InvalidArgumentException if the value can not be serialized.
-	 * @return string
-	 */
-	public function serialize( $value );
+    /**
+     * Encode $value as JSON with an intent to use JsonUnserializer::unserialize
+     * to decode it back.
+     *
+     * @param mixed|JsonUnserializable $value A value to encode. Can be any scalar,
+     * array, stdClass, JsonUnserializable or any combination of them.
+     * @return string
+     * @throws InvalidArgumentException if the value can not be serialized.
+     */
+    public function serialize($value);
 
-	// TODO: move more methods from FormatJson to here.
+    // TODO: move more methods from FormatJson to here.
 }

@@ -31,56 +31,60 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance ExternalStorage
  */
-class OrphanStats extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			"Show some statistics on the blob_orphans table, created with trackBlobs.php" );
-	}
+class OrphanStats extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            "Show some statistics on the blob_orphans table, created with trackBlobs.php");
+    }
 
-	protected function getExternalDB( $db, $cluster ) {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$lb = $lbFactory->getExternalLB( $cluster );
+    protected function getExternalDB($db, $cluster)
+    {
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $lb = $lbFactory->getExternalLB($cluster);
 
-		return $lb->getMaintenanceConnectionRef( $db );
-	}
+        return $lb->getMaintenanceConnectionRef($db);
+    }
 
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
-		if ( !$dbr->tableExists( 'blob_orphans', __METHOD__ ) ) {
-			$this->fatalError( "blob_orphans doesn't seem to exist, need to run trackBlobs.php first" );
-		}
-		$res = $dbr->select( 'blob_orphans', '*', '', __METHOD__ );
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        if (!$dbr->tableExists('blob_orphans', __METHOD__)) {
+            $this->fatalError("blob_orphans doesn't seem to exist, need to run trackBlobs.php first");
+        }
+        $res = $dbr->select('blob_orphans', '*', '', __METHOD__);
 
-		$num = 0;
-		$totalSize = 0;
-		$hashes = [];
-		$maxSize = 0;
+        $num = 0;
+        $totalSize = 0;
+        $hashes = [];
+        $maxSize = 0;
 
-		foreach ( $res as $row ) {
-			$extDB = $this->getExternalDB( DB_REPLICA, $row->bo_cluster );
-			$blobRow = $extDB->selectRow(
-				'blobs',
-				'*',
-				[ 'blob_id' => $row->bo_blob_id ],
-				__METHOD__
-			);
+        foreach ($res as $row) {
+            $extDB = $this->getExternalDB(DB_REPLICA, $row->bo_cluster);
+            $blobRow = $extDB->selectRow(
+                'blobs',
+                '*',
+                ['blob_id' => $row->bo_blob_id],
+                __METHOD__
+            );
 
-			$num++;
-			$size = strlen( $blobRow->blob_text );
-			$totalSize += $size;
-			$hashes[sha1( $blobRow->blob_text )] = true;
-			$maxSize = max( $size, $maxSize );
-		}
-		unset( $res );
+            $num++;
+            $size = strlen($blobRow->blob_text);
+            $totalSize += $size;
+            $hashes[sha1($blobRow->blob_text)] = true;
+            $maxSize = max($size, $maxSize);
+        }
+        unset($res);
 
-		$this->output( "Number of orphans: $num\n" );
-		if ( $num > 0 ) {
-			$this->output( "Average size: " . round( $totalSize / $num, 0 ) . " bytes\n" .
-				"Max size: $maxSize\n" .
-				"Number of unique texts: " . count( $hashes ) . "\n" );
-		}
-	}
+        $this->output("Number of orphans: $num\n");
+        if ($num > 0) {
+            $this->output("Average size: " . round($totalSize / $num, 0) . " bytes\n" .
+                "Max size: $maxSize\n" .
+                "Number of unique texts: " . count($hashes) . "\n");
+        }
+    }
 }
 
 $maintClass = OrphanStats::class;

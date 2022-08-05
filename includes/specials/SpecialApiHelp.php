@@ -27,70 +27,76 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialApiHelp extends UnlistedSpecialPage {
-	public function __construct() {
-		parent::__construct( 'ApiHelp' );
-	}
+class SpecialApiHelp extends UnlistedSpecialPage
+{
+    public function __construct()
+    {
+        parent::__construct('ApiHelp');
+    }
 
-	public function execute( $par ) {
-		if ( empty( $par ) ) {
-			$par = 'main';
-		}
+    public function execute($par)
+    {
+        if (empty($par)) {
+            $par = 'main';
+        }
 
-		// These come from transclusions
-		$request = $this->getRequest();
-		$options = [
-			'action' => 'help',
-			'nolead' => true,
-			'submodules' => $request->getCheck( 'submodules' ),
-			'recursivesubmodules' => $request->getCheck( 'recursivesubmodules' ),
-			'title' => $request->getVal( 'title', $this->getPageTitle( '$1' )->getPrefixedText() ),
-		];
+        // These come from transclusions
+        $request = $this->getRequest();
+        $options = [
+            'action'              => 'help',
+            'nolead'              => true,
+            'submodules'          => $request->getCheck('submodules'),
+            'recursivesubmodules' => $request->getCheck('recursivesubmodules'),
+            'title'               => $request->getVal('title', $this->getPageTitle('$1')->getPrefixedText()),
+        ];
 
-		// These are for linking from wikitext, since url parameters are a pain
-		// to do.
-		while ( true ) {
-			if ( substr( $par, 0, 4 ) === 'sub/' ) {
-				$par = substr( $par, 4 );
-				$options['submodules'] = 1;
-				continue;
-			}
+        // These are for linking from wikitext, since url parameters are a pain
+        // to do.
+        while (true) {
+            if (substr($par, 0, 4) === 'sub/') {
+                $par = substr($par, 4);
+                $options['submodules'] = 1;
+                continue;
+            }
 
-			if ( substr( $par, 0, 5 ) === 'rsub/' ) {
-				$par = substr( $par, 5 );
-				$options['recursivesubmodules'] = 1;
-				continue;
-			}
+            if (substr($par, 0, 5) === 'rsub/') {
+                $par = substr($par, 5);
+                $options['recursivesubmodules'] = 1;
+                continue;
+            }
 
-			$moduleName = $par;
-			break;
-		}
+            $moduleName = $par;
+            break;
+        }
 
-		if ( !$this->including() ) {
-			unset( $options['nolead'], $options['title'] );
-			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable False positive
-			$options['modules'] = $moduleName;
-			$link = wfAppendQuery( wfExpandUrl( wfScript( 'api' ), PROTO_CURRENT ), $options );
-			$this->getOutput()->redirect( $link );
-			return;
-		}
+        if (!$this->including()) {
+            unset($options['nolead'], $options['title']);
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable False positive
+            $options['modules'] = $moduleName;
+            $link = wfAppendQuery(wfExpandUrl(wfScript('api'), PROTO_CURRENT), $options);
+            $this->getOutput()->redirect($link);
 
-		$main = new ApiMain( $this->getContext(), false );
-		try {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable False positive
-			$module = $main->getModuleFromPath( $moduleName );
-		} catch ( ApiUsageException $ex ) {
-			$this->getOutput()->addHTML( Html::rawElement( 'span', [ 'class' => 'error' ],
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable False positive
-				$this->msg( 'apihelp-no-such-module', $moduleName )->inContentLanguage()->parse()
-			) );
-			return;
-		}
+            return;
+        }
 
-		ApiHelp::getHelp( $this->getContext(), $module, $options );
-	}
+        $main = new ApiMain($this->getContext(), false);
+        try {
+            // @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable False positive
+            $module = $main->getModuleFromPath($moduleName);
+        } catch (ApiUsageException $ex) {
+            $this->getOutput()->addHTML(Html::rawElement('span', ['class' => 'error'],
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable False positive
+                $this->msg('apihelp-no-such-module', $moduleName)->inContentLanguage()->parse()
+            ));
 
-	public function isIncludable() {
-		return true;
-	}
+            return;
+        }
+
+        ApiHelp::getHelp($this->getContext(), $module, $options);
+    }
+
+    public function isIncludable()
+    {
+        return true;
+    }
 }

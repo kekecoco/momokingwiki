@@ -22,29 +22,34 @@
 
 use MediaWiki\Languages\LanguageFactory;
 
-class UppercaseCollation extends Collation {
+class UppercaseCollation extends Collation
+{
 
-	/** @var Language Language object for English, so we can use the generic
-	 * UTF-8 uppercase function there
-	 */
-	private $lang;
+    /** @var Language Language object for English, so we can use the generic
+     * UTF-8 uppercase function there
+     */
+    private $lang;
 
-	/**
-	 * @param LanguageFactory $languageFactory
-	 */
-	public function __construct( LanguageFactory $languageFactory ) {
-		$this->lang = $languageFactory->getLanguage( 'en' );
-	}
+    /**
+     * @param LanguageFactory $languageFactory
+     */
+    public function __construct(LanguageFactory $languageFactory)
+    {
+        $this->lang = $languageFactory->getLanguage('en');
+    }
 
-	public function getSortKey( $string ) {
-		return $this->lang->uc( $string );
-	}
+    public function getSortKey($string)
+    {
+        return $this->lang->uc($string);
+    }
 
-	public function getFirstLetter( $string ) {
-		if ( $string[0] == "\0" ) {
-			$string = substr( $string, 1 );
-		}
-		return $this->lang->ucfirst( $this->lang->firstChar( $string ) );
-	}
+    public function getFirstLetter($string)
+    {
+        if ($string[0] == "\0") {
+            $string = substr($string, 1);
+        }
+
+        return $this->lang->ucfirst($this->lang->firstChar($string));
+    }
 
 }

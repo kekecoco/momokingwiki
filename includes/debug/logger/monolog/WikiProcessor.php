@@ -29,21 +29,24 @@ use WikiMap;
  * @since 1.25
  * @copyright © 2013 Wikimedia Foundation and contributors
  */
-class WikiProcessor {
+class WikiProcessor
+{
 
-	/**
-	 * @param array $record
-	 * @return array
-	 */
-	public function __invoke( array $record ) {
-		$record['extra']['host'] = wfHostname();
-		$record['extra']['wiki'] = WikiMap::getCurrentWikiId();
-		$record['extra']['mwversion'] = MW_VERSION;
-		$record['extra']['reqId'] = \WebRequest::getRequestId();
-		if ( wfIsCLI() && isset( $_SERVER['argv'] ) ) {
-			$record['extra']['cli_argv'] = implode( ' ', $_SERVER['argv'] );
-		}
-		return $record;
-	}
+    /**
+     * @param array $record
+     * @return array
+     */
+    public function __invoke(array $record)
+    {
+        $record['extra']['host'] = wfHostname();
+        $record['extra']['wiki'] = WikiMap::getCurrentWikiId();
+        $record['extra']['mwversion'] = MW_VERSION;
+        $record['extra']['reqId'] = \WebRequest::getRequestId();
+        if (wfIsCLI() && isset($_SERVER['argv'])) {
+            $record['extra']['cli_argv'] = implode(' ', $_SERVER['argv']);
+        }
+
+        return $record;
+    }
 
 }

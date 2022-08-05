@@ -6,22 +6,24 @@
  *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-class MediaWikiVersionFetcher {
+class MediaWikiVersionFetcher
+{
 
-	/**
-	 * Get the MediaWiki version, extracted from the PHP source file where it is defined.
-	 *
-	 * @return string
-	 * @throws RuntimeException
-	 */
-	public function fetchVersion() {
-		$code = file_get_contents( __DIR__ . '/Defines.php' );
+    /**
+     * Get the MediaWiki version, extracted from the PHP source file where it is defined.
+     *
+     * @return string
+     * @throws RuntimeException
+     */
+    public function fetchVersion()
+    {
+        $code = file_get_contents(__DIR__ . '/Defines.php');
 
-		if ( !preg_match( "/define\( 'MW_VERSION', '([^']+)'/", $code, $matches ) ) {
-			throw new RuntimeException( 'Could not extract the MediaWiki version from Defines.php' );
-		}
+        if (!preg_match("/define\( 'MW_VERSION', '([^']+)'/", $code, $matches)) {
+            throw new RuntimeException('Could not extract the MediaWiki version from Defines.php');
+        }
 
-		return $matches[1];
-	}
+        return $matches[1];
+    }
 
 }

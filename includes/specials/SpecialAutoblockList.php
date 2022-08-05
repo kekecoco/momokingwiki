@@ -34,188 +34,195 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @since 1.29
  * @ingroup SpecialPage
  */
-class SpecialAutoblockList extends SpecialPage {
+class SpecialAutoblockList extends SpecialPage
+{
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/** @var BlockRestrictionStore */
-	private $blockRestrictionStore;
+    /** @var BlockRestrictionStore */
+    private $blockRestrictionStore;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var CommentStore */
-	private $commentStore;
+    /** @var CommentStore */
+    private $commentStore;
 
-	/** @var BlockUtils */
-	private $blockUtils;
+    /** @var BlockUtils */
+    private $blockUtils;
 
-	/** @var BlockActionInfo */
-	private $blockActionInfo;
+    /** @var BlockActionInfo */
+    private $blockActionInfo;
 
-	/** @var RowCommentFormatter */
-	private $rowCommentFormatter;
+    /** @var RowCommentFormatter */
+    private $rowCommentFormatter;
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param BlockRestrictionStore $blockRestrictionStore
-	 * @param ILoadBalancer $loadBalancer
-	 * @param CommentStore $commentStore
-	 * @param BlockUtils $blockUtils
-	 * @param BlockActionInfo $blockActionInfo
-	 * @param RowCommentFormatter $rowCommentFormatter
-	 */
-	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		BlockRestrictionStore $blockRestrictionStore,
-		ILoadBalancer $loadBalancer,
-		CommentStore $commentStore,
-		BlockUtils $blockUtils,
-		BlockActionInfo $blockActionInfo,
-		RowCommentFormatter $rowCommentFormatter
-	) {
-		parent::__construct( 'AutoblockList' );
+    /**
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param BlockRestrictionStore $blockRestrictionStore
+     * @param ILoadBalancer $loadBalancer
+     * @param CommentStore $commentStore
+     * @param BlockUtils $blockUtils
+     * @param BlockActionInfo $blockActionInfo
+     * @param RowCommentFormatter $rowCommentFormatter
+     */
+    public function __construct(
+        LinkBatchFactory $linkBatchFactory,
+        BlockRestrictionStore $blockRestrictionStore,
+        ILoadBalancer $loadBalancer,
+        CommentStore $commentStore,
+        BlockUtils $blockUtils,
+        BlockActionInfo $blockActionInfo,
+        RowCommentFormatter $rowCommentFormatter
+    )
+    {
+        parent::__construct('AutoblockList');
 
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->blockRestrictionStore = $blockRestrictionStore;
-		$this->loadBalancer = $loadBalancer;
-		$this->commentStore = $commentStore;
-		$this->blockUtils = $blockUtils;
-		$this->blockActionInfo = $blockActionInfo;
-		$this->rowCommentFormatter = $rowCommentFormatter;
-	}
+        $this->linkBatchFactory = $linkBatchFactory;
+        $this->blockRestrictionStore = $blockRestrictionStore;
+        $this->loadBalancer = $loadBalancer;
+        $this->commentStore = $commentStore;
+        $this->blockUtils = $blockUtils;
+        $this->blockActionInfo = $blockActionInfo;
+        $this->rowCommentFormatter = $rowCommentFormatter;
+    }
 
-	/**
-	 * @param string|null $par Title fragment
-	 */
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
-		$out = $this->getOutput();
-		$out->setPageTitle( $this->msg( 'autoblocklist' ) );
-		$this->addHelpLink( 'Autoblock' );
-		$out->addModuleStyles( [ 'mediawiki.special' ] );
+    /**
+     * @param string|null $par Title fragment
+     */
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
+        $out = $this->getOutput();
+        $out->setPageTitle($this->msg('autoblocklist'));
+        $this->addHelpLink('Autoblock');
+        $out->addModuleStyles(['mediawiki.special']);
 
-		# setup BlockListPager here to get the actual default Limit
-		$pager = $this->getBlockListPager();
+        # setup BlockListPager here to get the actual default Limit
+        $pager = $this->getBlockListPager();
 
-		# Just show the block list
-		$fields = [
-			'Limit' => [
-				'type' => 'limitselect',
-				'label-message' => 'table_pager_limit_label',
-				'options' => $pager->getLimitSelectList(),
-				'name' => 'limit',
-				'default' => $pager->getLimit(),
-			]
-		];
+        # Just show the block list
+        $fields = [
+            'Limit' => [
+                'type'          => 'limitselect',
+                'label-message' => 'table_pager_limit_label',
+                'options'       => $pager->getLimitSelectList(),
+                'name'          => 'limit',
+                'default'       => $pager->getLimit(),
+            ]
+        ];
 
-		$form = HTMLForm::factory( 'ooui', $fields, $this->getContext() );
-		$form->setMethod( 'get' )
-			->setTitle( $this->getPageTitle() ) // Remove subpage
-			->setFormIdentifier( 'blocklist' )
-			->setWrapperLegendMsg( 'autoblocklist-legend' )
-			->setSubmitTextMsg( 'autoblocklist-submit' )
-			->prepareForm()
-			->displayForm( false );
+        $form = HTMLForm::factory('ooui', $fields, $this->getContext());
+        $form->setMethod('get')
+            ->setTitle($this->getPageTitle()) // Remove subpage
+            ->setFormIdentifier('blocklist')
+            ->setWrapperLegendMsg('autoblocklist-legend')
+            ->setSubmitTextMsg('autoblocklist-submit')
+            ->prepareForm()
+            ->displayForm(false);
 
-		$this->showTotal( $pager );
-		$this->showList( $pager );
-	}
+        $this->showTotal($pager);
+        $this->showList($pager);
+    }
 
-	/**
-	 * Setup a new BlockListPager instance.
-	 * @return BlockListPager
-	 */
-	protected function getBlockListPager() {
-		$conds = [
-			'ipb_parent_block_id IS NOT NULL'
-		];
-		# Is the user allowed to see hidden blocks?
-		if ( !$this->getAuthority()->isAllowed( 'hideuser' ) ) {
-			$conds['ipb_deleted'] = 0;
-		}
+    /**
+     * Setup a new BlockListPager instance.
+     * @return BlockListPager
+     */
+    protected function getBlockListPager()
+    {
+        $conds = [
+            'ipb_parent_block_id IS NOT NULL'
+        ];
+        # Is the user allowed to see hidden blocks?
+        if (!$this->getAuthority()->isAllowed('hideuser')) {
+            $conds['ipb_deleted'] = 0;
+        }
 
-		return new BlockListPager(
-			$this->getContext(),
-			$this->blockActionInfo,
-			$this->blockRestrictionStore,
-			$this->blockUtils,
-			$this->commentStore,
-			$this->linkBatchFactory,
-			$this->getLinkRenderer(),
-			$this->loadBalancer,
-			$this->rowCommentFormatter,
-			$this->getSpecialPageFactory(),
-			$conds
-		);
-	}
+        return new BlockListPager(
+            $this->getContext(),
+            $this->blockActionInfo,
+            $this->blockRestrictionStore,
+            $this->blockUtils,
+            $this->commentStore,
+            $this->linkBatchFactory,
+            $this->getLinkRenderer(),
+            $this->loadBalancer,
+            $this->rowCommentFormatter,
+            $this->getSpecialPageFactory(),
+            $conds
+        );
+    }
 
-	/**
-	 * Show total number of autoblocks on top of the table
-	 *
-	 * @param BlockListPager $pager The BlockListPager instance for this page
-	 */
-	protected function showTotal( BlockListPager $pager ) {
-		$out = $this->getOutput();
-		$out->addHTML(
-			Html::rawElement( 'div', [ 'style' => 'font-weight: bold;' ],
-				$this->msg( 'autoblocklist-total-autoblocks', $pager->getTotalAutoblocks() )->parse() )
-			. "\n"
-		);
-	}
+    /**
+     * Show total number of autoblocks on top of the table
+     *
+     * @param BlockListPager $pager The BlockListPager instance for this page
+     */
+    protected function showTotal(BlockListPager $pager)
+    {
+        $out = $this->getOutput();
+        $out->addHTML(
+            Html::rawElement('div', ['style' => 'font-weight: bold;'],
+                $this->msg('autoblocklist-total-autoblocks', $pager->getTotalAutoblocks())->parse())
+            . "\n"
+        );
+    }
 
-	/**
-	 * Show the list of blocked accounts matching the actual filter.
-	 * @param BlockListPager $pager The BlockListPager instance for this page
-	 */
-	protected function showList( BlockListPager $pager ) {
-		$out = $this->getOutput();
+    /**
+     * Show the list of blocked accounts matching the actual filter.
+     * @param BlockListPager $pager The BlockListPager instance for this page
+     */
+    protected function showList(BlockListPager $pager)
+    {
+        $out = $this->getOutput();
 
-		# Check for other blocks, i.e. global/tor blocks
-		$otherAutoblockLink = [];
-		$this->getHookRunner()->onOtherAutoblockLogLink( $otherAutoblockLink );
+        # Check for other blocks, i.e. global/tor blocks
+        $otherAutoblockLink = [];
+        $this->getHookRunner()->onOtherAutoblockLogLink($otherAutoblockLink);
 
-		# Show additional header for the local block only when other blocks exists.
-		# Not necessary in a standard installation without such extensions enabled
-		if ( count( $otherAutoblockLink ) ) {
-			$out->addHTML(
-				Html::rawElement( 'h2', [], $this->msg( 'autoblocklist-localblocks',
-					$pager->getNumRows() )->parse() )
-				. "\n"
-			);
-		}
+        # Show additional header for the local block only when other blocks exists.
+        # Not necessary in a standard installation without such extensions enabled
+        if (count($otherAutoblockLink)) {
+            $out->addHTML(
+                Html::rawElement('h2', [], $this->msg('autoblocklist-localblocks',
+                    $pager->getNumRows())->parse())
+                . "\n"
+            );
+        }
 
-		if ( $pager->getNumRows() ) {
-			$out->addParserOutputContent( $pager->getFullOutput() );
-		} else {
-			$out->addWikiMsg( 'autoblocklist-empty' );
-		}
+        if ($pager->getNumRows()) {
+            $out->addParserOutputContent($pager->getFullOutput());
+        } else {
+            $out->addWikiMsg('autoblocklist-empty');
+        }
 
-		if ( count( $otherAutoblockLink ) ) {
-			$out->addHTML(
-				Html::rawElement(
-					'h2',
-					[],
-					$this->msg( 'autoblocklist-otherblocks', count( $otherAutoblockLink ) )->parse()
-				) . "\n"
-			);
-			$list = '';
-			foreach ( $otherAutoblockLink as $link ) {
-				$list .= Html::rawElement( 'li', [], $link ) . "\n";
-			}
-			$out->addHTML(
-				Html::rawElement(
-					'ul',
-					[ 'class' => 'mw-autoblocklist-otherblocks' ],
-					$list
-				) . "\n"
-			);
-		}
-	}
+        if (count($otherAutoblockLink)) {
+            $out->addHTML(
+                Html::rawElement(
+                    'h2',
+                    [],
+                    $this->msg('autoblocklist-otherblocks', count($otherAutoblockLink))->parse()
+                ) . "\n"
+            );
+            $list = '';
+            foreach ($otherAutoblockLink as $link) {
+                $list .= Html::rawElement('li', [], $link) . "\n";
+            }
+            $out->addHTML(
+                Html::rawElement(
+                    'ul',
+                    ['class' => 'mw-autoblocklist-otherblocks'],
+                    $list
+                ) . "\n"
+            );
+        }
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 }

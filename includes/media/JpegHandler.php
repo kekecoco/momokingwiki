@@ -34,275 +34,293 @@ use MediaWiki\Shell\Shell;
  *
  * @ingroup Media
  */
-class JpegHandler extends ExifBitmapHandler {
-	private const SRGB_EXIF_COLOR_SPACE = 'sRGB';
-	private const SRGB_ICC_PROFILE_DESCRIPTION = 'sRGB IEC61966-2.1';
+class JpegHandler extends ExifBitmapHandler
+{
+    private const SRGB_EXIF_COLOR_SPACE = 'sRGB';
+    private const SRGB_ICC_PROFILE_DESCRIPTION = 'sRGB IEC61966-2.1';
 
-	public function normaliseParams( $image, &$params ) {
-		if ( !parent::normaliseParams( $image, $params ) ) {
-			return false;
-		}
-		if ( isset( $params['quality'] ) && !self::validateQuality( $params['quality'] ) ) {
-			return false;
-		}
-		return true;
-	}
+    public function normaliseParams($image, &$params)
+    {
+        if (!parent::normaliseParams($image, $params)) {
+            return false;
+        }
+        if (isset($params['quality']) && !self::validateQuality($params['quality'])) {
+            return false;
+        }
 
-	public function validateParam( $name, $value ) {
-		if ( $name === 'quality' ) {
-			return self::validateQuality( $value );
-		} else {
-			return parent::validateParam( $name, $value );
-		}
-	}
+        return true;
+    }
 
-	/** Validate and normalize quality value to be between 1 and 100 (inclusive).
-	 * @param string $value Quality value, will be converted to integer or 0 if invalid
-	 * @return bool True if the value is valid
-	 */
-	private static function validateQuality( $value ) {
-		return $value === 'low';
-	}
+    public function validateParam($name, $value)
+    {
+        if ($name === 'quality') {
+            return self::validateQuality($value);
+        } else {
+            return parent::validateParam($name, $value);
+        }
+    }
 
-	public function makeParamString( $params ) {
-		// Prepend quality as "qValue-". This has to match parseParamString() below
-		$res = parent::makeParamString( $params );
-		if ( $res && isset( $params['quality'] ) ) {
-			$res = "q{$params['quality']}-$res";
-		}
-		return $res;
-	}
+    /** Validate and normalize quality value to be between 1 and 100 (inclusive).
+     * @param string $value Quality value, will be converted to integer or 0 if invalid
+     * @return bool True if the value is valid
+     */
+    private static function validateQuality($value)
+    {
+        return $value === 'low';
+    }
 
-	public function parseParamString( $str ) {
-		// $str contains "qlow-200px" or "200px" strings because thumb.php would strip the filename
-		// first - check if the string begins with "qlow-", and if so, treat it as quality.
-		// Pass the first portion, or the whole string if "qlow-" not found, to the parent
-		// The parsing must match the makeParamString() above
-		$res = false;
-		$m = false;
-		if ( preg_match( '/q([^-]+)-(.*)$/', $str, $m ) ) {
-			$v = $m[1];
-			if ( self::validateQuality( $v ) ) {
-				$res = parent::parseParamString( $m[2] );
-				if ( $res ) {
-					$res['quality'] = $v;
-				}
-			}
-		} else {
-			$res = parent::parseParamString( $str );
-		}
-		return $res;
-	}
+    public function makeParamString($params)
+    {
+        // Prepend quality as "qValue-". This has to match parseParamString() below
+        $res = parent::makeParamString($params);
+        if ($res && isset($params['quality'])) {
+            $res = "q{$params['quality']}-$res";
+        }
 
-	protected function getScriptParams( $params ) {
-		$res = parent::getScriptParams( $params );
-		if ( isset( $params['quality'] ) ) {
-			$res['quality'] = $params['quality'];
-		}
-		return $res;
-	}
+        return $res;
+    }
 
-	public function getSizeAndMetadata( $state, $filename ) {
-		try {
-			$meta = BitmapMetadataHandler::Jpeg( $filename );
-			if ( !is_array( $meta ) ) {
-				// This should never happen, but doesn't hurt to be paranoid.
-				throw new MWException( 'Metadata array is not an array' );
-			}
-			$meta['MEDIAWIKI_EXIF_VERSION'] = Exif::version();
+    public function parseParamString($str)
+    {
+        // $str contains "qlow-200px" or "200px" strings because thumb.php would strip the filename
+        // first - check if the string begins with "qlow-", and if so, treat it as quality.
+        // Pass the first portion, or the whole string if "qlow-" not found, to the parent
+        // The parsing must match the makeParamString() above
+        $res = false;
+        $m = false;
+        if (preg_match('/q([^-]+)-(.*)$/', $str, $m)) {
+            $v = $m[1];
+            if (self::validateQuality($v)) {
+                $res = parent::parseParamString($m[2]);
+                if ($res) {
+                    $res['quality'] = $v;
+                }
+            }
+        } else {
+            $res = parent::parseParamString($str);
+        }
 
-			$info = [
-				'width' => $meta['SOF']['width'] ?? 0,
-				'height' => $meta['SOF']['height'] ?? 0,
-			];
-			if ( isset( $meta['SOF']['bits'] ) ) {
-				$info['bits'] = $meta['SOF']['bits'];
-			}
-			$info = $this->applyExifRotation( $info, $meta );
-			unset( $meta['SOF'] );
-			$info['metadata'] = $meta;
-			return $info;
-		} catch ( MWException $e ) {
-			// BitmapMetadataHandler throws an exception in certain exceptional
-			// cases like if file does not exist.
-			wfDebug( __METHOD__ . ': ' . $e->getMessage() );
+        return $res;
+    }
 
-			// This used to return an integer-like string from getMetadata(),
-			// producing a value which could not be unserialized in
-			// img_metadata. The "_error" array key matches the legacy
-			// unserialization for such image rows.
-			return [ 'metadata' => [ '_error' => ExifBitmapHandler::BROKEN_FILE ] ];
-		}
-	}
+    protected function getScriptParams($params)
+    {
+        $res = parent::getScriptParams($params);
+        if (isset($params['quality'])) {
+            $res['quality'] = $params['quality'];
+        }
 
-	/**
-	 * @param File $file
-	 * @param array $params Rotate parameters.
-	 *    'rotation' clockwise rotation in degrees, allowed are multiples of 90
-	 * @since 1.21
-	 * @return MediaTransformError|false
-	 */
-	public function rotate( $file, $params ) {
-		$jpegTran = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::JpegTran );
+        return $res;
+    }
 
-		$rotation = ( $params['rotation'] + $this->getRotation( $file ) ) % 360;
+    public function getSizeAndMetadata($state, $filename)
+    {
+        try {
+            $meta = BitmapMetadataHandler::Jpeg($filename);
+            if (!is_array($meta)) {
+                // This should never happen, but doesn't hurt to be paranoid.
+                throw new MWException('Metadata array is not an array');
+            }
+            $meta['MEDIAWIKI_EXIF_VERSION'] = Exif::version();
 
-		if ( $jpegTran && is_executable( $jpegTran ) ) {
-			$command = Shell::command( $jpegTran,
-				'-rotate',
-				(string)$rotation,
-				'-outfile',
-				$params['dstPath'],
-				$params['srcPath']
-			);
-			$result = $command
-				->includeStderr()
-				->execute();
-			if ( $result->getExitCode() !== 0 ) {
-				$this->logErrorForExternalProcess( $result->getExitCode(),
-					$result->getStdout(),
-					$command
-				);
+            $info = [
+                'width'  => $meta['SOF']['width'] ?? 0,
+                'height' => $meta['SOF']['height'] ?? 0,
+            ];
+            if (isset($meta['SOF']['bits'])) {
+                $info['bits'] = $meta['SOF']['bits'];
+            }
+            $info = $this->applyExifRotation($info, $meta);
+            unset($meta['SOF']);
+            $info['metadata'] = $meta;
 
-				return new MediaTransformError( 'thumbnail_error', 0, 0, $result->getStdout() );
-			}
+            return $info;
+        } catch (MWException $e) {
+            // BitmapMetadataHandler throws an exception in certain exceptional
+            // cases like if file does not exist.
+            wfDebug(__METHOD__ . ': ' . $e->getMessage());
 
-			return false;
-		} else {
-			return parent::rotate( $file, $params );
-		}
-	}
+            // This used to return an integer-like string from getMetadata(),
+            // producing a value which could not be unserialized in
+            // img_metadata. The "_error" array key matches the legacy
+            // unserialization for such image rows.
+            return ['metadata' => ['_error' => ExifBitmapHandler::BROKEN_FILE]];
+        }
+    }
 
-	public function supportsBucketing() {
-		return true;
-	}
+    /**
+     * @param File $file
+     * @param array $params Rotate parameters.
+     *    'rotation' clockwise rotation in degrees, allowed are multiples of 90
+     * @return MediaTransformError|false
+     * @since 1.21
+     */
+    public function rotate($file, $params)
+    {
+        $jpegTran = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::JpegTran);
 
-	public function sanitizeParamsForBucketing( $params ) {
-		$params = parent::sanitizeParamsForBucketing( $params );
+        $rotation = ($params['rotation'] + $this->getRotation($file)) % 360;
 
-		// Quality needs to be cleared for bucketing. Buckets need to be default quality
-		unset( $params['quality'] );
+        if ($jpegTran && is_executable($jpegTran)) {
+            $command = Shell::command($jpegTran,
+                '-rotate',
+                (string)$rotation,
+                '-outfile',
+                $params['dstPath'],
+                $params['srcPath']
+            );
+            $result = $command
+                ->includeStderr()
+                ->execute();
+            if ($result->getExitCode() !== 0) {
+                $this->logErrorForExternalProcess($result->getExitCode(),
+                    $result->getStdout(),
+                    $command
+                );
 
-		return $params;
-	}
+                return new MediaTransformError('thumbnail_error', 0, 0, $result->getStdout());
+            }
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function transformImageMagick( $image, $params ) {
-		$useTinyRGBForJPGThumbnails = MediaWikiServices::getInstance()
-			->getMainConfig()->get( MainConfigNames::UseTinyRGBForJPGThumbnails );
+            return false;
+        } else {
+            return parent::rotate($file, $params);
+        }
+    }
 
-		$ret = parent::transformImageMagick( $image, $params );
+    public function supportsBucketing()
+    {
+        return true;
+    }
 
-		if ( $ret ) {
-			return $ret;
-		}
+    public function sanitizeParamsForBucketing($params)
+    {
+        $params = parent::sanitizeParamsForBucketing($params);
 
-		if ( $useTinyRGBForJPGThumbnails ) {
-			// T100976 If the profile embedded in the JPG is sRGB, swap it for the smaller
-			// (and free) TinyRGB
+        // Quality needs to be cleared for bucketing. Buckets need to be default quality
+        unset($params['quality']);
 
-			/**
-			 * We'll want to replace the color profile for JPGs:
-			 * * in the sRGB color space, or with the sRGB profile
-			 *   (other profiles will be left untouched)
-			 * * without color space or profile, in which case browsers
-			 *   should assume sRGB, but don't always do (e.g. on wide-gamut
-			 *   monitors (unless it's meant for low bandwidth)
-			 * @see https://phabricator.wikimedia.org/T134498
-			 */
-			$colorSpaces = [ self::SRGB_EXIF_COLOR_SPACE, '-' ];
-			$profiles = [ self::SRGB_ICC_PROFILE_DESCRIPTION ];
+        return $params;
+    }
 
-			// we'll also add TinyRGB profile to images lacking a profile, but
-			// only if they're not low quality (which are meant to save bandwidth
-			// and we don't want to increase the filesize by adding a profile)
-			if ( isset( $params['quality'] ) && $params['quality'] > 30 ) {
-				$profiles[] = '-';
-			}
+    /**
+     * @inheritDoc
+     */
+    protected function transformImageMagick($image, $params)
+    {
+        $useTinyRGBForJPGThumbnails = MediaWikiServices::getInstance()
+            ->getMainConfig()->get(MainConfigNames::UseTinyRGBForJPGThumbnails);
 
-			$this->swapICCProfile(
-				$params['dstPath'],
-				$colorSpaces,
-				$profiles,
-				realpath( __DIR__ ) . '/tinyrgb.icc'
-			);
-		}
+        $ret = parent::transformImageMagick($image, $params);
 
-		return false;
-	}
+        if ($ret) {
+            return $ret;
+        }
 
-	/**
-	 * Swaps an embedded ICC profile for another, if found.
-	 * Depends on exiftool, no-op if not installed.
-	 * @param string $filepath File to be manipulated (will be overwritten)
-	 * @param array $colorSpaces Only process files with this/these Color Space(s)
-	 * @param array $oldProfileStrings Exact name(s) of color profile to look for
-	 *  (the one that will be replaced)
-	 * @param string $profileFilepath ICC profile file to apply to the file
-	 * @since 1.26
-	 * @return bool
-	 */
-	public function swapICCProfile( $filepath, array $colorSpaces,
-		array $oldProfileStrings, $profileFilepath
-	) {
-		$exiftool = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::Exiftool );
+        if ($useTinyRGBForJPGThumbnails) {
+            // T100976 If the profile embedded in the JPG is sRGB, swap it for the smaller
+            // (and free) TinyRGB
 
-		if ( !$exiftool || !is_executable( $exiftool ) ) {
-			return false;
-		}
+            /**
+             * We'll want to replace the color profile for JPGs:
+             * * in the sRGB color space, or with the sRGB profile
+             *   (other profiles will be left untouched)
+             * * without color space or profile, in which case browsers
+             *   should assume sRGB, but don't always do (e.g. on wide-gamut
+             *   monitors (unless it's meant for low bandwidth)
+             * @see https://phabricator.wikimedia.org/T134498
+             */
+            $colorSpaces = [self::SRGB_EXIF_COLOR_SPACE, '-'];
+            $profiles = [self::SRGB_ICC_PROFILE_DESCRIPTION];
 
-		$result = Shell::command(
-			$exiftool,
-			'-EXIF:ColorSpace',
-			'-ICC_Profile:ProfileDescription',
-			'-S',
-			'-T',
-			$filepath
-		)
-			->includeStderr()
-			->execute();
+            // we'll also add TinyRGB profile to images lacking a profile, but
+            // only if they're not low quality (which are meant to save bandwidth
+            // and we don't want to increase the filesize by adding a profile)
+            if (isset($params['quality']) && $params['quality'] > 30) {
+                $profiles[] = '-';
+            }
 
-		// Explode EXIF data into an array with [0 => Color Space, 1 => Device Model Desc]
-		$data = explode( "\t", trim( $result->getStdout() ), 3 );
+            $this->swapICCProfile(
+                $params['dstPath'],
+                $colorSpaces,
+                $profiles,
+                realpath(__DIR__) . '/tinyrgb.icc'
+            );
+        }
 
-		if ( $result->getExitCode() !== 0 ) {
-			return false;
-		}
+        return false;
+    }
 
-		// Make a regex out of the source data to match it to an array of color
-		// spaces in a case-insensitive way
-		$colorSpaceRegex = '/' . preg_quote( $data[0], '/' ) . '/i';
-		if ( empty( preg_grep( $colorSpaceRegex, $colorSpaces ) ) ) {
-			// We can't establish that this file matches the color space, don't process it
-			return false;
-		}
+    /**
+     * Swaps an embedded ICC profile for another, if found.
+     * Depends on exiftool, no-op if not installed.
+     * @param string $filepath File to be manipulated (will be overwritten)
+     * @param array $colorSpaces Only process files with this/these Color Space(s)
+     * @param array $oldProfileStrings Exact name(s) of color profile to look for
+     *  (the one that will be replaced)
+     * @param string $profileFilepath ICC profile file to apply to the file
+     * @return bool
+     * @since 1.26
+     */
+    public function swapICCProfile($filepath, array $colorSpaces,
+                                   array $oldProfileStrings, $profileFilepath
+    )
+    {
+        $exiftool = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::Exiftool);
 
-		$profileRegex = '/' . preg_quote( $data[1], '/' ) . '/i';
-		if ( empty( preg_grep( $profileRegex, $oldProfileStrings ) ) ) {
-			// We can't establish that this file has the expected ICC profile, don't process it
-			return false;
-		}
+        if (!$exiftool || !is_executable($exiftool)) {
+            return false;
+        }
 
-		$command = Shell::command( $exiftool,
-			'-overwrite_original',
-			'-icc_profile<=' . $profileFilepath,
-			$filepath
-		);
-		$result = $command
-			->includeStderr()
-			->execute();
+        $result = Shell::command(
+            $exiftool,
+            '-EXIF:ColorSpace',
+            '-ICC_Profile:ProfileDescription',
+            '-S',
+            '-T',
+            $filepath
+        )
+            ->includeStderr()
+            ->execute();
 
-		if ( $result->getExitCode() !== 0 ) {
-			$this->logErrorForExternalProcess( $result->getExitCode(),
-				$result->getStdout(),
-				$command
-			);
+        // Explode EXIF data into an array with [0 => Color Space, 1 => Device Model Desc]
+        $data = explode("\t", trim($result->getStdout()), 3);
 
-			return false;
-		}
+        if ($result->getExitCode() !== 0) {
+            return false;
+        }
 
-		return true;
-	}
+        // Make a regex out of the source data to match it to an array of color
+        // spaces in a case-insensitive way
+        $colorSpaceRegex = '/' . preg_quote($data[0], '/') . '/i';
+        if (empty(preg_grep($colorSpaceRegex, $colorSpaces))) {
+            // We can't establish that this file matches the color space, don't process it
+            return false;
+        }
+
+        $profileRegex = '/' . preg_quote($data[1], '/') . '/i';
+        if (empty(preg_grep($profileRegex, $oldProfileStrings))) {
+            // We can't establish that this file has the expected ICC profile, don't process it
+            return false;
+        }
+
+        $command = Shell::command($exiftool,
+            '-overwrite_original',
+            '-icc_profile<=' . $profileFilepath,
+            $filepath
+        );
+        $result = $command
+            ->includeStderr()
+            ->execute();
+
+        if ($result->getExitCode() !== 0) {
+            $this->logErrorForExternalProcess($result->getExitCode(),
+                $result->getStdout(),
+                $command
+            );
+
+            return false;
+        }
+
+        return true;
+    }
 }

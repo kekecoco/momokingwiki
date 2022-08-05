@@ -24,5 +24,6 @@
 /**
  * @newable
  */
-class UploadChunkZeroLengthFileException extends MWException {
+class UploadChunkZeroLengthFileException extends MWException
+{
 }

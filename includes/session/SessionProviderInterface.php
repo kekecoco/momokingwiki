@@ -33,29 +33,30 @@ use Message;
  * @ingroup Session
  * @since 1.27
  */
-interface SessionProviderInterface {
+interface SessionProviderInterface
+{
 
-	/**
-	 * Return an identifier for this session type
-	 *
-	 * @param Language $lang Language to use.
-	 * @return string
-	 */
-	public function describe( Language $lang );
+    /**
+     * Return an identifier for this session type
+     *
+     * @param Language $lang Language to use.
+     * @return string
+     */
+    public function describe(Language $lang);
 
-	/**
-	 * Return a Message for why sessions might not be being persisted.
-	 *
-	 * For example, "check whether you're blocking our cookies".
-	 *
-	 * @return Message|null
-	 */
-	public function whyNoSession();
+    /**
+     * Return a Message for why sessions might not be being persisted.
+     *
+     * For example, "check whether you're blocking our cookies".
+     *
+     * @return Message|null
+     */
+    public function whyNoSession();
 
-	/**
-	 * Returns true if this provider is safe against csrf attacks, or false otherwise
-	 *
-	 * @return bool
-	 */
-	public function safeAgainstCsrf();
+    /**
+     * Returns true if this provider is safe against csrf attacks, or false otherwise
+     *
+     * @return bool
+     */
+    public function safeAgainstCsrf();
 }

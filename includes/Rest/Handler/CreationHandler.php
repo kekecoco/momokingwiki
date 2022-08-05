@@ -13,99 +13,104 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * Core REST API endpoint that handles page creation (main slot only)
  */
-class CreationHandler extends EditHandler {
+class CreationHandler extends EditHandler
+{
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function getTitleParameter() {
-		return $this->getValidatedBody()['title'];
-	}
+    /**
+     * @inheritDoc
+     */
+    protected function getTitleParameter()
+    {
+        return $this->getValidatedBody()['title'];
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getBodyValidator( $contentType ) {
-		if ( $contentType !== 'application/json' ) {
-			throw new HttpException( "Unsupported Content-Type",
-				415,
-				[ 'content_type' => $contentType ]
-			);
-		}
+    /**
+     * @inheritDoc
+     */
+    public function getBodyValidator($contentType)
+    {
+        if ($contentType !== 'application/json') {
+            throw new HttpException("Unsupported Content-Type",
+                415,
+                ['content_type' => $contentType]
+            );
+        }
 
-		return new JsonBodyValidator( [
-			'source' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'title' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'comment' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'content_model' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false,
-			],
-		] + $this->getTokenParamDefinition() );
-	}
+        return new JsonBodyValidator([
+                'source'        => [
+                    self::PARAM_SOURCE             => 'body',
+                    ParamValidator::PARAM_TYPE     => 'string',
+                    ParamValidator::PARAM_REQUIRED => true,
+                ],
+                'title'         => [
+                    self::PARAM_SOURCE             => 'body',
+                    ParamValidator::PARAM_TYPE     => 'string',
+                    ParamValidator::PARAM_REQUIRED => true,
+                ],
+                'comment'       => [
+                    self::PARAM_SOURCE             => 'body',
+                    ParamValidator::PARAM_TYPE     => 'string',
+                    ParamValidator::PARAM_REQUIRED => true,
+                ],
+                'content_model' => [
+                    self::PARAM_SOURCE             => 'body',
+                    ParamValidator::PARAM_TYPE     => 'string',
+                    ParamValidator::PARAM_REQUIRED => false,
+                ],
+            ] + $this->getTokenParamDefinition());
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function getActionModuleParameters() {
-		$body = $this->getValidatedBody();
+    /**
+     * @inheritDoc
+     */
+    protected function getActionModuleParameters()
+    {
+        $body = $this->getValidatedBody();
 
-		$title = $this->getTitleParameter();
+        $title = $this->getTitleParameter();
 
-		$contentmodel = $body['content_model'] ?: null;
+        $contentmodel = $body['content_model'] ?: null;
 
-		if ( $contentmodel !== null && !$this->contentHandlerFactory->isDefinedModel( $contentmodel ) ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'rest-bad-content-model', [ $body['content_model'] ] ), 400
-			);
-		}
+        if ($contentmodel !== null && !$this->contentHandlerFactory->isDefinedModel($contentmodel)) {
+            throw new LocalizedHttpException(
+                new MessageValue('rest-bad-content-model', [$body['content_model']]), 400
+            );
+        }
 
-		$token = $this->getToken() ?? $this->getUser()->getEditToken();
+        $token = $this->getToken() ?? $this->getUser()->getEditToken();
 
-		$params = [
-			'action' => 'edit',
-			'title' => $title,
-			'text' => $body['source'],
-			'summary' => $body['comment'],
-			'token' => $token,
-			'createonly' => true,
-		];
+        $params = [
+            'action'     => 'edit',
+            'title'      => $title,
+            'text'       => $body['source'],
+            'summary'    => $body['comment'],
+            'token'      => $token,
+            'createonly' => true,
+        ];
 
-		if ( $contentmodel !== null ) {
-			$params['contentmodel'] = $contentmodel;
-		}
+        if ($contentmodel !== null) {
+            $params['contentmodel'] = $contentmodel;
+        }
 
-		return $params;
-	}
+        return $params;
+    }
 
-	protected function mapActionModuleResponse(
-		WebResponse $actionModuleResponse,
-		array $actionModuleResult,
-		Response $response
-	) {
-		parent::mapActionModuleResponse(
-			$actionModuleResponse,
-			$actionModuleResult,
-			$response
-		);
+    protected function mapActionModuleResponse(
+        WebResponse $actionModuleResponse,
+        array $actionModuleResult,
+        Response $response
+    )
+    {
+        parent::mapActionModuleResponse(
+            $actionModuleResponse,
+            $actionModuleResult,
+            $response
+        );
 
-		$title = $this->urlEncodeTitle( $actionModuleResult['edit']['title'] );
+        $title = $this->urlEncodeTitle($actionModuleResult['edit']['title']);
 
-		$url = $this->getRouter()->getRouteUrl( '/v1/page/' . $title );
-		$response->setHeader( 'Location', $url );
-	}
+        $url = $this->getRouter()->getRouteUrl('/v1/page/' . $title);
+        $response->setHeader('Location', $url);
+    }
 
 }

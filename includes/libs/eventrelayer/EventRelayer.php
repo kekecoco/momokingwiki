@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -26,45 +27,50 @@ use Psr\Log\NullLogger;
  *
  * @stable to extend
  */
-abstract class EventRelayer implements LoggerAwareInterface {
-	/** @var LoggerInterface */
-	protected $logger;
+abstract class EventRelayer implements LoggerAwareInterface
+{
+    /** @var LoggerInterface */
+    protected $logger;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param array $params
-	 */
-	public function __construct( array $params ) {
-		$this->logger = new NullLogger();
-	}
+    /**
+     * @stable to call
+     *
+     * @param array $params
+     */
+    public function __construct(array $params)
+    {
+        $this->logger = new NullLogger();
+    }
 
-	/**
-	 * @param string $channel
-	 * @param array $event Event data map
-	 * @return bool Success
-	 */
-	final public function notify( $channel, $event ) {
-		return $this->doNotify( $channel, [ $event ] );
-	}
+    /**
+     * @param string $channel
+     * @param array $event Event data map
+     * @return bool Success
+     */
+    final public function notify($channel, $event)
+    {
+        return $this->doNotify($channel, [$event]);
+    }
 
-	/**
-	 * @param string $channel
-	 * @param array $events List of event data maps
-	 * @return bool Success
-	 */
-	final public function notifyMulti( $channel, $events ) {
-		return $this->doNotify( $channel, $events );
-	}
+    /**
+     * @param string $channel
+     * @param array $events List of event data maps
+     * @return bool Success
+     */
+    final public function notifyMulti($channel, $events)
+    {
+        return $this->doNotify($channel, $events);
+    }
 
-	public function setLogger( LoggerInterface $logger ) {
-		$this->logger = $logger;
-	}
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
 
-	/**
-	 * @param string $channel
-	 * @param array $events List of event data maps
-	 * @return bool Success
-	 */
-	abstract protected function doNotify( $channel, array $events );
+    /**
+     * @param string $channel
+     * @param array $events List of event data maps
+     * @return bool Success
+     */
+    abstract protected function doNotify($channel, array $events);
 }

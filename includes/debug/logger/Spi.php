@@ -35,14 +35,15 @@ namespace MediaWiki\Logger;
  * @since 1.25
  * @copyright © 2014 Wikimedia Foundation and contributors
  */
-interface Spi {
+interface Spi
+{
 
-	/**
-	 * Get a logger instance.
-	 *
-	 * @param string $channel Logging channel
-	 * @return \Psr\Log\LoggerInterface Logger instance
-	 */
-	public function getLogger( $channel );
+    /**
+     * Get a logger instance.
+     *
+     * @param string $channel Logging channel
+     * @return \Psr\Log\LoggerInterface Logger instance
+     */
+    public function getLogger($channel);
 
 }

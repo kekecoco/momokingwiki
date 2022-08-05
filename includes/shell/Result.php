@@ -20,4 +20,4 @@
 
 use Shellbox\Command\UnboxedResult;
 
-class_alias( UnboxedResult::class, 'MediaWiki\\Shell\\Result', true );
+class_alias(UnboxedResult::class, 'MediaWiki\\Shell\\Result', true);

@@ -8,18 +8,22 @@ namespace Wikimedia\Reflection;
  * these ghost fields and the values can be accessed with GhostFieldAccessTrait.
  * @package Wikimedia\Reflection
  */
-class GhostFieldTestClass {
-	use GhostFieldAccessTrait;
+class GhostFieldTestClass
+{
+    use GhostFieldAccessTrait;
 
-	public function getPrivateField() {
-		return $this->getGhostFieldValue( 'privateField' );
-	}
+    public function getPrivateField()
+    {
+        return $this->getGhostFieldValue('privateField');
+    }
 
-	public function getProtectedField() {
-		return $this->getGhostFieldValue( 'protectedField' );
-	}
+    public function getProtectedField()
+    {
+        return $this->getGhostFieldValue('protectedField');
+    }
 
-	public function getPublicField() {
-		return $this->getGhostFieldValue( 'publicField' );
-	}
+    public function getPublicField()
+    {
+        return $this->getGhostFieldValue('publicField');
+    }
 }

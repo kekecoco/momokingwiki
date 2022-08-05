@@ -42,76 +42,84 @@ namespace Wikimedia\Rdbms;
  * @author Daniel Kinzler
  * @author Addshore
  */
-class SessionConsistentConnectionManager extends ConnectionManager {
+class SessionConsistentConnectionManager extends ConnectionManager
+{
 
-	/**
-	 * @var bool
-	 */
-	private $forceWriteConnection = false;
+    /**
+     * @var bool
+     */
+    private $forceWriteConnection = false;
 
-	/**
-	 * Forces all future calls to getReadConnection() to return a write connection.
-	 * Use this before performing read operations that are critical for a future update.
-	 *
-	 * @since 1.29
-	 */
-	public function prepareForUpdates() {
-		$this->forceWriteConnection = true;
-	}
+    /**
+     * Forces all future calls to getReadConnection() to return a write connection.
+     * Use this before performing read operations that are critical for a future update.
+     *
+     * @since 1.29
+     */
+    public function prepareForUpdates()
+    {
+        $this->forceWriteConnection = true;
+    }
 
-	/**
-	 * @since 1.29
-	 * @since 1.37 Added optional $flags parameter
-	 *
-	 * @param string[]|null $groups
-	 * @param int $flags
-	 *
-	 * @return IDatabase
-	 */
-	public function getReadConnection( ?array $groups = null, int $flags = 0 ) {
-		if ( $this->forceWriteConnection ) {
-			return parent::getWriteConnection( $flags );
-		}
+    /**
+     * @param string[]|null $groups
+     * @param int $flags
+     *
+     * @return IDatabase
+     * @since 1.37 Added optional $flags parameter
+     *
+     * @since 1.29
+     */
+    public function getReadConnection(?array $groups = null, int $flags = 0)
+    {
+        if ($this->forceWriteConnection) {
+            return parent::getWriteConnection($flags);
+        }
 
-		return parent::getReadConnection( $groups, $flags );
-	}
+        return parent::getReadConnection($groups, $flags);
+    }
 
-	/**
-	 * @since 1.29
-	 * @since 1.37 Added optional $flags parameter
-	 *
-	 * @param int $flags
-	 *
-	 * @return IDatabase
-	 */
-	public function getWriteConnection( int $flags = 0 ) {
-		$this->prepareForUpdates();
-		return parent::getWriteConnection( $flags );
-	}
+    /**
+     * @param int $flags
+     *
+     * @return IDatabase
+     * @since 1.29
+     * @since 1.37 Added optional $flags parameter
+     *
+     */
+    public function getWriteConnection(int $flags = 0)
+    {
+        $this->prepareForUpdates();
 
-	/**
-	 * @since 1.29
-	 *
-	 * @param string[]|null $groups
-	 *
-	 * @return DBConnRef
-	 */
-	public function getReadConnectionRef( array $groups = null ) {
-		if ( $this->forceWriteConnection ) {
-			return parent::getWriteConnectionRef();
-		}
+        return parent::getWriteConnection($flags);
+    }
 
-		return parent::getReadConnectionRef( $groups );
-	}
+    /**
+     * @param string[]|null $groups
+     *
+     * @return DBConnRef
+     * @since 1.29
+     *
+     */
+    public function getReadConnectionRef(array $groups = null)
+    {
+        if ($this->forceWriteConnection) {
+            return parent::getWriteConnectionRef();
+        }
 
-	/**
-	 * @since 1.29
-	 *
-	 * @return DBConnRef
-	 */
-	public function getWriteConnectionRef() {
-		$this->prepareForUpdates();
-		return parent::getWriteConnectionRef();
-	}
+        return parent::getReadConnectionRef($groups);
+    }
+
+    /**
+     * @return DBConnRef
+     * @since 1.29
+     *
+     */
+    public function getWriteConnectionRef()
+    {
+        $this->prepareForUpdates();
+
+        return parent::getWriteConnectionRef();
+    }
 
 }

@@ -30,47 +30,50 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class JSParseHelper extends Maintenance {
-	public $errs = 0;
+class JSParseHelper extends Maintenance
+{
+    public $errs = 0;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Runs parsing/syntax checks on JavaScript files' );
-		$this->addArg( 'file(s)', 'JavaScript file to test', false );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Runs parsing/syntax checks on JavaScript files');
+        $this->addArg('file(s)', 'JavaScript file to test', false);
+    }
 
-	public function execute() {
-		if ( !$this->hasArg( 0 ) ) {
-			$this->maybeHelp( true );
-		}
-		$files = $this->mArgs;
+    public function execute()
+    {
+        if (!$this->hasArg(0)) {
+            $this->maybeHelp(true);
+        }
+        $files = $this->mArgs;
 
-		$parser = new JSParser();
-		foreach ( $files as $filename ) {
-			AtEase::suppressWarnings();
-			$js = file_get_contents( $filename );
-			AtEase::restoreWarnings();
-			if ( $js === false ) {
-				$this->output( "$filename ERROR: could not read file\n" );
-				$this->errs++;
-				continue;
-			}
+        $parser = new JSParser();
+        foreach ($files as $filename) {
+            AtEase::suppressWarnings();
+            $js = file_get_contents($filename);
+            AtEase::restoreWarnings();
+            if ($js === false) {
+                $this->output("$filename ERROR: could not read file\n");
+                $this->errs++;
+                continue;
+            }
 
-			try {
-				$parser->parse( $js, $filename, 1 );
-			} catch ( Exception $e ) {
-				$this->errs++;
-				$this->output( "$filename ERROR: " . $e->getMessage() . "\n" );
-				continue;
-			}
+            try {
+                $parser->parse($js, $filename, 1);
+            } catch (Exception $e) {
+                $this->errs++;
+                $this->output("$filename ERROR: " . $e->getMessage() . "\n");
+                continue;
+            }
 
-			$this->output( "$filename OK\n" );
-		}
+            $this->output("$filename OK\n");
+        }
 
-		if ( $this->errs > 0 ) {
-			$this->fatalError( 'Failed.' );
-		}
-	}
+        if ($this->errs > 0) {
+            $this->fatalError('Failed.');
+        }
+    }
 }
 
 $maintClass = JSParseHelper::class;

@@ -26,54 +26,62 @@
  *
  * @since 1.27
  */
-class ReverseArrayIterator implements Iterator, Countable {
-	/** @var array */
-	protected $array;
+class ReverseArrayIterator implements Iterator, Countable
+{
+    /** @var array */
+    protected $array;
 
-	/**
-	 * Creates an iterator which will visit the keys in $array in
-	 * reverse order.  If given an object, will visit the properties
-	 * of the object in reverse order.  (Note that the default order
-	 * for PHP arrays and objects is declaration/assignment order.)
-	 *
-	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
-	 * @param array|object $array
-	 */
-	public function __construct( $array = [] ) {
-		if ( is_array( $array ) ) {
-			$this->array = $array;
-		} elseif ( is_object( $array ) ) {
-			$this->array = get_object_vars( $array );
-		} else {
-			throw new InvalidArgumentException( __METHOD__ . ' requires an array or object' );
-		}
+    /**
+     * Creates an iterator which will visit the keys in $array in
+     * reverse order.  If given an object, will visit the properties
+     * of the object in reverse order.  (Note that the default order
+     * for PHP arrays and objects is declaration/assignment order.)
+     *
+     * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
+     * @param array|object $array
+     */
+    public function __construct($array = [])
+    {
+        if (is_array($array)) {
+            $this->array = $array;
+        } elseif (is_object($array)) {
+            $this->array = get_object_vars($array);
+        } else {
+            throw new InvalidArgumentException(__METHOD__ . ' requires an array or object');
+        }
 
-		$this->rewind();
-	}
+        $this->rewind();
+    }
 
-	#[\ReturnTypeWillChange]
-	public function current() {
-		return current( $this->array );
-	}
+    #[\ReturnTypeWillChange]
+    public function current()
+    {
+        return current($this->array);
+    }
 
-	#[\ReturnTypeWillChange]
-	public function key() {
-		return key( $this->array );
-	}
+    #[\ReturnTypeWillChange]
+    public function key()
+    {
+        return key($this->array);
+    }
 
-	public function next(): void {
-		prev( $this->array );
-	}
+    public function next(): void
+    {
+        prev($this->array);
+    }
 
-	public function rewind(): void {
-		end( $this->array );
-	}
+    public function rewind(): void
+    {
+        end($this->array);
+    }
 
-	public function valid(): bool {
-		return key( $this->array ) !== null;
-	}
+    public function valid(): bool
+    {
+        return key($this->array) !== null;
+    }
 
-	public function count(): int {
-		return count( $this->array );
-	}
+    public function count(): int
+    {
+        return count($this->array);
+    }
 }

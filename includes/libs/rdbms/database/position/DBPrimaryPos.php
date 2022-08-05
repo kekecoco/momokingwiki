@@ -12,30 +12,31 @@ use Serializable;
  * @since 1.37
  * @stable to implement
  */
-interface DBPrimaryPos extends Serializable {
-	/**
-	 * @return float UNIX timestamp
-	 * @since 1.25
-	 */
-	public function asOfTime();
+interface DBPrimaryPos extends Serializable
+{
+    /**
+     * @return float UNIX timestamp
+     * @since 1.25
+     */
+    public function asOfTime();
 
-	/**
-	 * @param DBPrimaryPos $pos
-	 * @return bool Whether this position is at or higher than $pos
-	 * @since 1.27
-	 */
-	public function hasReached( DBPrimaryPos $pos );
+    /**
+     * @param DBPrimaryPos $pos
+     * @return bool Whether this position is at or higher than $pos
+     * @since 1.27
+     */
+    public function hasReached(DBPrimaryPos $pos);
 
-	/**
-	 * @param DBPrimaryPos $pos
-	 * @return bool Whether this position appears to be for the same channel as another
-	 * @since 1.27
-	 */
-	public function channelsMatch( DBPrimaryPos $pos );
+    /**
+     * @param DBPrimaryPos $pos
+     * @return bool Whether this position appears to be for the same channel as another
+     * @since 1.27
+     */
+    public function channelsMatch(DBPrimaryPos $pos);
 
-	/**
-	 * @return string
-	 * @since 1.27
-	 */
-	public function __toString();
+    /**
+     * @return string
+     * @since 1.27
+     */
+    public function __toString();
 }

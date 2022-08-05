@@ -20,7 +20,7 @@
  * @file
  */
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 /**
  * Helper class for password hash types that have a delimited set of parameters
@@ -37,90 +37,96 @@ declare( strict_types = 1 );
  *
  * @since 1.24
  */
-abstract class ParameterizedPassword extends Password {
-	/**
-	 * Named parameters that have default values for this password type
-	 * @var array
-	 */
-	protected $params = [];
+abstract class ParameterizedPassword extends Password
+{
+    /**
+     * Named parameters that have default values for this password type
+     * @var array
+     */
+    protected $params = [];
 
-	/**
-	 * Extra arguments that were found in the hash. This may or may not make
-	 * the hash invalid.
-	 * @var string[]
-	 */
-	protected $args = [];
+    /**
+     * Extra arguments that were found in the hash. This may or may not make
+     * the hash invalid.
+     * @var string[]
+     */
+    protected $args = [];
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function parseHash( ?string $hash ): void {
-		parent::parseHash( $hash );
+    /**
+     * @inheritDoc
+     */
+    protected function parseHash(?string $hash): void
+    {
+        parent::parseHash($hash);
 
-		if ( $hash === null ) {
-			$this->params = $this->getDefaultParams();
-			return;
-		}
+        if ($hash === null) {
+            $this->params = $this->getDefaultParams();
 
-		$parts = explode( $this->getDelimiter(), $hash );
-		$paramKeys = array_keys( $this->getDefaultParams() );
+            return;
+        }
 
-		if ( count( $parts ) < count( $paramKeys ) ) {
-			throw new PasswordError( 'Hash is missing required parameters.' );
-		}
+        $parts = explode($this->getDelimiter(), $hash);
+        $paramKeys = array_keys($this->getDefaultParams());
 
-		if ( $paramKeys ) {
-			$this->args = array_splice( $parts, count( $paramKeys ) );
-			$this->params = array_combine( $paramKeys, $parts );
-		} else {
-			$this->args = $parts;
-		}
+        if (count($parts) < count($paramKeys)) {
+            throw new PasswordError('Hash is missing required parameters.');
+        }
 
-		if ( $this->args ) {
-			$this->hash = array_pop( $this->args );
-		} else {
-			$this->hash = null;
-		}
-	}
+        if ($paramKeys) {
+            $this->args = array_splice($parts, count($paramKeys));
+            $this->params = array_combine($paramKeys, $parts);
+        } else {
+            $this->args = $parts;
+        }
 
-	public function needsUpdate(): bool {
-		return $this->params !== $this->getDefaultParams();
-	}
+        if ($this->args) {
+            $this->hash = array_pop($this->args);
+        } else {
+            $this->hash = null;
+        }
+    }
 
-	public function toString(): string {
-		$str = ':' . $this->config['type'] . ':';
+    public function needsUpdate(): bool
+    {
+        return $this->params !== $this->getDefaultParams();
+    }
 
-		if ( count( $this->params ) || count( $this->args ) ) {
-			$str .= implode( $this->getDelimiter(), array_merge( $this->params, $this->args ) );
-			$str .= $this->getDelimiter();
-		}
+    public function toString(): string
+    {
+        $str = ':' . $this->config['type'] . ':';
 
-		$res = $str . $this->hash;
-		$this->assertIsSafeSize( $res );
-		return $res;
-	}
+        if (count($this->params) || count($this->args)) {
+            $str .= implode($this->getDelimiter(), array_merge($this->params, $this->args));
+            $str .= $this->getDelimiter();
+        }
 
-	/**
-	 * Returns the delimiter for the parameters inside the hash
-	 *
-	 * @return string
-	 */
-	abstract protected function getDelimiter(): string;
+        $res = $str . $this->hash;
+        $this->assertIsSafeSize($res);
 
-	/**
-	 * Return an ordered array of default parameters for this password hash
-	 *
-	 * The keys should be the parameter names and the values should be the default
-	 * values. Additionally, the order of the array should be the order in which they
-	 * appear in the hash.
-	 *
-	 * When parsing a password hash, the constructor will split the hash based on
-	 * the delimiter, and consume as many parts as it can, matching each to a parameter
-	 * in this list. Once all the parameters have been filled, all remaining parts will
-	 * be considered extra arguments, except, of course, for the very last part, which
-	 * is the hash itself.
-	 *
-	 * @return array
-	 */
-	abstract protected function getDefaultParams(): array;
+        return $res;
+    }
+
+    /**
+     * Returns the delimiter for the parameters inside the hash
+     *
+     * @return string
+     */
+    abstract protected function getDelimiter(): string;
+
+    /**
+     * Return an ordered array of default parameters for this password hash
+     *
+     * The keys should be the parameter names and the values should be the default
+     * values. Additionally, the order of the array should be the order in which they
+     * appear in the hash.
+     *
+     * When parsing a password hash, the constructor will split the hash based on
+     * the delimiter, and consume as many parts as it can, matching each to a parameter
+     * in this list. Once all the parameters have been filled, all remaining parts will
+     * be considered extra arguments, except, of course, for the very last part, which
+     * is the hash itself.
+     *
+     * @return array
+     */
+    abstract protected function getDefaultParams(): array;
 }

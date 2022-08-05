@@ -9,13 +9,15 @@ namespace MediaWiki\Logger\Monolog;
  *
  * @since 1.33
  */
-class CeeFormatter extends LogstashFormatter {
-	/**
-	 * Format records with a cee cookie
-	 * @param array $record
-	 * @return string
-	 */
-	public function format( array $record ): string {
-		return "@cee: " . parent::format( $record );
-	}
+class CeeFormatter extends LogstashFormatter
+{
+    /**
+     * Format records with a cee cookie
+     * @param array $record
+     * @return string
+     */
+    public function format(array $record): string
+    {
+        return "@cee: " . parent::format($record);
+    }
 }

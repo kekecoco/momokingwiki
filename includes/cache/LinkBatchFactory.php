@@ -38,72 +38,75 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @ingroup Cache
  * @since 1.35
  */
-class LinkBatchFactory {
+class LinkBatchFactory
+{
 
-	/**
-	 * @var LinkCache
-	 */
-	private $linkCache;
+    /**
+     * @var LinkCache
+     */
+    private $linkCache;
 
-	/**
-	 * @var TitleFormatter
-	 */
-	private $titleFormatter;
+    /**
+     * @var TitleFormatter
+     */
+    private $titleFormatter;
 
-	/**
-	 * @var Language
-	 */
-	private $contentLanguage;
+    /**
+     * @var Language
+     */
+    private $contentLanguage;
 
-	/**
-	 * @var GenderCache
-	 */
-	private $genderCache;
+    /**
+     * @var GenderCache
+     */
+    private $genderCache;
 
-	/**
-	 * @var ILoadBalancer
-	 */
-	private $loadBalancer;
+    /**
+     * @var ILoadBalancer
+     */
+    private $loadBalancer;
 
-	/** @var LinksMigration */
-	private $linksMigration;
+    /** @var LinksMigration */
+    private $linksMigration;
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	public function __construct(
-		LinkCache $linkCache,
-		TitleFormatter $titleFormatter,
-		Language $contentLanguage,
-		GenderCache $genderCache,
-		ILoadBalancer $loadBalancer,
-		LinksMigration $linksMigration,
-		LoggerInterface $logger
-	) {
-		$this->linkCache = $linkCache;
-		$this->titleFormatter = $titleFormatter;
-		$this->contentLanguage = $contentLanguage;
-		$this->genderCache = $genderCache;
-		$this->loadBalancer = $loadBalancer;
-		$this->linksMigration = $linksMigration;
-		$this->logger = $logger;
-	}
+    public function __construct(
+        LinkCache $linkCache,
+        TitleFormatter $titleFormatter,
+        Language $contentLanguage,
+        GenderCache $genderCache,
+        ILoadBalancer $loadBalancer,
+        LinksMigration $linksMigration,
+        LoggerInterface $logger
+    )
+    {
+        $this->linkCache = $linkCache;
+        $this->titleFormatter = $titleFormatter;
+        $this->contentLanguage = $contentLanguage;
+        $this->genderCache = $genderCache;
+        $this->loadBalancer = $loadBalancer;
+        $this->linksMigration = $linksMigration;
+        $this->logger = $logger;
+    }
 
-	/**
-	 * @param iterable<LinkTarget>|iterable<PageReference> $initialItems items to be added
-	 *
-	 * @return LinkBatch
-	 */
-	public function newLinkBatch( iterable $initialItems = [] ): LinkBatch {
-		return new LinkBatch(
-			$initialItems,
-			$this->linkCache,
-			$this->titleFormatter,
-			$this->contentLanguage,
-			$this->genderCache,
-			$this->loadBalancer,
-			$this->linksMigration,
-			$this->logger
-		);
-	}
+    /**
+     * @param iterable<LinkTarget>|iterable<PageReference> $initialItems items to be added
+     *
+     * @return LinkBatch
+     */
+    public function newLinkBatch(iterable $initialItems = []): LinkBatch
+    {
+        return new LinkBatch(
+            $initialItems,
+            $this->linkCache,
+            $this->titleFormatter,
+            $this->contentLanguage,
+            $this->genderCache,
+            $this->loadBalancer,
+            $this->linksMigration,
+            $this->logger
+        );
+    }
 }

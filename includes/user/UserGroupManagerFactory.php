@@ -35,91 +35,94 @@ use Wikimedia\Rdbms\ILBFactory;
  *
  * @since 1.35
  */
-class UserGroupManagerFactory {
-	/** @var ServiceOptions */
-	private $options;
+class UserGroupManagerFactory
+{
+    /** @var ServiceOptions */
+    private $options;
 
-	/** @var ConfiguredReadOnlyMode */
-	private $configuredReadOnlyMode;
+    /** @var ConfiguredReadOnlyMode */
+    private $configuredReadOnlyMode;
 
-	/** @var ILBFactory */
-	private $dbLoadBalancerFactory;
+    /** @var ILBFactory */
+    private $dbLoadBalancerFactory;
 
-	/** @var UserEditTracker */
-	private $userEditTracker;
+    /** @var UserEditTracker */
+    private $userEditTracker;
 
-	/** @var GroupPermissionsLookup */
-	private $groupPermissionLookup;
+    /** @var GroupPermissionsLookup */
+    private $groupPermissionLookup;
 
-	/** @var JobQueueGroupFactory */
-	private $jobQueueGroupFactory;
+    /** @var JobQueueGroupFactory */
+    private $jobQueueGroupFactory;
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	/** @var callable[] */
-	private $clearCacheCallbacks;
+    /** @var callable[] */
+    private $clearCacheCallbacks;
 
-	/** @var HookContainer */
-	private $hookContainer;
+    /** @var HookContainer */
+    private $hookContainer;
 
-	/** @var TempUserConfig */
-	private $tempUserConfig;
+    /** @var TempUserConfig */
+    private $tempUserConfig;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param ConfiguredReadOnlyMode $configuredReadOnlyMode
-	 * @param ILBFactory $dbLoadBalancerFactory
-	 * @param HookContainer $hookContainer
-	 * @param UserEditTracker $userEditTracker
-	 * @param GroupPermissionsLookup $groupPermissionsLookup
-	 * @param JobQueueGroupFactory $jobQueueGroupFactory
-	 * @param LoggerInterface $logger
-	 * @param TempUserConfig $tempUserConfig Assumed to be the same across all domains.
-	 * @param callable[] $clearCacheCallbacks
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		ConfiguredReadOnlyMode $configuredReadOnlyMode,
-		ILBFactory $dbLoadBalancerFactory,
-		HookContainer $hookContainer,
-		UserEditTracker $userEditTracker,
-		GroupPermissionsLookup $groupPermissionsLookup,
-		JobQueueGroupFactory $jobQueueGroupFactory,
-		LoggerInterface $logger,
-		TempUserConfig $tempUserConfig,
-		array $clearCacheCallbacks = []
-	) {
-		$this->options = $options;
-		$this->configuredReadOnlyMode = $configuredReadOnlyMode;
-		$this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
-		$this->hookContainer = $hookContainer;
-		$this->userEditTracker = $userEditTracker;
-		$this->groupPermissionLookup = $groupPermissionsLookup;
-		$this->jobQueueGroupFactory = $jobQueueGroupFactory;
-		$this->logger = $logger;
-		$this->tempUserConfig = $tempUserConfig;
-		$this->clearCacheCallbacks = $clearCacheCallbacks;
-	}
+    /**
+     * @param ServiceOptions $options
+     * @param ConfiguredReadOnlyMode $configuredReadOnlyMode
+     * @param ILBFactory $dbLoadBalancerFactory
+     * @param HookContainer $hookContainer
+     * @param UserEditTracker $userEditTracker
+     * @param GroupPermissionsLookup $groupPermissionsLookup
+     * @param JobQueueGroupFactory $jobQueueGroupFactory
+     * @param LoggerInterface $logger
+     * @param TempUserConfig $tempUserConfig Assumed to be the same across all domains.
+     * @param callable[] $clearCacheCallbacks
+     */
+    public function __construct(
+        ServiceOptions $options,
+        ConfiguredReadOnlyMode $configuredReadOnlyMode,
+        ILBFactory $dbLoadBalancerFactory,
+        HookContainer $hookContainer,
+        UserEditTracker $userEditTracker,
+        GroupPermissionsLookup $groupPermissionsLookup,
+        JobQueueGroupFactory $jobQueueGroupFactory,
+        LoggerInterface $logger,
+        TempUserConfig $tempUserConfig,
+        array $clearCacheCallbacks = []
+    )
+    {
+        $this->options = $options;
+        $this->configuredReadOnlyMode = $configuredReadOnlyMode;
+        $this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
+        $this->hookContainer = $hookContainer;
+        $this->userEditTracker = $userEditTracker;
+        $this->groupPermissionLookup = $groupPermissionsLookup;
+        $this->jobQueueGroupFactory = $jobQueueGroupFactory;
+        $this->logger = $logger;
+        $this->tempUserConfig = $tempUserConfig;
+        $this->clearCacheCallbacks = $clearCacheCallbacks;
+    }
 
-	/**
-	 * @param string|bool $dbDomain
-	 * @return UserGroupManager
-	 */
-	public function getUserGroupManager( $dbDomain = false ): UserGroupManager {
-		// TODO: Once UserRightsProxy is removed, cache the instance per domain.
-		return new UserGroupManager(
-			$this->options,
-			$this->configuredReadOnlyMode,
-			$this->dbLoadBalancerFactory,
-			$this->hookContainer,
-			$this->userEditTracker,
-			$this->groupPermissionLookup,
-			$this->jobQueueGroupFactory->makeJobQueueGroup( $dbDomain ),
-			$this->logger,
-			$this->tempUserConfig,
-			$this->clearCacheCallbacks,
-			$dbDomain
-		);
-	}
+    /**
+     * @param string|bool $dbDomain
+     * @return UserGroupManager
+     */
+    public function getUserGroupManager($dbDomain = false): UserGroupManager
+    {
+        // TODO: Once UserRightsProxy is removed, cache the instance per domain.
+        return new UserGroupManager(
+            $this->options,
+            $this->configuredReadOnlyMode,
+            $this->dbLoadBalancerFactory,
+            $this->hookContainer,
+            $this->userEditTracker,
+            $this->groupPermissionLookup,
+            $this->jobQueueGroupFactory->makeJobQueueGroup($dbDomain),
+            $this->logger,
+            $this->tempUserConfig,
+            $this->clearCacheCallbacks,
+            $dbDomain
+        );
+    }
 }

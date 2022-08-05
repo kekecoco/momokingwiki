@@ -32,81 +32,86 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * @ingroup SpecialPage
  */
-class SpecialListUsers extends IncludableSpecialPage {
+class SpecialListUsers extends IncludableSpecialPage
+{
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var UserGroupManager */
-	private $userGroupManager;
+    /** @var UserGroupManager */
+    private $userGroupManager;
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
-	 * @param UserGroupManager $userGroupManager
-	 */
-	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer,
-		UserGroupManager $userGroupManager
-	) {
-		parent::__construct( 'Listusers' );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->loadBalancer = $loadBalancer;
-		$this->userGroupManager = $userGroupManager;
-	}
+    /**
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param ILoadBalancer $loadBalancer
+     * @param UserGroupManager $userGroupManager
+     */
+    public function __construct(
+        LinkBatchFactory $linkBatchFactory,
+        ILoadBalancer $loadBalancer,
+        UserGroupManager $userGroupManager
+    )
+    {
+        parent::__construct('Listusers');
+        $this->linkBatchFactory = $linkBatchFactory;
+        $this->loadBalancer = $loadBalancer;
+        $this->userGroupManager = $userGroupManager;
+    }
 
-	/**
-	 * @param string|null $par A group to list users from
-	 */
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
+    /**
+     * @param string|null $par A group to list users from
+     */
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
 
-		$up = new UsersPager(
-			$this->getContext(),
-			$this->getHookContainer(),
-			$this->linkBatchFactory,
-			$this->loadBalancer,
-			$this->userGroupManager,
-			$par,
-			$this->including()
-		);
+        $up = new UsersPager(
+            $this->getContext(),
+            $this->getHookContainer(),
+            $this->linkBatchFactory,
+            $this->loadBalancer,
+            $this->userGroupManager,
+            $par,
+            $this->including()
+        );
 
-		# getBody() first to check, if empty
-		$usersbody = $up->getBody();
+        # getBody() first to check, if empty
+        $usersbody = $up->getBody();
 
-		$s = '';
-		if ( !$this->including() ) {
-			$s = $up->getPageHeader();
-		}
+        $s = '';
+        if (!$this->including()) {
+            $s = $up->getPageHeader();
+        }
 
-		if ( $usersbody ) {
-			$s .= $up->getNavigationBar();
-			$s .= Html::rawElement( 'ul', [], $usersbody );
-			$s .= $up->getNavigationBar();
-		} else {
-			$s .= $this->msg( 'listusers-noresult' )->parseAsBlock();
-		}
+        if ($usersbody) {
+            $s .= $up->getNavigationBar();
+            $s .= Html::rawElement('ul', [], $usersbody);
+            $s .= $up->getNavigationBar();
+        } else {
+            $s .= $this->msg('listusers-noresult')->parseAsBlock();
+        }
 
-		$out = $this->getOutput();
-		$out->addHTML( $s );
-		$out->addModuleStyles( 'mediawiki.interface.helpers.styles' );
-	}
+        $out = $this->getOutput();
+        $out->addHTML($s);
+        $out->addModuleStyles('mediawiki.interface.helpers.styles');
+    }
 
-	/**
-	 * Return an array of subpages that this special page will accept.
-	 *
-	 * @return string[] subpages
-	 */
-	public function getSubpagesForPrefixSearch() {
-		return $this->userGroupManager->listAllGroups();
-	}
+    /**
+     * Return an array of subpages that this special page will accept.
+     *
+     * @return string[] subpages
+     */
+    public function getSubpagesForPrefixSearch()
+    {
+        return $this->userGroupManager->listAllGroups();
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 }

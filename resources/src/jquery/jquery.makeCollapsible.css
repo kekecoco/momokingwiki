@@ -6,24 +6,24 @@
 
 /* See also jquery.makeCollapsible.js */
 .mw-collapsible-toggle {
-	float: right;
-	-moz-user-select: none;
-	-webkit-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
+    float: right;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .mw-collapsible-toggle-default:before {
-	content: '[';
+    content: '[';
 }
 
 .mw-collapsible-toggle-default:after {
-	content: ']';
+    content: ']';
 }
 
 .mw-customtoggle,
 .mw-collapsible-toggle {
-	cursor: pointer;
+    cursor: pointer;
 }
 
 /* Collapse links in captions should be inline */
@@ -32,5 +32,5 @@ caption .mw-collapsible-toggle,
 .mw-content-rtl caption .mw-collapsible-toggle,
 .mw-content-rtl .mw-content-ltr caption .mw-collapsible-toggle,
 .mw-content-ltr .mw-content-rtl caption .mw-collapsible-toggle {
-	float: none;
+    float: none;
 }

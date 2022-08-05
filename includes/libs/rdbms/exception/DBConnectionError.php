@@ -18,29 +18,32 @@
  * @file
  * @ingroup Database
  */
+
 namespace Wikimedia\Rdbms;
 
 /**
  * @newable
  * @ingroup Database
  */
-class DBConnectionError extends DBExpectedError {
-	/**
-	 * @stable to call
-	 * @param IDatabase|null $db Object throwing the error
-	 * @param string $error Error text
-	 */
-	public function __construct( IDatabase $db = null, $error = 'unknown error' ) {
-		$msg = 'Cannot access the database';
-		if ( trim( $error ) != '' ) {
-			$msg .= ": $error";
-		}
+class DBConnectionError extends DBExpectedError
+{
+    /**
+     * @stable to call
+     * @param IDatabase|null $db Object throwing the error
+     * @param string $error Error text
+     */
+    public function __construct(IDatabase $db = null, $error = 'unknown error')
+    {
+        $msg = 'Cannot access the database';
+        if (trim($error) != '') {
+            $msg .= ": $error";
+        }
 
-		parent::__construct( $db, $msg );
-	}
+        parent::__construct($db, $msg);
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBConnectionError::class, 'DBConnectionError' );
+class_alias(DBConnectionError::class, 'DBConnectionError');

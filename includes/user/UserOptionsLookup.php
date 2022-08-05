@@ -26,107 +26,113 @@ use IDBAccessObject;
  * Provides access to user options
  * @since 1.35
  */
-abstract class UserOptionsLookup implements IDBAccessObject {
+abstract class UserOptionsLookup implements IDBAccessObject
+{
 
-	/**
-	 * Exclude user options that are set to their default value.
-	 */
-	public const EXCLUDE_DEFAULTS = 1;
+    /**
+     * Exclude user options that are set to their default value.
+     */
+    public const EXCLUDE_DEFAULTS = 1;
 
-	/**
-	 * Combine the language default options with any site-specific options
-	 * and add the default language variants.
-	 *
-	 * @return array
-	 */
-	abstract public function getDefaultOptions(): array;
+    /**
+     * Combine the language default options with any site-specific options
+     * and add the default language variants.
+     *
+     * @return array
+     */
+    abstract public function getDefaultOptions(): array;
 
-	/**
-	 * Get a given default option value.
-	 *
-	 * @param string $opt Name of option to retrieve
-	 * @return mixed|null Default option value
-	 */
-	public function getDefaultOption( string $opt ) {
-		$defaultOptions = $this->getDefaultOptions();
-		return $defaultOptions[$opt] ?? null;
-	}
+    /**
+     * Get a given default option value.
+     *
+     * @param string $opt Name of option to retrieve
+     * @return mixed|null Default option value
+     */
+    public function getDefaultOption(string $opt)
+    {
+        $defaultOptions = $this->getDefaultOptions();
 
-	/**
-	 * Get the user's current setting for a given option.
-	 *
-	 * @param UserIdentity $user The user to get the option for
-	 * @param string $oname The option to check
-	 * @param mixed|null $defaultOverride A default value returned if the option does not exist
-	 * @param bool $ignoreHidden Whether to ignore the effects of $wgHiddenPrefs
-	 * @param int $queryFlags A bit field composed of READ_XXX flags
-	 * @return mixed|null User's current value for the option
-	 * @see getBoolOption()
-	 * @see getIntOption()
-	 */
-	abstract public function getOption(
-		UserIdentity $user,
-		string $oname,
-		$defaultOverride = null,
-		bool $ignoreHidden = false,
-		int $queryFlags = self::READ_NORMAL
-	);
+        return $defaultOptions[$opt] ?? null;
+    }
 
-	/**
-	 * Get all user's options
-	 *
-	 * @param UserIdentity $user The user to get the option for
-	 * @param int $flags Bitwise combination of:
-	 *   UserOptionsManager::EXCLUDE_DEFAULTS  Exclude user options that are set
-	 *                                         to the default value.
-	 * @param int $queryFlags A bit field composed of READ_XXX flags
-	 * @return array
-	 */
-	abstract public function getOptions(
-		UserIdentity $user,
-		int $flags = 0,
-		int $queryFlags = self::READ_NORMAL
-	): array;
+    /**
+     * Get the user's current setting for a given option.
+     *
+     * @param UserIdentity $user The user to get the option for
+     * @param string $oname The option to check
+     * @param mixed|null $defaultOverride A default value returned if the option does not exist
+     * @param bool $ignoreHidden Whether to ignore the effects of $wgHiddenPrefs
+     * @param int $queryFlags A bit field composed of READ_XXX flags
+     * @return mixed|null User's current value for the option
+     * @see getBoolOption()
+     * @see getIntOption()
+     */
+    abstract public function getOption(
+        UserIdentity $user,
+        string $oname,
+        $defaultOverride = null,
+        bool $ignoreHidden = false,
+        int $queryFlags = self::READ_NORMAL
+    );
 
-	/**
-	 * Get the user's current setting for a given option, as a boolean value.
-	 *
-	 * @param UserIdentity $user The user to get the option for
-	 * @param string $oname The option to check
-	 * @param int $queryFlags A bit field composed of READ_XXX flags
-	 * @return bool User's current value for the option
-	 * @see getOption()
-	 */
-	public function getBoolOption(
-		UserIdentity $user,
-		string $oname,
-		int $queryFlags = self::READ_NORMAL
-	): bool {
-		return (bool)$this->getOption(
-			$user, $oname, null, false, $queryFlags );
-	}
+    /**
+     * Get all user's options
+     *
+     * @param UserIdentity $user The user to get the option for
+     * @param int $flags Bitwise combination of:
+     *   UserOptionsManager::EXCLUDE_DEFAULTS  Exclude user options that are set
+     *                                         to the default value.
+     * @param int $queryFlags A bit field composed of READ_XXX flags
+     * @return array
+     */
+    abstract public function getOptions(
+        UserIdentity $user,
+        int $flags = 0,
+        int $queryFlags = self::READ_NORMAL
+    ): array;
 
-	/**
-	 * Get the user's current setting for a given option, as an integer value.
-	 *
-	 * @param UserIdentity $user The user to get the option for
-	 * @param string $oname The option to check
-	 * @param int $defaultOverride A default value returned if the option does not exist
-	 * @param int $queryFlags A bit field composed of READ_XXX flags
-	 * @return int User's current value for the option
-	 * @see getOption()
-	 */
-	public function getIntOption(
-		UserIdentity $user,
-		string $oname,
-		int $defaultOverride = 0,
-		int $queryFlags = self::READ_NORMAL
-	): int {
-		$val = $this->getOption(
-			$user, $oname, $defaultOverride, false, $queryFlags );
-		if ( $val == '' ) {
-			$val = $defaultOverride;
-		}
-		return intval( $val );
-	}
+    /**
+     * Get the user's current setting for a given option, as a boolean value.
+     *
+     * @param UserIdentity $user The user to get the option for
+     * @param string $oname The option to check
+     * @param int $queryFlags A bit field composed of READ_XXX flags
+     * @return bool User's current value for the option
+     * @see getOption()
+     */
+    public function getBoolOption(
+        UserIdentity $user,
+        string $oname,
+        int $queryFlags = self::READ_NORMAL
+    ): bool
+    {
+        return (bool)$this->getOption(
+            $user, $oname, null, false, $queryFlags);
+    }
+
+    /**
+     * Get the user's current setting for a given option, as an integer value.
+     *
+     * @param UserIdentity $user The user to get the option for
+     * @param string $oname The option to check
+     * @param int $defaultOverride A default value returned if the option does not exist
+     * @param int $queryFlags A bit field composed of READ_XXX flags
+     * @return int User's current value for the option
+     * @see getOption()
+     */
+    public function getIntOption(
+        UserIdentity $user,
+        string $oname,
+        int $defaultOverride = 0,
+        int $queryFlags = self::READ_NORMAL
+    ): int
+    {
+        $val = $this->getOption(
+            $user, $oname, $defaultOverride, false, $queryFlags);
+        if ($val == '') {
+            $val = $defaultOverride;
+        }
+
+        return intval($val);
+    }
 }

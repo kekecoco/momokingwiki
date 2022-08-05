@@ -8,11 +8,11 @@ $xySillyStuff = 'Silly';
 
 // New style PHP based config: return a settings array.
 return [
-	'config' => [
-		'ExtensionDirectory' => '/test/extensions',
-		'ForeignUploadTargets' => [ 'acme' ],
-	],
-	'config-schema' => [
-		'Extra' => [ 'default' => 'extra' ]
-	],
+    'config'        => [
+        'ExtensionDirectory'   => '/test/extensions',
+        'ForeignUploadTargets' => ['acme'],
+    ],
+    'config-schema' => [
+        'Extra' => ['default' => 'extra']
+    ],
 ];

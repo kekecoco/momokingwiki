@@ -22,9 +22,11 @@
  * Fake maintenance wrapper, mostly used for the web installer/updater
  * @ingroup Maintenance
  */
-class FakeMaintenance extends Maintenance {
-	protected $mSelf = "FakeMaintenanceScript";
+class FakeMaintenance extends Maintenance
+{
+    protected $mSelf = "FakeMaintenanceScript";
 
-	public function execute() {
-	}
+    public function execute()
+    {
+    }
 }

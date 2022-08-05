@@ -26,56 +26,60 @@
  *
  * TODO convert to unit tests
  */
-class NamespaceImportTitleFactoryTest extends MediaWikiIntegrationTestCase {
+class NamespaceImportTitleFactoryTest extends MediaWikiIntegrationTestCase
+{
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->setContentLang( 'en' );
-	}
+        $this->setContentLang('en');
+    }
 
-	public function basicProvider() {
-		return [
-			[
-				new ForeignTitle( 0, '', 'MainNamespaceArticle' ),
-				0,
-				'MainNamespaceArticle'
-			],
-			[
-				new ForeignTitle( 0, '', 'MainNamespaceArticle' ),
-				2,
-				'User:MainNamespaceArticle'
-			],
-			[
-				new ForeignTitle( 1, 'Discussion', 'Nice_talk' ),
-				0,
-				'Nice_talk'
-			],
-			[
-				new ForeignTitle( 0, '', 'Bogus:Nice_talk' ),
-				0,
-				'Bogus:Nice_talk'
-			],
-			[
-				new ForeignTitle( 0, '', 'Bogus:Nice_talk' ),
-				2,
-				'User:Bogus:Nice_talk'
-			],
-		];
-	}
+    public function basicProvider()
+    {
+        return [
+            [
+                new ForeignTitle(0, '', 'MainNamespaceArticle'),
+                0,
+                'MainNamespaceArticle'
+            ],
+            [
+                new ForeignTitle(0, '', 'MainNamespaceArticle'),
+                2,
+                'User:MainNamespaceArticle'
+            ],
+            [
+                new ForeignTitle(1, 'Discussion', 'Nice_talk'),
+                0,
+                'Nice_talk'
+            ],
+            [
+                new ForeignTitle(0, '', 'Bogus:Nice_talk'),
+                0,
+                'Bogus:Nice_talk'
+            ],
+            [
+                new ForeignTitle(0, '', 'Bogus:Nice_talk'),
+                2,
+                'User:Bogus:Nice_talk'
+            ],
+        ];
+    }
 
-	/**
-	 * @dataProvider basicProvider
-	 */
-	public function testBasic( ForeignTitle $foreignTitle, $ns, $titleText ) {
-		$factory = new NamespaceImportTitleFactory(
-			$this->getServiceContainer()->getNamespaceInfo(),
-			$this->getServiceContainer()->getTitleFactory(),
-			$ns
-		);
-		$testTitle = $factory->createTitleFromForeignTitle( $foreignTitle );
-		$title = Title::newFromText( $titleText );
+    /**
+     * @dataProvider basicProvider
+     */
+    public function testBasic(ForeignTitle $foreignTitle, $ns, $titleText)
+    {
+        $factory = new NamespaceImportTitleFactory(
+            $this->getServiceContainer()->getNamespaceInfo(),
+            $this->getServiceContainer()->getTitleFactory(),
+            $ns
+        );
+        $testTitle = $factory->createTitleFromForeignTitle($foreignTitle);
+        $title = Title::newFromText($titleText);
 
-		$this->assertTrue( $title->equals( $testTitle ) );
-	}
+        $this->assertTrue($title->equals($testTitle));
+    }
 }

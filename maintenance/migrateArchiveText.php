@@ -32,122 +32,127 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.31
  */
-class MigrateArchiveText extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Migrates content from pre-1.5 ar_text and ar_flags columns to text storage'
-		);
-		$this->addOption(
-			'replace-missing',
-			"For rows with missing or unloadable data, throw away whatever is there and\n"
-			. "mark them as \"error\" in the database."
-		);
-	}
+class MigrateArchiveText extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Migrates content from pre-1.5 ar_text and ar_flags columns to text storage'
+        );
+        $this->addOption(
+            'replace-missing',
+            "For rows with missing or unloadable data, throw away whatever is there and\n"
+            . "mark them as \"error\" in the database."
+        );
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function doDBUpdates() {
-		$replaceMissing = $this->hasOption( 'replace-missing' );
-		$defaultExternalStore = $this->getConfig()->get( MainConfigNames::DefaultExternalStore );
-		$blobStore = MediaWikiServices::getInstance()
-			->getBlobStoreFactory()
-			->newSqlBlobStore();
-		$batchSize = $this->getBatchSize();
+    protected function doDBUpdates()
+    {
+        $replaceMissing = $this->hasOption('replace-missing');
+        $defaultExternalStore = $this->getConfig()->get(MainConfigNames::DefaultExternalStore);
+        $blobStore = MediaWikiServices::getInstance()
+            ->getBlobStoreFactory()
+            ->newSqlBlobStore();
+        $batchSize = $this->getBatchSize();
 
-		$dbr = $this->getDB( DB_REPLICA, [ 'vslow' ] );
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbr->fieldExists( 'archive', 'ar_text', __METHOD__ ) ||
-			!$dbw->fieldExists( 'archive', 'ar_text', __METHOD__ )
-		) {
-			$this->output( "No ar_text field, so nothing to migrate.\n" );
-			return true;
-		}
+        $dbr = $this->getDB(DB_REPLICA, ['vslow']);
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbr->fieldExists('archive', 'ar_text', __METHOD__) ||
+            !$dbw->fieldExists('archive', 'ar_text', __METHOD__)
+        ) {
+            $this->output("No ar_text field, so nothing to migrate.\n");
 
-		$this->output( "Migrating ar_text to modern storage...\n" );
-		$last = 0;
-		$count = 0;
-		$errors = 0;
-		while ( true ) {
-			$res = $dbr->select(
-				'archive',
-				[ 'ar_id', 'ar_text', 'ar_flags' ],
-				[
-					'ar_text_id' => null,
-					"ar_id > $last",
-				],
-				__METHOD__,
-				[ 'LIMIT' => $batchSize, 'ORDER BY' => [ 'ar_id' ] ]
-			);
-			$numRows = $res->numRows();
+            return true;
+        }
 
-			foreach ( $res as $row ) {
-				$last = $row->ar_id;
+        $this->output("Migrating ar_text to modern storage...\n");
+        $last = 0;
+        $count = 0;
+        $errors = 0;
+        while (true) {
+            $res = $dbr->select(
+                'archive',
+                ['ar_id', 'ar_text', 'ar_flags'],
+                [
+                    'ar_text_id' => null,
+                    "ar_id > $last",
+                ],
+                __METHOD__,
+                ['LIMIT' => $batchSize, 'ORDER BY' => ['ar_id']]
+            );
+            $numRows = $res->numRows();
 
-				// Recompress the text (and store in external storage, if
-				// applicable) if it's not already in external storage.
-				$arFlags = explode( ',', $row->ar_flags );
-				if ( !in_array( 'external', $arFlags, true ) ) {
-					$data = $blobStore->decompressData( $row->ar_text, $arFlags );
-					if ( $data !== false ) {
-						$flags = $blobStore->compressData( $data );
+            foreach ($res as $row) {
+                $last = $row->ar_id;
 
-						if ( $defaultExternalStore ) {
-							$data = ExternalStore::insertToDefault( $data );
-							if ( $flags ) {
-								$flags .= ',';
-							}
-							$flags .= 'external';
-						}
-					} elseif ( $replaceMissing ) {
-						$this->error( "Replacing missing data for row ar_id=$row->ar_id" );
-						$data = 'Missing data in migrateArchiveText.php on ' . date( 'c' );
-						$flags = 'error';
-					} else {
-						$this->error( "No data for row ar_id=$row->ar_id" );
-						$errors++;
-						continue;
-					}
-				} else {
-					$flags = $row->ar_flags;
-					$data = $row->ar_text;
-				}
+                // Recompress the text (and store in external storage, if
+                // applicable) if it's not already in external storage.
+                $arFlags = explode(',', $row->ar_flags);
+                if (!in_array('external', $arFlags, true)) {
+                    $data = $blobStore->decompressData($row->ar_text, $arFlags);
+                    if ($data !== false) {
+                        $flags = $blobStore->compressData($data);
 
-				$this->beginTransaction( $dbw, __METHOD__ );
-				$dbw->insert(
-					'text',
-					[ 'old_text' => $data, 'old_flags' => $flags ],
-					__METHOD__
-				);
-				$id = $dbw->insertId();
-				$dbw->update(
-					'archive',
-					[ 'ar_text_id' => $id, 'ar_text' => '', 'ar_flags' => '' ],
-					[ 'ar_id' => $row->ar_id, 'ar_text_id' => null ],
-					__METHOD__
-				);
-				$count += $dbw->affectedRows();
-				$this->commitTransaction( $dbw, __METHOD__ );
-			}
+                        if ($defaultExternalStore) {
+                            $data = ExternalStore::insertToDefault($data);
+                            if ($flags) {
+                                $flags .= ',';
+                            }
+                            $flags .= 'external';
+                        }
+                    } elseif ($replaceMissing) {
+                        $this->error("Replacing missing data for row ar_id=$row->ar_id");
+                        $data = 'Missing data in migrateArchiveText.php on ' . date('c');
+                        $flags = 'error';
+                    } else {
+                        $this->error("No data for row ar_id=$row->ar_id");
+                        $errors++;
+                        continue;
+                    }
+                } else {
+                    $flags = $row->ar_flags;
+                    $data = $row->ar_text;
+                }
 
-			if ( $numRows < $batchSize ) {
-				// We must have reached the end
-				break;
-			}
+                $this->beginTransaction($dbw, __METHOD__);
+                $dbw->insert(
+                    'text',
+                    ['old_text' => $data, 'old_flags' => $flags],
+                    __METHOD__
+                );
+                $id = $dbw->insertId();
+                $dbw->update(
+                    'archive',
+                    ['ar_text_id' => $id, 'ar_text' => '', 'ar_flags' => ''],
+                    ['ar_id' => $row->ar_id, 'ar_text_id' => null],
+                    __METHOD__
+                );
+                $count += $dbw->affectedRows();
+                $this->commitTransaction($dbw, __METHOD__);
+            }
 
-			$this->output( "... $last\n" );
-			// $this->commitTransaction() already waited for replication; no need to re-wait here
-		}
+            if ($numRows < $batchSize) {
+                // We must have reached the end
+                break;
+            }
 
-		$this->output( "Completed ar_text migration, $count rows updated, $errors missing data.\n" );
-		if ( $errors ) {
-			$this->output( "Run with --replace-missing to overwrite missing data with an error message.\n" );
-		}
+            $this->output("... $last\n");
+            // $this->commitTransaction() already waited for replication; no need to re-wait here
+        }
 
-		return $errors === 0;
-	}
+        $this->output("Completed ar_text migration, $count rows updated, $errors missing data.\n");
+        if ($errors) {
+            $this->output("Run with --replace-missing to overwrite missing data with an error message.\n");
+        }
+
+        return $errors === 0;
+    }
 }
 
 $maintClass = MigrateArchiveText::class;

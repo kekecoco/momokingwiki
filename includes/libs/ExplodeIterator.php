@@ -27,99 +27,107 @@
  *
  * Except it doesn't use 193 byte per element
  */
-class ExplodeIterator implements Iterator {
-	/** @var string */
-	private $subject;
+class ExplodeIterator implements Iterator
+{
+    /** @var string */
+    private $subject;
 
-	/** @var int */
-	private $subjectLength;
+    /** @var int */
+    private $subjectLength;
 
-	/** @var string */
-	private $delim;
+    /** @var string */
+    private $delim;
 
-	/** @var int */
-	private $delimLength;
+    /** @var int */
+    private $delimLength;
 
-	/** @var int|false The position of the start of the line */
-	private $curPos;
+    /** @var int|false The position of the start of the line */
+    private $curPos;
 
-	/** @var int|false The position after the end of the next delimiter */
-	private $endPos;
+    /** @var int|false The position after the end of the next delimiter */
+    private $endPos;
 
-	/** @var string|false The current token */
-	private $current;
+    /** @var string|false The current token */
+    private $current;
 
-	/**
-	 * Construct a DelimIterator
-	 * @param string $delim
-	 * @param string $subject
-	 */
-	public function __construct( $delim, $subject ) {
-		$this->subject = $subject;
-		$this->delim = $delim;
+    /**
+     * Construct a DelimIterator
+     * @param string $delim
+     * @param string $subject
+     */
+    public function __construct($delim, $subject)
+    {
+        $this->subject = $subject;
+        $this->delim = $delim;
 
-		// Micro-optimisation (theoretical)
-		$this->subjectLength = strlen( $subject );
-		$this->delimLength = strlen( $delim );
+        // Micro-optimisation (theoretical)
+        $this->subjectLength = strlen($subject);
+        $this->delimLength = strlen($delim);
 
-		$this->rewind();
-	}
+        $this->rewind();
+    }
 
-	public function rewind(): void {
-		$this->curPos = 0;
-		$this->endPos = strpos( $this->subject, $this->delim );
-		$this->refreshCurrent();
-	}
+    public function rewind(): void
+    {
+        $this->curPos = 0;
+        $this->endPos = strpos($this->subject, $this->delim);
+        $this->refreshCurrent();
+    }
 
-	public function refreshCurrent() {
-		if ( $this->curPos === false ) {
-			$this->current = false;
-		} elseif ( $this->curPos >= $this->subjectLength ) {
-			$this->current = '';
-		} elseif ( $this->endPos === false ) {
-			$this->current = substr( $this->subject, $this->curPos );
-		} else {
-			$this->current = substr( $this->subject, $this->curPos, $this->endPos - $this->curPos );
-		}
-	}
+    public function refreshCurrent()
+    {
+        if ($this->curPos === false) {
+            $this->current = false;
+        } elseif ($this->curPos >= $this->subjectLength) {
+            $this->current = '';
+        } elseif ($this->endPos === false) {
+            $this->current = substr($this->subject, $this->curPos);
+        } else {
+            $this->current = substr($this->subject, $this->curPos, $this->endPos - $this->curPos);
+        }
+    }
 
-	/**
-	 * @return string|false
-	 */
-	#[\ReturnTypeWillChange]
-	public function current() {
-		return $this->current;
-	}
+    /**
+     * @return string|false
+     */
+    #[\ReturnTypeWillChange]
+    public function current()
+    {
+        return $this->current;
+    }
 
-	/**
-	 * @return int|false Current position or boolean false if invalid
-	 */
-	#[\ReturnTypeWillChange]
-	public function key() {
-		return $this->curPos;
-	}
+    /**
+     * @return int|false Current position or boolean false if invalid
+     */
+    #[\ReturnTypeWillChange]
+    public function key()
+    {
+        return $this->curPos;
+    }
 
-	/**
-	 * @return void
-	 */
-	public function next(): void {
-		if ( $this->endPos === false ) {
-			$this->curPos = false;
-		} else {
-			$this->curPos = $this->endPos + $this->delimLength;
-			if ( $this->curPos >= $this->subjectLength ) {
-				$this->endPos = false;
-			} else {
-				$this->endPos = strpos( $this->subject, $this->delim, $this->curPos );
-			}
-		}
-		$this->refreshCurrent();
-	}
+    /**
+     * @return void
+     */
+    public function next(): void
+    {
+        if ($this->endPos === false) {
+            $this->curPos = false;
+        } else {
+            $this->curPos = $this->endPos + $this->delimLength;
+            if ($this->curPos >= $this->subjectLength) {
+                $this->endPos = false;
+            } else {
+                $this->endPos = strpos($this->subject, $this->delim, $this->curPos);
+            }
+        }
+        $this->refreshCurrent();
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function valid(): bool {
-		return $this->curPos !== false;
-	}
+    /**
+     * @return bool
+     */
+    public function valid(): bool
+    {
+        return $this->curPos !== false;
+    }
 }

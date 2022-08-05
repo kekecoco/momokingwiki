@@ -29,5 +29,6 @@ namespace Wikimedia\Metrics\Exceptions;
 
 use InvalidArgumentException;
 
-class InvalidLabelsException extends InvalidArgumentException {
+class InvalidLabelsException extends InvalidArgumentException
+{
 }

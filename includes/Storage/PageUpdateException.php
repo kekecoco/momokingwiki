@@ -30,6 +30,7 @@ use RuntimeException;
  * @newable
  * @since 1.32
  */
-class PageUpdateException extends RuntimeException {
+class PageUpdateException extends RuntimeException
+{
 
 }

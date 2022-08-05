@@ -26,33 +26,34 @@
  * @license GPL-2.0-or-later
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-interface SiteStore extends SiteLookup {
+interface SiteStore extends SiteLookup
+{
 
-	/**
-	 * Saves the provided site.
-	 *
-	 * @since 1.21
-	 *
-	 * @param Site $site
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSite( Site $site );
+    /**
+     * Saves the provided site.
+     *
+     * @param Site $site
+     *
+     * @return bool Success indicator
+     * @since 1.21
+     *
+     */
+    public function saveSite(Site $site);
 
-	/**
-	 * Saves the provided sites.
-	 *
-	 * @since 1.21
-	 *
-	 * @param Site[] $sites
-	 *
-	 * @return bool Success indicator
-	 */
-	public function saveSites( array $sites );
+    /**
+     * Saves the provided sites.
+     *
+     * @param Site[] $sites
+     *
+     * @return bool Success indicator
+     * @since 1.21
+     *
+     */
+    public function saveSites(array $sites);
 
-	/**
-	 * Deletes all sites from the database. After calling clear(), getSites() will return an empty
-	 * list and getSite() will return null until saveSite() or saveSites() is called.
-	 */
-	public function clear();
+    /**
+     * Deletes all sites from the database. After calling clear(), getSites() will return an empty
+     * list and getSite() will return null until saveSite() or saveSites() is called.
+     */
+    public function clear();
 }

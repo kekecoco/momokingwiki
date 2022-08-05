@@ -36,97 +36,101 @@ require_once __DIR__ . '/Maintenance.php';
  * @see https://phabricator.wikimedia.org/T263340
  * @see https://phabricator.wikimedia.org/T259022
  */
-class FixMergeHistoryCorruption extends Maintenance {
+class FixMergeHistoryCorruption extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Delete pages corrupted by MergeHistory' );
-		$this->addOption( 'ns', 'Namespace to restrict the query', false, true );
-		$this->addOption( 'dry-run', 'Run in dry-mode' );
-		$this->addOption( 'delete', 'Actually delete the found rows' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Delete pages corrupted by MergeHistory');
+        $this->addOption('ns', 'Namespace to restrict the query', false, true);
+        $this->addOption('dry-run', 'Run in dry-mode');
+        $this->addOption('delete', 'Actually delete the found rows');
+    }
 
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
-		$dbw = $this->getDB( DB_PRIMARY );
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		$dryRun = true;
-		if ( $this->hasOption( 'dry-run' ) && $this->hasOption( 'delete' ) ) {
-			$this->fatalError( 'Cannot do both --dry-run and --delete.' );
-		} elseif ( $this->hasOption( 'delete' ) ) {
-			$dryRun = false;
-		} elseif ( !$this->hasOption( 'dry-run' ) ) {
-			$this->fatalError( 'Either --dry-run or --delete must be specified.' );
-		}
+        $dryRun = true;
+        if ($this->hasOption('dry-run') && $this->hasOption('delete')) {
+            $this->fatalError('Cannot do both --dry-run and --delete.');
+        } elseif ($this->hasOption('delete')) {
+            $dryRun = false;
+        } elseif (!$this->hasOption('dry-run')) {
+            $this->fatalError('Either --dry-run or --delete must be specified.');
+        }
 
-		$conds = [ 'page_id<>rev_page' ];
-		if ( $this->hasOption( 'ns' ) ) {
-			$conds['page_namespace'] = (int)$this->getOption( 'ns' );
-		}
+        $conds = ['page_id<>rev_page'];
+        if ($this->hasOption('ns')) {
+            $conds['page_namespace'] = (int)$this->getOption('ns');
+        }
 
-		$res = $dbr->newSelectQueryBuilder()
-			->from( 'page' )
-			->join( 'revision', null, 'page_latest=rev_id' )
-			->fields( [ 'page_namespace', 'page_title', 'page_id' ] )
-			->where( $conds )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+        $res = $dbr->newSelectQueryBuilder()
+            ->from('page')
+            ->join('revision', null, 'page_latest=rev_id')
+            ->fields(['page_namespace', 'page_title', 'page_id'])
+            ->where($conds)
+            ->caller(__METHOD__)
+            ->fetchResultSet();
 
-		$count = $res->numRows();
+        $count = $res->numRows();
 
-		if ( !$count ) {
-			$this->output( "Nothing was found, no page matches the criteria.\n" );
-			return;
-		}
+        if (!$count) {
+            $this->output("Nothing was found, no page matches the criteria.\n");
 
-		$numDeleted = 0;
-		$numUpdated = 0;
+            return;
+        }
 
-		foreach ( $res as $row ) {
-			$title = Title::makeTitleSafe( $row->page_namespace, $row->page_title );
-			if ( !$title ) {
-				$this->output( "Skipping invalid title with page_id: $row->page_id\n" );
-				continue;
-			}
-			$titleText = $title->getPrefixedDBkey();
+        $numDeleted = 0;
+        $numUpdated = 0;
 
-			// Check if there are any revisions that have this $row->page_id as their
-			// rev_page and select the largest which should be the newest revision.
-			$revId = $dbr->selectField(
-				'revision',
-				'MAX(rev_id)',
-				[ 'rev_page' => $row->page_id ],
-				__METHOD__
-			);
+        foreach ($res as $row) {
+            $title = Title::makeTitleSafe($row->page_namespace, $row->page_title);
+            if (!$title) {
+                $this->output("Skipping invalid title with page_id: $row->page_id\n");
+                continue;
+            }
+            $titleText = $title->getPrefixedDBkey();
 
-			if ( !$revId ) {
-				if ( $dryRun ) {
-					$this->output( "Would delete $titleText with page_id: $row->page_id\n" );
-				} else {
-					$this->output( "Deleting $titleText with page_id: $row->page_id\n" );
-					$dbw->delete( 'page', [ 'page_id' => $row->page_id ], __METHOD__ );
-				}
-				$numDeleted++;
-			} else {
-				if ( $dryRun ) {
-					$this->output( "Would update page_id $row->page_id to page_latest $revId\n" );
-				} else {
-					$this->output( "Updating page_id $row->page_id to page_latest $revId\n" );
-					$dbw->update(
-						'page',
-						[ 'page_latest' => $revId ],
-						[ 'page_id' => $row->page_id ],
-						__METHOD__
-					);
-				}
-				$numUpdated++;
-			}
-		}
+            // Check if there are any revisions that have this $row->page_id as their
+            // rev_page and select the largest which should be the newest revision.
+            $revId = $dbr->selectField(
+                'revision',
+                'MAX(rev_id)',
+                ['rev_page' => $row->page_id],
+                __METHOD__
+            );
 
-		if ( !$dryRun ) {
-			$this->output( "Updated $numUpdated row(s), deleted $numDeleted row(s)\n" );
-		}
-	}
+            if (!$revId) {
+                if ($dryRun) {
+                    $this->output("Would delete $titleText with page_id: $row->page_id\n");
+                } else {
+                    $this->output("Deleting $titleText with page_id: $row->page_id\n");
+                    $dbw->delete('page', ['page_id' => $row->page_id], __METHOD__);
+                }
+                $numDeleted++;
+            } else {
+                if ($dryRun) {
+                    $this->output("Would update page_id $row->page_id to page_latest $revId\n");
+                } else {
+                    $this->output("Updating page_id $row->page_id to page_latest $revId\n");
+                    $dbw->update(
+                        'page',
+                        ['page_latest' => $revId],
+                        ['page_id' => $row->page_id],
+                        __METHOD__
+                    );
+                }
+                $numUpdated++;
+            }
+        }
+
+        if (!$dryRun) {
+            $this->output("Updated $numUpdated row(s), deleted $numDeleted row(s)\n");
+        }
+    }
 }
 
 $maintClass = FixMergeHistoryCorruption::class;

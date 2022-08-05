@@ -33,118 +33,129 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  * @since 1.24
  */
-class ApiQueryTokens extends ApiQueryBase {
+class ApiQueryTokens extends ApiQueryBase
+{
 
-	public function execute() {
-		$params = $this->extractRequestParams();
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
 
-		if ( $this->lacksSameOriginSecurity() ) {
-			$this->addWarning( [ 'apiwarn-tokens-origin' ] );
-			return;
-		}
+        if ($this->lacksSameOriginSecurity()) {
+            $this->addWarning(['apiwarn-tokens-origin']);
 
-		$user = $this->getUser();
-		$session = $this->getRequest()->getSession();
-		$salts = self::getTokenTypeSalts();
+            return;
+        }
 
-		$done = [];
-		$path = [ 'query', $this->getModuleName() ];
-		$this->getResult()->addArrayType( $path, 'assoc' );
+        $user = $this->getUser();
+        $session = $this->getRequest()->getSession();
+        $salts = self::getTokenTypeSalts();
 
-		foreach ( $params['type'] as $type ) {
-			$token = self::getToken( $user, $session, $salts[$type] )->toString();
-			$fit = $this->getResult()->addValue( $path, $type . 'token', $token );
+        $done = [];
+        $path = ['query', $this->getModuleName()];
+        $this->getResult()->addArrayType($path, 'assoc');
 
-			if ( !$fit ) {
-				// Abuse type as a query-continue parameter and set it to all unprocessed types
-				$this->setContinueEnumParameter( 'type',
-					array_diff( $params['type'], $done ) );
-				break;
-			}
-			$done[] = $type;
-		}
-	}
+        foreach ($params['type'] as $type) {
+            $token = self::getToken($user, $session, $salts[$type])->toString();
+            $fit = $this->getResult()->addValue($path, $type . 'token', $token);
 
-	/**
-	 * Get the salts for known token types
-	 * @return (string|array)[] Returning a string will use that as the salt
-	 *  for User::getEditTokenObject() to fetch the token, which will give a
-	 *  LoggedOutEditToken (always "+\\") for anonymous users. Returning an
-	 *  array will use it as parameters to MediaWiki\Session\Session::getToken(),
-	 *  which will always return a full token even for anonymous users.
-	 */
-	public static function getTokenTypeSalts() {
-		static $salts = null;
-		if ( !$salts ) {
-			$salts = [
-				'csrf' => '',
-				'watch' => 'watch',
-				'patrol' => 'patrol',
-				'rollback' => 'rollback',
-				'userrights' => 'userrights',
-				'login' => [ '', 'login' ],
-				'createaccount' => [ '', 'createaccount' ],
-			];
-			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-			$hookRunner = new ApiHookRunner( $hookContainer );
-			$hookRunner->onApiQueryTokensRegisterTypes( $salts );
-			ksort( $salts );
-		}
+            if (!$fit) {
+                // Abuse type as a query-continue parameter and set it to all unprocessed types
+                $this->setContinueEnumParameter('type',
+                    array_diff($params['type'], $done));
+                break;
+            }
+            $done[] = $type;
+        }
+    }
 
-		return $salts;
-	}
+    /**
+     * Get the salts for known token types
+     * @return (string|array)[] Returning a string will use that as the salt
+     *  for User::getEditTokenObject() to fetch the token, which will give a
+     *  LoggedOutEditToken (always "+\\") for anonymous users. Returning an
+     *  array will use it as parameters to MediaWiki\Session\Session::getToken(),
+     *  which will always return a full token even for anonymous users.
+     */
+    public static function getTokenTypeSalts()
+    {
+        static $salts = null;
+        if (!$salts) {
+            $salts = [
+                'csrf'          => '',
+                'watch'         => 'watch',
+                'patrol'        => 'patrol',
+                'rollback'      => 'rollback',
+                'userrights'    => 'userrights',
+                'login'         => ['', 'login'],
+                'createaccount' => ['', 'createaccount'],
+            ];
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookRunner = new ApiHookRunner($hookContainer);
+            $hookRunner->onApiQueryTokensRegisterTypes($salts);
+            ksort($salts);
+        }
 
-	/**
-	 * Get a token from a salt
-	 * @param User $user
-	 * @param MediaWiki\Session\Session $session
-	 * @param string|array $salt A string will be used as the salt for
-	 *  User::getEditTokenObject() to fetch the token, which will give a
-	 *  LoggedOutEditToken (always "+\\") for anonymous users. An array will
-	 *  be used as parameters to MediaWiki\Session\Session::getToken(), which
-	 *  will always return a full token even for anonymous users. An array will
-	 *  also persist the session.
-	 * @return MediaWiki\Session\Token
-	 */
-	public static function getToken( User $user, MediaWiki\Session\Session $session, $salt ) {
-		if ( is_array( $salt ) ) {
-			$session->persist();
-			return $session->getToken( ...$salt );
-		} else {
-			return $user->getEditTokenObject( $salt, $session->getRequest() );
-		}
-	}
+        return $salts;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'type' => [
-				ParamValidator::PARAM_DEFAULT => 'csrf',
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_TYPE => array_keys( self::getTokenTypeSalts() ),
-				ParamValidator::PARAM_ALL => true,
-			],
-		];
-	}
+    /**
+     * Get a token from a salt
+     * @param User $user
+     * @param MediaWiki\Session\Session $session
+     * @param string|array $salt A string will be used as the salt for
+     *  User::getEditTokenObject() to fetch the token, which will give a
+     *  LoggedOutEditToken (always "+\\") for anonymous users. An array will
+     *  be used as parameters to MediaWiki\Session\Session::getToken(), which
+     *  will always return a full token even for anonymous users. An array will
+     *  also persist the session.
+     * @return MediaWiki\Session\Token
+     */
+    public static function getToken(User $user, MediaWiki\Session\Session $session, $salt)
+    {
+        if (is_array($salt)) {
+            $session->persist();
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&meta=tokens'
-				=> 'apihelp-query+tokens-example-simple',
-			'action=query&meta=tokens&type=watch|patrol'
-				=> 'apihelp-query+tokens-example-types',
-		];
-	}
+            return $session->getToken(...$salt);
+        } else {
+            return $user->getEditTokenObject($salt, $session->getRequest());
+        }
+    }
 
-	public function isReadMode() {
-		// So login tokens can be fetched on private wikis
-		return false;
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'type' => [
+                ParamValidator::PARAM_DEFAULT => 'csrf',
+                ParamValidator::PARAM_ISMULTI => true,
+                ParamValidator::PARAM_TYPE    => array_keys(self::getTokenTypeSalts()),
+                ParamValidator::PARAM_ALL     => true,
+            ],
+        ];
+    }
 
-	public function getCacheMode( $params ) {
-		return 'private';
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&meta=tokens'
+            => 'apihelp-query+tokens-example-simple',
+            'action=query&meta=tokens&type=watch|patrol'
+            => 'apihelp-query+tokens-example-types',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Tokens';
-	}
+    public function isReadMode()
+    {
+        // So login tokens can be fetched on private wikis
+        return false;
+    }
+
+    public function getCacheMode($params)
+    {
+        return 'private';
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Tokens';
+    }
 }

@@ -1,9 +1,9 @@
 {
-	"@metadata": {
-		"authors": [
-			"Санюн Вадик"
-		]
-	},
-	"config-help": "полыш",
-	"mainpagetext": "'''MediaWiki сай шындыме.'''"
+  "@metadata": {
+    "authors": [
+      "Санюн Вадик"
+    ]
+  },
+  "config-help": "полыш",
+  "mainpagetext": "'''MediaWiki сай шындыме.'''"
 }

@@ -35,302 +35,321 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialPageLanguage extends FormSpecialPage {
-	/**
-	 * @var string URL to go to if language change successful
-	 */
-	private $goToUrl;
+class SpecialPageLanguage extends FormSpecialPage
+{
+    /**
+     * @var string URL to go to if language change successful
+     */
+    private $goToUrl;
 
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
+    /** @var IContentHandlerFactory */
+    private $contentHandlerFactory;
 
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
+    /** @var LanguageNameUtils */
+    private $languageNameUtils;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var SearchEngineFactory */
-	private $searchEngineFactory;
+    /** @var SearchEngineFactory */
+    private $searchEngineFactory;
 
-	/**
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param ILoadBalancer $loadBalancer
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
-	public function __construct(
-		IContentHandlerFactory $contentHandlerFactory,
-		LanguageNameUtils $languageNameUtils,
-		ILoadBalancer $loadBalancer,
-		SearchEngineFactory $searchEngineFactory
-	) {
-		parent::__construct( 'PageLanguage', 'pagelang' );
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->loadBalancer = $loadBalancer;
-		$this->searchEngineFactory = $searchEngineFactory;
-	}
+    /**
+     * @param IContentHandlerFactory $contentHandlerFactory
+     * @param LanguageNameUtils $languageNameUtils
+     * @param ILoadBalancer $loadBalancer
+     * @param SearchEngineFactory $searchEngineFactory
+     */
+    public function __construct(
+        IContentHandlerFactory $contentHandlerFactory,
+        LanguageNameUtils $languageNameUtils,
+        ILoadBalancer $loadBalancer,
+        SearchEngineFactory $searchEngineFactory
+    )
+    {
+        parent::__construct('PageLanguage', 'pagelang');
+        $this->contentHandlerFactory = $contentHandlerFactory;
+        $this->languageNameUtils = $languageNameUtils;
+        $this->loadBalancer = $loadBalancer;
+        $this->searchEngineFactory = $searchEngineFactory;
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	protected function preHtml() {
-		$this->getOutput()->addModules( 'mediawiki.misc-authed-ooui' );
-		return parent::preHtml();
-	}
+    protected function preHtml()
+    {
+        $this->getOutput()->addModules('mediawiki.misc-authed-ooui');
 
-	protected function getFormFields() {
-		// Get default from the subpage of Special page
-		$defaultName = $this->par;
-		$title = $defaultName ? Title::newFromText( $defaultName ) : null;
-		if ( $title ) {
-			$defaultPageLanguage = $this->contentHandlerFactory->getContentHandler( $title->getContentModel() )
-				->getPageLanguage( $title );
+        return parent::preHtml();
+    }
 
-			$hasCustomLanguageSet = !$defaultPageLanguage->equals( $title->getPageLanguage() );
-		} else {
-			$hasCustomLanguageSet = false;
-		}
+    protected function getFormFields()
+    {
+        // Get default from the subpage of Special page
+        $defaultName = $this->par;
+        $title = $defaultName ? Title::newFromText($defaultName) : null;
+        if ($title) {
+            $defaultPageLanguage = $this->contentHandlerFactory->getContentHandler($title->getContentModel())
+                ->getPageLanguage($title);
 
-		$page = [];
-		$page['pagename'] = [
-			'type' => 'title',
-			'label-message' => 'pagelang-name',
-			'default' => $title ? $title->getPrefixedText() : $defaultName,
-			'autofocus' => $defaultName === null,
-			'exists' => true,
-		];
+            $hasCustomLanguageSet = !$defaultPageLanguage->equals($title->getPageLanguage());
+        } else {
+            $hasCustomLanguageSet = false;
+        }
 
-		// Options for whether to use the default language or select language
-		$selectoptions = [
-			(string)$this->msg( 'pagelang-use-default' )->escaped() => 1,
-			(string)$this->msg( 'pagelang-select-lang' )->escaped() => 2,
-		];
-		$page['selectoptions'] = [
-			'id' => 'mw-pl-options',
-			'type' => 'radio',
-			'options' => $selectoptions,
-			'default' => $hasCustomLanguageSet ? 2 : 1
-		];
+        $page = [];
+        $page['pagename'] = [
+            'type'          => 'title',
+            'label-message' => 'pagelang-name',
+            'default'       => $title ? $title->getPrefixedText() : $defaultName,
+            'autofocus'     => $defaultName === null,
+            'exists'        => true,
+        ];
 
-		// Building a language selector
-		$userLang = $this->getLanguage()->getCode();
-		$languages = $this->languageNameUtils->getLanguageNames( $userLang, LanguageNameUtils::SUPPORTED );
-		$options = [];
-		foreach ( $languages as $code => $name ) {
-			$options["$code - $name"] = $code;
-		}
+        // Options for whether to use the default language or select language
+        $selectoptions = [
+            (string)$this->msg('pagelang-use-default')->escaped() => 1,
+            (string)$this->msg('pagelang-select-lang')->escaped() => 2,
+        ];
+        $page['selectoptions'] = [
+            'id'      => 'mw-pl-options',
+            'type'    => 'radio',
+            'options' => $selectoptions,
+            'default' => $hasCustomLanguageSet ? 2 : 1
+        ];
 
-		$page['language'] = [
-			'id' => 'mw-pl-languageselector',
-			'cssclass' => 'mw-languageselector',
-			'type' => 'select',
-			'options' => $options,
-			'label-message' => 'pagelang-language',
-			'default' => $title ?
-				$title->getPageLanguage()->getCode() :
-				$this->getConfig()->get( MainConfigNames::LanguageCode ),
-		];
+        // Building a language selector
+        $userLang = $this->getLanguage()->getCode();
+        $languages = $this->languageNameUtils->getLanguageNames($userLang, LanguageNameUtils::SUPPORTED);
+        $options = [];
+        foreach ($languages as $code => $name) {
+            $options["$code - $name"] = $code;
+        }
 
-		// Allow user to enter a comment explaining the change
-		$page['reason'] = [
-			'type' => 'text',
-			'label-message' => 'pagelang-reason'
-		];
+        $page['language'] = [
+            'id'            => 'mw-pl-languageselector',
+            'cssclass'      => 'mw-languageselector',
+            'type'          => 'select',
+            'options'       => $options,
+            'label-message' => 'pagelang-language',
+            'default'       => $title ?
+                $title->getPageLanguage()->getCode() :
+                $this->getConfig()->get(MainConfigNames::LanguageCode),
+        ];
 
-		return $page;
-	}
+        // Allow user to enter a comment explaining the change
+        $page['reason'] = [
+            'type'          => 'text',
+            'label-message' => 'pagelang-reason'
+        ];
 
-	protected function postHtml() {
-		if ( $this->par ) {
-			return $this->showLogFragment( $this->par );
-		}
-		return '';
-	}
+        return $page;
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function postHtml()
+    {
+        if ($this->par) {
+            return $this->showLogFragment($this->par);
+        }
 
-	public function alterForm( HTMLForm $form ) {
-		$this->getHookRunner()->onLanguageSelector( $this->getOutput(), 'mw-languageselector' );
-		$form->setSubmitTextMsg( 'pagelang-submit' );
-	}
+        return '';
+    }
 
-	/**
-	 * @param array $data
-	 * @return Status
-	 */
-	public function onSubmit( array $data ) {
-		$pageName = $data['pagename'];
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-		// Check if user wants to use default language
-		if ( $data['selectoptions'] == 1 ) {
-			$newLanguage = 'default';
-		} else {
-			$newLanguage = $data['language'];
-		}
+    public function alterForm(HTMLForm $form)
+    {
+        $this->getHookRunner()->onLanguageSelector($this->getOutput(), 'mw-languageselector');
+        $form->setSubmitTextMsg('pagelang-submit');
+    }
 
-		try {
-			$title = Title::newFromTextThrow( $pageName );
-		} catch ( MalformedTitleException $ex ) {
-			return Status::newFatal( $ex->getMessageObject() );
-		}
+    /**
+     * @param array $data
+     * @return Status
+     */
+    public function onSubmit(array $data)
+    {
+        $pageName = $data['pagename'];
 
-		// Check permissions and make sure the user has permission to edit the page
-		$status = PermissionStatus::newEmpty();
-		if ( !$this->getAuthority()->authorizeWrite( 'edit', $title, $status ) ) {
-			$wikitext = $this->getOutput()->formatPermissionStatus( $status );
-			// Hack to get our wikitext parsed
-			return Status::newFatal( new RawMessage( '$1', [ $wikitext ] ) );
-		}
+        // Check if user wants to use default language
+        if ($data['selectoptions'] == 1) {
+            $newLanguage = 'default';
+        } else {
+            $newLanguage = $data['language'];
+        }
 
-		// Url to redirect to after the operation
-		$this->goToUrl = $title->getFullUrlForRedirect(
-			$title->isRedirect() ? [ 'redirect' => 'no' ] : []
-		);
+        try {
+            $title = Title::newFromTextThrow($pageName);
+        } catch (MalformedTitleException $ex) {
+            return Status::newFatal($ex->getMessageObject());
+        }
 
-		return self::changePageLanguage(
-			$this->getContext(),
-			$title,
-			$newLanguage,
-			$data['reason'] ?? '',
-			[],
-			$this->loadBalancer->getConnectionRef( ILoadBalancer::DB_PRIMARY )
-		);
-	}
+        // Check permissions and make sure the user has permission to edit the page
+        $status = PermissionStatus::newEmpty();
+        if (!$this->getAuthority()->authorizeWrite('edit', $title, $status)) {
+            $wikitext = $this->getOutput()->formatPermissionStatus($status);
 
-	/**
-	 * @since 1.36 Added $dbw parameter
-	 *
-	 * @param IContextSource $context
-	 * @param Title $title
-	 * @param string $newLanguage Language code
-	 * @param string $reason Reason for the change
-	 * @param string[] $tags Change tags to apply to the log entry
-	 * @param IDatabase|null $dbw
-	 * @return Status
-	 */
-	public static function changePageLanguage( IContextSource $context, Title $title,
-		$newLanguage, $reason = "", array $tags = [], IDatabase $dbw = null ) {
-		// Get the default language for the wiki
-		$defLang = $context->getConfig()->get( MainConfigNames::LanguageCode );
+            // Hack to get our wikitext parsed
+            return Status::newFatal(new RawMessage('$1', [$wikitext]));
+        }
 
-		$pageId = $title->getArticleID();
+        // Url to redirect to after the operation
+        $this->goToUrl = $title->getFullUrlForRedirect(
+            $title->isRedirect() ? ['redirect' => 'no'] : []
+        );
 
-		// Check if article exists
-		if ( !$pageId ) {
-			return Status::newFatal(
-				'pagelang-nonexistent-page',
-				wfEscapeWikiText( $title->getPrefixedText() )
-			);
-		}
+        return self::changePageLanguage(
+            $this->getContext(),
+            $title,
+            $newLanguage,
+            $data['reason'] ?? '',
+            [],
+            $this->loadBalancer->getConnectionRef(ILoadBalancer::DB_PRIMARY)
+        );
+    }
 
-		// Load the page language from DB
-		$dbw = $dbw ?? wfGetDB( DB_PRIMARY );
-		$oldLanguage = $dbw->selectField(
-			'page',
-			'page_lang',
-			[ 'page_id' => $pageId ],
-			__METHOD__
-		);
+    /**
+     * @param IContextSource $context
+     * @param Title $title
+     * @param string $newLanguage Language code
+     * @param string $reason Reason for the change
+     * @param string[] $tags Change tags to apply to the log entry
+     * @param IDatabase|null $dbw
+     * @return Status
+     * @since 1.36 Added $dbw parameter
+     *
+     */
+    public static function changePageLanguage(IContextSource $context, Title $title,
+                                              $newLanguage, $reason = "", array $tags = [], IDatabase $dbw = null)
+    {
+        // Get the default language for the wiki
+        $defLang = $context->getConfig()->get(MainConfigNames::LanguageCode);
 
-		// Check if user wants to use the default language
-		if ( $newLanguage === 'default' ) {
-			$newLanguage = null;
-		}
+        $pageId = $title->getArticleID();
 
-		// No change in language
-		if ( $newLanguage === $oldLanguage ) {
-			// Check if old language does not exist
-			if ( !$oldLanguage ) {
-				return Status::newFatal( ApiMessage::create(
-					[
-						'pagelang-unchanged-language-default',
-						wfEscapeWikiText( $title->getPrefixedText() )
-					],
-					'pagelang-unchanged-language'
-				) );
-			}
-			return Status::newFatal(
-				'pagelang-unchanged-language',
-				wfEscapeWikiText( $title->getPrefixedText() ),
-				$oldLanguage
-			);
-		}
+        // Check if article exists
+        if (!$pageId) {
+            return Status::newFatal(
+                'pagelang-nonexistent-page',
+                wfEscapeWikiText($title->getPrefixedText())
+            );
+        }
 
-		// Hardcoded [def] if the language is set to null
-		$logOld = $oldLanguage ?: $defLang . '[def]';
-		$logNew = $newLanguage ?: $defLang . '[def]';
+        // Load the page language from DB
+        $dbw = $dbw ?? wfGetDB(DB_PRIMARY);
+        $oldLanguage = $dbw->selectField(
+            'page',
+            'page_lang',
+            ['page_id' => $pageId],
+            __METHOD__
+        );
 
-		// Writing new page language to database
-		$dbw->update(
-			'page',
-			[ 'page_lang' => $newLanguage ],
-			[
-				'page_id' => $pageId,
-				'page_lang' => $oldLanguage
-			],
-			__METHOD__
-		);
+        // Check if user wants to use the default language
+        if ($newLanguage === 'default') {
+            $newLanguage = null;
+        }
 
-		if ( !$dbw->affectedRows() ) {
-			return Status::newFatal( 'pagelang-db-failed' );
-		}
+        // No change in language
+        if ($newLanguage === $oldLanguage) {
+            // Check if old language does not exist
+            if (!$oldLanguage) {
+                return Status::newFatal(ApiMessage::create(
+                    [
+                        'pagelang-unchanged-language-default',
+                        wfEscapeWikiText($title->getPrefixedText())
+                    ],
+                    'pagelang-unchanged-language'
+                ));
+            }
 
-		// Logging change of language
-		$logParams = [
-			'4::oldlanguage' => $logOld,
-			'5::newlanguage' => $logNew
-		];
-		$entry = new ManualLogEntry( 'pagelang', 'pagelang' );
-		$entry->setPerformer( $context->getUser() );
-		$entry->setTarget( $title );
-		$entry->setParameters( $logParams );
-		$entry->setComment( is_string( $reason ) ? $reason : "" );
-		$entry->addTags( $tags );
+            return Status::newFatal(
+                'pagelang-unchanged-language',
+                wfEscapeWikiText($title->getPrefixedText()),
+                $oldLanguage
+            );
+        }
 
-		$logid = $entry->insert();
-		$entry->publish( $logid );
+        // Hardcoded [def] if the language is set to null
+        $logOld = $oldLanguage ?: $defLang . '[def]';
+        $logNew = $newLanguage ?: $defLang . '[def]';
 
-		// Force re-render so that language-based content (parser functions etc.) gets updated
-		$title->invalidateCache();
+        // Writing new page language to database
+        $dbw->update(
+            'page',
+            ['page_lang' => $newLanguage],
+            [
+                'page_id'   => $pageId,
+                'page_lang' => $oldLanguage
+            ],
+            __METHOD__
+        );
 
-		return Status::newGood( (object)[
-			'oldLanguage' => $logOld,
-			'newLanguage' => $logNew,
-			'logId' => $logid,
-		] );
-	}
+        if (!$dbw->affectedRows()) {
+            return Status::newFatal('pagelang-db-failed');
+        }
 
-	public function onSuccess() {
-		// Success causes a redirect
-		$this->getOutput()->redirect( $this->goToUrl );
-	}
+        // Logging change of language
+        $logParams = [
+            '4::oldlanguage' => $logOld,
+            '5::newlanguage' => $logNew
+        ];
+        $entry = new ManualLogEntry('pagelang', 'pagelang');
+        $entry->setPerformer($context->getUser());
+        $entry->setTarget($title);
+        $entry->setParameters($logParams);
+        $entry->setComment(is_string($reason) ? $reason : "");
+        $entry->addTags($tags);
 
-	private function showLogFragment( $title ) {
-		$moveLogPage = new LogPage( 'pagelang' );
-		$out1 = Xml::element( 'h2', null, $moveLogPage->getName()->text() );
-		$out2 = '';
-		LogEventsList::showLogExtract( $out2, 'pagelang', $title );
-		return $out1 . $out2;
-	}
+        $logid = $entry->insert();
+        $entry->publish($logid);
 
-	/**
-	 * Return an array of subpages beginning with $search that this special page will accept.
-	 *
-	 * @param string $search Prefix to search for
-	 * @param int $limit Maximum number of results to return (usually 10)
-	 * @param int $offset Number of results to skip (usually 0)
-	 * @return string[] Matching subpages
-	 */
-	public function prefixSearchSubpages( $search, $limit, $offset ) {
-		return $this->prefixSearchString( $search, $limit, $offset, $this->searchEngineFactory );
-	}
+        // Force re-render so that language-based content (parser functions etc.) gets updated
+        $title->invalidateCache();
 
-	protected function getGroupName() {
-		return 'pagetools';
-	}
+        return Status::newGood((object)[
+            'oldLanguage' => $logOld,
+            'newLanguage' => $logNew,
+            'logId'       => $logid,
+        ]);
+    }
+
+    public function onSuccess()
+    {
+        // Success causes a redirect
+        $this->getOutput()->redirect($this->goToUrl);
+    }
+
+    private function showLogFragment($title)
+    {
+        $moveLogPage = new LogPage('pagelang');
+        $out1 = Xml::element('h2', null, $moveLogPage->getName()->text());
+        $out2 = '';
+        LogEventsList::showLogExtract($out2, 'pagelang', $title);
+
+        return $out1 . $out2;
+    }
+
+    /**
+     * Return an array of subpages beginning with $search that this special page will accept.
+     *
+     * @param string $search Prefix to search for
+     * @param int $limit Maximum number of results to return (usually 10)
+     * @param int $offset Number of results to skip (usually 0)
+     * @return string[] Matching subpages
+     */
+    public function prefixSearchSubpages($search, $limit, $offset)
+    {
+        return $this->prefixSearchString($search, $limit, $offset, $this->searchEngineFactory);
+    }
+
+    protected function getGroupName()
+    {
+        return 'pagetools';
+    }
 }

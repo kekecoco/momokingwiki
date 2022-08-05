@@ -15,173 +15,187 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * @internal for use by core REST infrastructure
  */
-class RevisionContentHelper extends PageContentHelper {
+class RevisionContentHelper extends PageContentHelper
+{
 
-	/**
-	 * @return int|null The ID of the target revision
-	 */
-	public function getRevisionId(): ?int {
-		return isset( $this->parameters['id'] ) ? (int)$this->parameters['id'] : null;
-	}
+    /**
+     * @return int|null The ID of the target revision
+     */
+    public function getRevisionId(): ?int
+    {
+        return isset($this->parameters['id']) ? (int)$this->parameters['id'] : null;
+    }
 
-	/**
-	 * @return string|null title text or null if unable to retrieve title
-	 */
-	public function getTitleText(): ?string {
-		$revision = $this->getTargetRevision();
-		return $revision
-			? $this->titleFormatter->getPrefixedText( $revision->getPageAsLinkTarget() )
-			: null;
-	}
+    /**
+     * @return string|null title text or null if unable to retrieve title
+     */
+    public function getTitleText(): ?string
+    {
+        $revision = $this->getTargetRevision();
 
-	/**
-	 * @return ExistingPageRecord|null
-	 */
-	public function getPage(): ?ExistingPageRecord {
-		$revision = $this->getTargetRevision();
-		return $revision ? $this->pageLookup->getPageByReference( $revision->getPage() ) : null;
-	}
+        return $revision
+            ? $this->titleFormatter->getPrefixedText($revision->getPageAsLinkTarget())
+            : null;
+    }
 
-	/**
-	 * @return RevisionRecord|null latest revision or null if unable to retrieve revision
-	 */
-	public function getTargetRevision(): ?RevisionRecord {
-		if ( $this->targetRevision === false ) {
-			$revId = $this->getRevisionId();
-			if ( $revId ) {
-				$this->targetRevision = $this->revisionLookup->getRevisionById( $revId );
-			} else {
-				$this->targetRevision = null;
-			}
-		}
-		return $this->targetRevision;
-	}
+    /**
+     * @return ExistingPageRecord|null
+     */
+    public function getPage(): ?ExistingPageRecord
+    {
+        $revision = $this->getTargetRevision();
 
-	/**
-	 * @return bool
-	 */
-	public function isAccessible(): bool {
-		if ( !parent::isAccessible() ) {
-			return false;
-		}
+        return $revision ? $this->pageLookup->getPageByReference($revision->getPage()) : null;
+    }
 
-		$revision = $this->getTargetRevision();
+    /**
+     * @return RevisionRecord|null latest revision or null if unable to retrieve revision
+     */
+    public function getTargetRevision(): ?RevisionRecord
+    {
+        if ($this->targetRevision === false) {
+            $revId = $this->getRevisionId();
+            if ($revId) {
+                $this->targetRevision = $this->revisionLookup->getRevisionById($revId);
+            } else {
+                $this->targetRevision = null;
+            }
+        }
 
-		// TODO: allow authorized users to see suppressed content. Set cache control accordingly.
+        return $this->targetRevision;
+    }
 
-		if ( !$revision ||
-			!$revision->audienceCan( RevisionRecord::DELETED_TEXT, RevisionRecord::FOR_PUBLIC )
-		) {
-			return false;
-		}
+    /**
+     * @return bool
+     */
+    public function isAccessible(): bool
+    {
+        if (!parent::isAccessible()) {
+            return false;
+        }
 
-		return true;
-	}
+        $revision = $this->getTargetRevision();
 
-	/**
-	 * @return bool
-	 */
-	public function hasContent(): bool {
-		return (bool)$this->getTargetRevision();
-	}
+        // TODO: allow authorized users to see suppressed content. Set cache control accordingly.
 
-	public function setCacheControl( ResponseInterface $response, int $expiry = null ) {
-		$revision = $this->getTargetRevision();
+        if (!$revision ||
+            !$revision->audienceCan(RevisionRecord::DELETED_TEXT, RevisionRecord::FOR_PUBLIC)
+        ) {
+            return false;
+        }
 
-		if ( $revision && $revision->getVisibility() !== 0 ) {
-			// The revision is not public, so it's not cacheable!
-			return;
-		}
+        return true;
+    }
 
-		parent::setCacheControl( $response, $expiry );
-	}
+    /**
+     * @return bool
+     */
+    public function hasContent(): bool
+    {
+        return (bool)$this->getTargetRevision();
+    }
 
-	/**
-	 * @return array
-	 */
-	public function constructMetadata(): array {
-		$page = $this->getPage();
-		$revision = $this->getTargetRevision();
+    public function setCacheControl(ResponseInterface $response, int $expiry = null)
+    {
+        $revision = $this->getTargetRevision();
 
-		$mainSlot = $revision->getSlot( SlotRecord::MAIN, RevisionRecord::RAW );
+        if ($revision && $revision->getVisibility() !== 0) {
+            // The revision is not public, so it's not cacheable!
+            return;
+        }
 
-		$metadata = [
-			'id' => $revision->getId(),
-			'size' => $revision->getSize(),
-			'minor' => $revision->isMinor(),
-			'timestamp' => wfTimestampOrNull( TS_ISO_8601, $revision->getTimestamp() ),
-			'content_model' => $mainSlot->getModel(),
-			'page' => [
-				'id' => $page->getId(),
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
-				'key' => $this->titleFormatter->getPrefixedDBkey( $page ),
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
-				'title' => $this->titleFormatter->getPrefixedText( $page ),
-			],
-			'license' => [
-				'url' => $this->config->get( MainConfigNames::RightsUrl ),
-				'title' => $this->config->get( MainConfigNames::RightsText )
-			],
-		];
+        parent::setCacheControl($response, $expiry);
+    }
 
-		$revUser = $revision->getUser( RevisionRecord::FOR_THIS_USER, $this->authority );
-		if ( $revUser ) {
-			$metadata['user'] = [
-				'id' => $revUser->isRegistered() ? $revUser->getId() : null,
-				'name' => $revUser->getName()
-			];
-		} else {
-			$metadata['user'] = null;
-		}
+    /**
+     * @return array
+     */
+    public function constructMetadata(): array
+    {
+        $page = $this->getPage();
+        $revision = $this->getTargetRevision();
 
-		$comment = $revision->getComment( RevisionRecord::FOR_THIS_USER, $this->authority );
-		$metadata['comment'] = $comment ? $comment->text : null;
+        $mainSlot = $revision->getSlot(SlotRecord::MAIN, RevisionRecord::RAW);
 
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
-		$parent = $this->revisionLookup->getPreviousRevision( $revision );
-		if ( $parent ) {
-			$metadata['delta'] = $revision->getSize() - $parent->getSize();
-		} else {
-			$metadata['delta'] = null;
-		}
+        $metadata = [
+            'id'            => $revision->getId(),
+            'size'          => $revision->getSize(),
+            'minor'         => $revision->isMinor(),
+            'timestamp'     => wfTimestampOrNull(TS_ISO_8601, $revision->getTimestamp()),
+            'content_model' => $mainSlot->getModel(),
+            'page'          => [
+                'id'    => $page->getId(),
+                // @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+                'key'   => $this->titleFormatter->getPrefixedDBkey($page),
+                // @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+                'title' => $this->titleFormatter->getPrefixedText($page),
+            ],
+            'license'       => [
+                'url'   => $this->config->get(MainConfigNames::RightsUrl),
+                'title' => $this->config->get(MainConfigNames::RightsText)
+            ],
+        ];
 
-		// FIXME: test fall fields
-		return $metadata;
-	}
+        $revUser = $revision->getUser(RevisionRecord::FOR_THIS_USER, $this->authority);
+        if ($revUser) {
+            $metadata['user'] = [
+                'id'   => $revUser->isRegistered() ? $revUser->getId() : null,
+                'name' => $revUser->getName()
+            ];
+        } else {
+            $metadata['user'] = null;
+        }
 
-	/**
-	 * @return array[]
-	 */
-	public function getParamSettings(): array {
-		return [
-			'id' => [
-				Handler::PARAM_SOURCE => 'path',
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-		];
-	}
+        $comment = $revision->getComment(RevisionRecord::FOR_THIS_USER, $this->authority);
+        $metadata['comment'] = $comment ? $comment->text : null;
 
-	/**
-	 * @throws LocalizedHttpException if the content is not accessible
-	 */
-	public function checkAccess() {
-		$revId = $this->getRevisionId() ?? '';
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+        $parent = $this->revisionLookup->getPreviousRevision($revision);
+        if ($parent) {
+            $metadata['delta'] = $revision->getSize() - $parent->getSize();
+        } else {
+            $metadata['delta'] = null;
+        }
 
-		if ( !$this->hasContent() ) {
-			throw new LocalizedHttpException(
-				MessageValue::new( 'rest-nonexistent-revision' )->plaintextParams( $revId ),
-				404
-			);
-		}
+        // FIXME: test fall fields
+        return $metadata;
+    }
 
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Validated by hasContent
-		if ( !$this->authority->authorizeRead( 'read', $this->getPage() ) ) {
-			throw new LocalizedHttpException(
-				MessageValue::new( 'rest-permission-denied-revision' )->plaintextParams( $revId ),
-				403
-			);
-		}
-	}
+    /**
+     * @return array[]
+     */
+    public function getParamSettings(): array
+    {
+        return [
+            'id' => [
+                Handler::PARAM_SOURCE          => 'path',
+                ParamValidator::PARAM_TYPE     => 'integer',
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
+        ];
+    }
+
+    /**
+     * @throws LocalizedHttpException if the content is not accessible
+     */
+    public function checkAccess()
+    {
+        $revId = $this->getRevisionId() ?? '';
+
+        if (!$this->hasContent()) {
+            throw new LocalizedHttpException(
+                MessageValue::new('rest-nonexistent-revision')->plaintextParams($revId),
+                404
+            );
+        }
+
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable Validated by hasContent
+        if (!$this->authority->authorizeRead('read', $this->getPage())) {
+            throw new LocalizedHttpException(
+                MessageValue::new('rest-permission-denied-revision')->plaintextParams($revId),
+                403
+            );
+        }
+    }
 
 }

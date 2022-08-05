@@ -32,33 +32,36 @@ require_once __DIR__ . '/../Maintenance.php';
  *
  * @ingroup Maintenance ExternalStorage
  */
-class DumpRev extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addArg( 'rev-id', 'Revision ID', true );
-	}
+class DumpRev extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addArg('rev-id', 'Revision ID', true);
+    }
 
-	public function execute() {
-		$id = (int)$this->getArg( 0 );
+    public function execute()
+    {
+        $id = (int)$this->getArg(0);
 
-		$lookup = MediaWikiServices::getInstance()->getRevisionLookup();
-		$rev = $lookup->getRevisionById( $id );
-		if ( !$rev ) {
-			$this->fatalError( "Row not found" );
-		}
+        $lookup = MediaWikiServices::getInstance()->getRevisionLookup();
+        $rev = $lookup->getRevisionById($id);
+        if (!$rev) {
+            $this->fatalError("Row not found");
+        }
 
-		$content = $rev->getContent( SlotRecord::MAIN );
-		if ( !$content ) {
-			$this->fatalError( "Text not found" );
-		}
+        $content = $rev->getContent(SlotRecord::MAIN);
+        if (!$content) {
+            $this->fatalError("Text not found");
+        }
 
-		$blobStore = MediaWikiServices::getInstance()->getBlobStore();
-		$slot = $rev->getSlot( SlotRecord::MAIN );
-		$text = $blobStore->getBlob( $slot->getAddress() );
+        $blobStore = MediaWikiServices::getInstance()->getBlobStore();
+        $slot = $rev->getSlot(SlotRecord::MAIN);
+        $text = $blobStore->getBlob($slot->getAddress());
 
-		$this->output( "Text length: " . strlen( $text ) . "\n" );
-		$this->output( substr( $text, 0, 100 ) . "\n" );
-	}
+        $this->output("Text length: " . strlen($text) . "\n");
+        $this->output(substr($text, 0, 100) . "\n");
+    }
 }
 
 $maintClass = DumpRev::class;

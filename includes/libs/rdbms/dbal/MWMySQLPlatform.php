@@ -5,17 +5,19 @@ namespace Wikimedia\Rdbms;
 /**
  * @suppress PhanRedefinedExtendedClass
  */
-class MWMySQLPlatform extends MWMySQLPlatformCompat {
+class MWMySQLPlatform extends MWMySQLPlatformCompat
+{
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getFloatDeclarationSQL( array $column ) {
-		$double = $column['doublePrecision'] ?? false;
-		$unsigned = $column['unsigned'] ?? false;
+    /**
+     * @inheritDoc
+     */
+    public function getFloatDeclarationSQL(array $column)
+    {
+        $double = $column['doublePrecision'] ?? false;
+        $unsigned = $column['unsigned'] ?? false;
 
-		$sql = $double ? 'DOUBLE PRECISION' : 'FLOAT';
+        $sql = $double ? 'DOUBLE PRECISION' : 'FLOAT';
 
-		return $sql . ( $unsigned ? ' UNSIGNED' : '' );
-	}
+        return $sql . ($unsigned ? ' UNSIGNED' : '');
+    }
 }

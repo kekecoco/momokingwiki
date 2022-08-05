@@ -24,76 +24,81 @@
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\IDatabase;
 
-class BatchRowWriter {
-	/**
-	 * @var IDatabase The database to write to
-	 */
-	protected $db;
+class BatchRowWriter
+{
+    /**
+     * @var IDatabase The database to write to
+     */
+    protected $db;
 
-	/**
-	 * @var string The name of the table to update
-	 */
-	protected $table;
+    /**
+     * @var string The name of the table to update
+     */
+    protected $table;
 
-	/**
-	 * @var string|false A cluster name valid for use with LBFactory
-	 */
-	protected $clusterName;
+    /**
+     * @var string|false A cluster name valid for use with LBFactory
+     */
+    protected $clusterName;
 
-	/**
-	 * @var string|null For debugging which method is using this class.
-	 */
-	protected $caller;
+    /**
+     * @var string|null For debugging which method is using this class.
+     */
+    protected $caller;
 
-	/**
-	 * @param IDatabase $db The database to write to
-	 * @param string $table The name of the table to update
-	 * @param string|false $clusterName A cluster name valid for use with LBFactory
-	 */
-	public function __construct( IDatabase $db, $table, $clusterName = false ) {
-		$this->db = $db;
-		$this->table = $table;
-		$this->clusterName = $clusterName;
-	}
+    /**
+     * @param IDatabase $db The database to write to
+     * @param string $table The name of the table to update
+     * @param string|false $clusterName A cluster name valid for use with LBFactory
+     */
+    public function __construct(IDatabase $db, $table, $clusterName = false)
+    {
+        $this->db = $db;
+        $this->table = $table;
+        $this->clusterName = $clusterName;
+    }
 
-	/**
-	 * Use ->setCaller( __METHOD__ ) to indicate which code is using this
-	 * class. Only used in debugging output.
-	 * @since 1.36
-	 *
-	 * @param string $caller
-	 * @return self
-	 */
-	public function setCaller( $caller ) {
-		$this->caller = $caller;
-		return $this;
-	}
+    /**
+     * Use ->setCaller( __METHOD__ ) to indicate which code is using this
+     * class. Only used in debugging output.
+     * @param string $caller
+     * @return self
+     * @since 1.36
+     *
+     */
+    public function setCaller($caller)
+    {
+        $this->caller = $caller;
 
-	/**
-	 * @param array[][] $updates Array of arrays each containing two keys, 'primaryKey'
-	 *  and 'changes'. primaryKey must contain a map of column names to values
-	 *  sufficient to uniquely identify the row. changes must contain a map of column
-	 *  names to update values to apply to the row.
-	 * @phan-param array<int,array{primaryKey:array,changes:array}> $updates
-	 */
-	public function write( array $updates ) {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$ticket = $lbFactory->getEmptyTransactionTicket( __METHOD__ );
+        return $this;
+    }
 
-		$caller = __METHOD__;
-		if ( (string)$this->caller !== '' ) {
-			$caller .= " (for {$this->caller})";
-		}
+    /**
+     * @param array[][] $updates Array of arrays each containing two keys, 'primaryKey'
+     *  and 'changes'. primaryKey must contain a map of column names to values
+     *  sufficient to uniquely identify the row. changes must contain a map of column
+     *  names to update values to apply to the row.
+     * @phan-param array<int,array{primaryKey:array,changes:array}> $updates
+     */
+    public function write(array $updates)
+    {
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $ticket = $lbFactory->getEmptyTransactionTicket(__METHOD__);
 
-		foreach ( $updates as $update ) {
-			$this->db->update(
-				$this->table,
-				$update['changes'],
-				$update['primaryKey'],
-				$caller
-			);
-		}
+        $caller = __METHOD__;
+        if ((string)$this->caller !== '') {
+            $caller .= " (for {$this->caller})";
+        }
 
-		$lbFactory->commitAndWaitForReplication( __METHOD__, $ticket );
-	}
+        foreach ($updates as $update) {
+            $this->db->update(
+                $this->table,
+                $update['changes'],
+                $update['primaryKey'],
+                $caller
+            );
+        }
+
+        $lbFactory->commitAndWaitForReplication(__METHOD__, $ticket);
+    }
 }

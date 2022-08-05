@@ -29,61 +29,64 @@
  * a matching namespace name. If that can't be found, we dump the page in the
  * main namespace as a last resort.
  */
-class NaiveImportTitleFactory implements ImportTitleFactory {
-	/** @var Language */
-	private $contentLanguage;
+class NaiveImportTitleFactory implements ImportTitleFactory
+{
+    /** @var Language */
+    private $contentLanguage;
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var TitleFactory */
-	private $titleFactory;
+    /** @var TitleFactory */
+    private $titleFactory;
 
-	/**
-	 * @param Language $contentLanguage
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TitleFactory $titleFactory
-	 */
-	public function __construct(
-		Language $contentLanguage,
-		NamespaceInfo $namespaceInfo,
-		TitleFactory $titleFactory
-	) {
-		$this->contentLanguage = $contentLanguage;
-		$this->namespaceInfo = $namespaceInfo;
-		$this->titleFactory = $titleFactory;
-	}
+    /**
+     * @param Language $contentLanguage
+     * @param NamespaceInfo $namespaceInfo
+     * @param TitleFactory $titleFactory
+     */
+    public function __construct(
+        Language $contentLanguage,
+        NamespaceInfo $namespaceInfo,
+        TitleFactory $titleFactory
+    )
+    {
+        $this->contentLanguage = $contentLanguage;
+        $this->namespaceInfo = $namespaceInfo;
+        $this->titleFactory = $titleFactory;
+    }
 
-	/**
-	 * Determines which local title best corresponds to the given foreign title.
-	 * If such a title can't be found or would be locally invalid, null is
-	 * returned.
-	 *
-	 * @param ForeignTitle $foreignTitle The ForeignTitle to convert
-	 * @return Title|null
-	 */
-	public function createTitleFromForeignTitle( ForeignTitle $foreignTitle ) {
-		if ( $foreignTitle->isNamespaceIdKnown() ) {
-			$foreignNs = $foreignTitle->getNamespaceId();
+    /**
+     * Determines which local title best corresponds to the given foreign title.
+     * If such a title can't be found or would be locally invalid, null is
+     * returned.
+     *
+     * @param ForeignTitle $foreignTitle The ForeignTitle to convert
+     * @return Title|null
+     */
+    public function createTitleFromForeignTitle(ForeignTitle $foreignTitle)
+    {
+        if ($foreignTitle->isNamespaceIdKnown()) {
+            $foreignNs = $foreignTitle->getNamespaceId();
 
-			// For built-in namespaces (0 <= ID < 100), we try to find a local NS with
-			// the same namespace ID
-			if (
-				$foreignNs < 100 &&
-				$this->namespaceInfo->exists( $foreignNs )
-			) {
-				return $this->titleFactory->makeTitleSafe( $foreignNs, $foreignTitle->getText() );
-			}
-		}
+            // For built-in namespaces (0 <= ID < 100), we try to find a local NS with
+            // the same namespace ID
+            if (
+                $foreignNs < 100 &&
+                $this->namespaceInfo->exists($foreignNs)
+            ) {
+                return $this->titleFactory->makeTitleSafe($foreignNs, $foreignTitle->getText());
+            }
+        }
 
-		// Do we have a local namespace by the same name as the foreign
-		// namespace?
-		$targetNs = $this->contentLanguage->getNsIndex( $foreignTitle->getNamespaceName() );
-		if ( $targetNs !== false ) {
-			return $this->titleFactory->makeTitleSafe( $targetNs, $foreignTitle->getText() );
-		}
+        // Do we have a local namespace by the same name as the foreign
+        // namespace?
+        $targetNs = $this->contentLanguage->getNsIndex($foreignTitle->getNamespaceName());
+        if ($targetNs !== false) {
+            return $this->titleFactory->makeTitleSafe($targetNs, $foreignTitle->getText());
+        }
 
-		// Otherwise, just fall back to main namespace
-		return $this->titleFactory->makeTitleSafe( 0, $foreignTitle->getFullText() );
-	}
+        // Otherwise, just fall back to main namespace
+        return $this->titleFactory->makeTitleSafe(0, $foreignTitle->getFullText());
+    }
 }

@@ -40,106 +40,112 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @internal Used by RevertedTagUpdateManager
  */
-class EditResultCache {
+class EditResultCache
+{
 
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::RCMaxAge,
-	];
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::RCMaxAge,
+    ];
 
-	private const CACHE_KEY_PREFIX = 'EditResult';
+    private const CACHE_KEY_PREFIX = 'EditResult';
 
-	/** @var BagOStuff */
-	private $mainObjectStash;
+    /** @var BagOStuff */
+    private $mainObjectStash;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/**
-	 * @param BagOStuff $mainObjectStash Main object stash, see
-	 *  MediaWikiServices::getMainObjectStash()
-	 * @param ILoadBalancer $loadBalancer
-	 * @param ServiceOptions $options
-	 */
-	public function __construct(
-		BagOStuff $mainObjectStash,
-		ILoadBalancer $loadBalancer,
-		ServiceOptions $options
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
+    /**
+     * @param BagOStuff $mainObjectStash Main object stash, see
+     *  MediaWikiServices::getMainObjectStash()
+     * @param ILoadBalancer $loadBalancer
+     * @param ServiceOptions $options
+     */
+    public function __construct(
+        BagOStuff $mainObjectStash,
+        ILoadBalancer $loadBalancer,
+        ServiceOptions $options
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
 
-		$this->mainObjectStash = $mainObjectStash;
-		$this->loadBalancer = $loadBalancer;
-		$this->options = $options;
-	}
+        $this->mainObjectStash = $mainObjectStash;
+        $this->loadBalancer = $loadBalancer;
+        $this->options = $options;
+    }
 
-	/**
-	 * Store the EditResult in the main object stash.
-	 *
-	 * @param int $revisionId
-	 * @param EditResult $editResult
-	 *
-	 * @return bool Success
-	 */
-	public function set( int $revisionId, EditResult $editResult ): bool {
-		return $this->mainObjectStash->set(
-			$this->makeKey( $revisionId ),
-			FormatJson::encode( $editResult ),
-			// Patrol flags are not stored for longer than $wgRCMaxAge
-			$this->options->get( MainConfigNames::RCMaxAge )
-		);
-	}
+    /**
+     * Store the EditResult in the main object stash.
+     *
+     * @param int $revisionId
+     * @param EditResult $editResult
+     *
+     * @return bool Success
+     */
+    public function set(int $revisionId, EditResult $editResult): bool
+    {
+        return $this->mainObjectStash->set(
+            $this->makeKey($revisionId),
+            FormatJson::encode($editResult),
+            // Patrol flags are not stored for longer than $wgRCMaxAge
+            $this->options->get(MainConfigNames::RCMaxAge)
+        );
+    }
 
-	/**
-	 * Get an EditResult for the given revision ID.
-	 *
-	 * Will first attempt to get the EditResult from the main stash. If this fails, it
-	 * will try to retrieve the EditResult from revert change tags of this revision.
-	 *
-	 * @param int $revisionId
-	 *
-	 * @return EditResult|null Returns null on failure
-	 */
-	public function get( int $revisionId ): ?EditResult {
-		$result = $this->mainObjectStash->get( $this->makeKey( $revisionId ) );
+    /**
+     * Get an EditResult for the given revision ID.
+     *
+     * Will first attempt to get the EditResult from the main stash. If this fails, it
+     * will try to retrieve the EditResult from revert change tags of this revision.
+     *
+     * @param int $revisionId
+     *
+     * @return EditResult|null Returns null on failure
+     */
+    public function get(int $revisionId): ?EditResult
+    {
+        $result = $this->mainObjectStash->get($this->makeKey($revisionId));
 
-		// not found in stash, try change tags
-		if ( !$result ) {
-			$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-			$result = $dbr->selectField(
-				[ 'change_tag', 'change_tag_def' ],
-				'ct_params',
-				[
-					'ct_rev_id' => $revisionId,
-					'ctd_id = ct_tag_id',
-					'ctd_name' => [
-						'mw-rollback',
-						'mw-undo',
-						'mw-manual-revert'
-					]
-				],
-				__METHOD__
-			);
-		}
+        // not found in stash, try change tags
+        if (!$result) {
+            $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+            $result = $dbr->selectField(
+                ['change_tag', 'change_tag_def'],
+                'ct_params',
+                [
+                    'ct_rev_id' => $revisionId,
+                    'ctd_id = ct_tag_id',
+                    'ctd_name'  => [
+                        'mw-rollback',
+                        'mw-undo',
+                        'mw-manual-revert'
+                    ]
+                ],
+                __METHOD__
+            );
+        }
 
-		if ( !$result ) {
-			return null;
-		}
+        if (!$result) {
+            return null;
+        }
 
-		$decoded = FormatJson::decode( $result, true );
-		return $decoded ? EditResult::newFromArray( $decoded ) : null;
-	}
+        $decoded = FormatJson::decode($result, true);
 
-	/**
-	 * Generates a cache key for the given revision ID.
-	 *
-	 * @param int $revisionId
-	 *
-	 * @return string
-	 */
-	private function makeKey( int $revisionId ): string {
-		return $this->mainObjectStash->makeKey( self::CACHE_KEY_PREFIX, $revisionId );
-	}
+        return $decoded ? EditResult::newFromArray($decoded) : null;
+    }
+
+    /**
+     * Generates a cache key for the given revision ID.
+     *
+     * @param int $revisionId
+     *
+     * @return string
+     */
+    private function makeKey(int $revisionId): string
+    {
+        return $this->mainObjectStash->makeKey(self::CACHE_KEY_PREFIX, $revisionId);
+    }
 }

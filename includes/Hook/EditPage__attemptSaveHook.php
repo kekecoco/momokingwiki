@@ -12,14 +12,15 @@ use EditPage;
  * @stable to implement
  * @ingroup Hooks
  */
-interface EditPage__attemptSaveHook {
-	/**
-	 * This hook is called before an article is saved, before WikiPage::doUserEditContent() is called.
-	 *
-	 * @since 1.35
-	 *
-	 * @param EditPage $editpage_Obj Current EditPage object
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onEditPage__attemptSave( $editpage_Obj );
+interface EditPage__attemptSaveHook
+{
+    /**
+     * This hook is called before an article is saved, before WikiPage::doUserEditContent() is called.
+     *
+     * @param EditPage $editpage_Obj Current EditPage object
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onEditPage__attemptSave($editpage_Obj);
 }

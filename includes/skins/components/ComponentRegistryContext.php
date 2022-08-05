@@ -25,18 +25,19 @@ use Title;
  * @internal for use inside Skin and SkinTemplate classes only
  * @unstable
  */
-interface ComponentRegistryContext {
-	/**
-	 * Returns the config needed for the component.
-	 *
-	 * @return Config
-	 */
-	public function getConfig(): Config;
+interface ComponentRegistryContext
+{
+    /**
+     * Returns the config needed for the component.
+     *
+     * @return Config
+     */
+    public function getConfig(): Config;
 
-	/**
-	 * Returns the Title object for the component.
-	 *
-	 * @return Title
-	 */
-	public function getTitle(): Title;
+    /**
+     * Returns the Title object for the component.
+     *
+     * @return Title
+     */
+    public function getTitle(): Title;
 }

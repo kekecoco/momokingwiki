@@ -24,52 +24,59 @@
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPCustomFrame_Hash extends PPFrame_Hash {
+class PPCustomFrame_Hash extends PPFrame_Hash
+{
 
-	/** @var array */
-	public $args;
+    /** @var array */
+    public $args;
 
-	/**
-	 * @param Preprocessor $preprocessor
-	 * @param array $args
-	 */
-	public function __construct( $preprocessor, $args ) {
-		parent::__construct( $preprocessor );
-		$this->args = $args;
-	}
+    /**
+     * @param Preprocessor $preprocessor
+     * @param array $args
+     */
+    public function __construct($preprocessor, $args)
+    {
+        parent::__construct($preprocessor);
+        $this->args = $args;
+    }
 
-	public function __toString() {
-		$s = 'cstmframe{';
-		$first = true;
-		foreach ( $this->args as $name => $value ) {
-			if ( $first ) {
-				$first = false;
-			} else {
-				$s .= ', ';
-			}
-			$s .= "\"$name\":\"" .
-				str_replace( '"', '\\"', $value->__toString() ) . '"';
-		}
-		$s .= '}';
-		return $s;
-	}
+    public function __toString()
+    {
+        $s = 'cstmframe{';
+        $first = true;
+        foreach ($this->args as $name => $value) {
+            if ($first) {
+                $first = false;
+            } else {
+                $s .= ', ';
+            }
+            $s .= "\"$name\":\"" .
+                str_replace('"', '\\"', $value->__toString()) . '"';
+        }
+        $s .= '}';
 
-	/**
-	 * @return bool
-	 */
-	public function isEmpty() {
-		return !count( $this->args );
-	}
+        return $s;
+    }
 
-	/**
-	 * @param int|string $index
-	 * @return string|false
-	 */
-	public function getArgument( $index ) {
-		return $this->args[$index] ?? false;
-	}
+    /**
+     * @return bool
+     */
+    public function isEmpty()
+    {
+        return !count($this->args);
+    }
 
-	public function getArguments() {
-		return $this->args;
-	}
+    /**
+     * @param int|string $index
+     * @return string|false
+     */
+    public function getArgument($index)
+    {
+        return $this->args[$index] ?? false;
+    }
+
+    public function getArguments()
+    {
+        return $this->args;
+    }
 }

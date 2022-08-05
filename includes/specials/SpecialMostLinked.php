@@ -35,113 +35,123 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup SpecialPage
  */
-class SpecialMostLinked extends QueryPage {
+class SpecialMostLinked extends QueryPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory
-	) {
-		parent::__construct( 'Mostlinked' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory
+    )
+    {
+        parent::__construct('Mostlinked');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'pagelinks', 'page' ],
-			'fields' => [
-				'namespace' => 'pl_namespace',
-				'title' => 'pl_title',
-				'value' => 'COUNT(*)',
-				'page_namespace'
-			],
-			'options' => [
-				'HAVING' => 'COUNT(*) > 1',
-				'GROUP BY' => [
-					'pl_namespace', 'pl_title',
-					'page_namespace'
-				]
-			],
-			'join_conds' => [
-				'page' => [
-					'LEFT JOIN',
-					[
-						'page_namespace = pl_namespace',
-						'page_title = pl_title'
-					]
-				]
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'     => ['pagelinks', 'page'],
+            'fields'     => [
+                'namespace' => 'pl_namespace',
+                'title'     => 'pl_title',
+                'value'     => 'COUNT(*)',
+                'page_namespace'
+            ],
+            'options'    => [
+                'HAVING'   => 'COUNT(*) > 1',
+                'GROUP BY' => [
+                    'pl_namespace', 'pl_title',
+                    'page_namespace'
+                ]
+            ],
+            'join_conds' => [
+                'page' => [
+                    'LEFT JOIN',
+                    [
+                        'page_namespace = pl_namespace',
+                        'page_title = pl_title'
+                    ]
+                ]
+            ]
+        ];
+    }
 
-	/**
-	 * Pre-fill the link cache
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    /**
+     * Pre-fill the link cache
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	/**
-	 * Make a link to "what links here" for the specified title
-	 *
-	 * @param Title $title Title being queried
-	 * @param string $caption Text to display on the link
-	 * @return string
-	 */
-	private function makeWlhLink( $title, $caption ) {
-		$wlh = SpecialPage::getTitleFor( 'Whatlinkshere', $title->getPrefixedDBkey() );
+    /**
+     * Make a link to "what links here" for the specified title
+     *
+     * @param Title $title Title being queried
+     * @param string $caption Text to display on the link
+     * @return string
+     */
+    private function makeWlhLink($title, $caption)
+    {
+        $wlh = SpecialPage::getTitleFor('Whatlinkshere', $title->getPrefixedDBkey());
 
-		$linkRenderer = $this->getLinkRenderer();
-		return $linkRenderer->makeKnownLink( $wlh, $caption );
-	}
+        $linkRenderer = $this->getLinkRenderer();
 
-	/**
-	 * Make links to the page corresponding to the item,
-	 * and the "what links here" page for it
-	 *
-	 * @param Skin $skin Skin to be used
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$title = Title::makeTitleSafe( $result->namespace, $result->title );
-		if ( !$title ) {
-			return Html::element(
-				'span',
-				[ 'class' => 'mw-invalidtitle' ],
-				Linker::getInvalidTitleDescription(
-					$this->getContext(),
-					$result->namespace,
-					$result->title )
-			);
-		}
+        return $linkRenderer->makeKnownLink($wlh, $caption);
+    }
 
-		$linkRenderer = $this->getLinkRenderer();
-		$link = $linkRenderer->makeLink( $title );
-		$wlh = $this->makeWlhLink(
-			$title,
-			$this->msg( 'nlinks' )->numParams( $result->value )->text()
-		);
+    /**
+     * Make links to the page corresponding to the item,
+     * and the "what links here" page for it
+     *
+     * @param Skin $skin Skin to be used
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $title = Title::makeTitleSafe($result->namespace, $result->title);
+        if (!$title) {
+            return Html::element(
+                'span',
+                ['class' => 'mw-invalidtitle'],
+                Linker::getInvalidTitleDescription(
+                    $this->getContext(),
+                    $result->namespace,
+                    $result->title)
+            );
+        }
 
-		return $this->getLanguage()->specialList( $link, $wlh );
-	}
+        $linkRenderer = $this->getLinkRenderer();
+        $link = $linkRenderer->makeLink($title);
+        $wlh = $this->makeWlhLink(
+            $title,
+            $this->msg('nlinks')->numParams($result->value)->text()
+        );
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+        return $this->getLanguage()->specialList($link, $wlh);
+    }
+
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

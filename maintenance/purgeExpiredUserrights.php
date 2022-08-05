@@ -30,21 +30,24 @@ require_once __DIR__ . '/Maintenance.php';
  * @since 1.31
  */
 
-class PurgeExpiredUserrights extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Move expired userrights from user_groups to former_user_groups table.' );
-	}
+class PurgeExpiredUserrights extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Move expired userrights from user_groups to former_user_groups table.');
+    }
 
-	public function execute() {
-		$this->output( "Purging expired user rights...\n" );
-		$res = MediaWikiServices::getInstance()->getUserGroupManager()->purgeExpired();
-		if ( $res === false ) {
-			$this->output( "Purging failed.\n" );
-		} else {
-			$this->output( "$res rows purged.\n" );
-		}
-	}
+    public function execute()
+    {
+        $this->output("Purging expired user rights...\n");
+        $res = MediaWikiServices::getInstance()->getUserGroupManager()->purgeExpired();
+        if ($res === false) {
+            $this->output("Purging failed.\n");
+        } else {
+            $this->output("$res rows purged.\n");
+        }
+    }
 }
 
 $maintClass = PurgeExpiredUserrights::class;

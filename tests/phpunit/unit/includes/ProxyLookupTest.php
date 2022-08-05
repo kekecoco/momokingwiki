@@ -29,95 +29,101 @@ use ProxyLookup;
  *
  * @coversDefaultClass \ProxyLookup
  */
-class ProxyLookupTest extends MediaWikiUnitTestCase {
+class ProxyLookupTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @covers ::__construct
-	 */
-	public function testConstruct() {
-		$proxyLookup = new ProxyLookup(
-			[],
-			[],
-			$this->createNoOpMock( HookContainer::class )
-		);
-		$this->assertInstanceOf( ProxyLookup::class, $proxyLookup, 'No errors' );
-	}
+    /**
+     * @covers ::__construct
+     */
+    public function testConstruct()
+    {
+        $proxyLookup = new ProxyLookup(
+            [],
+            [],
+            $this->createNoOpMock(HookContainer::class)
+        );
+        $this->assertInstanceOf(ProxyLookup::class, $proxyLookup, 'No errors');
+    }
 
-	public function provideIsConfiguredProxy() {
-		// $ip, $expected
-		yield 'Listed ip #1' => [ '1.1.1.1', true ];
-		yield 'Listed ip #2' => [ '2.2.2.2', true ];
-		yield 'In complex list #1' => [ '127.0.0.127', true ];
-		yield 'In complex list #2' => [ '255.0.0.127', true ];
-		yield 'Not listed #1' => [ '3.3.3.3', false ];
-		yield 'Not listed #2' => [ '255.255.255.255', false ];
-	}
+    public function provideIsConfiguredProxy()
+    {
+        // $ip, $expected
+        yield 'Listed ip #1' => ['1.1.1.1', true];
+        yield 'Listed ip #2' => ['2.2.2.2', true];
+        yield 'In complex list #1' => ['127.0.0.127', true];
+        yield 'In complex list #2' => ['255.0.0.127', true];
+        yield 'Not listed #1' => ['3.3.3.3', false];
+        yield 'Not listed #2' => ['255.255.255.255', false];
+    }
 
-	/**
-	 * @covers ::isConfiguredProxy
-	 * @dataProvider provideIsConfiguredProxy
-	 */
-	public function testIsConfiguredProxy( string $ip, bool $expected ) {
-		// Should never be called
-		$hookContainer = $this->createNoOpMock( HookContainer::class );
+    /**
+     * @covers ::isConfiguredProxy
+     * @dataProvider provideIsConfiguredProxy
+     */
+    public function testIsConfiguredProxy(string $ip, bool $expected)
+    {
+        // Should never be called
+        $hookContainer = $this->createNoOpMock(HookContainer::class);
 
-		// Not an exhaustive test of the functionality of IPSet since that has its own
-		// tests, just need to make sure it works
-		$proxyLookup = new ProxyLookup(
-			[
-				'1.1.1.1',
-				'2.2.2.2',
-			],
-			[
-				'127.0.0.0/24',
-				'255.0.0.0/24',
-			],
-			$hookContainer
-		);
+        // Not an exhaustive test of the functionality of IPSet since that has its own
+        // tests, just need to make sure it works
+        $proxyLookup = new ProxyLookup(
+            [
+                '1.1.1.1',
+                '2.2.2.2',
+            ],
+            [
+                '127.0.0.0/24',
+                '255.0.0.0/24',
+            ],
+            $hookContainer
+        );
 
-		$this->assertSame( $expected, $proxyLookup->isConfiguredProxy( $ip ) );
-	}
+        $this->assertSame($expected, $proxyLookup->isConfiguredProxy($ip));
+    }
 
-	public function provideIsTrustedProxy() {
-		// $ip, $expectedForHookCall, $hookResult
-		yield 'Listed, hook return true' => [ '1.1.1.1', true, true ];
-		yield 'Listed, hook return false' => [ '1.1.1.1', true, false ];
-		yield 'Not listed, hook return true' => [ '2.2.2.2', false, true ];
-		yield 'Not listed, hook return false' => [ '2.2.2.2', false, false ];
-	}
+    public function provideIsTrustedProxy()
+    {
+        // $ip, $expectedForHookCall, $hookResult
+        yield 'Listed, hook return true' => ['1.1.1.1', true, true];
+        yield 'Listed, hook return false' => ['1.1.1.1', true, false];
+        yield 'Not listed, hook return true' => ['2.2.2.2', false, true];
+        yield 'Not listed, hook return false' => ['2.2.2.2', false, false];
+    }
 
-	/**
-	 * @covers ::isTrustedProxy
-	 * @dataProvider provideIsTrustedProxy
-	 */
-	public function testIsTrustedProxy(
-		string $ip,
-		bool $expectedForHookCall,
-		bool $hookResult
-	) {
-		// Hook should be called with the correct parameters
-		$hookCalled = false;
-		$hookCallback = function ( $hookIP, &$trusted ) use ( &$hookCalled, $ip, $expectedForHookCall, $hookResult ) {
-			$hookCalled = true;
+    /**
+     * @covers ::isTrustedProxy
+     * @dataProvider provideIsTrustedProxy
+     */
+    public function testIsTrustedProxy(
+        string $ip,
+        bool $expectedForHookCall,
+        bool $hookResult
+    )
+    {
+        // Hook should be called with the correct parameters
+        $hookCalled = false;
+        $hookCallback = function ($hookIP, &$trusted) use (&$hookCalled, $ip, $expectedForHookCall, $hookResult) {
+            $hookCalled = true;
 
-			// Make sure called correctly
-			$this->assertSame( $ip, $hookIP, 'Hook called with the right IP' );
-			$this->assertSame( $expectedForHookCall, $trusted, 'Hook called with the correct $trusted' );
-			$trusted = $hookResult;
-		};
+            // Make sure called correctly
+            $this->assertSame($ip, $hookIP, 'Hook called with the right IP');
+            $this->assertSame($expectedForHookCall, $trusted, 'Hook called with the correct $trusted');
+            $trusted = $hookResult;
+        };
 
-		$hookContainer = $this->createHookContainer( [
-			'IsTrustedProxy' => $hookCallback,
-		] );
+        $hookContainer = $this->createHookContainer([
+            'IsTrustedProxy' => $hookCallback,
+        ]);
 
-		$proxyLookup = new ProxyLookup(
-			[ '1.1.1.1' ],
-			[],
-			$hookContainer
-		);
+        $proxyLookup = new ProxyLookup(
+            ['1.1.1.1'],
+            [],
+            $hookContainer
+        );
 
-		$this->assertSame( $hookResult, $proxyLookup->isTrustedProxy( $ip ) );
-		$this->assertTrue( $hookCalled );
-	}
+        $this->assertSame($hookResult, $proxyLookup->isTrustedProxy($ip));
+        $this->assertTrue($hookCalled);
+    }
 
 }

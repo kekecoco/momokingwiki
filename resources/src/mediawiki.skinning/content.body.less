@@ -30,31 +30,33 @@
  * the body of a page includes other sibling elements aside from the output of the parser.
  */
 .mw-body-content {
-	.mixin-clearfix();
+  .mixin-clearfix();
 
-	a.external.free {
-		word-wrap: break-word;
-	}
+  a.external.free {
+    word-wrap: break-word;
+  }
 
-	// error is a class outputted by the parser,
-	// when transcluding a page on itself, for example.
-	.error {
-		font-size: larger;
-		color: #d33;
-	}
+  // error is a class outputted by the parser,
+  // when transcluding a page on itself, for example.
+  .error {
+    font-size: larger;
+    color: #d33;
+  }
 }
 
 /* External URLs should always be treated as LTR (T6330) */
-/* @noflip */ .rtl .mw-parser-output a.external.free,
+/* @noflip */
+.rtl .mw-parser-output a.external.free,
 .rtl .mw-parser-output a.external.autonumber {
-	direction: ltr;
-	unicode-bidi: embed;
+  direction: ltr;
+  unicode-bidi: embed;
 }
 
 // Hide elements that are marked as "empty" according to legacy Tidy rules,
 // except if a client script removes the `.mw-hide-empty-elt` class from the body.
 // Allow individual parser-output blocks to show empty elements using `.mw-show-empty-elt`,
 // for example an editing interface. (T295984)
-/* body */ .mw-hide-empty-elt .mw-parser-output:not( .mw-show-empty-elt ) .mw-empty-elt {
-	display: none;
+/* body */
+.mw-hide-empty-elt .mw-parser-output:not( .mw-show-empty-elt ) .mw-empty-elt {
+  display: none;
 }

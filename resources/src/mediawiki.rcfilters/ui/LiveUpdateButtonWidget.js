@@ -9,29 +9,29 @@
  * @param {mw.rcfilters.dm.ChangesListViewModel} changesListModel
  * @param {Object} [config] Configuration object
  */
-var LiveUpdateButtonWidget = function MwRcfiltersUiLiveUpdateButtonWidget( controller, changesListModel, config ) {
-	config = config || {};
+var LiveUpdateButtonWidget = function MwRcfiltersUiLiveUpdateButtonWidget(controller, changesListModel, config) {
+    config = config || {};
 
-	// Parent
-	LiveUpdateButtonWidget.parent.call( this, $.extend( {
-		label: mw.msg( 'rcfilters-liveupdates-button' )
-	}, config ) );
+    // Parent
+    LiveUpdateButtonWidget.parent.call(this, $.extend({
+        label: mw.msg('rcfilters-liveupdates-button')
+    }, config));
 
-	this.controller = controller;
-	this.model = changesListModel;
+    this.controller = controller;
+    this.model = changesListModel;
 
-	// Events
-	this.connect( this, { click: 'onClick' } );
-	this.model.connect( this, { liveUpdateChange: 'onLiveUpdateChange' } );
+    // Events
+    this.connect(this, {click: 'onClick'});
+    this.model.connect(this, {liveUpdateChange: 'onLiveUpdateChange'});
 
-	this.$element.addClass( 'mw-rcfilters-ui-liveUpdateButtonWidget' );
+    this.$element.addClass('mw-rcfilters-ui-liveUpdateButtonWidget');
 
-	this.setState( false );
+    this.setState(false);
 };
 
 /* Initialization */
 
-OO.inheritClass( LiveUpdateButtonWidget, OO.ui.ToggleButtonWidget );
+OO.inheritClass(LiveUpdateButtonWidget, OO.ui.ToggleButtonWidget);
 
 /* Methods */
 
@@ -39,7 +39,7 @@ OO.inheritClass( LiveUpdateButtonWidget, OO.ui.ToggleButtonWidget );
  * Respond to the button being clicked
  */
 LiveUpdateButtonWidget.prototype.onClick = function () {
-	this.controller.toggleLiveUpdate();
+    this.controller.toggleLiveUpdate();
 };
 
 /**
@@ -47,14 +47,14 @@ LiveUpdateButtonWidget.prototype.onClick = function () {
  *
  * @param {boolean} enable Whether the 'live update' feature is now on/off
  */
-LiveUpdateButtonWidget.prototype.setState = function ( enable ) {
-	this.setValue( enable );
-	this.setIcon( enable ? 'stop' : 'play' );
-	this.setTitle( mw.msg(
-		enable ?
-			'rcfilters-liveupdates-button-title-on' :
-			'rcfilters-liveupdates-button-title-off'
-	) );
+LiveUpdateButtonWidget.prototype.setState = function (enable) {
+    this.setValue(enable);
+    this.setIcon(enable ? 'stop' : 'play');
+    this.setTitle(mw.msg(
+        enable ?
+            'rcfilters-liveupdates-button-title-on' :
+            'rcfilters-liveupdates-button-title-off'
+    ));
 };
 
 /**
@@ -62,8 +62,8 @@ LiveUpdateButtonWidget.prototype.setState = function ( enable ) {
  *
  * @param {boolean} enable Whether the 'live update' feature is now on/off
  */
-LiveUpdateButtonWidget.prototype.onLiveUpdateChange = function ( enable ) {
-	this.setState( enable );
+LiveUpdateButtonWidget.prototype.onLiveUpdateChange = function (enable) {
+    this.setState(enable);
 };
 
 module.exports = LiveUpdateButtonWidget;

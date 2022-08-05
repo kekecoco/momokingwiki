@@ -28,226 +28,242 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @ingroup API
  * @since 1.25
  */
-class ApiTag extends ApiBase {
+class ApiTag extends ApiBase
+{
 
-	use ApiBlockInfoTrait;
+    use ApiBlockInfoTrait;
 
-	/** @var IDatabase */
-	private $dbr;
+    /** @var IDatabase */
+    private $dbr;
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param ILoadBalancer $loadBalancer
-	 * @param RevisionStore $revisionStore
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		ILoadBalancer $loadBalancer,
-		RevisionStore $revisionStore
-	) {
-		parent::__construct( $main, $action );
-		$this->dbr = $loadBalancer->getConnectionRef( DB_REPLICA );
-		$this->revisionStore = $revisionStore;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param ILoadBalancer $loadBalancer
+     * @param RevisionStore $revisionStore
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        ILoadBalancer $loadBalancer,
+        RevisionStore $revisionStore
+    )
+    {
+        parent::__construct($main, $action);
+        $this->dbr = $loadBalancer->getConnectionRef(DB_REPLICA);
+        $this->revisionStore = $revisionStore;
+    }
 
-	public function execute() {
-		$params = $this->extractRequestParams();
-		$user = $this->getUser();
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
+        $user = $this->getUser();
 
-		// make sure the user is allowed
-		$this->checkUserRightsAny( 'changetags' );
+        // make sure the user is allowed
+        $this->checkUserRightsAny('changetags');
 
-		// Fail early if the user is sitewide blocked.
-		$block = $user->getBlock();
-		if ( $block && $block->isSitewide() ) {
-			$this->dieBlocked( $block );
-		}
+        // Fail early if the user is sitewide blocked.
+        $block = $user->getBlock();
+        if ($block && $block->isSitewide()) {
+            $this->dieBlocked($block);
+        }
 
-		// Check if user can add tags
-		if ( $params['tags'] ) {
-			$ableToTag = ChangeTags::canAddTagsAccompanyingChange( $params['tags'], $this->getAuthority() );
-			if ( !$ableToTag->isOK() ) {
-				$this->dieStatus( $ableToTag );
-			}
-		}
+        // Check if user can add tags
+        if ($params['tags']) {
+            $ableToTag = ChangeTags::canAddTagsAccompanyingChange($params['tags'], $this->getAuthority());
+            if (!$ableToTag->isOK()) {
+                $this->dieStatus($ableToTag);
+            }
+        }
 
-		// validate and process each revid, rcid and logid
-		$this->requireAtLeastOneParameter( $params, 'revid', 'rcid', 'logid' );
-		$ret = [];
-		if ( $params['revid'] ) {
-			foreach ( $params['revid'] as $id ) {
-				$ret[] = $this->processIndividual( 'revid', $params, $id );
-			}
-		}
-		if ( $params['rcid'] ) {
-			foreach ( $params['rcid'] as $id ) {
-				$ret[] = $this->processIndividual( 'rcid', $params, $id );
-			}
-		}
-		if ( $params['logid'] ) {
-			foreach ( $params['logid'] as $id ) {
-				$ret[] = $this->processIndividual( 'logid', $params, $id );
-			}
-		}
+        // validate and process each revid, rcid and logid
+        $this->requireAtLeastOneParameter($params, 'revid', 'rcid', 'logid');
+        $ret = [];
+        if ($params['revid']) {
+            foreach ($params['revid'] as $id) {
+                $ret[] = $this->processIndividual('revid', $params, $id);
+            }
+        }
+        if ($params['rcid']) {
+            foreach ($params['rcid'] as $id) {
+                $ret[] = $this->processIndividual('rcid', $params, $id);
+            }
+        }
+        if ($params['logid']) {
+            foreach ($params['logid'] as $id) {
+                $ret[] = $this->processIndividual('logid', $params, $id);
+            }
+        }
 
-		ApiResult::setIndexedTagName( $ret, 'result' );
-		$this->getResult()->addValue( null, $this->getModuleName(), $ret );
-	}
+        ApiResult::setIndexedTagName($ret, 'result');
+        $this->getResult()->addValue(null, $this->getModuleName(), $ret);
+    }
 
-	protected function validateLogId( $logid ) {
-		$result = $this->dbr->selectField( 'logging', 'log_id', [ 'log_id' => $logid ],
-			__METHOD__ );
-		return (bool)$result;
-	}
+    protected function validateLogId($logid)
+    {
+        $result = $this->dbr->selectField('logging', 'log_id', ['log_id' => $logid],
+            __METHOD__);
 
-	protected function processIndividual( $type, $params, $id ) {
-		$user = $this->getUser();
-		$idResult = [ $type => $id ];
+        return (bool)$result;
+    }
 
-		// validate the ID
-		$valid = false;
-		switch ( $type ) {
-			case 'rcid':
-				$valid = RecentChange::newFromId( $id );
-				// TODO: replace use of PermissionManager
-				if ( $valid && $this->getPermissionManager()->isBlockedFrom( $user, $valid->getTitle() ) ) {
-					$idResult['status'] = 'error';
-					// @phan-suppress-next-line PhanTypeMismatchArgument
-					$idResult += $this->getErrorFormatter()->formatMessage( ApiMessage::create(
-						'apierror-blocked',
-						'blocked',
-						// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
-						[ 'blockinfo' => $this->getBlockDetails( $user->getBlock() ) ]
-					) );
-					return $idResult;
-				}
-				break;
-			case 'revid':
-				$valid = $this->revisionStore->getRevisionById( $id );
-				// TODO: replace use of PermissionManager
-				if (
-					$valid &&
-					$this->getPermissionManager()->isBlockedFrom( $user, $valid->getPageAsLinkTarget() )
-				) {
-					$idResult['status'] = 'error';
-					// @phan-suppress-next-line PhanTypeMismatchArgument
-					$idResult += $this->getErrorFormatter()->formatMessage( ApiMessage::create(
-							'apierror-blocked',
-							'blocked',
-							// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
-							[ 'blockinfo' => $this->getBlockDetails( $user->getBlock() ) ]
-					) );
-					return $idResult;
-				}
-				break;
-			case 'logid':
-				$valid = $this->validateLogId( $id );
-				break;
-		}
+    protected function processIndividual($type, $params, $id)
+    {
+        $user = $this->getUser();
+        $idResult = [$type => $id];
 
-		if ( !$valid ) {
-			$idResult['status'] = 'error';
-			// Messages: apierror-nosuchrcid apierror-nosuchrevid apierror-nosuchlogid
-			$idResult += $this->getErrorFormatter()->formatMessage( [ "apierror-nosuch$type", $id ] );
-			return $idResult;
-		}
+        // validate the ID
+        $valid = false;
+        switch ($type) {
+            case 'rcid':
+                $valid = RecentChange::newFromId($id);
+                // TODO: replace use of PermissionManager
+                if ($valid && $this->getPermissionManager()->isBlockedFrom($user, $valid->getTitle())) {
+                    $idResult['status'] = 'error';
+                    // @phan-suppress-next-line PhanTypeMismatchArgument
+                    $idResult += $this->getErrorFormatter()->formatMessage(ApiMessage::create(
+                        'apierror-blocked',
+                        'blocked',
+                        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
+                        ['blockinfo' => $this->getBlockDetails($user->getBlock())]
+                    ));
 
-		$status = ChangeTags::updateTagsWithChecks( $params['add'],
-			$params['remove'],
-			( $type === 'rcid' ? $id : null ),
-			( $type === 'revid' ? $id : null ),
-			( $type === 'logid' ? $id : null ),
-			null,
-			$params['reason'],
-			$this->getAuthority()
-		);
+                    return $idResult;
+                }
+                break;
+            case 'revid':
+                $valid = $this->revisionStore->getRevisionById($id);
+                // TODO: replace use of PermissionManager
+                if (
+                    $valid &&
+                    $this->getPermissionManager()->isBlockedFrom($user, $valid->getPageAsLinkTarget())
+                ) {
+                    $idResult['status'] = 'error';
+                    // @phan-suppress-next-line PhanTypeMismatchArgument
+                    $idResult += $this->getErrorFormatter()->formatMessage(ApiMessage::create(
+                        'apierror-blocked',
+                        'blocked',
+                        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
+                        ['blockinfo' => $this->getBlockDetails($user->getBlock())]
+                    ));
 
-		if ( !$status->isOK() ) {
-			if ( $status->hasMessage( 'actionthrottledtext' ) ) {
-				$idResult['status'] = 'skipped';
-			} else {
-				$idResult['status'] = 'failure';
-				$idResult['errors'] = $this->getErrorFormatter()->arrayFromStatus( $status, 'error' );
-			}
-		} else {
-			$idResult['status'] = 'success';
-			if ( $status->value->logId === null ) {
-				$idResult['noop'] = true;
-			} else {
-				$idResult['actionlogid'] = $status->value->logId;
-				$idResult['added'] = $status->value->addedTags;
-				ApiResult::setIndexedTagName( $idResult['added'], 't' );
-				$idResult['removed'] = $status->value->removedTags;
-				ApiResult::setIndexedTagName( $idResult['removed'], 't' );
+                    return $idResult;
+                }
+                break;
+            case 'logid':
+                $valid = $this->validateLogId($id);
+                break;
+        }
 
-				if ( $params['tags'] ) {
-					ChangeTags::addTags( $params['tags'], null, null, $status->value->logId );
-				}
-			}
-		}
-		return $idResult;
-	}
+        if (!$valid) {
+            $idResult['status'] = 'error';
+            // Messages: apierror-nosuchrcid apierror-nosuchrevid apierror-nosuchlogid
+            $idResult += $this->getErrorFormatter()->formatMessage(["apierror-nosuch$type", $id]);
 
-	public function mustBePosted() {
-		return true;
-	}
+            return $idResult;
+        }
 
-	public function isWriteMode() {
-		return true;
-	}
+        $status = ChangeTags::updateTagsWithChecks($params['add'],
+            $params['remove'],
+            ($type === 'rcid' ? $id : null),
+            ($type === 'revid' ? $id : null),
+            ($type === 'logid' ? $id : null),
+            null,
+            $params['reason'],
+            $this->getAuthority()
+        );
 
-	public function getAllowedParams() {
-		return [
-			'rcid' => [
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'revid' => [
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'logid' => [
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'add' => [
-				ParamValidator::PARAM_TYPE => 'tags',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'remove' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'reason' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_DEFAULT => '',
-			],
-			'tags' => [
-				ParamValidator::PARAM_TYPE => 'tags',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-		];
-	}
+        if (!$status->isOK()) {
+            if ($status->hasMessage('actionthrottledtext')) {
+                $idResult['status'] = 'skipped';
+            } else {
+                $idResult['status'] = 'failure';
+                $idResult['errors'] = $this->getErrorFormatter()->arrayFromStatus($status, 'error');
+            }
+        } else {
+            $idResult['status'] = 'success';
+            if ($status->value->logId === null) {
+                $idResult['noop'] = true;
+            } else {
+                $idResult['actionlogid'] = $status->value->logId;
+                $idResult['added'] = $status->value->addedTags;
+                ApiResult::setIndexedTagName($idResult['added'], 't');
+                $idResult['removed'] = $status->value->removedTags;
+                ApiResult::setIndexedTagName($idResult['removed'], 't');
 
-	public function needsToken() {
-		return 'csrf';
-	}
+                if ($params['tags']) {
+                    ChangeTags::addTags($params['tags'], null, null, $status->value->logId);
+                }
+            }
+        }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=tag&revid=123&add=vandalism&token=123ABC'
-				=> 'apihelp-tag-example-rev',
-			'action=tag&logid=123&remove=spam&reason=Wrongly+applied&token=123ABC'
-				=> 'apihelp-tag-example-log',
-		];
-	}
+        return $idResult;
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Tag';
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
+
+    public function isWriteMode()
+    {
+        return true;
+    }
+
+    public function getAllowedParams()
+    {
+        return [
+            'rcid'   => [
+                ParamValidator::PARAM_TYPE    => 'integer',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'revid'  => [
+                ParamValidator::PARAM_TYPE    => 'integer',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'logid'  => [
+                ParamValidator::PARAM_TYPE    => 'integer',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'add'    => [
+                ParamValidator::PARAM_TYPE    => 'tags',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'remove' => [
+                ParamValidator::PARAM_TYPE    => 'string',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+            'reason' => [
+                ParamValidator::PARAM_TYPE    => 'string',
+                ParamValidator::PARAM_DEFAULT => '',
+            ],
+            'tags'   => [
+                ParamValidator::PARAM_TYPE    => 'tags',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+        ];
+    }
+
+    public function needsToken()
+    {
+        return 'csrf';
+    }
+
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=tag&revid=123&add=vandalism&token=123ABC'
+            => 'apihelp-tag-example-rev',
+            'action=tag&logid=123&remove=spam&reason=Wrongly+applied&token=123ABC'
+            => 'apihelp-tag-example-log',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Tag';
+    }
 }

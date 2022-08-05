@@ -12,21 +12,22 @@ use File;
  * @deprecated since 1.37
  * @ingroup Hooks
  */
-interface LocalFile__getHistoryHook {
-	/**
-	 * This hook is called before a file history query is performed.
-	 *
-	 * @since 1.35
-	 *
-	 * @param File $file
-	 * @param array &$tables
-	 * @param array &$fields Select fields
-	 * @param array &$conds Conditions
-	 * @param array &$opts Query options
-	 * @param array &$join_conds JOIN conditions
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onLocalFile__getHistory( $file, &$tables, &$fields, &$conds,
-		&$opts, &$join_conds
-	);
+interface LocalFile__getHistoryHook
+{
+    /**
+     * This hook is called before a file history query is performed.
+     *
+     * @param File $file
+     * @param array &$tables
+     * @param array &$fields Select fields
+     * @param array &$conds Conditions
+     * @param array &$opts Query options
+     * @param array &$join_conds JOIN conditions
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onLocalFile__getHistory($file, &$tables, &$fields, &$conds,
+                                            &$opts, &$join_conds
+    );
 }

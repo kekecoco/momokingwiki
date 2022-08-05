@@ -21,16 +21,19 @@
 /**
  * Stub object for the user language. Assigned to the $wgLang global.
  */
-class StubUserLang extends StubObject {
+class StubUserLang extends StubObject
+{
 
-	public function __construct() {
-		parent::__construct( 'wgLang' );
-	}
+    public function __construct()
+    {
+        parent::__construct('wgLang');
+    }
 
-	/**
-	 * @return Language
-	 */
-	public function _newObject() {
-		return RequestContext::getMain()->getLanguage();
-	}
+    /**
+     * @return Language
+     */
+    public function _newObject()
+    {
+        return RequestContext::getMain()->getLanguage();
+    }
 }

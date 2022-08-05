@@ -18,196 +18,205 @@ use Title;
 use WebResponse;
 use Wikimedia\Message\ITextFormatter;
 
-class EntryPoint {
-	/** @var RequestInterface */
-	private $request;
-	/** @var WebResponse */
-	private $webResponse;
-	/** @var Router */
-	private $router;
-	/** @var RequestContext */
-	private $context;
-	/** @var CorsUtils */
-	private $cors;
-	/** @var ?RequestInterface */
-	private static $mainRequest;
+class EntryPoint
+{
+    /** @var RequestInterface */
+    private $request;
+    /** @var WebResponse */
+    private $webResponse;
+    /** @var Router */
+    private $router;
+    /** @var RequestContext */
+    private $context;
+    /** @var CorsUtils */
+    private $cors;
+    /** @var ?RequestInterface */
+    private static $mainRequest;
 
-	/**
-	 * @param IContextSource $context
-	 * @param RequestInterface $request
-	 * @param ResponseFactory $responseFactory
-	 * @param CorsUtils $cors
-	 * @return Router
-	 */
-	private static function createRouter(
-		IContextSource $context, RequestInterface $request, ResponseFactory $responseFactory, CorsUtils $cors
-	): Router {
-		$services = MediaWikiServices::getInstance();
-		$conf = $services->getMainConfig();
+    /**
+     * @param IContextSource $context
+     * @param RequestInterface $request
+     * @param ResponseFactory $responseFactory
+     * @param CorsUtils $cors
+     * @return Router
+     */
+    private static function createRouter(
+        IContextSource $context, RequestInterface $request, ResponseFactory $responseFactory, CorsUtils $cors
+    ): Router
+    {
+        $services = MediaWikiServices::getInstance();
+        $conf = $services->getMainConfig();
 
-		$authority = $context->getAuthority();
-		$authorizer = new CompoundAuthorizer();
-		$authorizer
-			->addAuthorizer( new MWBasicAuthorizer( $authority ) )
-			->addAuthorizer( $cors );
+        $authority = $context->getAuthority();
+        $authorizer = new CompoundAuthorizer();
+        $authorizer
+            ->addAuthorizer(new MWBasicAuthorizer($authority))
+            ->addAuthorizer($cors);
 
-		$objectFactory = $services->getObjectFactory();
-		$restValidator = new Validator( $objectFactory,
-			$request,
-			$authority
-		);
+        $objectFactory = $services->getObjectFactory();
+        $restValidator = new Validator($objectFactory,
+            $request,
+            $authority
+        );
 
-		// Always include the "official" routes. Include additional routes if specified.
-		$routeFiles = array_merge(
-			[ 'includes/Rest/coreRoutes.json' ],
-			$conf->get( MainConfigNames::RestAPIAdditionalRouteFiles )
-		);
-		array_walk( $routeFiles, static function ( &$val, $key ) {
-			global $IP;
-			$val = "$IP/$val";
-		} );
+        // Always include the "official" routes. Include additional routes if specified.
+        $routeFiles = array_merge(
+            ['includes/Rest/coreRoutes.json'],
+            $conf->get(MainConfigNames::RestAPIAdditionalRouteFiles)
+        );
+        array_walk($routeFiles, static function (&$val, $key) {
+            global $IP;
+            $val = "$IP/$val";
+        });
 
-		return ( new Router(
-			$routeFiles,
-			ExtensionRegistry::getInstance()->getAttribute( 'RestRoutes' ),
-			new ServiceOptions( Router::CONSTRUCTOR_OPTIONS, $conf ),
-			$services->getLocalServerObjectCache(),
-			$responseFactory,
-			$authorizer,
-			$authority,
-			$objectFactory,
-			$restValidator,
-			new MWErrorReporter(),
-			$services->getHookContainer(),
-			$context->getRequest()->getSession()
-		) )->setCors( $cors );
-	}
+        return (new Router(
+            $routeFiles,
+            ExtensionRegistry::getInstance()->getAttribute('RestRoutes'),
+            new ServiceOptions(Router::CONSTRUCTOR_OPTIONS, $conf),
+            $services->getLocalServerObjectCache(),
+            $responseFactory,
+            $authorizer,
+            $authority,
+            $objectFactory,
+            $restValidator,
+            new MWErrorReporter(),
+            $services->getHookContainer(),
+            $context->getRequest()->getSession()
+        ))->setCors($cors);
+    }
 
-	/**
-	 * @return RequestInterface The RequestInterface object used by this entry point.
-	 */
-	public static function getMainRequest(): RequestInterface {
-		if ( self::$mainRequest === null ) {
-			$conf = MediaWikiServices::getInstance()->getMainConfig();
-			self::$mainRequest = new RequestFromGlobals( [
-				'cookiePrefix' => $conf->get( MainConfigNames::CookiePrefix )
-			] );
-		}
-		return self::$mainRequest;
-	}
+    /**
+     * @return RequestInterface The RequestInterface object used by this entry point.
+     */
+    public static function getMainRequest(): RequestInterface
+    {
+        if (self::$mainRequest === null) {
+            $conf = MediaWikiServices::getInstance()->getMainConfig();
+            self::$mainRequest = new RequestFromGlobals([
+                'cookiePrefix' => $conf->get(MainConfigNames::CookiePrefix)
+            ]);
+        }
 
-	public static function main() {
-		// URL safety checks
-		global $wgRequest;
+        return self::$mainRequest;
+    }
 
-		$context = RequestContext::getMain();
+    public static function main()
+    {
+        // URL safety checks
+        global $wgRequest;
 
-		// Set $wgTitle and the title in RequestContext, as in api.php
-		global $wgTitle;
-		$wgTitle = Title::makeTitle( NS_SPECIAL, 'Badtitle/rest.php' );
-		$context->setTitle( $wgTitle );
+        $context = RequestContext::getMain();
 
-		$services = MediaWikiServices::getInstance();
-		$conf = $services->getMainConfig();
+        // Set $wgTitle and the title in RequestContext, as in api.php
+        global $wgTitle;
+        $wgTitle = Title::makeTitle(NS_SPECIAL, 'Badtitle/rest.php');
+        $context->setTitle($wgTitle);
 
-		$responseFactory = new ResponseFactory( self::getTextFormatters( $services ) );
-		$responseFactory->setShowExceptionDetails( MWExceptionRenderer::shouldShowExceptionDetails() );
+        $services = MediaWikiServices::getInstance();
+        $conf = $services->getMainConfig();
 
-		$cors = new CorsUtils(
-			new ServiceOptions(
-				CorsUtils::CONSTRUCTOR_OPTIONS, $conf
-			),
-			$responseFactory,
-			$context->getUser()
-		);
+        $responseFactory = new ResponseFactory(self::getTextFormatters($services));
+        $responseFactory->setShowExceptionDetails(MWExceptionRenderer::shouldShowExceptionDetails());
 
-		$request = self::getMainRequest();
+        $cors = new CorsUtils(
+            new ServiceOptions(
+                CorsUtils::CONSTRUCTOR_OPTIONS, $conf
+            ),
+            $responseFactory,
+            $context->getUser()
+        );
 
-		$router = self::createRouter( $context, $request, $responseFactory, $cors );
+        $request = self::getMainRequest();
 
-		$entryPoint = new self(
-			$context,
-			$request,
-			$wgRequest->response(),
-			$router,
-			$cors
-		);
-		$entryPoint->execute();
-	}
+        $router = self::createRouter($context, $request, $responseFactory, $cors);
 
-	/**
-	 * Get a TextFormatter array from MediaWikiServices
-	 *
-	 * @param MediaWikiServices $services
-	 * @return ITextFormatter[]
-	 */
-	private static function getTextFormatters( MediaWikiServices $services ) {
-		$code = $services->getContentLanguage()->getCode();
-		$langs = array_unique( [ $code, 'en' ] );
-		$textFormatters = [];
-		$factory = $services->getMessageFormatterFactory();
+        $entryPoint = new self(
+            $context,
+            $request,
+            $wgRequest->response(),
+            $router,
+            $cors
+        );
+        $entryPoint->execute();
+    }
 
-		foreach ( $langs as $lang ) {
-			$textFormatters[] = $factory->getTextFormatter( $lang );
-		}
-		return $textFormatters;
-	}
+    /**
+     * Get a TextFormatter array from MediaWikiServices
+     *
+     * @param MediaWikiServices $services
+     * @return ITextFormatter[]
+     */
+    private static function getTextFormatters(MediaWikiServices $services)
+    {
+        $code = $services->getContentLanguage()->getCode();
+        $langs = array_unique([$code, 'en']);
+        $textFormatters = [];
+        $factory = $services->getMessageFormatterFactory();
 
-	public function __construct( RequestContext $context, RequestInterface $request,
-		WebResponse $webResponse, Router $router, CorsUtils $cors
-	) {
-		$this->context = $context;
-		$this->request = $request;
-		$this->webResponse = $webResponse;
-		$this->router = $router;
-		$this->cors = $cors;
-	}
+        foreach ($langs as $lang) {
+            $textFormatters[] = $factory->getTextFormatter($lang);
+        }
 
-	public function execute() {
-		ob_start();
-		$response = $this->cors->modifyResponse(
-			$this->request,
-			$this->router->execute( $this->request )
-		);
+        return $textFormatters;
+    }
 
-		$this->webResponse->header(
-			'HTTP/' . $response->getProtocolVersion() . ' ' .
-			$response->getStatusCode() . ' ' .
-			$response->getReasonPhrase() );
+    public function __construct(RequestContext $context, RequestInterface $request,
+                                WebResponse $webResponse, Router $router, CorsUtils $cors
+    )
+    {
+        $this->context = $context;
+        $this->request = $request;
+        $this->webResponse = $webResponse;
+        $this->router = $router;
+        $this->cors = $cors;
+    }
 
-		foreach ( $response->getRawHeaderLines() as $line ) {
-			$this->webResponse->header( $line );
-		}
+    public function execute()
+    {
+        ob_start();
+        $response = $this->cors->modifyResponse(
+            $this->request,
+            $this->router->execute($this->request)
+        );
 
-		foreach ( $response->getCookies() as $cookie ) {
-			$this->webResponse->setCookie(
-				$cookie['name'],
-				$cookie['value'],
-				$cookie['expiry'],
-				$cookie['options'] );
-		}
+        $this->webResponse->header(
+            'HTTP/' . $response->getProtocolVersion() . ' ' .
+            $response->getStatusCode() . ' ' .
+            $response->getReasonPhrase());
 
-		// Clear all errors that might have been displayed if display_errors=On
-		ob_end_clean();
+        foreach ($response->getRawHeaderLines() as $line) {
+            $this->webResponse->header($line);
+        }
 
-		$stream = $response->getBody();
-		$stream->rewind();
+        foreach ($response->getCookies() as $cookie) {
+            $this->webResponse->setCookie(
+                $cookie['name'],
+                $cookie['value'],
+                $cookie['expiry'],
+                $cookie['options']);
+        }
 
-		MediaWiki::preOutputCommit( $this->context );
+        // Clear all errors that might have been displayed if display_errors=On
+        ob_end_clean();
 
-		if ( $stream instanceof CopyableStreamInterface ) {
-			$stream->copyToStream( fopen( 'php://output', 'w' ) );
-		} else {
-			while ( true ) {
-				$buffer = $stream->read( 65536 );
-				if ( $buffer === '' ) {
-					break;
-				}
-				echo $buffer;
-			}
-		}
+        $stream = $response->getBody();
+        $stream->rewind();
 
-		$mw = new MediaWiki;
-		$mw->doPostOutputShutdown();
-	}
+        MediaWiki::preOutputCommit($this->context);
+
+        if ($stream instanceof CopyableStreamInterface) {
+            $stream->copyToStream(fopen('php://output', 'w'));
+        } else {
+            while (true) {
+                $buffer = $stream->read(65536);
+                if ($buffer === '') {
+                    break;
+                }
+                echo $buffer;
+            }
+        }
+
+        $mw = new MediaWiki;
+        $mw->doPostOutputShutdown();
+    }
 }

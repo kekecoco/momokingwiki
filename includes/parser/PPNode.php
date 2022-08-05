@@ -32,81 +32,82 @@
  *     * The PPNode::split*() functions, which provide metadata about certain types of tree node
  * @ingroup Parser
  */
-interface PPNode {
-	/**
-	 * Get an array-type node containing the children of this node.
-	 * Returns false if this is not a tree node.
-	 * @return false|PPNode
-	 */
-	public function getChildren();
+interface PPNode
+{
+    /**
+     * Get an array-type node containing the children of this node.
+     * Returns false if this is not a tree node.
+     * @return false|PPNode
+     */
+    public function getChildren();
 
-	/**
-	 * Get the first child of a tree node. False if there isn't one.
-	 *
-	 * @return false|PPNode
-	 */
-	public function getFirstChild();
+    /**
+     * Get the first child of a tree node. False if there isn't one.
+     *
+     * @return false|PPNode
+     */
+    public function getFirstChild();
 
-	/**
-	 * Get the next sibling of any node. False if there isn't one
-	 * @return false|PPNode
-	 */
-	public function getNextSibling();
+    /**
+     * Get the next sibling of any node. False if there isn't one
+     * @return false|PPNode
+     */
+    public function getNextSibling();
 
-	/**
-	 * Get all children of this tree node which have a given name.
-	 * Returns an array-type node, or false if this is not a tree node.
-	 * @param string $type
-	 * @return false|PPNode
-	 */
-	public function getChildrenOfType( $type );
+    /**
+     * Get all children of this tree node which have a given name.
+     * Returns an array-type node, or false if this is not a tree node.
+     * @param string $type
+     * @return false|PPNode
+     */
+    public function getChildrenOfType($type);
 
-	/**
-	 * Returns the length of the array, or false if this is not an array-type node
-	 */
-	public function getLength();
+    /**
+     * Returns the length of the array, or false if this is not an array-type node
+     */
+    public function getLength();
 
-	/**
-	 * Returns an item of an array-type node
-	 * @param int $i
-	 * @return bool|PPNode
-	 */
-	public function item( $i );
+    /**
+     * Returns an item of an array-type node
+     * @param int $i
+     * @return bool|PPNode
+     */
+    public function item($i);
 
-	/**
-	 * Get the name of this node. The following names are defined here:
-	 *
-	 *    h             A heading node.
-	 *    template      A double-brace node.
-	 *    tplarg        A triple-brace node.
-	 *    title         The first argument to a template or tplarg node.
-	 *    part          Subsequent arguments to a template or tplarg node.
-	 *    #nodelist     An array-type node
-	 *
-	 * The subclass may define various other names for tree and leaf nodes.
-	 * @return string
-	 */
-	public function getName();
+    /**
+     * Get the name of this node. The following names are defined here:
+     *
+     *    h             A heading node.
+     *    template      A double-brace node.
+     *    tplarg        A triple-brace node.
+     *    title         The first argument to a template or tplarg node.
+     *    part          Subsequent arguments to a template or tplarg node.
+     *    #nodelist     An array-type node
+     *
+     * The subclass may define various other names for tree and leaf nodes.
+     * @return string
+     */
+    public function getName();
 
-	/**
-	 * Split a "<part>" node into an associative array containing:
-	 *    name          PPNode name
-	 *    index         String index
-	 *    value         PPNode value
-	 * @return array
-	 */
-	public function splitArg();
+    /**
+     * Split a "<part>" node into an associative array containing:
+     *    name          PPNode name
+     *    index         String index
+     *    value         PPNode value
+     * @return array
+     */
+    public function splitArg();
 
-	/**
-	 * Split an "<ext>" node into an associative array containing name, attr, inner and close
-	 * All values in the resulting array are PPNodes. Inner and close are optional.
-	 * @return array
-	 */
-	public function splitExt();
+    /**
+     * Split an "<ext>" node into an associative array containing name, attr, inner and close
+     * All values in the resulting array are PPNodes. Inner and close are optional.
+     * @return array
+     */
+    public function splitExt();
 
-	/**
-	 * Split an "<h>" node
-	 * @return array
-	 */
-	public function splitHeading();
+    /**
+     * Split an "<h>" node
+     * @return array
+     */
+    public function splitHeading();
 }

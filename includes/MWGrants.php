@@ -26,133 +26,154 @@ use MediaWiki\MediaWikiServices;
  *
  * A collection of public static functions to deal with grants.
  */
-class MWGrants {
+class MWGrants
+{
 
-	/**
-	 * List all known grants.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::getValidGrants() instead
-	 * @return array
-	 */
-	public static function getValidGrants() {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->getValidGrants();
-	}
+    /**
+     * List all known grants.
+     * @return array
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::getValidGrants() instead
+     */
+    public static function getValidGrants()
+    {
+        wfDeprecated(__METHOD__, '1.38');
 
-	/**
-	 * Map all grants to corresponding user rights.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::getRightsByGrant() instead
-	 * @return array grant => array of rights
-	 */
-	public static function getRightsByGrant() {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->getRightsByGrant();
-	}
+        return MediaWikiServices::getInstance()->getGrantsInfo()->getValidGrants();
+    }
 
-	/**
-	 * Fetch the description of the grant
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsLocalization::getGrantDescription() instead
-	 * @param string $grant
-	 * @param Language|string|null $lang
-	 * @return string Grant description
-	 */
-	public static function grantName( $grant, $lang = null ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantDescription( $grant, $lang );
-	}
+    /**
+     * Map all grants to corresponding user rights.
+     * @return array grant => array of rights
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::getRightsByGrant() instead
+     */
+    public static function getRightsByGrant()
+    {
+        wfDeprecated(__METHOD__, '1.38');
 
-	/**
-	 * Fetch the descriptions for the grants.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsLocalization::getGrantDescriptions() instead
-	 * @param string[] $grants
-	 * @param Language|string|null $lang
-	 * @return string[] Corresponding grant descriptions
-	 */
-	public static function grantNames( array $grants, $lang = null ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantDescriptions( $grants, $lang );
-	}
+        return MediaWikiServices::getInstance()->getGrantsInfo()->getRightsByGrant();
+    }
 
-	/**
-	 * Fetch the rights allowed by a set of grants.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::getGrantRights() instead
-	 * @param string[]|string $grants
-	 * @return string[]
-	 */
-	public static function getGrantRights( $grants ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->getGrantRights( $grants );
-	}
+    /**
+     * Fetch the description of the grant
+     * @param string $grant
+     * @param Language|string|null $lang
+     * @return string Grant description
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsLocalization::getGrantDescription() instead
+     */
+    public static function grantName($grant, $lang = null)
+    {
+        wfDeprecated(__METHOD__, '1.38');
 
-	/**
-	 * Test that all grants in the list are known.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::grantsAreValid() instead
-	 * @param string[] $grants
-	 * @return bool
-	 */
-	public static function grantsAreValid( array $grants ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->grantsAreValid( $grants );
-	}
+        return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantDescription($grant, $lang);
+    }
 
-	/**
-	 * Divide the grants into groups.
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::getGrantGroups() instead
-	 * @param string[]|null $grantsFilter
-	 * @return array Map of (group => (grant list))
-	 */
-	public static function getGrantGroups( $grantsFilter = null ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->getGrantGroups( $grantsFilter );
-	}
+    /**
+     * Fetch the descriptions for the grants.
+     * @param string[] $grants
+     * @param Language|string|null $lang
+     * @return string[] Corresponding grant descriptions
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsLocalization::getGrantDescriptions() instead
+     */
+    public static function grantNames(array $grants, $lang = null)
+    {
+        wfDeprecated(__METHOD__, '1.38');
 
-	/**
-	 * Get the list of grants that are hidden and should always be granted
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsInfo::getHiddenGrants() instead
-	 * @return string[]
-	 */
-	public static function getHiddenGrants() {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsInfo()->getHiddenGrants();
-	}
+        return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantDescriptions($grants, $lang);
+    }
 
-	/**
-	 * Generate a link to Special:ListGrants for a particular grant name.
-	 *
-	 * This should be used to link end users to a full description of what
-	 * rights they are giving when they authorize a grant.
-	 *
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsLocalization::getGrantsLink() instead
-	 *
-	 * @param string $grant the grant name
-	 * @param Language|string|null $lang
-	 * @return string (proto-relative) HTML link
-	 */
-	public static function getGrantsLink( $grant, $lang = null ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantsLink( $grant, $lang );
-	}
+    /**
+     * Fetch the rights allowed by a set of grants.
+     * @param string[]|string $grants
+     * @return string[]
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::getGrantRights() instead
+     */
+    public static function getGrantRights($grants)
+    {
+        wfDeprecated(__METHOD__, '1.38');
 
-	/**
-	 * Generate wikitext to display a list of grants
-	 * @deprecated since 1.38, hard deprecated since 1.39
-	 * Use GrantsLocalization::getGrantsWikiText() instead
-	 *
-	 * @param string[]|null $grantsFilter If non-null, only display these grants.
-	 * @param Language|string|null $lang
-	 * @return string Wikitext
-	 */
-	public static function getGrantsWikiText( $grantsFilter, $lang = null ) {
-		wfDeprecated( __METHOD__, '1.38' );
-		return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantsWikiText( $grantsFilter, $lang );
-	}
+        return MediaWikiServices::getInstance()->getGrantsInfo()->getGrantRights($grants);
+    }
+
+    /**
+     * Test that all grants in the list are known.
+     * @param string[] $grants
+     * @return bool
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::grantsAreValid() instead
+     */
+    public static function grantsAreValid(array $grants)
+    {
+        wfDeprecated(__METHOD__, '1.38');
+
+        return MediaWikiServices::getInstance()->getGrantsInfo()->grantsAreValid($grants);
+    }
+
+    /**
+     * Divide the grants into groups.
+     * @param string[]|null $grantsFilter
+     * @return array Map of (group => (grant list))
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::getGrantGroups() instead
+     */
+    public static function getGrantGroups($grantsFilter = null)
+    {
+        wfDeprecated(__METHOD__, '1.38');
+
+        return MediaWikiServices::getInstance()->getGrantsInfo()->getGrantGroups($grantsFilter);
+    }
+
+    /**
+     * Get the list of grants that are hidden and should always be granted
+     * @return string[]
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsInfo::getHiddenGrants() instead
+     */
+    public static function getHiddenGrants()
+    {
+        wfDeprecated(__METHOD__, '1.38');
+
+        return MediaWikiServices::getInstance()->getGrantsInfo()->getHiddenGrants();
+    }
+
+    /**
+     * Generate a link to Special:ListGrants for a particular grant name.
+     *
+     * This should be used to link end users to a full description of what
+     * rights they are giving when they authorize a grant.
+     *
+     * @param string $grant the grant name
+     * @param Language|string|null $lang
+     * @return string (proto-relative) HTML link
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsLocalization::getGrantsLink() instead
+     *
+     */
+    public static function getGrantsLink($grant, $lang = null)
+    {
+        wfDeprecated(__METHOD__, '1.38');
+
+        return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantsLink($grant, $lang);
+    }
+
+    /**
+     * Generate wikitext to display a list of grants
+     * @param string[]|null $grantsFilter If non-null, only display these grants.
+     * @param Language|string|null $lang
+     * @return string Wikitext
+     * @deprecated since 1.38, hard deprecated since 1.39
+     * Use GrantsLocalization::getGrantsWikiText() instead
+     *
+     */
+    public static function getGrantsWikiText($grantsFilter, $lang = null)
+    {
+        wfDeprecated(__METHOD__, '1.38');
+
+        return MediaWikiServices::getInstance()->getGrantsLocalization()->getGrantsWikiText($grantsFilter, $lang);
+    }
 
 }

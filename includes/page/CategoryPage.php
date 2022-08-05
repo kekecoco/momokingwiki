@@ -25,91 +25,97 @@
  *
  * @method WikiCategoryPage getPage() Set by overwritten newPage() in this class
  */
-class CategoryPage extends Article {
-	/** @var string Subclasses can change this to override the viewer class. */
-	protected $mCategoryViewerClass = CategoryViewer::class;
+class CategoryPage extends Article
+{
+    /** @var string Subclasses can change this to override the viewer class. */
+    protected $mCategoryViewerClass = CategoryViewer::class;
 
-	/**
-	 * @param Title $title
-	 * @return WikiCategoryPage
-	 */
-	protected function newPage( Title $title ) {
-		// Overload mPage with a category-specific page
-		return new WikiCategoryPage( $title );
-	}
+    /**
+     * @param Title $title
+     * @return WikiCategoryPage
+     */
+    protected function newPage(Title $title)
+    {
+        // Overload mPage with a category-specific page
+        return new WikiCategoryPage($title);
+    }
 
-	public function view() {
-		$request = $this->getContext()->getRequest();
-		$diff = $request->getVal( 'diff' );
-		$diffOnly = $request->getBool( 'diffonly',
-			$this->getContext()->getUser()->getOption( 'diffonly' ) );
+    public function view()
+    {
+        $request = $this->getContext()->getRequest();
+        $diff = $request->getVal('diff');
+        $diffOnly = $request->getBool('diffonly',
+            $this->getContext()->getUser()->getOption('diffonly'));
 
-		if ( $diff !== null && $diffOnly ) {
-			parent::view();
-			return;
-		}
+        if ($diff !== null && $diffOnly) {
+            parent::view();
 
-		if ( !$this->getHookRunner()->onCategoryPageView( $this ) ) {
-			return;
-		}
+            return;
+        }
 
-		$title = $this->getTitle();
-		if ( $title->inNamespace( NS_CATEGORY ) ) {
-			$this->openShowCategory();
-		}
+        if (!$this->getHookRunner()->onCategoryPageView($this)) {
+            return;
+        }
 
-		parent::view();
+        $title = $this->getTitle();
+        if ($title->inNamespace(NS_CATEGORY)) {
+            $this->openShowCategory();
+        }
 
-		if ( $title->inNamespace( NS_CATEGORY ) ) {
-			$this->closeShowCategory();
-		}
+        parent::view();
 
-		# Use adaptive TTLs for CDN so delayed/failed purges are noticed less often
-		$outputPage = $this->getContext()->getOutput();
-		$outputPage->adaptCdnTTL(
-			$this->getPage()->getTouched(),
-			IExpiringStore::TTL_MINUTE
-		);
-	}
+        if ($title->inNamespace(NS_CATEGORY)) {
+            $this->closeShowCategory();
+        }
 
-	public function openShowCategory() {
-		# For overloading
-	}
+        # Use adaptive TTLs for CDN so delayed/failed purges are noticed less often
+        $outputPage = $this->getContext()->getOutput();
+        $outputPage->adaptCdnTTL(
+            $this->getPage()->getTouched(),
+            IExpiringStore::TTL_MINUTE
+        );
+    }
 
-	public function closeShowCategory() {
-		// Use these as defaults for back compat --catrope
-		$request = $this->getContext()->getRequest();
-		$oldFrom = $request->getVal( 'from' );
-		$oldUntil = $request->getVal( 'until' );
+    public function openShowCategory()
+    {
+        # For overloading
+    }
 
-		$reqArray = $request->getValues();
+    public function closeShowCategory()
+    {
+        // Use these as defaults for back compat --catrope
+        $request = $this->getContext()->getRequest();
+        $oldFrom = $request->getVal('from');
+        $oldUntil = $request->getVal('until');
 
-		$from = $until = [];
-		foreach ( [ 'page', 'subcat', 'file' ] as $type ) {
-			$from[$type] = $request->getVal( "{$type}from", $oldFrom );
-			$until[$type] = $request->getVal( "{$type}until", $oldUntil );
+        $reqArray = $request->getValues();
 
-			// Do not want old-style from/until propagating in nav links.
-			if ( !isset( $reqArray["{$type}from"] ) && isset( $reqArray["from"] ) ) {
-				$reqArray["{$type}from"] = $reqArray["from"];
-			}
-			if ( !isset( $reqArray["{$type}to"] ) && isset( $reqArray["to"] ) ) {
-				$reqArray["{$type}to"] = $reqArray["to"];
-			}
-		}
+        $from = $until = [];
+        foreach (['page', 'subcat', 'file'] as $type) {
+            $from[$type] = $request->getVal("{$type}from", $oldFrom);
+            $until[$type] = $request->getVal("{$type}until", $oldUntil);
 
-		unset( $reqArray["from"] );
-		unset( $reqArray["to"] );
+            // Do not want old-style from/until propagating in nav links.
+            if (!isset($reqArray["{$type}from"]) && isset($reqArray["from"])) {
+                $reqArray["{$type}from"] = $reqArray["from"];
+            }
+            if (!isset($reqArray["{$type}to"]) && isset($reqArray["to"])) {
+                $reqArray["{$type}to"] = $reqArray["to"];
+            }
+        }
 
-		$viewer = new $this->mCategoryViewerClass(
-			$this->getPage(),
-			$this->getContext(),
-			$from,
-			$until,
-			$reqArray
-		);
-		$out = $this->getContext()->getOutput();
-		$out->addHTML( $viewer->getHTML() );
-		$this->addHelpLink( 'Help:Categories' );
-	}
+        unset($reqArray["from"]);
+        unset($reqArray["to"]);
+
+        $viewer = new $this->mCategoryViewerClass(
+            $this->getPage(),
+            $this->getContext(),
+            $from,
+            $until,
+            $reqArray
+        );
+        $out = $this->getContext()->getOutput();
+        $out->addHTML($viewer->getHTML());
+        $this->addHelpLink('Help:Categories');
+    }
 }

@@ -14,48 +14,54 @@ use ArrayUtils;
  *
  * @since 1.39
  */
-class FilteredRadixSerialMapping implements SerialMapping {
-	/** @var int */
-	private $radix;
+class FilteredRadixSerialMapping implements SerialMapping
+{
+    /** @var int */
+    private $radix;
 
-	/** @var int[] */
-	private $badIndexes;
+    /** @var int[] */
+    private $badIndexes;
 
-	/** @var bool */
-	private $uppercase;
+    /** @var bool */
+    private $uppercase;
 
-	/**
-	 * @param array $config See MainConfigSchema::AutoCreateTempUser
-	 */
-	public function __construct( $config ) {
-		$this->radix = $config['radix'] ?? 10;
-		$this->badIndexes = $config['badIndexes'] ?? [];
-		$this->uppercase = $config['uppercase'] ?? false;
-	}
+    /**
+     * @param array $config See MainConfigSchema::AutoCreateTempUser
+     */
+    public function __construct($config)
+    {
+        $this->radix = $config['radix'] ?? 10;
+        $this->badIndexes = $config['badIndexes'] ?? [];
+        $this->uppercase = $config['uppercase'] ?? false;
+    }
 
-	public function getSerialIdForIndex( int $index ): string {
-		$index = $this->adjustID( $index );
-		return \Wikimedia\base_convert( (string)$index, 10, $this->radix, 1, !$this->uppercase );
-	}
+    public function getSerialIdForIndex(int $index): string
+    {
+        $index = $this->adjustID($index);
 
-	/**
-	 * Add the number of "bad" IDs less than or equal to the given ID to the
-	 * given ID, thus mapping the set of all integers to the "good" set.
-	 *
-	 * @param int $id
-	 * @return int
-	 */
-	private function adjustID( int $id ): int {
-		$pos = ArrayUtils::findLowerBound(
-			function ( $i ) {
-				return $this->badIndexes[$i];
-			},
-			count( $this->badIndexes ),
-			static function ( $a, $b ) {
-				return $a <=> $b;
-			},
-			$id
-		);
-		return $pos === false ? $id : $id + $pos + 1;
-	}
+        return \Wikimedia\base_convert((string)$index, 10, $this->radix, 1, !$this->uppercase);
+    }
+
+    /**
+     * Add the number of "bad" IDs less than or equal to the given ID to the
+     * given ID, thus mapping the set of all integers to the "good" set.
+     *
+     * @param int $id
+     * @return int
+     */
+    private function adjustID(int $id): int
+    {
+        $pos = ArrayUtils::findLowerBound(
+            function ($i) {
+                return $this->badIndexes[$i];
+            },
+            count($this->badIndexes),
+            static function ($a, $b) {
+                return $a <=> $b;
+            },
+            $id
+        );
+
+        return $pos === false ? $id : $id + $pos + 1;
+    }
 }

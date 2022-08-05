@@ -31,5 +31,6 @@ namespace Wikimedia\Metrics\Exceptions;
 
 use InvalidArgumentException;
 
-class UnsupportedFormatException extends InvalidArgumentException {
+class UnsupportedFormatException extends InvalidArgumentException
+{
 }

@@ -9,16 +9,17 @@ namespace MediaWiki\Hook;
  * @ingroup Hooks
  * @deprecated No longer invoked by MW 1.36+
  */
-interface ParserTestTablesHook {
-	/**
-	 * Use this hook to alter the list of tables to duplicate when parser tests are
-	 * run. Use when page save hooks require the presence of custom tables to ensure
-	 * that tests continue to run properly.
-	 *
-	 * @since 1.35
-	 *
-	 * @param string[] &$tables Array of table names
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onParserTestTables( &$tables );
+interface ParserTestTablesHook
+{
+    /**
+     * Use this hook to alter the list of tables to duplicate when parser tests are
+     * run. Use when page save hooks require the presence of custom tables to ensure
+     * that tests continue to run properly.
+     *
+     * @param string[] &$tables Array of table names
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onParserTestTables(&$tables);
 }

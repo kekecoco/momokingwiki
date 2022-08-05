@@ -26,6 +26,7 @@
  * @ingroup JobQueue
  * @since 1.22
  */
-class JobQueueReadOnlyError extends JobQueueError {
+class JobQueueReadOnlyError extends JobQueueError
+{
 
 }

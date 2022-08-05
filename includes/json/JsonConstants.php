@@ -26,10 +26,11 @@ namespace MediaWiki\Json;
  * @internal
  * @package MediaWiki\Json
  */
-interface JsonConstants {
+interface JsonConstants
+{
 
-	/**
-	 * Name of the property where the class information is stored.
-	 */
-	public const TYPE_ANNOTATION = '_type_';
+    /**
+     * Name of the property where the class information is stored.
+     */
+    public const TYPE_ANNOTATION = '_type_';
 }

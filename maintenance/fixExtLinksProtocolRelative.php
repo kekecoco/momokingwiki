@@ -33,71 +33,76 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class FixExtLinksProtocolRelative extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Fixes any entries in the externallinks table containing protocol-relative URLs' );
-	}
+class FixExtLinksProtocolRelative extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Fixes any entries in the externallinks table containing protocol-relative URLs');
+    }
 
-	protected function getUpdateKey() {
-		return 'fix protocol-relative URLs in externallinks';
-	}
+    protected function getUpdateKey()
+    {
+        return 'fix protocol-relative URLs in externallinks';
+    }
 
-	protected function updateSkippedMessage() {
-		return 'protocol-relative URLs in externallinks table already fixed.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'protocol-relative URLs in externallinks table already fixed.';
+    }
 
-	protected function doDBUpdates() {
-		$db = $this->getDB( DB_PRIMARY );
-		if ( !$db->tableExists( 'externallinks', __METHOD__ ) ) {
-			$this->error( "externallinks table does not exist" );
+    protected function doDBUpdates()
+    {
+        $db = $this->getDB(DB_PRIMARY);
+        if (!$db->tableExists('externallinks', __METHOD__)) {
+            $this->error("externallinks table does not exist");
 
-			return false;
-		}
-		$this->output( "Fixing protocol-relative entries in the externallinks table...\n" );
-		$res = $db->select( 'externallinks', [ 'el_from', 'el_to', 'el_index' ],
-			[ 'el_index' . $db->buildLike( '//', $db->anyString() ) ],
-			__METHOD__
-		);
-		$count = 0;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		foreach ( $res as $row ) {
-			$count++;
-			if ( $count % 100 == 0 ) {
-				$this->output( $count . "\n" );
-				$lbFactory->waitForReplication();
-			}
-			$db->insert( 'externallinks',
-				[
-					[
-						'el_from' => $row->el_from,
-						'el_to' => $row->el_to,
-						'el_index' => "http:{$row->el_index}",
-						'el_index_60' => substr( "http:{$row->el_index}", 0, 60 ),
-					],
-					[
-						'el_from' => $row->el_from,
-						'el_to' => $row->el_to,
-						'el_index' => "https:{$row->el_index}",
-						'el_index_60' => substr( "https:{$row->el_index}", 0, 60 ),
-					]
-				], __METHOD__, [ 'IGNORE' ]
-			);
-			$db->delete(
-				'externallinks',
-				[
-					'el_index' => $row->el_index,
-					'el_from' => $row->el_from,
-					'el_to' => $row->el_to
-				],
-				__METHOD__
-			);
-		}
-		$this->output( "Done, $count rows updated.\n" );
+            return false;
+        }
+        $this->output("Fixing protocol-relative entries in the externallinks table...\n");
+        $res = $db->select('externallinks', ['el_from', 'el_to', 'el_index'],
+            ['el_index' . $db->buildLike('//', $db->anyString())],
+            __METHOD__
+        );
+        $count = 0;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        foreach ($res as $row) {
+            $count++;
+            if ($count % 100 == 0) {
+                $this->output($count . "\n");
+                $lbFactory->waitForReplication();
+            }
+            $db->insert('externallinks',
+                [
+                    [
+                        'el_from'     => $row->el_from,
+                        'el_to'       => $row->el_to,
+                        'el_index'    => "http:{$row->el_index}",
+                        'el_index_60' => substr("http:{$row->el_index}", 0, 60),
+                    ],
+                    [
+                        'el_from'     => $row->el_from,
+                        'el_to'       => $row->el_to,
+                        'el_index'    => "https:{$row->el_index}",
+                        'el_index_60' => substr("https:{$row->el_index}", 0, 60),
+                    ]
+                ], __METHOD__, ['IGNORE']
+            );
+            $db->delete(
+                'externallinks',
+                [
+                    'el_index' => $row->el_index,
+                    'el_from'  => $row->el_from,
+                    'el_to'    => $row->el_to
+                ],
+                __METHOD__
+            );
+        }
+        $this->output("Done, $count rows updated.\n");
 
-		return true;
-	}
+        return true;
+    }
 }
 
 $maintClass = FixExtLinksProtocolRelative::class;

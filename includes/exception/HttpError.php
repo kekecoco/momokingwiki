@@ -29,111 +29,118 @@ use MediaWiki\Logger\LoggerFactory;
  * @since 1.19
  * @ingroup Exception
  */
-class HttpError extends MWException {
-	/** @var int */
-	private $httpCode;
-	/** @var string|Message|null */
-	private $header;
-	/** @var string|Message */
-	private $content;
+class HttpError extends MWException
+{
+    /** @var int */
+    private $httpCode;
+    /** @var string|Message|null */
+    private $header;
+    /** @var string|Message */
+    private $content;
 
-	/**
-	 * @stable to call
-	 * @param int $httpCode HTTP status code to send to the client
-	 * @param string|Message $content Content of the message
-	 * @param string|Message|null $header Content of the header (\<title\> and \<h1\>)
-	 * @param-taint $content tainted
-	 * @param-taint $header tainted
-	 */
-	public function __construct( $httpCode, $content, $header = null ) {
-		parent::__construct( $content );
-		$this->httpCode = (int)$httpCode;
-		$this->header = $header;
-		$this->content = $content;
-	}
+    /**
+     * @stable to call
+     * @param int $httpCode HTTP status code to send to the client
+     * @param string|Message $content Content of the message
+     * @param string|Message|null $header Content of the header (\<title\> and \<h1\>)
+     * @param-taint $content tainted
+     * @param-taint $header tainted
+     */
+    public function __construct($httpCode, $content, $header = null)
+    {
+        parent::__construct($content);
+        $this->httpCode = (int)$httpCode;
+        $this->header = $header;
+        $this->content = $content;
+    }
 
-	/**
-	 * We don't want the default exception logging as we got our own logging set
-	 * up in self::report.
-	 *
-	 * @see MWException::isLoggable
-	 *
-	 * @since 1.24
-	 * @return bool
-	 */
-	public function isLoggable() {
-		return false;
-	}
+    /**
+     * We don't want the default exception logging as we got our own logging set
+     * up in self::report.
+     *
+     * @return bool
+     * @since 1.24
+     * @see MWException::isLoggable
+     *
+     */
+    public function isLoggable()
+    {
+        return false;
+    }
 
-	/**
-	 * Returns the HTTP status code supplied to the constructor.
-	 *
-	 * @return int
-	 */
-	public function getStatusCode() {
-		return $this->httpCode;
-	}
+    /**
+     * Returns the HTTP status code supplied to the constructor.
+     *
+     * @return int
+     */
+    public function getStatusCode()
+    {
+        return $this->httpCode;
+    }
 
-	/**
-	 * Report and log the HTTP error.
-	 * Sends the appropriate HTTP status code and outputs an
-	 * HTML page with an error message.
-	 */
-	public function report() {
-		$this->doLog();
+    /**
+     * Report and log the HTTP error.
+     * Sends the appropriate HTTP status code and outputs an
+     * HTML page with an error message.
+     */
+    public function report()
+    {
+        $this->doLog();
 
-		HttpStatus::header( $this->httpCode );
-		header( 'Content-type: text/html; charset=utf-8' );
+        HttpStatus::header($this->httpCode);
+        header('Content-type: text/html; charset=utf-8');
 
-		print $this->getHTML();
-	}
+        print $this->getHTML();
+    }
 
-	private function doLog() {
-		$logger = LoggerFactory::getInstance( 'HttpError' );
-		$content = $this->content;
+    private function doLog()
+    {
+        $logger = LoggerFactory::getInstance('HttpError');
+        $content = $this->content;
 
-		if ( $content instanceof Message ) {
-			$content = $content->text();
-		}
+        if ($content instanceof Message) {
+            $content = $content->text();
+        }
 
-		$context = [
-			'file' => $this->getFile(),
-			'line' => $this->getLine(),
-			'http_code' => $this->httpCode,
-		];
+        $context = [
+            'file'      => $this->getFile(),
+            'line'      => $this->getLine(),
+            'http_code' => $this->httpCode,
+        ];
 
-		$logMsg = "$content ({http_code}) from {file}:{line}";
+        $logMsg = "$content ({http_code}) from {file}:{line}";
 
-		if ( $this->getStatusCode() < 500 ) {
-			$logger->info( $logMsg, $context );
-		} else {
-			$logger->error( $logMsg, $context );
-		}
-	}
+        if ($this->getStatusCode() < 500) {
+            $logger->info($logMsg, $context);
+        } else {
+            $logger->error($logMsg, $context);
+        }
+    }
 
-	/**
-	 * Returns HTML for reporting the HTTP error.
-	 * This will be a minimal but complete HTML document.
-	 *
-	 * @return string HTML
-	 */
-	public function getHTML() {
-		if ( $this->header === null ) {
-			$titleHtml = htmlspecialchars( HttpStatus::getMessage( $this->httpCode ) );
-		} elseif ( $this->header instanceof Message ) {
-			$titleHtml = $this->header->escaped();
-		} else {
-			$titleHtml = htmlspecialchars( $this->header );
-		}
+    /**
+     * Returns HTML for reporting the HTTP error.
+     * This will be a minimal but complete HTML document.
+     *
+     * @return string HTML
+     */
+    public function getHTML()
+    {
+        if ($this->header === null) {
+            $titleHtml = htmlspecialchars(HttpStatus::getMessage($this->httpCode));
+        } elseif ($this->header instanceof Message) {
+            $titleHtml = $this->header->escaped();
+        } else {
+            $titleHtml = htmlspecialchars($this->header);
+        }
 
-		if ( $this->content instanceof Message ) {
-			$contentHtml = $this->content->escaped();
-		} else {
-			$contentHtml = nl2br( htmlspecialchars( $this->content ) );
-		}
+        if ($this->content instanceof Message) {
+            $contentHtml = $this->content->escaped();
+        } else {
+            $contentHtml = nl2br(htmlspecialchars($this->content));
+        }
 
-		return "<!DOCTYPE html>\n" .
-		"<html><head><title>$titleHtml</title></head>\n" .
-		"<body><h1>$titleHtml</h1><p>$contentHtml</p></body></html>\n";
-	}
+        return "<!DOCTYPE html>\n" .
+            "<html><head><title>$titleHtml</title></head>\n" .
+            "<body><h1>$titleHtml</h1><p>$contentHtml</p></body></html>\n";
+    }
 }

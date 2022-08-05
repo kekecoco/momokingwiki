@@ -16,53 +16,54 @@ use MediaWiki\MediaWikiServices;
  * @stable to implement
  * @ingroup Hooks
  */
-interface MediaWikiServicesHook {
-	/**
-	 * This hook is called when a global MediaWikiServices instance is initialized.
-	 * Extensions may use this to define, replace, or wrap services. However, the
-	 * preferred way to define a new service is the $wgServiceWiringFiles array.
-	 *
-	 * @warning Implementations must not immediately access services instances from the
-	 * service container $services, since the service container is not fully initialized
-	 * at the time when the hook is called. However, callbacks that are used as service
-	 * instantiators or service manipulators may access service instances.
-	 *
-	 * Example:
-	 * @code
-	 * function onMediaWikiServices( $services ) {
-	 *     // The service wiring and configuration in $services may be incomplete at this time,
-	 *     // do not access services yet!
-	 *     // At this point, we can only manipulate the wiring, not use it!
-	 *
-	 *     $services->defineService(
-	 *        'MyCoolService',
-	 *         function( MediaWikiServices $container ) {
-	 *             // It's ok to access services inside this callback, since the
-	 *             // service container will be fully initialized when it is called!
-	 *             return new MyCoolService( $container->getPageLookup() );
-	 *         }
-	 *     );
-	 *
-	 *     $services->addServiceManipulator(
-	 *         'SlotRoleRegistry',
-	 *         function ( SlotRoleRegistry $service, MediaWikiServices $container ) {
-	 *             // ...
-	 *         }
-	 *     );
-	 *
-	 *     $services->redefineService(
-	 *         'StatsdDataFactory',
-	 *         function ( MediaWikiServices $container ) {
-	 *             // ...
-	 *         }
-	 *     );
-	 * }
-	 * @endcode
-	 *
-	 * @since 1.35
-	 *
-	 * @param MediaWikiServices $services
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onMediaWikiServices( $services );
+interface MediaWikiServicesHook
+{
+    /**
+     * This hook is called when a global MediaWikiServices instance is initialized.
+     * Extensions may use this to define, replace, or wrap services. However, the
+     * preferred way to define a new service is the $wgServiceWiringFiles array.
+     *
+     * @warning Implementations must not immediately access services instances from the
+     * service container $services, since the service container is not fully initialized
+     * at the time when the hook is called. However, callbacks that are used as service
+     * instantiators or service manipulators may access service instances.
+     *
+     * Example:
+     * @code
+     * function onMediaWikiServices( $services ) {
+     *     // The service wiring and configuration in $services may be incomplete at this time,
+     *     // do not access services yet!
+     *     // At this point, we can only manipulate the wiring, not use it!
+     *
+     *     $services->defineService(
+     *        'MyCoolService',
+     *         function( MediaWikiServices $container ) {
+     *             // It's ok to access services inside this callback, since the
+     *             // service container will be fully initialized when it is called!
+     *             return new MyCoolService( $container->getPageLookup() );
+     *         }
+     *     );
+     *
+     *     $services->addServiceManipulator(
+     *         'SlotRoleRegistry',
+     *         function ( SlotRoleRegistry $service, MediaWikiServices $container ) {
+     *             // ...
+     *         }
+     *     );
+     *
+     *     $services->redefineService(
+     *         'StatsdDataFactory',
+     *         function ( MediaWikiServices $container ) {
+     *             // ...
+     *         }
+     *     );
+     * }
+     * @endcode
+     *
+     * @param MediaWikiServices $services
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onMediaWikiServices($services);
 }

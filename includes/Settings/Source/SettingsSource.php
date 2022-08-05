@@ -13,13 +13,14 @@ use Stringable;
  * @since 1.38
  * @stable to implement
  */
-interface SettingsSource extends Stringable {
-	/**
-	 * Loads and returns all settings from this source as an associative
-	 * array.
-	 *
-	 * @return array
-	 * @throws SettingsBuilderException
-	 */
-	public function load(): array;
+interface SettingsSource extends Stringable
+{
+    /**
+     * Loads and returns all settings from this source as an associative
+     * array.
+     *
+     * @return array
+     * @throws SettingsBuilderException
+     */
+    public function load(): array;
 }

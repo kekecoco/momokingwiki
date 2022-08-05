@@ -20,83 +20,83 @@
  * @cfg {boolean} [deletable=true] Whether the table should provide deletion UI tools
  * for this row or not. Defaults to true.
  */
-mw.widgets.RowWidget = function MwWidgetsRowWidget( config ) {
-	config = config || {};
+mw.widgets.RowWidget = function MwWidgetsRowWidget(config) {
+    config = config || {};
 
-	// Parent constructor
-	mw.widgets.RowWidget.super.call( this, config );
+    // Parent constructor
+    mw.widgets.RowWidget.super.call(this, config);
 
-	// Mixin constructor
-	OO.ui.mixin.GroupElement.call( this, config );
+    // Mixin constructor
+    OO.ui.mixin.GroupElement.call(this, config);
 
-	// Set up model
-	this.model = new mw.widgets.RowWidgetModel( config );
+    // Set up model
+    this.model = new mw.widgets.RowWidgetModel(config);
 
-	// Set up group element
-	this.setGroupElement(
-		$( '<div>' )
-			.addClass( 'mw-widgets-rowWidget-cells' )
-	);
+    // Set up group element
+    this.setGroupElement(
+        $('<div>')
+            .addClass('mw-widgets-rowWidget-cells')
+    );
 
-	// Set up label
-	this.labelCell = new OO.ui.LabelWidget( {
-		classes: [ 'mw-widgets-rowWidget-label' ]
-	} );
+    // Set up label
+    this.labelCell = new OO.ui.LabelWidget({
+        classes: ['mw-widgets-rowWidget-label']
+    });
 
-	// Set up delete button
-	if ( this.model.getRowProperties().isDeletable ) {
-		this.deleteButton = new OO.ui.ButtonWidget( {
-			icon: 'trash',
-			classes: [ 'mw-widgets-rowWidget-delete-button' ],
-			flags: 'destructive',
-			title: mw.msg( 'mw-widgets-table-row-delete' )
-		} );
-	}
+    // Set up delete button
+    if (this.model.getRowProperties().isDeletable) {
+        this.deleteButton = new OO.ui.ButtonWidget({
+            icon: 'trash',
+            classes: ['mw-widgets-rowWidget-delete-button'],
+            flags: 'destructive',
+            title: mw.msg('mw-widgets-table-row-delete')
+        });
+    }
 
-	// Events
-	this.model.connect( this, {
-		valueChange: 'onValueChange',
-		insertCell: 'onInsertCell',
-		removeCell: 'onRemoveCell',
-		clear: 'onClear',
-		labelUpdate: 'onLabelUpdate'
-	} );
+    // Events
+    this.model.connect(this, {
+        valueChange: 'onValueChange',
+        insertCell: 'onInsertCell',
+        removeCell: 'onRemoveCell',
+        clear: 'onClear',
+        labelUpdate: 'onLabelUpdate'
+    });
 
-	this.aggregate( {
-		change: 'cellChange'
-	} );
+    this.aggregate({
+        change: 'cellChange'
+    });
 
-	this.connect( this, {
-		cellChange: 'onCellChange'
-	} );
+    this.connect(this, {
+        cellChange: 'onCellChange'
+    });
 
-	if ( this.model.getRowProperties().isDeletable ) {
-		this.deleteButton.connect( this, {
-			click: 'onDeleteButtonClick'
-		} );
-	}
+    if (this.model.getRowProperties().isDeletable) {
+        this.deleteButton.connect(this, {
+            click: 'onDeleteButtonClick'
+        });
+    }
 
-	// Initialization
-	this.$element.addClass( 'mw-widgets-rowWidget' );
+    // Initialization
+    this.$element.addClass('mw-widgets-rowWidget');
 
-	this.$element.append(
-		this.labelCell.$element,
-		this.$group
-	);
+    this.$element.append(
+        this.labelCell.$element,
+        this.$group
+    );
 
-	if ( this.model.getRowProperties().isDeletable ) {
-		this.$element.append( this.deleteButton.$element );
-	}
+    if (this.model.getRowProperties().isDeletable) {
+        this.$element.append(this.deleteButton.$element);
+    }
 
-	this.setLabel( this.model.getRowProperties().label );
+    this.setLabel(this.model.getRowProperties().label);
 
-	this.model.setupRow();
+    this.model.setupRow();
 };
 
 /* Inheritance */
 
-OO.inheritClass( mw.widgets.RowWidget, OO.ui.Widget );
-OO.mixinClass( mw.widgets.RowWidget, OO.ui.mixin.GroupElement );
+OO.inheritClass(mw.widgets.RowWidget, OO.ui.Widget);
+OO.mixinClass(mw.widgets.RowWidget, OO.ui.mixin.GroupElement);
 
 /* Events */
 
@@ -121,29 +121,29 @@ OO.mixinClass( mw.widgets.RowWidget, OO.ui.mixin.GroupElement );
  * @private
  * @inheritdoc
  */
-mw.widgets.RowWidget.prototype.addItems = function ( items, index ) {
-	var i, len;
+mw.widgets.RowWidget.prototype.addItems = function (items, index) {
+    var i, len;
 
-	OO.ui.mixin.GroupElement.prototype.addItems.call( this, items, index );
+    OO.ui.mixin.GroupElement.prototype.addItems.call(this, items, index);
 
-	for ( i = index, len = items.length; i < len; i++ ) {
-		items[ i ].setData( i );
-	}
+    for (i = index, len = items.length; i < len; i++) {
+        items[i].setData(i);
+    }
 };
 
 /**
  * @private
  * @inheritdoc
  */
-mw.widgets.RowWidget.prototype.removeItems = function ( items ) {
-	var i, len, cells;
+mw.widgets.RowWidget.prototype.removeItems = function (items) {
+    var i, len, cells;
 
-	OO.ui.mixin.GroupElement.prototype.removeItems.call( this, items );
+    OO.ui.mixin.GroupElement.prototype.removeItems.call(this, items);
 
-	cells = this.getItems();
-	for ( i = 0, len = cells.length; i < len; i++ ) {
-		cells[ i ].setData( i );
-	}
+    cells = this.getItems();
+    for (i = 0, len = cells.length; i < len; i++) {
+        cells[i].setData(i);
+    }
 };
 
 /**
@@ -152,7 +152,7 @@ mw.widgets.RowWidget.prototype.removeItems = function ( items ) {
  * @return {number} The row index
  */
 mw.widgets.RowWidget.prototype.getIndex = function () {
-	return this.model.getRowProperties().index;
+    return this.model.getRowProperties().index;
 };
 
 /**
@@ -160,8 +160,8 @@ mw.widgets.RowWidget.prototype.getIndex = function () {
  *
  * @param {number} index The new index
  */
-mw.widgets.RowWidget.prototype.setIndex = function ( index ) {
-	this.model.setIndex( index );
+mw.widgets.RowWidget.prototype.setIndex = function (index) {
+    this.model.setIndex(index);
 };
 
 /**
@@ -171,15 +171,15 @@ mw.widgets.RowWidget.prototype.setIndex = function ( index ) {
  * @return {string} The row label
  */
 mw.widgets.RowWidget.prototype.getLabel = function () {
-	var props = this.model.getRowProperties();
+    var props = this.model.getRowProperties();
 
-	if ( props.label === null ) {
-		return '';
-	} else if ( !props.label ) {
-		return props.index.toString();
-	} else {
-		return props.label;
-	}
+    if (props.label === null) {
+        return '';
+    } else if (!props.label) {
+        return props.index.toString();
+    } else {
+        return props.label;
+    }
 };
 
 /**
@@ -188,8 +188,8 @@ mw.widgets.RowWidget.prototype.getLabel = function () {
  * @param {string} label The new label
  * @fires labelUpdate
  */
-mw.widgets.RowWidget.prototype.setLabel = function ( label ) {
-	this.model.setLabel( label );
+mw.widgets.RowWidget.prototype.setLabel = function (label) {
+    this.model.setLabel(label);
 };
 
 /**
@@ -198,8 +198,8 @@ mw.widgets.RowWidget.prototype.setLabel = function ( label ) {
  * @param {number} index The cell index
  * @param {string} value The new value
  */
-mw.widgets.RowWidget.prototype.setValue = function ( index, value ) {
-	this.model.setValue( index, value );
+mw.widgets.RowWidget.prototype.setValue = function (index, value) {
+    this.model.setValue(index, value);
 };
 
 /**
@@ -209,8 +209,8 @@ mw.widgets.RowWidget.prototype.setValue = function ( index, value ) {
  * @param  {number} index The index to insert the cell at
  * @param  {string} key A key for easy cell selection
  */
-mw.widgets.RowWidget.prototype.insertCell = function ( data, index, key ) {
-	this.model.insertCell( data, index, key );
+mw.widgets.RowWidget.prototype.insertCell = function (data, index, key) {
+    this.model.insertCell(data, index, key);
 };
 
 /**
@@ -218,15 +218,15 @@ mw.widgets.RowWidget.prototype.insertCell = function ( data, index, key ) {
  *
  * @param {number} index The index to removeColumn
  */
-mw.widgets.RowWidget.prototype.removeCell = function ( index ) {
-	this.model.removeCell( index );
+mw.widgets.RowWidget.prototype.removeCell = function (index) {
+    this.model.removeCell(index);
 };
 
 /**
  * Clear the field values
  */
 mw.widgets.RowWidget.prototype.clear = function () {
-	this.model.clear();
+    this.model.clear();
 };
 
 /**
@@ -237,9 +237,9 @@ mw.widgets.RowWidget.prototype.clear = function () {
  *
  * @fires inputChange
  */
-mw.widgets.RowWidget.prototype.onValueChange = function ( index, value ) {
-	this.getItems()[ index ].setValue( value );
-	this.emit( 'inputChange', index, value );
+mw.widgets.RowWidget.prototype.onValueChange = function (index, value) {
+    this.getItems()[index].setValue(value);
+    this.emit('inputChange', index, value);
 };
 
 /**
@@ -248,14 +248,14 @@ mw.widgets.RowWidget.prototype.onValueChange = function ( index, value ) {
  * @param {string} data The initial data
  * @param {number} index The index in which to insert the new cell
  */
-mw.widgets.RowWidget.prototype.onInsertCell = function ( data, index ) {
-	this.addItems( [
-		new OO.ui.TextInputWidget( {
-			data: index,
-			value: data,
-			validate: this.model.getValidationPattern()
-		} )
-	], index );
+mw.widgets.RowWidget.prototype.onInsertCell = function (data, index) {
+    this.addItems([
+        new OO.ui.TextInputWidget({
+            data: index,
+            value: data,
+            validate: this.model.getValidationPattern()
+        })
+    ], index);
 };
 
 /**
@@ -263,27 +263,27 @@ mw.widgets.RowWidget.prototype.onInsertCell = function ( data, index ) {
  *
  * @param {number} index The removed cell index
  */
-mw.widgets.RowWidget.prototype.onRemoveCell = function ( index ) {
-	this.removeItems( [ index ] );
+mw.widgets.RowWidget.prototype.onRemoveCell = function (index) {
+    this.removeItems([index]);
 };
 
 /**
  * Handle clear requests
  */
 mw.widgets.RowWidget.prototype.onClear = function () {
-	var i, len,
-		cells = this.getItems();
+    var i, len,
+        cells = this.getItems();
 
-	for ( i = 0, len = cells.length; i < len; i++ ) {
-		cells[ i ].setValue( '' );
-	}
+    for (i = 0, len = cells.length; i < len; i++) {
+        cells[i].setValue('');
+    }
 };
 
 /**
  * Update model label changes
  */
 mw.widgets.RowWidget.prototype.onLabelUpdate = function () {
-	this.labelCell.setLabel( this.getLabel() );
+    this.labelCell.setLabel(this.getLabel());
 };
 
 /**
@@ -293,18 +293,18 @@ mw.widgets.RowWidget.prototype.onLabelUpdate = function () {
  * @param {OO.ui.TextInputWidget} input The input that fired the event
  * @param {string} value The value of the input
  */
-mw.widgets.RowWidget.prototype.onCellChange = function ( input, value ) {
-	// FIXME: The table itself should know if it contains invalid data
-	// in order to pass form state to the dialog when it asks if the Apply
-	// button should be enabled or not. This probably requires the table
-	// and each individual row to handle validation through an array of promises
-	// fed from the cells within.
-	// Right now, the table can't know if it's valid or not because the events
-	// don't get passed through.
-	var self = this;
-	input.getValidity().done( function () {
-		self.model.setValue( input.getData(), value );
-	} );
+mw.widgets.RowWidget.prototype.onCellChange = function (input, value) {
+    // FIXME: The table itself should know if it contains invalid data
+    // in order to pass form state to the dialog when it asks if the Apply
+    // button should be enabled or not. This probably requires the table
+    // and each individual row to handle validation through an array of promises
+    // fed from the cells within.
+    // Right now, the table can't know if it's valid or not because the events
+    // don't get passed through.
+    var self = this;
+    input.getValidity().done(function () {
+        self.model.setValue(input.getData(), value);
+    });
 };
 
 /**
@@ -314,25 +314,25 @@ mw.widgets.RowWidget.prototype.onCellChange = function ( input, value ) {
  * @fires deleteButtonClick
  */
 mw.widgets.RowWidget.prototype.onDeleteButtonClick = function () {
-	this.emit( 'deleteButtonClick' );
+    this.emit('deleteButtonClick');
 };
 
 /**
  * @inheritdoc
  */
-mw.widgets.RowWidget.prototype.setDisabled = function ( disabled ) {
-	// Parent method
-	mw.widgets.RowWidget.super.prototype.setDisabled.call( this, disabled );
+mw.widgets.RowWidget.prototype.setDisabled = function (disabled) {
+    // Parent method
+    mw.widgets.RowWidget.super.prototype.setDisabled.call(this, disabled);
 
-	if ( !this.items ) {
-		return;
-	}
+    if (!this.items) {
+        return;
+    }
 
-	if ( this.model.getRowProperties().isDeletable ) {
-		this.deleteButton.setDisabled( disabled );
-	}
+    if (this.model.getRowProperties().isDeletable) {
+        this.deleteButton.setDisabled(disabled);
+    }
 
-	this.getItems().forEach( function ( cell ) {
-		cell.setDisabled( disabled );
-	} );
+    this.getItems().forEach(function (cell) {
+        cell.setDisabled(disabled);
+    });
 };

@@ -21,45 +21,50 @@
 /**
  * @covers Deflate
  */
-class DeflateTest extends PHPUnit\Framework\TestCase {
-	use MediaWikiTestCaseTrait;
+class DeflateTest extends PHPUnit\Framework\TestCase
+{
+    use MediaWikiTestCaseTrait;
 
-	public function provideIsDeflated() {
-		return [
-			// mw.deflate('foobar')
-			[ 'rawdeflate,S8vPT0osAgA=', true ],
-			[ 'abcdefghijklmnopqrstuvwxyz', false ],
-		];
-	}
+    public function provideIsDeflated()
+    {
+        return [
+            // mw.deflate('foobar')
+            ['rawdeflate,S8vPT0osAgA=', true],
+            ['abcdefghijklmnopqrstuvwxyz', false],
+        ];
+    }
 
-	/**
-	 * @dataProvider provideIsDeflated
-	 */
-	public function testIsDeflated( $data, $expected ) {
-		$actual = Deflate::isDeflated( $data );
-		$this->assertSame( $expected, $actual );
-	}
+    /**
+     * @dataProvider provideIsDeflated
+     */
+    public function testIsDeflated($data, $expected)
+    {
+        $actual = Deflate::isDeflated($data);
+        $this->assertSame($expected, $actual);
+    }
 
-	public function provideInflate() {
-		return [
-			[ 'rawdeflate,S8vPT0osAgA=', true, 'foobar' ],
-			// Fails base64_decode
-			[ 'rawdeflate,🌻', false, 'deflate-invaliddeflate' ],
-			// Fails gzinflate
-			[ 'rawdeflate,S8vPT0dfdAgB=', false, 'deflate-invaliddeflate' ],
-		];
-	}
+    public function provideInflate()
+    {
+        return [
+            ['rawdeflate,S8vPT0osAgA=', true, 'foobar'],
+            // Fails base64_decode
+            ['rawdeflate,🌻', false, 'deflate-invaliddeflate'],
+            // Fails gzinflate
+            ['rawdeflate,S8vPT0dfdAgB=', false, 'deflate-invaliddeflate'],
+        ];
+    }
 
-	/**
-	 * @dataProvider provideInflate
-	 */
-	public function testInflate( $data, $ok, $value ) {
-		$actual = Deflate::inflate( $data );
-		if ( $ok ) {
-			$this->assertStatusOK( $actual );
-			$this->assertStatusValue( $value, $actual );
-		} else {
-			$this->assertStatusError( $value, $actual );
-		}
-	}
+    /**
+     * @dataProvider provideInflate
+     */
+    public function testInflate($data, $ok, $value)
+    {
+        $actual = Deflate::inflate($data);
+        if ($ok) {
+            $this->assertStatusOK($actual);
+            $this->assertStatusValue($value, $actual);
+        } else {
+            $this->assertStatusError($value, $actual);
+        }
+    }
 }

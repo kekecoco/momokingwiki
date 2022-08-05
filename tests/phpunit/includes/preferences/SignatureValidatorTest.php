@@ -25,98 +25,107 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group Preferences
  */
-class SignatureValidatorTest extends MediaWikiIntegrationTestCase {
+class SignatureValidatorTest extends MediaWikiIntegrationTestCase
+{
 
-	private $validator;
+    private $validator;
 
-	protected function setUp(): void {
-		parent::setUp();
-		$this->validator = $this->getSignatureValidator();
-	}
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->validator = $this->getSignatureValidator();
+    }
 
-	/**
-	 * Get a basic SignatureValidator for testing with.
-	 * @return SignatureValidator
-	 */
-	protected function getSignatureValidator() {
-		$services = $this->getServiceContainer();
-		$lang = $services->getLanguageFactory()->getLanguage( 'en' );
-		$user = $services->getUserFactory()->newFromName( 'SignatureValidatorTest' );
-		$validator = $services->getSignatureValidatorFactory()->newSignatureValidator(
-			$user,
-			null,
-			ParserOptions::newFromUserAndLang( $user, $lang )
-		);
+    /**
+     * Get a basic SignatureValidator for testing with.
+     * @return SignatureValidator
+     */
+    protected function getSignatureValidator()
+    {
+        $services = $this->getServiceContainer();
+        $lang = $services->getLanguageFactory()->getLanguage('en');
+        $user = $services->getUserFactory()->newFromName('SignatureValidatorTest');
+        $validator = $services->getSignatureValidatorFactory()->newSignatureValidator(
+            $user,
+            null,
+            ParserOptions::newFromUserAndLang($user, $lang)
+        );
 
-		return TestingAccessWrapper::newFromObject( $validator );
-	}
+        return TestingAccessWrapper::newFromObject($validator);
+    }
 
-	/**
-	 * @covers MediaWiki\Preferences\SignatureValidator::applyPreSaveTransform()
-	 * @dataProvider provideApplyPreSaveTransform
-	 */
-	public function testApplyPreSaveTransform( $signature, $expected ) {
-		$pstSig = $this->validator->applyPreSaveTransform( $signature );
-		$this->assertSame( $expected, $pstSig );
-	}
+    /**
+     * @covers       MediaWiki\Preferences\SignatureValidator::applyPreSaveTransform()
+     * @dataProvider provideApplyPreSaveTransform
+     */
+    public function testApplyPreSaveTransform($signature, $expected)
+    {
+        $pstSig = $this->validator->applyPreSaveTransform($signature);
+        $this->assertSame($expected, $pstSig);
+    }
 
-	public function provideApplyPreSaveTransform() {
-		return [
-			'Pipe trick' =>
-				[ '[[test|]]', '[[test|test]]' ],
-			'One level substitution' =>
-				[ '{{subst:uc:whatever}}', 'WHATEVER' ],
-			'Hidden nested substitution' =>
-				[ '{{subst:uc:{}}{{subst:uc:{subst:uc:}}}{{subst:uc:}}}', false ],
-			'Hidden nested signature' =>
-				[ '{{subst:uc:~~}}{{subst:uc:~~}}', false ],
-		];
-	}
+    public function provideApplyPreSaveTransform()
+    {
+        return [
+            'Pipe trick'                 =>
+                ['[[test|]]', '[[test|test]]'],
+            'One level substitution'     =>
+                ['{{subst:uc:whatever}}', 'WHATEVER'],
+            'Hidden nested substitution' =>
+                ['{{subst:uc:{}}{{subst:uc:{subst:uc:}}}{{subst:uc:}}}', false],
+            'Hidden nested signature'    =>
+                ['{{subst:uc:~~}}{{subst:uc:~~}}', false],
+        ];
+    }
 
-	/**
-	 * @covers MediaWiki\Preferences\SignatureValidator::checkUserLinks()
-	 * @dataProvider provideCheckUserLinks
-	 */
-	public function testCheckUserLinks( $signature, $expected ) {
-		$isValid = $this->validator->checkUserLinks( $signature );
-		$this->assertSame( $expected, $isValid );
-	}
+    /**
+     * @covers       MediaWiki\Preferences\SignatureValidator::checkUserLinks()
+     * @dataProvider provideCheckUserLinks
+     */
+    public function testCheckUserLinks($signature, $expected)
+    {
+        $isValid = $this->validator->checkUserLinks($signature);
+        $this->assertSame($expected, $isValid);
+    }
 
-	public function provideCheckUserLinks() {
-		return [
-			'Perfect' =>
-				[ '[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk]])', true ],
-			'User link' =>
-				[ '[[User:SignatureValidatorTest|Signature]]', true ],
-			'User talk link' =>
-				[ '[[User talk:SignatureValidatorTest]]', true ],
-			'Contributions link' =>
-				[ '[[Special:Contributions/SignatureValidatorTest]]', true ],
-			'Silly formatting permitted' =>
-				[ '[[_uSeR :_signatureValidatorTest_]]', true ],
-			'Contributions of wrong user' =>
-				[ '[[Special:Contributions/SignatureValidatorTestNot]]', false ],
-			'Link to subpage only' =>
-				[ '[[User:SignatureValidatorTest/blah|Signature]]', false ],
-		];
-	}
+    public function provideCheckUserLinks()
+    {
+        return [
+            'Perfect'                     =>
+                ['[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk]])', true],
+            'User link'                   =>
+                ['[[User:SignatureValidatorTest|Signature]]', true],
+            'User talk link'              =>
+                ['[[User talk:SignatureValidatorTest]]', true],
+            'Contributions link'          =>
+                ['[[Special:Contributions/SignatureValidatorTest]]', true],
+            'Silly formatting permitted'  =>
+                ['[[_uSeR :_signatureValidatorTest_]]', true],
+            'Contributions of wrong user' =>
+                ['[[Special:Contributions/SignatureValidatorTestNot]]', false],
+            'Link to subpage only'        =>
+                ['[[User:SignatureValidatorTest/blah|Signature]]', false],
+        ];
+    }
 
-	/**
-	 * @covers MediaWiki\Preferences\SignatureValidator::checkLineBreaks()
-	 * @dataProvider provideCheckLineBreaks
-	 */
-	public function testCheckLineBreaks( $signature, $expected ) {
-		$isValid = $this->validator->checkLineBreaks( $signature );
-		$this->assertSame( $expected, $isValid );
-	}
+    /**
+     * @covers       MediaWiki\Preferences\SignatureValidator::checkLineBreaks()
+     * @dataProvider provideCheckLineBreaks
+     */
+    public function testCheckLineBreaks($signature, $expected)
+    {
+        $isValid = $this->validator->checkLineBreaks($signature);
+        $this->assertSame($expected, $isValid);
+    }
 
-	public function provideCheckLineBreaks() {
-		return [
-			'Perfect' =>
-				[ '[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk]])', true ],
-			'Line break' =>
-				[ "[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk\n]])", false ],
-		];
-	}
+    public function provideCheckLineBreaks()
+    {
+        return [
+            'Perfect'    =>
+                ['[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk]])', true],
+            'Line break' =>
+                ["[[User:SignatureValidatorTest|Signature]] ([[User talk:SignatureValidatorTest|talk\n]])", false],
+        ];
+    }
 
 }

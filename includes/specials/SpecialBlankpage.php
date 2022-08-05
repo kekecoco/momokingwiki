@@ -27,13 +27,16 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialBlankpage extends UnlistedSpecialPage {
-	public function __construct() {
-		parent::__construct( 'Blankpage' );
-	}
+class SpecialBlankpage extends UnlistedSpecialPage
+{
+    public function __construct()
+    {
+        parent::__construct('Blankpage');
+    }
 
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->getOutput()->addWikiMsg( 'intentionallyblankpage' );
-	}
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->getOutput()->addWikiMsg('intentionallyblankpage');
+    }
 }

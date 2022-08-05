@@ -26,36 +26,41 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialFilepath extends RedirectSpecialPage {
-	public function __construct() {
-		parent::__construct( 'Filepath' );
-		$this->mAllowedRedirectParams = [ 'width', 'height' ];
-	}
+class SpecialFilepath extends RedirectSpecialPage
+{
+    public function __construct()
+    {
+        parent::__construct('Filepath');
+        $this->mAllowedRedirectParams = ['width', 'height'];
+    }
 
-	/**
-	 * Implement by redirecting through Special:Redirect/file.
-	 *
-	 * @param string|null $par
-	 * @return Title
-	 */
-	public function getRedirect( $par ) {
-		$file = $par ?: $this->getRequest()->getText( 'file' );
+    /**
+     * Implement by redirecting through Special:Redirect/file.
+     *
+     * @param string|null $par
+     * @return Title
+     */
+    public function getRedirect($par)
+    {
+        $file = $par ?: $this->getRequest()->getText('file');
 
-		$redirect = null;
-		if ( $file ) {
-			$redirect = SpecialPage::getSafeTitleFor( 'Redirect', "file/$file" );
-		}
-		if ( $redirect === null ) {
-			// The user input is empty or an invalid title,
-			// redirect to form of Special:Redirect with the invalid value prefilled
-			$this->mAddedRedirectParams['wpvalue'] = $file;
-			$redirect = SpecialPage::getSafeTitleFor( 'Redirect', 'file' );
-		}
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable Known to be valid
-		return $redirect;
-	}
+        $redirect = null;
+        if ($file) {
+            $redirect = SpecialPage::getSafeTitleFor('Redirect', "file/$file");
+        }
+        if ($redirect === null) {
+            // The user input is empty or an invalid title,
+            // redirect to form of Special:Redirect with the invalid value prefilled
+            $this->mAddedRedirectParams['wpvalue'] = $file;
+            $redirect = SpecialPage::getSafeTitleFor('Redirect', 'file');
+        }
 
-	protected function getGroupName() {
-		return 'media';
-	}
+        // @phan-suppress-next-line PhanTypeMismatchReturnNullable Known to be valid
+        return $redirect;
+    }
+
+    protected function getGroupName()
+    {
+        return 'media';
+    }
 }

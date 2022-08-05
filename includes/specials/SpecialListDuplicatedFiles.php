@@ -34,90 +34,99 @@ use Wikimedia\Rdbms\IResultWrapper;
  *   a duplicate of the current version of some other file.
  * @ingroup SpecialPage
  */
-class SpecialListDuplicatedFiles extends QueryPage {
+class SpecialListDuplicatedFiles extends QueryPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory
-	) {
-		parent::__construct( 'ListDuplicatedFiles' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory
+    )
+    {
+        parent::__construct('ListDuplicatedFiles');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	/**
-	 * Get all the duplicates by grouping on sha1s.
-	 *
-	 * A cheaper (but less useful) version of this
-	 * query would be to not care how many duplicates a
-	 * particular file has, and do a self-join on image table.
-	 * However this version should be no more expensive then
-	 * Special:MostLinked, which seems to get handled fine
-	 * with however we are doing cached special pages.
-	 * @return array
-	 */
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'image' ],
-			'fields' => [
-				'namespace' => NS_FILE,
-				'title' => 'MIN(img_name)',
-				'value' => 'count(*)'
-			],
-			'options' => [
-				'GROUP BY' => 'img_sha1',
-				'HAVING' => 'count(*) > 1',
-			],
-		];
-	}
+    /**
+     * Get all the duplicates by grouping on sha1s.
+     *
+     * A cheaper (but less useful) version of this
+     * query would be to not care how many duplicates a
+     * particular file has, and do a self-join on image table.
+     * However this version should be no more expensive then
+     * Special:MostLinked, which seems to get handled fine
+     * with however we are doing cached special pages.
+     * @return array
+     */
+    public function getQueryInfo()
+    {
+        return [
+            'tables'  => ['image'],
+            'fields'  => [
+                'namespace' => NS_FILE,
+                'title'     => 'MIN(img_name)',
+                'value'     => 'count(*)'
+            ],
+            'options' => [
+                'GROUP BY' => 'img_sha1',
+                'HAVING'   => 'count(*) > 1',
+            ],
+        ];
+    }
 
-	/**
-	 * Pre-fill the link cache
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    /**
+     * Pre-fill the link cache
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		// Future version might include a list of the first 5 duplicates
-		// perhaps separated by an "↔".
-		$image1 = Title::makeTitle( $result->namespace, $result->title );
-		$dupeSearch = SpecialPage::getTitleFor( 'FileDuplicateSearch', $image1->getDBkey() );
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        // Future version might include a list of the first 5 duplicates
+        // perhaps separated by an "↔".
+        $image1 = Title::makeTitle($result->namespace, $result->title);
+        $dupeSearch = SpecialPage::getTitleFor('FileDuplicateSearch', $image1->getDBkey());
 
-		$msg = $this->msg( 'listduplicatedfiles-entry' )
-			->params( $image1->getText() )
-			->numParams( $result->value - 1 )
-			->params( $dupeSearch->getPrefixedDBkey() );
+        $msg = $this->msg('listduplicatedfiles-entry')
+            ->params($image1->getText())
+            ->numParams($result->value - 1)
+            ->params($dupeSearch->getPrefixedDBkey());
 
-		return $msg->parse();
-	}
+        return $msg->parse();
+    }
 
-	public function execute( $par ) {
-		$this->addHelpLink( 'Help:Managing_files' );
-		parent::execute( $par );
-	}
+    public function execute($par)
+    {
+        $this->addHelpLink('Help:Managing_files');
+        parent::execute($par);
+    }
 
-	protected function getGroupName() {
-		return 'media';
-	}
+    protected function getGroupName()
+    {
+        return 'media';
+    }
 }

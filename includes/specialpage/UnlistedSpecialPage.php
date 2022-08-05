@@ -28,21 +28,24 @@
  *
  * @ingroup SpecialPage
  */
-class UnlistedSpecialPage extends SpecialPage {
+class UnlistedSpecialPage extends SpecialPage
+{
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $name
-	 * @param string $restriction
-	 * @param bool $function
-	 * @param string $file
-	 */
-	public function __construct( $name, $restriction = '', $function = false, $file = 'default' ) {
-		parent::__construct( $name, $restriction, false, $function, $file );
-	}
+    /**
+     * @stable to call
+     *
+     * @param string $name
+     * @param string $restriction
+     * @param bool $function
+     * @param string $file
+     */
+    public function __construct($name, $restriction = '', $function = false, $file = 'default')
+    {
+        parent::__construct($name, $restriction, false, $function, $file);
+    }
 
-	public function isListed() {
-		return false;
-	}
+    public function isListed()
+    {
+        return false;
+    }
 }

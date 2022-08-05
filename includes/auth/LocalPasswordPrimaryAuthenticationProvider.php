@@ -32,310 +32,326 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @since 1.27
  */
 class LocalPasswordPrimaryAuthenticationProvider
-	extends AbstractPasswordPrimaryAuthenticationProvider
+    extends AbstractPasswordPrimaryAuthenticationProvider
 {
 
-	/** @var bool If true, this instance is for legacy logins only. */
-	protected $loginOnly = false;
+    /** @var bool If true, this instance is for legacy logins only. */
+    protected $loginOnly = false;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param array $params Settings
-	 *  - loginOnly: If true, the local passwords are for legacy logins only:
-	 *    the local password will be invalidated when authentication is changed
-	 *    and new users will not have a valid local password set.
-	 */
-	public function __construct( ILoadBalancer $loadBalancer, $params = [] ) {
-		parent::__construct( $params );
-		$this->loginOnly = !empty( $params['loginOnly'] );
-		$this->loadBalancer = $loadBalancer;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param array $params Settings
+     *  - loginOnly: If true, the local passwords are for legacy logins only:
+     *    the local password will be invalidated when authentication is changed
+     *    and new users will not have a valid local password set.
+     */
+    public function __construct(ILoadBalancer $loadBalancer, $params = [])
+    {
+        parent::__construct($params);
+        $this->loginOnly = !empty($params['loginOnly']);
+        $this->loadBalancer = $loadBalancer;
+    }
 
-	/**
-	 * Check if the password has expired and needs a reset
-	 *
-	 * @param string $username
-	 * @param \stdClass $row A row from the user table
-	 * @return \stdClass|null
-	 */
-	protected function getPasswordResetData( $username, $row ) {
-		$now = (int)wfTimestamp();
-		$expiration = wfTimestampOrNull( TS_UNIX, $row->user_password_expires );
-		if ( $expiration === null || (int)$expiration >= $now ) {
-			return null;
-		}
+    /**
+     * Check if the password has expired and needs a reset
+     *
+     * @param string $username
+     * @param \stdClass $row A row from the user table
+     * @return \stdClass|null
+     */
+    protected function getPasswordResetData($username, $row)
+    {
+        $now = (int)wfTimestamp();
+        $expiration = wfTimestampOrNull(TS_UNIX, $row->user_password_expires);
+        if ($expiration === null || (int)$expiration >= $now) {
+            return null;
+        }
 
-		$grace = $this->config->get( MainConfigNames::PasswordExpireGrace );
-		if ( (int)$expiration + $grace < $now ) {
-			$data = [
-				'hard' => true,
-				'msg' => \Status::newFatal( 'resetpass-expired' )->getMessage(),
-			];
-		} else {
-			$data = [
-				'hard' => false,
-				'msg' => \Status::newFatal( 'resetpass-expired-soft' )->getMessage(),
-			];
-		}
+        $grace = $this->config->get(MainConfigNames::PasswordExpireGrace);
+        if ((int)$expiration + $grace < $now) {
+            $data = [
+                'hard' => true,
+                'msg'  => \Status::newFatal('resetpass-expired')->getMessage(),
+            ];
+        } else {
+            $data = [
+                'hard' => false,
+                'msg'  => \Status::newFatal('resetpass-expired-soft')->getMessage(),
+            ];
+        }
 
-		return (object)$data;
-	}
+        return (object)$data;
+    }
 
-	public function beginPrimaryAuthentication( array $reqs ) {
-		$req = AuthenticationRequest::getRequestByClass( $reqs, PasswordAuthenticationRequest::class );
-		if ( !$req ) {
-			return AuthenticationResponse::newAbstain();
-		}
+    public function beginPrimaryAuthentication(array $reqs)
+    {
+        $req = AuthenticationRequest::getRequestByClass($reqs, PasswordAuthenticationRequest::class);
+        if (!$req) {
+            return AuthenticationResponse::newAbstain();
+        }
 
-		if ( $req->username === null || $req->password === null ) {
-			return AuthenticationResponse::newAbstain();
-		}
+        if ($req->username === null || $req->password === null) {
+            return AuthenticationResponse::newAbstain();
+        }
 
-		$username = $this->userNameUtils->getCanonical(
-			$req->username, UserRigorOptions::RIGOR_USABLE );
-		if ( $username === false ) {
-			return AuthenticationResponse::newAbstain();
-		}
+        $username = $this->userNameUtils->getCanonical(
+            $req->username, UserRigorOptions::RIGOR_USABLE);
+        if ($username === false) {
+            return AuthenticationResponse::newAbstain();
+        }
 
-		$fields = [
-			'user_id', 'user_password', 'user_password_expires',
-		];
+        $fields = [
+            'user_id', 'user_password', 'user_password_expires',
+        ];
 
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$row = $dbr->selectRow(
-			'user',
-			$fields,
-			[ 'user_name' => $username ],
-			__METHOD__
-		);
-		if ( !$row ) {
-			// Do not reveal whether its bad username or
-			// bad password to prevent username enumeration
-			// on private wikis. (T134100)
-			return $this->failResponse( $req );
-		}
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $row = $dbr->selectRow(
+            'user',
+            $fields,
+            ['user_name' => $username],
+            __METHOD__
+        );
+        if (!$row) {
+            // Do not reveal whether its bad username or
+            // bad password to prevent username enumeration
+            // on private wikis. (T134100)
+            return $this->failResponse($req);
+        }
 
-		$oldRow = clone $row;
-		// Check for *really* old password hashes that don't even have a type
-		// The old hash format was just an md5 hex hash, with no type information
-		if ( preg_match( '/^[0-9a-f]{32}$/', $row->user_password ) ) {
-			$row->user_password = ":B:{$row->user_id}:{$row->user_password}";
-		}
+        $oldRow = clone $row;
+        // Check for *really* old password hashes that don't even have a type
+        // The old hash format was just an md5 hex hash, with no type information
+        if (preg_match('/^[0-9a-f]{32}$/', $row->user_password)) {
+            $row->user_password = ":B:{$row->user_id}:{$row->user_password}";
+        }
 
-		$status = $this->checkPasswordValidity( $username, $req->password );
-		if ( !$status->isOK() ) {
-			// Fatal, can't log in
-			return AuthenticationResponse::newFail( $status->getMessage() );
-		}
+        $status = $this->checkPasswordValidity($username, $req->password);
+        if (!$status->isOK()) {
+            // Fatal, can't log in
+            return AuthenticationResponse::newFail($status->getMessage());
+        }
 
-		$pwhash = $this->getPassword( $row->user_password );
-		if ( !$pwhash->verify( $req->password ) ) {
-			if ( $this->config->get( MainConfigNames::LegacyEncoding ) ) {
-				// Some wikis were converted from ISO 8859-1 to UTF-8, the passwords can't be converted
-				// Check for this with iconv
-				$cp1252Password = iconv( 'UTF-8', 'WINDOWS-1252//TRANSLIT', $req->password );
-				if ( $cp1252Password === $req->password || !$pwhash->verify( $cp1252Password ) ) {
-					return $this->failResponse( $req );
-				}
-			} else {
-				return $this->failResponse( $req );
-			}
-		}
+        $pwhash = $this->getPassword($row->user_password);
+        if (!$pwhash->verify($req->password)) {
+            if ($this->config->get(MainConfigNames::LegacyEncoding)) {
+                // Some wikis were converted from ISO 8859-1 to UTF-8, the passwords can't be converted
+                // Check for this with iconv
+                $cp1252Password = iconv('UTF-8', 'WINDOWS-1252//TRANSLIT', $req->password);
+                if ($cp1252Password === $req->password || !$pwhash->verify($cp1252Password)) {
+                    return $this->failResponse($req);
+                }
+            } else {
+                return $this->failResponse($req);
+            }
+        }
 
-		// @codeCoverageIgnoreStart
-		if ( $this->getPasswordFactory()->needsUpdate( $pwhash ) ) {
-			$newHash = $this->getPasswordFactory()->newFromPlaintext( $req->password );
-			$fname = __METHOD__;
-			\DeferredUpdates::addCallableUpdate( function () use ( $newHash, $oldRow, $fname ) {
-				$dbw = $this->loadBalancer->getConnectionRef( DB_PRIMARY );
-				$dbw->update(
-					'user',
-					[ 'user_password' => $newHash->toString() ],
-					[
-						'user_id' => $oldRow->user_id,
-						'user_password' => $oldRow->user_password
-					],
-					$fname
-				);
-			} );
-		}
-		// @codeCoverageIgnoreEnd
+        // @codeCoverageIgnoreStart
+        if ($this->getPasswordFactory()->needsUpdate($pwhash)) {
+            $newHash = $this->getPasswordFactory()->newFromPlaintext($req->password);
+            $fname = __METHOD__;
+            \DeferredUpdates::addCallableUpdate(function () use ($newHash, $oldRow, $fname) {
+                $dbw = $this->loadBalancer->getConnectionRef(DB_PRIMARY);
+                $dbw->update(
+                    'user',
+                    ['user_password' => $newHash->toString()],
+                    [
+                        'user_id'       => $oldRow->user_id,
+                        'user_password' => $oldRow->user_password
+                    ],
+                    $fname
+                );
+            });
+        }
+        // @codeCoverageIgnoreEnd
 
-		$this->setPasswordResetFlag( $username, $status, $row );
+        $this->setPasswordResetFlag($username, $status, $row);
 
-		return AuthenticationResponse::newPass( $username );
-	}
+        return AuthenticationResponse::newPass($username);
+    }
 
-	public function testUserCanAuthenticate( $username ) {
-		$username = $this->userNameUtils->getCanonical(
-			$username, UserRigorOptions::RIGOR_USABLE );
-		if ( $username === false ) {
-			return false;
-		}
+    public function testUserCanAuthenticate($username)
+    {
+        $username = $this->userNameUtils->getCanonical(
+            $username, UserRigorOptions::RIGOR_USABLE);
+        if ($username === false) {
+            return false;
+        }
 
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$row = $dbr->selectRow(
-			'user',
-			[ 'user_password' ],
-			[ 'user_name' => $username ],
-			__METHOD__
-		);
-		if ( !$row ) {
-			return false;
-		}
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $row = $dbr->selectRow(
+            'user',
+            ['user_password'],
+            ['user_name' => $username],
+            __METHOD__
+        );
+        if (!$row) {
+            return false;
+        }
 
-		// Check for *really* old password hashes that don't even have a type
-		// The old hash format was just an md5 hex hash, with no type information
-		if ( preg_match( '/^[0-9a-f]{32}$/', $row->user_password ) ) {
-			return true;
-		}
+        // Check for *really* old password hashes that don't even have a type
+        // The old hash format was just an md5 hex hash, with no type information
+        if (preg_match('/^[0-9a-f]{32}$/', $row->user_password)) {
+            return true;
+        }
 
-		return !$this->getPassword( $row->user_password ) instanceof \InvalidPassword;
-	}
+        return !$this->getPassword($row->user_password) instanceof \InvalidPassword;
+    }
 
-	public function testUserExists( $username, $flags = User::READ_NORMAL ) {
-		$username = $this->userNameUtils->getCanonical(
-			$username, UserRigorOptions::RIGOR_USABLE );
-		if ( $username === false ) {
-			return false;
-		}
+    public function testUserExists($username, $flags = User::READ_NORMAL)
+    {
+        $username = $this->userNameUtils->getCanonical(
+            $username, UserRigorOptions::RIGOR_USABLE);
+        if ($username === false) {
+            return false;
+        }
 
-		list( $db, $options ) = \DBAccessObjectUtils::getDBOptions( $flags );
-		return (bool)$this->loadBalancer->getConnectionRef( $db )->selectField(
-			[ 'user' ],
-			'user_id',
-			[ 'user_name' => $username ],
-			__METHOD__,
-			$options
-		);
-	}
+        [$db, $options] = \DBAccessObjectUtils::getDBOptions($flags);
 
-	public function providerAllowsAuthenticationDataChange(
-		AuthenticationRequest $req, $checkData = true
-	) {
-		// We only want to blank the password if something else will accept the
-		// new authentication data, so return 'ignore' here.
-		if ( $this->loginOnly ) {
-			return \StatusValue::newGood( 'ignored' );
-		}
+        return (bool)$this->loadBalancer->getConnectionRef($db)->selectField(
+            ['user'],
+            'user_id',
+            ['user_name' => $username],
+            __METHOD__,
+            $options
+        );
+    }
 
-		if ( get_class( $req ) === PasswordAuthenticationRequest::class ) {
-			if ( !$checkData ) {
-				return \StatusValue::newGood();
-			}
+    public function providerAllowsAuthenticationDataChange(
+        AuthenticationRequest $req, $checkData = true
+    )
+    {
+        // We only want to blank the password if something else will accept the
+        // new authentication data, so return 'ignore' here.
+        if ($this->loginOnly) {
+            return \StatusValue::newGood('ignored');
+        }
 
-			$username = $this->userNameUtils->getCanonical( $req->username,
-				UserRigorOptions::RIGOR_USABLE );
-			if ( $username !== false ) {
-				$row = $this->loadBalancer->getConnectionRef( DB_PRIMARY )->selectRow(
-					'user',
-					[ 'user_id' ],
-					[ 'user_name' => $username ],
-					__METHOD__
-				);
-				if ( $row ) {
-					$sv = \StatusValue::newGood();
-					if ( $req->password !== null ) {
-						if ( $req->password !== $req->retype ) {
-							$sv->fatal( 'badretype' );
-						} else {
-							$sv->merge( $this->checkPasswordValidity( $username, $req->password ) );
-						}
-					}
-					return $sv;
-				}
-			}
-		}
+        if (get_class($req) === PasswordAuthenticationRequest::class) {
+            if (!$checkData) {
+                return \StatusValue::newGood();
+            }
 
-		return \StatusValue::newGood( 'ignored' );
-	}
+            $username = $this->userNameUtils->getCanonical($req->username,
+                UserRigorOptions::RIGOR_USABLE);
+            if ($username !== false) {
+                $row = $this->loadBalancer->getConnectionRef(DB_PRIMARY)->selectRow(
+                    'user',
+                    ['user_id'],
+                    ['user_name' => $username],
+                    __METHOD__
+                );
+                if ($row) {
+                    $sv = \StatusValue::newGood();
+                    if ($req->password !== null) {
+                        if ($req->password !== $req->retype) {
+                            $sv->fatal('badretype');
+                        } else {
+                            $sv->merge($this->checkPasswordValidity($username, $req->password));
+                        }
+                    }
 
-	public function providerChangeAuthenticationData( AuthenticationRequest $req ) {
-		$username = $req->username !== null ?
-			$this->userNameUtils->getCanonical( $req->username, UserRigorOptions::RIGOR_USABLE )
-			: false;
-		if ( $username === false ) {
-			return;
-		}
+                    return $sv;
+                }
+            }
+        }
 
-		$pwhash = null;
+        return \StatusValue::newGood('ignored');
+    }
 
-		if ( get_class( $req ) === PasswordAuthenticationRequest::class ) {
-			if ( $this->loginOnly ) {
-				$pwhash = $this->getPasswordFactory()->newFromCiphertext( null );
-				$expiry = null;
-			} else {
-				$pwhash = $this->getPasswordFactory()->newFromPlaintext( $req->password );
-				$expiry = $this->getNewPasswordExpiry( $username );
-			}
-		}
+    public function providerChangeAuthenticationData(AuthenticationRequest $req)
+    {
+        $username = $req->username !== null ?
+            $this->userNameUtils->getCanonical($req->username, UserRigorOptions::RIGOR_USABLE)
+            : false;
+        if ($username === false) {
+            return;
+        }
 
-		if ( $pwhash ) {
-			$dbw = $this->loadBalancer->getConnectionRef( DB_PRIMARY );
-			$dbw->update(
-				'user',
-				[
-					'user_password' => $pwhash->toString(),
-					// @phan-suppress-next-line PhanPossiblyUndeclaredVariable expiry is set together with pwhash
-					'user_password_expires' => $dbw->timestampOrNull( $expiry ),
-				],
-				[ 'user_name' => $username ],
-				__METHOD__
-			);
-		}
-	}
+        $pwhash = null;
 
-	public function accountCreationType() {
-		return $this->loginOnly ? self::TYPE_NONE : self::TYPE_CREATE;
-	}
+        if (get_class($req) === PasswordAuthenticationRequest::class) {
+            if ($this->loginOnly) {
+                $pwhash = $this->getPasswordFactory()->newFromCiphertext(null);
+                $expiry = null;
+            } else {
+                $pwhash = $this->getPasswordFactory()->newFromPlaintext($req->password);
+                $expiry = $this->getNewPasswordExpiry($username);
+            }
+        }
 
-	public function testForAccountCreation( $user, $creator, array $reqs ) {
-		$req = AuthenticationRequest::getRequestByClass( $reqs, PasswordAuthenticationRequest::class );
+        if ($pwhash) {
+            $dbw = $this->loadBalancer->getConnectionRef(DB_PRIMARY);
+            $dbw->update(
+                'user',
+                [
+                    'user_password'         => $pwhash->toString(),
+                    // @phan-suppress-next-line PhanPossiblyUndeclaredVariable expiry is set together with pwhash
+                    'user_password_expires' => $dbw->timestampOrNull($expiry),
+                ],
+                ['user_name' => $username],
+                __METHOD__
+            );
+        }
+    }
 
-		$ret = \StatusValue::newGood();
-		if ( !$this->loginOnly && $req && $req->username !== null && $req->password !== null ) {
-			if ( $req->password !== $req->retype ) {
-				$ret->fatal( 'badretype' );
-			} else {
-				$ret->merge(
-					$this->checkPasswordValidity( $user->getName(), $req->password )
-				);
-			}
-		}
-		return $ret;
-	}
+    public function accountCreationType()
+    {
+        return $this->loginOnly ? self::TYPE_NONE : self::TYPE_CREATE;
+    }
 
-	public function beginPrimaryAccountCreation( $user, $creator, array $reqs ) {
-		if ( $this->accountCreationType() === self::TYPE_NONE ) {
-			throw new \BadMethodCallException( 'Shouldn\'t call this when accountCreationType() is NONE' );
-		}
+    public function testForAccountCreation($user, $creator, array $reqs)
+    {
+        $req = AuthenticationRequest::getRequestByClass($reqs, PasswordAuthenticationRequest::class);
 
-		$req = AuthenticationRequest::getRequestByClass( $reqs, PasswordAuthenticationRequest::class );
-		if ( $req && $req->username !== null && $req->password !== null ) {
-			// Nothing we can do besides claim it, because the user isn't in
-			// the DB yet
-			if ( $req->username !== $user->getName() ) {
-				$req = clone $req;
-				$req->username = $user->getName();
-			}
-			$ret = AuthenticationResponse::newPass( $req->username );
-			$ret->createRequest = $req;
-			return $ret;
-		}
-		return AuthenticationResponse::newAbstain();
-	}
+        $ret = \StatusValue::newGood();
+        if (!$this->loginOnly && $req && $req->username !== null && $req->password !== null) {
+            if ($req->password !== $req->retype) {
+                $ret->fatal('badretype');
+            } else {
+                $ret->merge(
+                    $this->checkPasswordValidity($user->getName(), $req->password)
+                );
+            }
+        }
 
-	public function finishAccountCreation( $user, $creator, AuthenticationResponse $res ) {
-		if ( $this->accountCreationType() === self::TYPE_NONE ) {
-			throw new \BadMethodCallException( 'Shouldn\'t call this when accountCreationType() is NONE' );
-		}
+        return $ret;
+    }
 
-		// Now that the user is in the DB, set the password on it.
-		$this->providerChangeAuthenticationData( $res->createRequest );
+    public function beginPrimaryAccountCreation($user, $creator, array $reqs)
+    {
+        if ($this->accountCreationType() === self::TYPE_NONE) {
+            throw new \BadMethodCallException('Shouldn\'t call this when accountCreationType() is NONE');
+        }
 
-		return null;
-	}
+        $req = AuthenticationRequest::getRequestByClass($reqs, PasswordAuthenticationRequest::class);
+        if ($req && $req->username !== null && $req->password !== null) {
+            // Nothing we can do besides claim it, because the user isn't in
+            // the DB yet
+            if ($req->username !== $user->getName()) {
+                $req = clone $req;
+                $req->username = $user->getName();
+            }
+            $ret = AuthenticationResponse::newPass($req->username);
+            $ret->createRequest = $req;
+
+            return $ret;
+        }
+
+        return AuthenticationResponse::newAbstain();
+    }
+
+    public function finishAccountCreation($user, $creator, AuthenticationResponse $res)
+    {
+        if ($this->accountCreationType() === self::TYPE_NONE) {
+            throw new \BadMethodCallException('Shouldn\'t call this when accountCreationType() is NONE');
+        }
+
+        // Now that the user is in the DB, set the password on it.
+        $this->providerChangeAuthenticationData($res->createRequest);
+
+        return null;
+    }
 }

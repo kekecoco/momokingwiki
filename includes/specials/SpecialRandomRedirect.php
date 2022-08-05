@@ -29,18 +29,20 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialRandomRedirect extends SpecialRandomPage {
+class SpecialRandomRedirect extends SpecialRandomPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param NamespaceInfo $nsInfo
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		NamespaceInfo $nsInfo
-	) {
-		parent::__construct( $loadBalancer, $nsInfo );
-		$this->mName = 'Randomredirect';
-		$this->isRedir = true;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param NamespaceInfo $nsInfo
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        NamespaceInfo $nsInfo
+    )
+    {
+        parent::__construct($loadBalancer, $nsInfo);
+        $this->mName = 'Randomredirect';
+        $this->isRedir = true;
+    }
 }

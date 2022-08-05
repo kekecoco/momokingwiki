@@ -39,113 +39,121 @@ use Wikimedia\NonSerializable\NonSerializableTrait;
  *
  * @since 1.37
  */
-class PageReferenceValue implements PageReference {
+class PageReferenceValue implements PageReference
+{
 
-	/* Use JSON, but beware the note on serialization above. */
-	use NonSerializableTrait;
-	use WikiAwareEntityTrait;
+    /* Use JSON, but beware the note on serialization above. */
+    use NonSerializableTrait;
+    use WikiAwareEntityTrait;
 
-	/** @var int */
-	private $namespace;
+    /** @var int */
+    private $namespace;
 
-	/** @var string */
-	private $dbKey;
+    /** @var string */
+    private $dbKey;
 
-	/** @var bool|string */
-	private $wikiId;
+    /** @var bool|string */
+    private $wikiId;
 
-	/**
-	 * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
-	 * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
-	 * @param string|bool $wikiId The Id of the wiki this page belongs to,
-	 *        or self::LOCAL for the local wiki.
-	 */
-	public function __construct( int $namespace, string $dbKey, $wikiId ) {
-		$this->assertWikiIdParam( $wikiId );
+    /**
+     * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
+     * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
+     * @param string|bool $wikiId The Id of the wiki this page belongs to,
+     *        or self::LOCAL for the local wiki.
+     */
+    public function __construct(int $namespace, string $dbKey, $wikiId)
+    {
+        $this->assertWikiIdParam($wikiId);
 
-		Assert::parameter( $dbKey !== '', '$dbKey', 'must not be empty' );
+        Assert::parameter($dbKey !== '', '$dbKey', 'must not be empty');
 
-		// Replace spaces with underscores
-		$dbKey = str_replace( ' ', '_', $dbKey );
+        // Replace spaces with underscores
+        $dbKey = str_replace(' ', '_', $dbKey);
 
-		$this->wikiId = $wikiId;
-		$this->namespace = $namespace;
-		$this->dbKey = $dbKey;
-	}
+        $this->wikiId = $wikiId;
+        $this->namespace = $namespace;
+        $this->dbKey = $dbKey;
+    }
 
-	/**
-	 * Create PageReference for a local page.
-	 *
-	 * @param int $namespace
-	 * @param string $dbKey
-	 * @return PageReferenceValue
-	 */
-	public static function localReference( int $namespace, string $dbKey ): self {
-		return new self( $namespace, $dbKey, self::LOCAL );
-	}
+    /**
+     * Create PageReference for a local page.
+     *
+     * @param int $namespace
+     * @param string $dbKey
+     * @return PageReferenceValue
+     */
+    public static function localReference(int $namespace, string $dbKey): self
+    {
+        return new self($namespace, $dbKey, self::LOCAL);
+    }
 
-	/**
-	 * Get the ID of the wiki provided to the constructor.
-	 *
-	 * @return string|false
-	 */
-	public function getWikiId() {
-		return $this->wikiId;
-	}
+    /**
+     * Get the ID of the wiki provided to the constructor.
+     *
+     * @return string|false
+     */
+    public function getWikiId()
+    {
+        return $this->wikiId;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return int
-	 */
-	public function getNamespace(): int {
-		return $this->namespace;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @return int
+     */
+    public function getNamespace(): int
+    {
+        return $this->namespace;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return string
-	 */
-	public function getDBkey(): string {
-		return $this->dbKey;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @return string
+     */
+    public function getDBkey(): string
+    {
+        return $this->dbKey;
+    }
 
-	/**
-	 * @param PageReference $other
-	 *
-	 * @return bool
-	 */
-	public function isSamePageAs( PageReference $other ): bool {
-		// NOTE: keep in sync with Title::isSamePageAs()!
-		// NOTE: keep in sync with WikiPage::isSamePageAs()!
+    /**
+     * @param PageReference $other
+     *
+     * @return bool
+     */
+    public function isSamePageAs(PageReference $other): bool
+    {
+        // NOTE: keep in sync with Title::isSamePageAs()!
+        // NOTE: keep in sync with WikiPage::isSamePageAs()!
 
-		if ( $other->getWikiId() !== $this->getWikiId() ) {
-			return false;
-		}
+        if ($other->getWikiId() !== $this->getWikiId()) {
+            return false;
+        }
 
-		if ( $other->getNamespace() !== $this->getNamespace()
-			|| $other->getDBkey() !== $this->getDBkey() ) {
-			return false;
-		}
+        if ($other->getNamespace() !== $this->getNamespace()
+            || $other->getDBkey() !== $this->getDBkey()) {
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * Returns a string representation of the title, for logging. This is purely informative
-	 * and must not be used programmatically.
-	 *
-	 * @return string
-	 */
-	public function __toString(): string {
-		$s = '[' . $this->namespace . ':' . $this->dbKey . ']';
+    /**
+     * Returns a string representation of the title, for logging. This is purely informative
+     * and must not be used programmatically.
+     *
+     * @return string
+     */
+    public function __toString(): string
+    {
+        $s = '[' . $this->namespace . ':' . $this->dbKey . ']';
 
-		if ( $this->wikiId ) {
-			$s .= '@' . $this->wikiId;
-		}
+        if ($this->wikiId) {
+            $s .= '@' . $this->wikiId;
+        }
 
-		return $s;
-	}
+        return $s;
+    }
 
 }

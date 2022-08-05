@@ -32,146 +32,157 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup API
  */
-class ApiSetPageLanguage extends ApiBase {
+class ApiSetPageLanguage extends ApiBase
+{
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
+    /** @var LanguageNameUtils */
+    private $languageNameUtils;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LanguageNameUtils $languageNameUtils
-	 */
-	public function __construct(
-		ApiMain $mainModule,
-		$moduleName,
-		ILoadBalancer $loadBalancer,
-		LanguageNameUtils $languageNameUtils
-	) {
-		parent::__construct( $mainModule, $moduleName );
-		$this->loadBalancer = $loadBalancer;
-		$this->languageNameUtils = $languageNameUtils;
-	}
+    /**
+     * @param ApiMain $mainModule
+     * @param string $moduleName
+     * @param ILoadBalancer $loadBalancer
+     * @param LanguageNameUtils $languageNameUtils
+     */
+    public function __construct(
+        ApiMain $mainModule,
+        $moduleName,
+        ILoadBalancer $loadBalancer,
+        LanguageNameUtils $languageNameUtils
+    )
+    {
+        parent::__construct($mainModule, $moduleName);
+        $this->loadBalancer = $loadBalancer;
+        $this->languageNameUtils = $languageNameUtils;
+    }
 
-	// Check if change language feature is enabled
-	protected function getExtendedDescription() {
-		if ( !$this->getConfig()->get( MainConfigNames::PageLanguageUseDB ) ) {
-			return 'apihelp-setpagelanguage-extended-description-disabled';
-		}
-		return parent::getExtendedDescription();
-	}
+    // Check if change language feature is enabled
+    protected function getExtendedDescription()
+    {
+        if (!$this->getConfig()->get(MainConfigNames::PageLanguageUseDB)) {
+            return 'apihelp-setpagelanguage-extended-description-disabled';
+        }
 
-	/**
-	 * Extracts the title and language from the request parameters and invokes
-	 * the static SpecialPageLanguage::changePageLanguage() function with these as arguments.
-	 * If the language change succeeds, the title, old language, and new language
-	 * of the article changed, as well as the performer of the language change
-	 * are added to the result object.
-	 */
-	public function execute() {
-		// Check if change language feature is enabled
-		if ( !$this->getConfig()->get( MainConfigNames::PageLanguageUseDB ) ) {
-			$this->dieWithError( 'apierror-pagelang-disabled' );
-		}
+        return parent::getExtendedDescription();
+    }
 
-		// Check if the user has permissions
-		$this->checkUserRightsAny( 'pagelang' );
+    /**
+     * Extracts the title and language from the request parameters and invokes
+     * the static SpecialPageLanguage::changePageLanguage() function with these as arguments.
+     * If the language change succeeds, the title, old language, and new language
+     * of the article changed, as well as the performer of the language change
+     * are added to the result object.
+     */
+    public function execute()
+    {
+        // Check if change language feature is enabled
+        if (!$this->getConfig()->get(MainConfigNames::PageLanguageUseDB)) {
+            $this->dieWithError('apierror-pagelang-disabled');
+        }
 
-		$this->useTransactionalTimeLimit();
+        // Check if the user has permissions
+        $this->checkUserRightsAny('pagelang');
 
-		$params = $this->extractRequestParams();
+        $this->useTransactionalTimeLimit();
 
-		$pageObj = $this->getTitleOrPageId( $params, 'fromdbmaster' );
-		$titleObj = $pageObj->getTitle();
-		$this->getErrorFormatter()->setContextTitle( $titleObj );
-		if ( !$pageObj->exists() ) {
-			$this->dieWithError( 'apierror-missingtitle' );
-		}
+        $params = $this->extractRequestParams();
 
-		// Check that the user is allowed to edit the page
-		$this->checkTitleUserPermissions( $titleObj, 'edit' );
+        $pageObj = $this->getTitleOrPageId($params, 'fromdbmaster');
+        $titleObj = $pageObj->getTitle();
+        $this->getErrorFormatter()->setContextTitle($titleObj);
+        if (!$pageObj->exists()) {
+            $this->dieWithError('apierror-missingtitle');
+        }
 
-		// If change tagging was requested, check that the user is allowed to tag,
-		// and the tags are valid
-		if ( $params['tags'] ) {
-			$tagStatus = ChangeTags::canAddTagsAccompanyingChange( $params['tags'], $this->getAuthority() );
-			if ( !$tagStatus->isOK() ) {
-				$this->dieStatus( $tagStatus );
-			}
-		}
+        // Check that the user is allowed to edit the page
+        $this->checkTitleUserPermissions($titleObj, 'edit');
 
-		$status = SpecialPageLanguage::changePageLanguage(
-			$this,
-			$titleObj,
-			$params['lang'],
-			$params['reason'] ?? '',
-			$params['tags'] ?: [],
-			$this->loadBalancer->getConnectionRef( ILoadBalancer::DB_PRIMARY )
-		);
+        // If change tagging was requested, check that the user is allowed to tag,
+        // and the tags are valid
+        if ($params['tags']) {
+            $tagStatus = ChangeTags::canAddTagsAccompanyingChange($params['tags'], $this->getAuthority());
+            if (!$tagStatus->isOK()) {
+                $this->dieStatus($tagStatus);
+            }
+        }
 
-		if ( !$status->isOK() ) {
-			$this->dieStatus( $status );
-		}
+        $status = SpecialPageLanguage::changePageLanguage(
+            $this,
+            $titleObj,
+            $params['lang'],
+            $params['reason'] ?? '',
+            $params['tags'] ?: [],
+            $this->loadBalancer->getConnectionRef(ILoadBalancer::DB_PRIMARY)
+        );
 
-		$r = [
-			'title' => $titleObj->getPrefixedText(),
-			'oldlanguage' => $status->value->oldLanguage,
-			'newlanguage' => $status->value->newLanguage,
-			'logid' => $status->value->logId
-		];
-		$this->getResult()->addValue( null, $this->getModuleName(), $r );
-	}
+        if (!$status->isOK()) {
+            $this->dieStatus($status);
+        }
 
-	public function mustBePosted() {
-		return true;
-	}
+        $r = [
+            'title'       => $titleObj->getPrefixedText(),
+            'oldlanguage' => $status->value->oldLanguage,
+            'newlanguage' => $status->value->newLanguage,
+            'logid'       => $status->value->logId
+        ];
+        $this->getResult()->addValue(null, $this->getModuleName(), $r);
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'title' => null,
-			'pageid' => [
-				ParamValidator::PARAM_TYPE => 'integer'
-			],
-			'lang' => [
-				ParamValidator::PARAM_TYPE => array_merge(
-					[ 'default' ],
-					array_keys( $this->languageNameUtils->getLanguageNames(
-						LanguageNameUtils::AUTONYMS,
-						LanguageNameUtils::SUPPORTED
-					) )
-				),
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'reason' => null,
-			'tags' => [
-				ParamValidator::PARAM_TYPE => 'tags',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-		];
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'title'  => null,
+            'pageid' => [
+                ParamValidator::PARAM_TYPE => 'integer'
+            ],
+            'lang'   => [
+                ParamValidator::PARAM_TYPE     => array_merge(
+                    ['default'],
+                    array_keys($this->languageNameUtils->getLanguageNames(
+                        LanguageNameUtils::AUTONYMS,
+                        LanguageNameUtils::SUPPORTED
+                    ))
+                ),
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
+            'reason' => null,
+            'tags'   => [
+                ParamValidator::PARAM_TYPE    => 'tags',
+                ParamValidator::PARAM_ISMULTI => true,
+            ],
+        ];
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=setpagelanguage&title=Main%20Page&lang=eu&token=123ABC'
-				=> 'apihelp-setpagelanguage-example-language',
-			'action=setpagelanguage&pageid=123&lang=default&token=123ABC'
-				=> 'apihelp-setpagelanguage-example-default',
-		];
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:SetPageLanguage';
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=setpagelanguage&title=Main%20Page&lang=eu&token=123ABC'
+            => 'apihelp-setpagelanguage-example-language',
+            'action=setpagelanguage&pageid=123&lang=default&token=123ABC'
+            => 'apihelp-setpagelanguage-example-default',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:SetPageLanguage';
+    }
 }

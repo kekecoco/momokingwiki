@@ -21,8 +21,10 @@
 /**
  * No-op class for publishing messages into a PubSub system
  */
-class EventRelayerNull extends EventRelayer {
-	public function doNotify( $channel, array $events ) {
-		return true;
-	}
+class EventRelayerNull extends EventRelayer
+{
+    public function doNotify($channel, array $events)
+    {
+        return true;
+    }
 }

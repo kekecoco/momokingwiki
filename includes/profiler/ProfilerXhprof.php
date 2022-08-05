@@ -33,206 +33,221 @@
  * @see https://php.net/xhprof
  * @see https://github.com/tideways/php-xhprof-extension
  */
-class ProfilerXhprof extends Profiler {
-	/**
-	 * @var XhprofData|null
-	 */
-	protected $xhprofData;
+class ProfilerXhprof extends Profiler
+{
+    /**
+     * @var XhprofData|null
+     */
+    protected $xhprofData;
 
-	/**
-	 * Profiler for explicit, arbitrary, frame labels
-	 * @var SectionProfiler
-	 */
-	protected $sprofiler;
+    /**
+     * Profiler for explicit, arbitrary, frame labels
+     * @var SectionProfiler
+     */
+    protected $sprofiler;
 
-	/**
-	 * @see $wgProfiler
-	 * @param array $params Associative array of parameters:
-	 *  - int flags: Bitmask of constants from the Xhprof or Tideways extension
-	 *    that will be passed to its enable function,
-	 *    such as `XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY | XHPROF_FLAGS_NO_BUILTINS`.
-	 *    With Tideways-XHProf, use `TIDEWAYS_XHPROF_FLAGS_*` instead.
-	 *  - bool running: If true, it is assumed that the enable function was already
-	 *    called. The `flags` option is ignored in this case.
-	 *    This exists for use with a custom web entrypoint from which the profiler
-	 *    is started before MediaWiki is included.
-	 *  - array include: If set, only function names matching a pattern in this
-	 *    array will be reported. The pattern strings will be matched using
-	 *    the PHP fnmatch() function.
-	 *  - array exclude: If set, function names matching an exact name in this
-	 *    will be skipped over by XHProf. Ignored functions become transparent
-	 *    in the profile. For example, `foo=>ignored=>bar` becomes `foo=>bar`.
-	 *    This option is backed by XHProf's `ignored_functions` option.
-	 *
-	 *    **Note:** The `exclude` option is not supported in Tideways-XHProf.
-	 */
-	public function __construct( array $params = [] ) {
-		parent::__construct( $params );
+    /**
+     * @param array $params Associative array of parameters:
+     *  - int flags: Bitmask of constants from the Xhprof or Tideways extension
+     *    that will be passed to its enable function,
+     *    such as `XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY | XHPROF_FLAGS_NO_BUILTINS`.
+     *    With Tideways-XHProf, use `TIDEWAYS_XHPROF_FLAGS_*` instead.
+     *  - bool running: If true, it is assumed that the enable function was already
+     *    called. The `flags` option is ignored in this case.
+     *    This exists for use with a custom web entrypoint from which the profiler
+     *    is started before MediaWiki is included.
+     *  - array include: If set, only function names matching a pattern in this
+     *    array will be reported. The pattern strings will be matched using
+     *    the PHP fnmatch() function.
+     *  - array exclude: If set, function names matching an exact name in this
+     *    will be skipped over by XHProf. Ignored functions become transparent
+     *    in the profile. For example, `foo=>ignored=>bar` becomes `foo=>bar`.
+     *    This option is backed by XHProf's `ignored_functions` option.
+     *
+     *    **Note:** The `exclude` option is not supported in Tideways-XHProf.
+     * @see $wgProfiler
+     */
+    public function __construct(array $params = [])
+    {
+        parent::__construct($params);
 
-		// See T180183 and T247332 for why we need the 'running' option.
-		if ( empty( $params['running'] ) ) {
-			$flags = $params['flags'] ?? 0;
-			$options = isset( $params['exclude'] )
-				? [ 'ignored_functions' => $params['exclude'] ]
-				: [];
+        // See T180183 and T247332 for why we need the 'running' option.
+        if (empty($params['running'])) {
+            $flags = $params['flags'] ?? 0;
+            $options = isset($params['exclude'])
+                ? ['ignored_functions' => $params['exclude']]
+                : [];
 
-			Xhprof::enable( $flags, $options );
-		}
+            Xhprof::enable($flags, $options);
+        }
 
-		$this->sprofiler = new SectionProfiler();
-	}
+        $this->sprofiler = new SectionProfiler();
+    }
 
-	/**
-	 * @return XhprofData
-	 */
-	public function getXhprofData() {
-		if ( !$this->xhprofData ) {
-			$this->xhprofData = new XhprofData( Xhprof::disable(), $this->params );
-		}
-		return $this->xhprofData;
-	}
+    /**
+     * @return XhprofData
+     */
+    public function getXhprofData()
+    {
+        if (!$this->xhprofData) {
+            $this->xhprofData = new XhprofData(Xhprof::disable(), $this->params);
+        }
 
-	public function scopedProfileIn( $section ) {
-		$key = 'section.' . ltrim( $section, '.' );
-		return $this->sprofiler->scopedProfileIn( $key );
-	}
+        return $this->xhprofData;
+    }
 
-	/**
-	 * No-op for xhprof profiling.
-	 */
-	public function close() {
-	}
+    public function scopedProfileIn($section)
+    {
+        $key = 'section.' . ltrim($section, '.');
 
-	/**
-	 * Check if a function or section should be excluded from the output.
-	 *
-	 * @param string $name Function or section name.
-	 * @return bool
-	 */
-	private function shouldExclude( $name ) {
-		if ( $name === '-total' ) {
-			return true;
-		}
-		if ( !empty( $this->params['include'] ) ) {
-			foreach ( $this->params['include'] as $pattern ) {
-				if ( fnmatch( $pattern, $name, FNM_NOESCAPE ) ) {
-					return false;
-				}
-			}
-			return true;
-		}
-		if ( !empty( $this->params['exclude'] ) ) {
-			foreach ( $this->params['exclude'] as $pattern ) {
-				if ( fnmatch( $pattern, $name, FNM_NOESCAPE ) ) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+        return $this->sprofiler->scopedProfileIn($key);
+    }
 
-	public function getFunctionStats() {
-		$metrics = $this->getXhprofData()->getCompleteMetrics();
-		$profile = [];
+    /**
+     * No-op for xhprof profiling.
+     */
+    public function close()
+    {
+    }
 
-		$main = null; // units in ms
-		foreach ( $metrics as $fname => $stats ) {
-			if ( $this->shouldExclude( $fname ) ) {
-				continue;
-			}
-			// Convert elapsed times from μs to ms to match interface
-			$entry = [
-				'name' => $fname,
-				'calls' => $stats['ct'],
-				'real' => $stats['wt']['total'] / 1000,
-				'%real' => $stats['wt']['percent'],
-				'cpu' => ( $stats['cpu']['total'] ?? 0 ) / 1000,
-				'%cpu' => $stats['cpu']['percent'] ?? 0,
-				'memory' => $stats['mu']['total'] ?? 0,
-				'%memory' => $stats['mu']['percent'] ?? 0,
-				'min_real' => $stats['wt']['min'] / 1000,
-				'max_real' => $stats['wt']['max'] / 1000
-			];
-			$profile[] = $entry;
-			if ( $fname === 'main()' ) {
-				$main = $entry;
-			}
-		}
+    /**
+     * Check if a function or section should be excluded from the output.
+     *
+     * @param string $name Function or section name.
+     * @return bool
+     */
+    private function shouldExclude($name)
+    {
+        if ($name === '-total') {
+            return true;
+        }
+        if (!empty($this->params['include'])) {
+            foreach ($this->params['include'] as $pattern) {
+                if (fnmatch($pattern, $name, FNM_NOESCAPE)) {
+                    return false;
+                }
+            }
 
-		// Merge in all of the custom profile sections
-		foreach ( $this->sprofiler->getFunctionStats() as $stats ) {
-			if ( $this->shouldExclude( $stats['name'] ) ) {
-				continue;
-			}
+            return true;
+        }
+        if (!empty($this->params['exclude'])) {
+            foreach ($this->params['exclude'] as $pattern) {
+                if (fnmatch($pattern, $name, FNM_NOESCAPE)) {
+                    return true;
+                }
+            }
+        }
 
-			// @note: getFunctionStats() values already in ms
-			$stats['%real'] = $main['real'] ? $stats['real'] / $main['real'] * 100 : 0;
-			$stats['%cpu'] = $main['cpu'] ? $stats['cpu'] / $main['cpu'] * 100 : 0;
-			$stats['%memory'] = $main['memory'] ? $stats['memory'] / $main['memory'] * 100 : 0;
-			$profile[] = $stats; // assume no section names collide with $metrics
-		}
+        return false;
+    }
 
-		return $profile;
-	}
+    public function getFunctionStats()
+    {
+        $metrics = $this->getXhprofData()->getCompleteMetrics();
+        $profile = [];
 
-	/**
-	 * Returns a profiling output to be stored in debug file
-	 *
-	 * @return string
-	 */
-	public function getOutput() {
-		return $this->getFunctionReport();
-	}
+        $main = null; // units in ms
+        foreach ($metrics as $fname => $stats) {
+            if ($this->shouldExclude($fname)) {
+                continue;
+            }
+            // Convert elapsed times from μs to ms to match interface
+            $entry = [
+                'name'     => $fname,
+                'calls'    => $stats['ct'],
+                'real'     => $stats['wt']['total'] / 1000,
+                '%real'    => $stats['wt']['percent'],
+                'cpu'      => ($stats['cpu']['total'] ?? 0) / 1000,
+                '%cpu'     => $stats['cpu']['percent'] ?? 0,
+                'memory'   => $stats['mu']['total'] ?? 0,
+                '%memory'  => $stats['mu']['percent'] ?? 0,
+                'min_real' => $stats['wt']['min'] / 1000,
+                'max_real' => $stats['wt']['max'] / 1000
+            ];
+            $profile[] = $entry;
+            if ($fname === 'main()') {
+                $main = $entry;
+            }
+        }
 
-	/**
-	 * Get a report of profiled functions sorted by inclusive wall clock time
-	 * in descending order.
-	 *
-	 * Each line of the report includes this data:
-	 * - Function name
-	 * - Number of times function was called
-	 * - Total wall clock time spent in function in microseconds
-	 * - Minimum wall clock time spent in function in microseconds
-	 * - Average wall clock time spent in function in microseconds
-	 * - Maximum wall clock time spent in function in microseconds
-	 * - Percentage of total wall clock time spent in function
-	 * - Total delta of memory usage from start to end of function in bytes
-	 *
-	 * @return string
-	 */
-	protected function getFunctionReport() {
-		$data = $this->getFunctionStats();
-		usort( $data, static function ( $a, $b ) {
-			return $b['real'] <=> $a['real']; // descending
-		} );
+        // Merge in all of the custom profile sections
+        foreach ($this->sprofiler->getFunctionStats() as $stats) {
+            if ($this->shouldExclude($stats['name'])) {
+                continue;
+            }
 
-		$width = 140;
-		$nameWidth = $width - 65;
-		$format = "%-{$nameWidth}s %6d %9d %9d %9d %9d %7.3f%% %9d";
-		$out = [];
-		$out[] = sprintf( "%-{$nameWidth}s %6s %9s %9s %9s %9s %7s %9s",
-			'Name', 'Calls', 'Total', 'Min', 'Each', 'Max', '%', 'Mem'
-		);
-		foreach ( $data as $stats ) {
-			$out[] = sprintf( $format,
-				$stats['name'],
-				$stats['calls'],
-				$stats['real'] * 1000,
-				$stats['min_real'] * 1000,
-				$stats['real'] / $stats['calls'] * 1000,
-				$stats['max_real'] * 1000,
-				$stats['%real'],
-				$stats['memory']
-			);
-		}
-		return implode( "\n", $out );
-	}
+            // @note: getFunctionStats() values already in ms
+            $stats['%real'] = $main['real'] ? $stats['real'] / $main['real'] * 100 : 0;
+            $stats['%cpu'] = $main['cpu'] ? $stats['cpu'] / $main['cpu'] * 100 : 0;
+            $stats['%memory'] = $main['memory'] ? $stats['memory'] / $main['memory'] * 100 : 0;
+            $profile[] = $stats; // assume no section names collide with $metrics
+        }
 
-	/**
-	 * Retrieve raw data from xhprof
-	 * @return array
-	 */
-	public function getRawData() {
-		return $this->getXhprofData()->getRawData();
-	}
+        return $profile;
+    }
+
+    /**
+     * Returns a profiling output to be stored in debug file
+     *
+     * @return string
+     */
+    public function getOutput()
+    {
+        return $this->getFunctionReport();
+    }
+
+    /**
+     * Get a report of profiled functions sorted by inclusive wall clock time
+     * in descending order.
+     *
+     * Each line of the report includes this data:
+     * - Function name
+     * - Number of times function was called
+     * - Total wall clock time spent in function in microseconds
+     * - Minimum wall clock time spent in function in microseconds
+     * - Average wall clock time spent in function in microseconds
+     * - Maximum wall clock time spent in function in microseconds
+     * - Percentage of total wall clock time spent in function
+     * - Total delta of memory usage from start to end of function in bytes
+     *
+     * @return string
+     */
+    protected function getFunctionReport()
+    {
+        $data = $this->getFunctionStats();
+        usort($data, static function ($a, $b) {
+            return $b['real'] <=> $a['real']; // descending
+        });
+
+        $width = 140;
+        $nameWidth = $width - 65;
+        $format = "%-{$nameWidth}s %6d %9d %9d %9d %9d %7.3f%% %9d";
+        $out = [];
+        $out[] = sprintf("%-{$nameWidth}s %6s %9s %9s %9s %9s %7s %9s",
+            'Name', 'Calls', 'Total', 'Min', 'Each', 'Max', '%', 'Mem'
+        );
+        foreach ($data as $stats) {
+            $out[] = sprintf($format,
+                $stats['name'],
+                $stats['calls'],
+                $stats['real'] * 1000,
+                $stats['min_real'] * 1000,
+                $stats['real'] / $stats['calls'] * 1000,
+                $stats['max_real'] * 1000,
+                $stats['%real'],
+                $stats['memory']
+            );
+        }
+
+        return implode("\n", $out);
+    }
+
+    /**
+     * Retrieve raw data from xhprof
+     * @return array
+     */
+    public function getRawData()
+    {
+        return $this->getXhprofData()->getRawData();
+    }
 }

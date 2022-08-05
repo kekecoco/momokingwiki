@@ -24,128 +24,144 @@ namespace Wikimedia\Rdbms\Platform;
  * @since 1.38
  * @see ISQLPlatform
  */
-class SqlitePlatform extends SQLPlatform {
-	public function buildGreatest( $fields, $values ) {
-		return $this->buildSuperlative( 'MAX', $fields, $values );
-	}
+class SqlitePlatform extends SQLPlatform
+{
+    public function buildGreatest($fields, $values)
+    {
+        return $this->buildSuperlative('MAX', $fields, $values);
+    }
 
-	public function buildLeast( $fields, $values ) {
-		return $this->buildSuperlative( 'MIN', $fields, $values );
-	}
+    public function buildLeast($fields, $values)
+    {
+        return $this->buildSuperlative('MIN', $fields, $values);
+    }
 
-	/**
-	 * Build a concatenation list to feed into a SQL query
-	 *
-	 * @param string[] $stringList
-	 * @return string
-	 */
-	public function buildConcat( $stringList ) {
-		return '(' . implode( ') || (', $stringList ) . ')';
-	}
+    /**
+     * Build a concatenation list to feed into a SQL query
+     *
+     * @param string[] $stringList
+     * @return string
+     */
+    public function buildConcat($stringList)
+    {
+        return '(' . implode(') || (', $stringList) . ')';
+    }
 
-	/**
-	 * @param string[] $sqls
-	 * @param bool $all Whether to "UNION ALL" or not
-	 * @return string
-	 */
-	public function unionQueries( $sqls, $all ) {
-		$glue = $all ? ' UNION ALL ' : ' UNION ';
+    /**
+     * @param string[] $sqls
+     * @param bool $all Whether to "UNION ALL" or not
+     * @return string
+     */
+    public function unionQueries($sqls, $all)
+    {
+        $glue = $all ? ' UNION ALL ' : ' UNION ';
 
-		return implode( $glue, $sqls );
-	}
+        return implode($glue, $sqls);
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function unionSupportsOrderAndLimit() {
-		return false;
-	}
+    /**
+     * @return bool
+     */
+    public function unionSupportsOrderAndLimit()
+    {
+        return false;
+    }
 
-	public function buildSubstring( $input, $startPosition, $length = null ) {
-		$this->assertBuildSubstringParams( $startPosition, $length );
-		$params = [ $input, $startPosition ];
-		if ( $length !== null ) {
-			$params[] = $length;
-		}
-		return 'SUBSTR(' . implode( ',', $params ) . ')';
-	}
+    public function buildSubstring($input, $startPosition, $length = null)
+    {
+        $this->assertBuildSubstringParams($startPosition, $length);
+        $params = [$input, $startPosition];
+        if ($length !== null) {
+            $params[] = $length;
+        }
 
-	/**
-	 * @param string $field Field or column to cast
-	 * @return string
-	 * @since 1.28
-	 */
-	public function buildStringCast( $field ) {
-		return 'CAST ( ' . $field . ' AS TEXT )';
-	}
+        return 'SUBSTR(' . implode(',', $params) . ')';
+    }
 
-	/**
-	 * Use MySQL's naming (accounts for prefix etc) but remove surrounding backticks
-	 *
-	 * @param string $name
-	 * @param string $format
-	 * @return string
-	 */
-	public function tableName( $name, $format = 'quoted' ) {
-		// table names starting with sqlite_ are reserved
-		if ( strpos( $name, 'sqlite_' ) === 0 ) {
-			return $name;
-		}
+    /**
+     * @param string $field Field or column to cast
+     * @return string
+     * @since 1.28
+     */
+    public function buildStringCast($field)
+    {
+        return 'CAST ( ' . $field . ' AS TEXT )';
+    }
 
-		return str_replace( '"', '', parent::tableName( $name, $format ) );
-	}
+    /**
+     * Use MySQL's naming (accounts for prefix etc) but remove surrounding backticks
+     *
+     * @param string $name
+     * @param string $format
+     * @return string
+     */
+    public function tableName($name, $format = 'quoted')
+    {
+        // table names starting with sqlite_ are reserved
+        if (strpos($name, 'sqlite_') === 0) {
+            return $name;
+        }
 
-	protected function makeSelectOptions( array $options ) {
-		// Remove problematic options that the base implementation converts to SQL
-		foreach ( $options as $k => $v ) {
-			if ( is_numeric( $k ) && ( $v === 'FOR UPDATE' || $v === 'LOCK IN SHARE MODE' ) ) {
-				$options[$k] = '';
-			}
-		}
+        return str_replace('"', '', parent::tableName($name, $format));
+    }
 
-		return parent::makeSelectOptions( $options );
-	}
+    protected function makeSelectOptions(array $options)
+    {
+        // Remove problematic options that the base implementation converts to SQL
+        foreach ($options as $k => $v) {
+            if (is_numeric($k) && ($v === 'FOR UPDATE' || $v === 'LOCK IN SHARE MODE')) {
+                $options[$k] = '';
+            }
+        }
 
-	public function buildGroupConcatField(
-		$delim, $table, $field, $conds = '', $join_conds = []
-	) {
-		$fld = "group_concat($field," . $this->quoter->addQuotes( $delim ) . ')';
+        return parent::makeSelectOptions($options);
+    }
 
-		return '(' . $this->selectSQLText( $table, $fld, $conds, null, [], $join_conds ) . ')';
-	}
+    public function buildGroupConcatField(
+        $delim, $table, $field, $conds = '', $join_conds = []
+    )
+    {
+        $fld = "group_concat($field," . $this->quoter->addQuotes($delim) . ')';
 
-	protected function makeInsertNonConflictingVerbAndOptions() {
-		return [ 'INSERT OR IGNORE INTO', '' ];
-	}
+        return '(' . $this->selectSQLText($table, $fld, $conds, null, [], $join_conds) . ')';
+    }
 
-	/**
-	 * @param array $options
-	 * @return array
-	 */
-	protected function makeUpdateOptionsArray( $options ) {
-		$options = parent::makeUpdateOptionsArray( $options );
-		$options = $this->rewriteIgnoreKeyword( $options );
+    protected function makeInsertNonConflictingVerbAndOptions()
+    {
+        return ['INSERT OR IGNORE INTO', ''];
+    }
 
-		return $options;
-	}
+    /**
+     * @param array $options
+     * @return array
+     */
+    protected function makeUpdateOptionsArray($options)
+    {
+        $options = parent::makeUpdateOptionsArray($options);
+        $options = $this->rewriteIgnoreKeyword($options);
 
-	/**
-	 * @param array $options
-	 * @return array
-	 */
-	private function rewriteIgnoreKeyword( $options ) {
-		# SQLite uses OR IGNORE not just IGNORE
-		foreach ( $options as $k => $v ) {
-			if ( $v == 'IGNORE' ) {
-				$options[$k] = 'OR IGNORE';
-			}
-		}
+        return $options;
+    }
 
-		return $options;
-	}
+    /**
+     * @param array $options
+     * @return array
+     */
+    private function rewriteIgnoreKeyword($options)
+    {
+        # SQLite uses OR IGNORE not just IGNORE
+        foreach ($options as $k => $v) {
+            if ($v == 'IGNORE') {
+                $options[$k] = 'OR IGNORE';
+            }
+        }
 
-	public function dropTableSqlText( $table ) {
-		// No CASCADE support; https://www.sqlite.org/lang_droptable.html
-		return "DROP TABLE " . $this->tableName( $table );
-	}
+        return $options;
+    }
+
+    public function dropTableSqlText($table)
+    {
+        // No CASCADE support; https://www.sqlite.org/lang_droptable.html
+        return "DROP TABLE " . $this->tableName($table);
+    }
 }

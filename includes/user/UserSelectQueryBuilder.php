@@ -26,198 +26,225 @@ use Wikimedia\Assert\PreconditionException;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
-class UserSelectQueryBuilder extends SelectQueryBuilder {
+class UserSelectQueryBuilder extends SelectQueryBuilder
+{
 
-	/** @var ActorStore */
-	private $actorStore;
+    /** @var ActorStore */
+    private $actorStore;
 
-	/**
-	 * @internal
-	 * @param IDatabase $db
-	 * @param ActorStore $actorStore
-	 */
-	public function __construct( IDatabase $db, ActorStore $actorStore ) {
-		parent::__construct( $db );
-		$this->actorStore = $actorStore;
-		$this->table( 'actor' );
-	}
+    /**
+     * @param IDatabase $db
+     * @param ActorStore $actorStore
+     * @internal
+     */
+    public function __construct(IDatabase $db, ActorStore $actorStore)
+    {
+        parent::__construct($db);
+        $this->actorStore = $actorStore;
+        $this->table('actor');
+    }
 
-	/**
-	 * Find by provided user ids.
-	 *
-	 * @param int|int[] $userIds
-	 * @return UserSelectQueryBuilder
-	 */
-	public function whereUserIds( $userIds ): self {
-		Assert::parameterType( [ 'integer', 'array' ], $userIds, '$userIds' );
-		$this->conds( [ 'actor_user' => $userIds ] );
-		return $this;
-	}
+    /**
+     * Find by provided user ids.
+     *
+     * @param int|int[] $userIds
+     * @return UserSelectQueryBuilder
+     */
+    public function whereUserIds($userIds): self
+    {
+        Assert::parameterType(['integer', 'array'], $userIds, '$userIds');
+        $this->conds(['actor_user' => $userIds]);
 
-	/**
-	 * Find by provided user ids.
-	 * @deprecated since 1.37, use whereUserIds instead
-	 * @param int|int[] $userIds
-	 * @return UserSelectQueryBuilder
-	 */
-	public function userIds( $userIds ): self {
-		return $this->whereUserIds( $userIds );
-	}
+        return $this;
+    }
 
-	/**
-	 * Find by provided user names.
-	 *
-	 * @param string|string[] $userNames
-	 * @return UserSelectQueryBuilder
-	 */
-	public function whereUserNames( $userNames ): self {
-		Assert::parameterType( [ 'string', 'array' ], $userNames, '$userIds' );
-		$userNames = array_map( function ( $name ) {
-			return $this->actorStore->normalizeUserName( (string)$name );
-		}, (array)$userNames );
-		$this->conds( [ 'actor_name' => $userNames ] );
-		return $this;
-	}
+    /**
+     * Find by provided user ids.
+     * @param int|int[] $userIds
+     * @return UserSelectQueryBuilder
+     * @deprecated since 1.37, use whereUserIds instead
+     */
+    public function userIds($userIds): self
+    {
+        return $this->whereUserIds($userIds);
+    }
 
-	/**
-	 * Find by provided user names.
-	 * @deprecated since 1.37, use whereUserNames instead
-	 * @param string|string[] $userNames
-	 * @return UserSelectQueryBuilder
-	 */
-	public function userNames( $userNames ): self {
-		return $this->whereUserNames( $userNames );
-	}
+    /**
+     * Find by provided user names.
+     *
+     * @param string|string[] $userNames
+     * @return UserSelectQueryBuilder
+     */
+    public function whereUserNames($userNames): self
+    {
+        Assert::parameterType(['string', 'array'], $userNames, '$userIds');
+        $userNames = array_map(function ($name) {
+            return $this->actorStore->normalizeUserName((string)$name);
+        }, (array)$userNames);
+        $this->conds(['actor_name' => $userNames]);
 
-	/**
-	 * Find users with names starting from the provided prefix.
-	 *
-	 * @note this could produce a huge number of results, like User00000 ... User99999,
-	 * so you must set a limit when using this condition.
-	 *
-	 * @param string $prefix
-	 * @return UserSelectQueryBuilder
-	 */
-	public function whereUserNamePrefix( string $prefix ): self {
-		if ( !isset( $this->options['LIMIT'] ) ) {
-			throw new PreconditionException( 'Must set a limit when using a user name prefix' );
-		}
-		$like = $this->db->buildLike( $prefix, $this->db->anyString() );
-		$this->conds( "actor_name{$like}" );
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Find users with names starting from the provided prefix.
-	 *
-	 * @note this could produce a huge number of results, like User00000 ... User99999,
-	 * so you must set a limit when using this condition.
-	 * @deprecated since 1.37 use whereUserNamePrefix instead
-	 * @param string $prefix
-	 * @return UserSelectQueryBuilder
-	 */
-	public function userNamePrefix( string $prefix ): self {
-		return $this->whereUserNamePrefix( $prefix );
-	}
+    /**
+     * Find by provided user names.
+     * @param string|string[] $userNames
+     * @return UserSelectQueryBuilder
+     * @deprecated since 1.37, use whereUserNames instead
+     */
+    public function userNames($userNames): self
+    {
+        return $this->whereUserNames($userNames);
+    }
 
-	/**
-	 * Order results by name in $direction
-	 *
-	 * @param string $dir one of self::SORT_ACS or self::SORT_DESC
-	 * @return UserSelectQueryBuilder
-	 */
-	public function orderByName( string $dir = self::SORT_ASC ): self {
-		$this->orderBy( 'actor_name', $dir );
-		return $this;
-	}
+    /**
+     * Find users with names starting from the provided prefix.
+     *
+     * @note this could produce a huge number of results, like User00000 ... User99999,
+     * so you must set a limit when using this condition.
+     *
+     * @param string $prefix
+     * @return UserSelectQueryBuilder
+     */
+    public function whereUserNamePrefix(string $prefix): self
+    {
+        if (!isset($this->options['LIMIT'])) {
+            throw new PreconditionException('Must set a limit when using a user name prefix');
+        }
+        $like = $this->db->buildLike($prefix, $this->db->anyString());
+        $this->conds("actor_name{$like}");
 
-	/**
-	 * Order results by user id.
-	 *
-	 * @param string $dir one of self::SORT_ACS or self::SORT_DESC
-	 * @return UserSelectQueryBuilder
-	 */
-	public function orderByUserId( string $dir = self::SORT_ASC ): self {
-		$this->orderBy( 'actor_user', $dir );
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Only return registered users.
-	 *
-	 * @return UserSelectQueryBuilder
-	 */
-	public function registered(): self {
-		$this->conds( [ 'actor_user != 0' ] );
-		return $this;
-	}
+    /**
+     * Find users with names starting from the provided prefix.
+     *
+     * @note this could produce a huge number of results, like User00000 ... User99999,
+     * so you must set a limit when using this condition.
+     * @param string $prefix
+     * @return UserSelectQueryBuilder
+     * @deprecated since 1.37 use whereUserNamePrefix instead
+     */
+    public function userNamePrefix(string $prefix): self
+    {
+        return $this->whereUserNamePrefix($prefix);
+    }
 
-	/**
-	 * Only return anonymous users.
-	 *
-	 * @return UserSelectQueryBuilder
-	 */
-	public function anon(): self {
-		$this->conds( [ 'actor_user' => null ] );
-		return $this;
-	}
+    /**
+     * Order results by name in $direction
+     *
+     * @param string $dir one of self::SORT_ACS or self::SORT_DESC
+     * @return UserSelectQueryBuilder
+     */
+    public function orderByName(string $dir = self::SORT_ASC): self
+    {
+        $this->orderBy('actor_name', $dir);
 
-	/**
-	 * Filter based on user hidden status
-	 *
-	 * @since 1.38
-	 * @param bool $hidden True - only hidden users, false - no hidden users
-	 * @return $this
-	 */
-	public function hidden( bool $hidden ): self {
-		$this->leftJoin( 'ipblocks', null, [ "actor_user=ipb_user" ] );
-		if ( $hidden ) {
-			// only hidden users
-			$this->conds( [ 'ipb_deleted = 1' ] );
-		} else {
-			// filter out hidden users
-			$this->conds( [ 'ipb_deleted = 0 OR ipb_deleted IS NULL' ] );
-		}
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Fetch a single UserIdentity that matches specified criteria.
-	 *
-	 * @return UserIdentity|null
-	 */
-	public function fetchUserIdentity(): ?UserIdentity {
-		$this->fields( [ 'actor_id', 'actor_name', 'actor_user' ] );
-		$row = $this->fetchRow();
-		if ( !$row ) {
-			return null;
-		}
-		return $this->actorStore->newActorFromRow( $row );
-	}
+    /**
+     * Order results by user id.
+     *
+     * @param string $dir one of self::SORT_ACS or self::SORT_DESC
+     * @return UserSelectQueryBuilder
+     */
+    public function orderByUserId(string $dir = self::SORT_ASC): self
+    {
+        $this->orderBy('actor_user', $dir);
 
-	/**
-	 * Fetch UserIdentities for the specified query.
-	 *
-	 * @return Iterator<UserIdentity>
-	 */
-	public function fetchUserIdentities(): Iterator {
-		$this->fields( [ 'actor_id', 'actor_name', 'actor_user' ] );
-		return call_user_func( function () {
-			$result = $this->fetchResultSet();
-			foreach ( $result as $row ) {
-				yield $this->actorStore->newActorFromRow( $row );
-			}
-			$result->free();
-		} );
-	}
+        return $this;
+    }
 
-	/**
-	 * Returns an array of user names matching the query.
-	 *
-	 * @return string[]
-	 */
-	public function fetchUserNames(): array {
-		$this->field( 'actor_name' );
-		return $this->fetchFieldValues();
-	}
+    /**
+     * Only return registered users.
+     *
+     * @return UserSelectQueryBuilder
+     */
+    public function registered(): self
+    {
+        $this->conds(['actor_user != 0']);
+
+        return $this;
+    }
+
+    /**
+     * Only return anonymous users.
+     *
+     * @return UserSelectQueryBuilder
+     */
+    public function anon(): self
+    {
+        $this->conds(['actor_user' => null]);
+
+        return $this;
+    }
+
+    /**
+     * Filter based on user hidden status
+     *
+     * @param bool $hidden True - only hidden users, false - no hidden users
+     * @return $this
+     * @since 1.38
+     */
+    public function hidden(bool $hidden): self
+    {
+        $this->leftJoin('ipblocks', null, ["actor_user=ipb_user"]);
+        if ($hidden) {
+            // only hidden users
+            $this->conds(['ipb_deleted = 1']);
+        } else {
+            // filter out hidden users
+            $this->conds(['ipb_deleted = 0 OR ipb_deleted IS NULL']);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Fetch a single UserIdentity that matches specified criteria.
+     *
+     * @return UserIdentity|null
+     */
+    public function fetchUserIdentity(): ?UserIdentity
+    {
+        $this->fields(['actor_id', 'actor_name', 'actor_user']);
+        $row = $this->fetchRow();
+        if (!$row) {
+            return null;
+        }
+
+        return $this->actorStore->newActorFromRow($row);
+    }
+
+    /**
+     * Fetch UserIdentities for the specified query.
+     *
+     * @return Iterator<UserIdentity>
+     */
+    public function fetchUserIdentities(): Iterator
+    {
+        $this->fields(['actor_id', 'actor_name', 'actor_user']);
+
+        return call_user_func(function () {
+            $result = $this->fetchResultSet();
+            foreach ($result as $row) {
+                yield $this->actorStore->newActorFromRow($row);
+            }
+            $result->free();
+        });
+    }
+
+    /**
+     * Returns an array of user names matching the query.
+     *
+     * @return string[]
+     */
+    public function fetchUserNames(): array
+    {
+        $this->field('actor_name');
+
+        return $this->fetchFieldValues();
+    }
 }

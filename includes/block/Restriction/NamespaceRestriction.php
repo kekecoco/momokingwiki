@@ -22,23 +22,25 @@
 
 namespace MediaWiki\Block\Restriction;
 
-class NamespaceRestriction extends AbstractRestriction {
+class NamespaceRestriction extends AbstractRestriction
+{
 
-	/**
-	 * @inheritDoc
-	 */
-	public const TYPE = 'ns';
+    /**
+     * @inheritDoc
+     */
+    public const TYPE = 'ns';
 
-	/**
-	 * @inheritDoc
-	 */
-	public const TYPE_ID = 2;
+    /**
+     * @inheritDoc
+     */
+    public const TYPE_ID = 2;
 
-	/**
-	 * @inheritDoc
-	 */
-	public function matches( \Title $title ) {
-		return $this->getValue() === $title->getNamespace();
-	}
+    /**
+     * @inheritDoc
+     */
+    public function matches(\Title $title)
+    {
+        return $this->getValue() === $title->getNamespace();
+    }
 
 }

@@ -34,20 +34,24 @@ use MediaWiki\Session\Token;
  *
  * @since 1.27
  */
-class LoggedOutEditToken extends Token {
+class LoggedOutEditToken extends Token
+{
 
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		parent::__construct( '', '', false );
-	}
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        parent::__construct('', '', false);
+    }
 
-	protected function toStringAtTimestamp( $timestamp ) {
-		return self::SUFFIX;
-	}
+    protected function toStringAtTimestamp($timestamp)
+    {
+        return self::SUFFIX;
+    }
 
-	public function match( $userToken, $maxAge = null ) {
-		return $userToken === self::SUFFIX;
-	}
+    public function match($userToken, $maxAge = null)
+    {
+        return $userToken === self::SUFFIX;
+    }
 }

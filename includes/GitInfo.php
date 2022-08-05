@@ -37,432 +37,458 @@ use Wikimedia\AtEase\AtEase;
  * @note marked as newable in 1.35 for lack of a better alternative,
  *       but should become a stateless service eventually.
  */
-class GitInfo {
+class GitInfo
+{
 
-	/**
-	 * Singleton for the repo at $IP
-	 */
-	protected static $repo = null;
+    /**
+     * Singleton for the repo at $IP
+     */
+    protected static $repo = null;
 
-	/**
-	 * Location of the .git directory
-	 */
-	protected $basedir;
+    /**
+     * Location of the .git directory
+     */
+    protected $basedir;
 
-	/**
-	 * Location of the repository
-	 */
-	protected $repoDir;
+    /**
+     * Location of the repository
+     */
+    protected $repoDir;
 
-	/**
-	 * Path to JSON cache file for pre-computed git information.
-	 */
-	protected $cacheFile;
+    /**
+     * Path to JSON cache file for pre-computed git information.
+     */
+    protected $cacheFile;
 
-	/**
-	 * Cached git information.
-	 */
-	protected $cache = [];
+    /**
+     * Cached git information.
+     */
+    protected $cache = [];
 
-	/**
-	 * @var array|false Map of repo URLs to viewer URLs. Access via method getViewers().
-	 */
-	private static $viewers = false;
+    /**
+     * @var array|false Map of repo URLs to viewer URLs. Access via method getViewers().
+     */
+    private static $viewers = false;
 
-	/** Configuration options needed */
-	private const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::BaseDirectory,
-		MainConfigNames::CacheDirectory,
-		MainConfigNames::GitBin,
-		MainConfigNames::GitInfoCacheDirectory,
-		MainConfigNames::GitRepositoryViewers,
-	];
+    /** Configuration options needed */
+    private const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::BaseDirectory,
+        MainConfigNames::CacheDirectory,
+        MainConfigNames::GitBin,
+        MainConfigNames::GitInfoCacheDirectory,
+        MainConfigNames::GitRepositoryViewers,
+    ];
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/**
-	 * @stable to call
-	 * @param string $repoDir The root directory of the repo where .git can be found
-	 * @param bool $usePrecomputed Use precomputed information if available
-	 * @see precomputeValues
-	 */
-	public function __construct( $repoDir, $usePrecomputed = true ) {
-		$this->repoDir = $repoDir;
-		$this->options = new ServiceOptions(
-			self::CONSTRUCTOR_OPTIONS,
-			MediaWikiServices::getInstance()->getMainConfig()
-		);
-		$this->options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		// $this->options must be set before using getCacheFilePath()
-		$this->cacheFile = $this->getCacheFilePath( $repoDir );
-		$this->logger = LoggerFactory::getInstance( 'gitinfo' );
-		$this->logger->debug(
-			"Candidate cacheFile={$this->cacheFile} for {$repoDir}"
-		);
-		$this->hookRunner = Hooks::runner();
-		if ( $usePrecomputed &&
-			$this->cacheFile !== null &&
-			is_readable( $this->cacheFile )
-		) {
-			$this->cache = FormatJson::decode(
-				file_get_contents( $this->cacheFile ),
-				true
-			);
-			$this->logger->debug( "Loaded git data from cache for {$repoDir}" );
-		}
+    /**
+     * @stable to call
+     * @param string $repoDir The root directory of the repo where .git can be found
+     * @param bool $usePrecomputed Use precomputed information if available
+     * @see precomputeValues
+     */
+    public function __construct($repoDir, $usePrecomputed = true)
+    {
+        $this->repoDir = $repoDir;
+        $this->options = new ServiceOptions(
+            self::CONSTRUCTOR_OPTIONS,
+            MediaWikiServices::getInstance()->getMainConfig()
+        );
+        $this->options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        // $this->options must be set before using getCacheFilePath()
+        $this->cacheFile = $this->getCacheFilePath($repoDir);
+        $this->logger = LoggerFactory::getInstance('gitinfo');
+        $this->logger->debug(
+            "Candidate cacheFile={$this->cacheFile} for {$repoDir}"
+        );
+        $this->hookRunner = Hooks::runner();
+        if ($usePrecomputed &&
+            $this->cacheFile !== null &&
+            is_readable($this->cacheFile)
+        ) {
+            $this->cache = FormatJson::decode(
+                file_get_contents($this->cacheFile),
+                true
+            );
+            $this->logger->debug("Loaded git data from cache for {$repoDir}");
+        }
 
-		if ( !$this->cacheIsComplete() ) {
-			$this->logger->debug( "Cache incomplete for {$repoDir}" );
-			$this->basedir = $repoDir . DIRECTORY_SEPARATOR . '.git';
-			if ( is_readable( $this->basedir ) && !is_dir( $this->basedir ) ) {
-				$GITfile = file_get_contents( $this->basedir );
-				if ( strlen( $GITfile ) > 8 &&
-					substr( $GITfile, 0, 8 ) === 'gitdir: '
-				) {
-					$path = rtrim( substr( $GITfile, 8 ), "\r\n" );
-					if ( $path[0] === '/' || substr( $path, 1, 1 ) === ':' ) {
-						// Path from GITfile is absolute
-						$this->basedir = $path;
-					} else {
-						$this->basedir = $repoDir . DIRECTORY_SEPARATOR . $path;
-					}
-				}
-			}
-		}
-	}
+        if (!$this->cacheIsComplete()) {
+            $this->logger->debug("Cache incomplete for {$repoDir}");
+            $this->basedir = $repoDir . DIRECTORY_SEPARATOR . '.git';
+            if (is_readable($this->basedir) && !is_dir($this->basedir)) {
+                $GITfile = file_get_contents($this->basedir);
+                if (strlen($GITfile) > 8 &&
+                    substr($GITfile, 0, 8) === 'gitdir: '
+                ) {
+                    $path = rtrim(substr($GITfile, 8), "\r\n");
+                    if ($path[0] === '/' || substr($path, 1, 1) === ':') {
+                        // Path from GITfile is absolute
+                        $this->basedir = $path;
+                    } else {
+                        $this->basedir = $repoDir . DIRECTORY_SEPARATOR . $path;
+                    }
+                }
+            }
+        }
+    }
 
-	/**
-	 * Compute the path to the cache file for a given directory.
-	 *
-	 * @param string $repoDir The root directory of the repo where .git can be found
-	 * @return string Path to GitInfo cache file in $wgGitInfoCacheDirectory or
-	 * fallback in the extension directory itself
-	 * @since 1.24
-	 */
-	private function getCacheFilePath( $repoDir ) {
-		$gitInfoCacheDirectory = $this->options->get( MainConfigNames::GitInfoCacheDirectory );
-		if ( $gitInfoCacheDirectory === false ) {
-			$gitInfoCacheDirectory = $this->options->get( MainConfigNames::CacheDirectory ) . '/gitinfo';
-		}
-		$baseDir = $this->options->get( MainConfigNames::BaseDirectory );
-		if ( $gitInfoCacheDirectory ) {
-			// Convert both $IP and $repoDir to canonical paths to protect against
-			// $IP having changed between the settings files and runtime.
-			$realIP = realpath( $baseDir );
-			$repoName = realpath( $repoDir );
-			if ( $repoName === false ) {
-				// Unit tests use fake path names
-				$repoName = $repoDir;
-			}
-			if ( strpos( $repoName, $realIP ) === 0 ) {
-				// Strip $IP from path
-				$repoName = substr( $repoName, strlen( $realIP ) );
-			}
-			// Transform path to git repo to something we can safely embed in
-			// a filename
-			$repoName = strtr( $repoName, DIRECTORY_SEPARATOR, '-' );
-			$fileName = 'info' . $repoName . '.json';
-			$cachePath = "{$gitInfoCacheDirectory}/{$fileName}";
-			if ( is_readable( $cachePath ) ) {
-				return $cachePath;
-			}
-		}
+    /**
+     * Compute the path to the cache file for a given directory.
+     *
+     * @param string $repoDir The root directory of the repo where .git can be found
+     * @return string Path to GitInfo cache file in $wgGitInfoCacheDirectory or
+     * fallback in the extension directory itself
+     * @since 1.24
+     */
+    private function getCacheFilePath($repoDir)
+    {
+        $gitInfoCacheDirectory = $this->options->get(MainConfigNames::GitInfoCacheDirectory);
+        if ($gitInfoCacheDirectory === false) {
+            $gitInfoCacheDirectory = $this->options->get(MainConfigNames::CacheDirectory) . '/gitinfo';
+        }
+        $baseDir = $this->options->get(MainConfigNames::BaseDirectory);
+        if ($gitInfoCacheDirectory) {
+            // Convert both $IP and $repoDir to canonical paths to protect against
+            // $IP having changed between the settings files and runtime.
+            $realIP = realpath($baseDir);
+            $repoName = realpath($repoDir);
+            if ($repoName === false) {
+                // Unit tests use fake path names
+                $repoName = $repoDir;
+            }
+            if (strpos($repoName, $realIP) === 0) {
+                // Strip $IP from path
+                $repoName = substr($repoName, strlen($realIP));
+            }
+            // Transform path to git repo to something we can safely embed in
+            // a filename
+            $repoName = strtr($repoName, DIRECTORY_SEPARATOR, '-');
+            $fileName = 'info' . $repoName . '.json';
+            $cachePath = "{$gitInfoCacheDirectory}/{$fileName}";
+            if (is_readable($cachePath)) {
+                return $cachePath;
+            }
+        }
 
-		return "$repoDir/gitinfo.json";
-	}
+        return "$repoDir/gitinfo.json";
+    }
 
-	/**
-	 * Get the singleton for the repo at MW_INSTALL_PATH
-	 *
-	 * @return GitInfo
-	 */
-	public static function repo() {
-		if ( self::$repo === null ) {
-			self::$repo = new self( MW_INSTALL_PATH );
-		}
-		return self::$repo;
-	}
+    /**
+     * Get the singleton for the repo at MW_INSTALL_PATH
+     *
+     * @return GitInfo
+     */
+    public static function repo()
+    {
+        if (self::$repo === null) {
+            self::$repo = new self(MW_INSTALL_PATH);
+        }
 
-	/**
-	 * Check if a string looks like a hex encoded SHA1 hash
-	 *
-	 * @param string $str The string to check
-	 * @return bool Whether or not the string looks like a SHA1
-	 */
-	public static function isSHA1( $str ) {
-		return (bool)preg_match( '/^[0-9A-F]{40}$/i', $str );
-	}
+        return self::$repo;
+    }
 
-	/**
-	 * Get the HEAD of the repo (without any opening "ref: ")
-	 *
-	 * @return string|bool The HEAD (git reference or SHA1) or false
-	 */
-	public function getHead() {
-		if ( !isset( $this->cache['head'] ) ) {
-			$headFile = "{$this->basedir}/HEAD";
-			$head = false;
+    /**
+     * Check if a string looks like a hex encoded SHA1 hash
+     *
+     * @param string $str The string to check
+     * @return bool Whether or not the string looks like a SHA1
+     */
+    public static function isSHA1($str)
+    {
+        return (bool)preg_match('/^[0-9A-F]{40}$/i', $str);
+    }
 
-			if ( is_readable( $headFile ) ) {
-				$head = file_get_contents( $headFile );
+    /**
+     * Get the HEAD of the repo (without any opening "ref: ")
+     *
+     * @return string|bool The HEAD (git reference or SHA1) or false
+     */
+    public function getHead()
+    {
+        if (!isset($this->cache['head'])) {
+            $headFile = "{$this->basedir}/HEAD";
+            $head = false;
 
-				if ( preg_match( "/ref: (.*)/", $head, $m ) ) {
-					$head = rtrim( $m[1] );
-				} else {
-					$head = rtrim( $head );
-				}
-			}
-			$this->cache['head'] = $head;
-		}
-		return $this->cache['head'];
-	}
+            if (is_readable($headFile)) {
+                $head = file_get_contents($headFile);
 
-	/**
-	 * Get the SHA1 for the current HEAD of the repo
-	 *
-	 * @return string|bool A SHA1 or false
-	 */
-	public function getHeadSHA1() {
-		if ( !isset( $this->cache['headSHA1'] ) ) {
-			$head = $this->getHead();
-			$sha1 = false;
+                if (preg_match("/ref: (.*)/", $head, $m)) {
+                    $head = rtrim($m[1]);
+                } else {
+                    $head = rtrim($head);
+                }
+            }
+            $this->cache['head'] = $head;
+        }
 
-			// If detached HEAD may be a SHA1
-			if ( self::isSHA1( $head ) ) {
-				$sha1 = $head;
-			} else {
-				// If not a SHA1 it may be a ref:
-				$refFile = "{$this->basedir}/{$head}";
-				$packedRefs = "{$this->basedir}/packed-refs";
-				$headRegex = preg_quote( $head, '/' );
-				if ( is_readable( $refFile ) ) {
-					$sha1 = rtrim( file_get_contents( $refFile ) );
-				} elseif ( is_readable( $packedRefs ) &&
-					preg_match( "/^([0-9A-Fa-f]{40}) $headRegex$/m", file_get_contents( $packedRefs ), $matches )
-				) {
-					$sha1 = $matches[1];
-				}
-			}
-			$this->cache['headSHA1'] = $sha1;
-		}
-		return $this->cache['headSHA1'];
-	}
+        return $this->cache['head'];
+    }
 
-	/**
-	 * Get the commit date of HEAD entry of the git code repository
-	 *
-	 * @since 1.22
-	 * @return int|bool Commit date (UNIX timestamp) or false
-	 */
-	public function getHeadCommitDate() {
-		$gitBin = $this->options->get( MainConfigNames::GitBin );
+    /**
+     * Get the SHA1 for the current HEAD of the repo
+     *
+     * @return string|bool A SHA1 or false
+     */
+    public function getHeadSHA1()
+    {
+        if (!isset($this->cache['headSHA1'])) {
+            $head = $this->getHead();
+            $sha1 = false;
 
-		if ( !isset( $this->cache['headCommitDate'] ) ) {
-			$date = false;
+            // If detached HEAD may be a SHA1
+            if (self::isSHA1($head)) {
+                $sha1 = $head;
+            } else {
+                // If not a SHA1 it may be a ref:
+                $refFile = "{$this->basedir}/{$head}";
+                $packedRefs = "{$this->basedir}/packed-refs";
+                $headRegex = preg_quote($head, '/');
+                if (is_readable($refFile)) {
+                    $sha1 = rtrim(file_get_contents($refFile));
+                } elseif (is_readable($packedRefs) &&
+                    preg_match("/^([0-9A-Fa-f]{40}) $headRegex$/m", file_get_contents($packedRefs), $matches)
+                ) {
+                    $sha1 = $matches[1];
+                }
+            }
+            $this->cache['headSHA1'] = $sha1;
+        }
 
-			// Suppress warnings about any open_basedir restrictions affecting $wgGitBin (T74445).
-			$isFile = AtEase::quietCall( 'is_file', $gitBin );
-			if ( $isFile &&
-				is_executable( $gitBin ) &&
-				!Shell::isDisabled() &&
-				$this->getHead() !== false
-			) {
-				$cmd = [
-					$gitBin,
-					'show',
-					'-s',
-					'--format=format:%ct',
-					'HEAD',
-				];
-				$gitDir = realpath( $this->basedir );
-				$result = Shell::command( $cmd )
-					->environment( [ 'GIT_DIR' => $gitDir ] )
-					->restrict( Shell::RESTRICT_DEFAULT | Shell::NO_NETWORK )
-					->whitelistPaths( [ $gitDir, $this->repoDir ] )
-					->execute();
+        return $this->cache['headSHA1'];
+    }
 
-				if ( $result->getExitCode() === 0 ) {
-					$date = (int)$result->getStdout();
-				}
-			}
-			$this->cache['headCommitDate'] = $date;
-		}
-		return $this->cache['headCommitDate'];
-	}
+    /**
+     * Get the commit date of HEAD entry of the git code repository
+     *
+     * @return int|bool Commit date (UNIX timestamp) or false
+     * @since 1.22
+     */
+    public function getHeadCommitDate()
+    {
+        $gitBin = $this->options->get(MainConfigNames::GitBin);
 
-	/**
-	 * Get the name of the current branch, or HEAD if not found
-	 *
-	 * @return string|bool The branch name, HEAD, or false
-	 */
-	public function getCurrentBranch() {
-		if ( !isset( $this->cache['branch'] ) ) {
-			$branch = $this->getHead();
-			if ( $branch &&
-				preg_match( "#^refs/heads/(.*)$#", $branch, $m )
-			) {
-				$branch = $m[1];
-			}
-			$this->cache['branch'] = $branch;
-		}
-		return $this->cache['branch'];
-	}
+        if (!isset($this->cache['headCommitDate'])) {
+            $date = false;
 
-	/**
-	 * Get an URL to a web viewer link to the HEAD revision.
-	 *
-	 * @return string|bool String if a URL is available or false otherwise
-	 */
-	public function getHeadViewUrl() {
-		$url = $this->getRemoteUrl();
-		if ( $url === false ) {
-			return false;
-		}
-		foreach ( $this->getViewers() as $repo => $viewer ) {
-			$pattern = '#^' . $repo . '$#';
-			if ( preg_match( $pattern, $url, $matches ) ) {
-				$viewerUrl = preg_replace( $pattern, $viewer, $url );
-				$headSHA1 = $this->getHeadSHA1();
-				$replacements = [
-					'%h' => substr( $headSHA1, 0, 7 ),
-					'%H' => $headSHA1,
-					'%r' => urlencode( $matches[1] ),
-					'%R' => $matches[1],
-				];
-				return strtr( $viewerUrl, $replacements );
-			}
-		}
-		return false;
-	}
+            // Suppress warnings about any open_basedir restrictions affecting $wgGitBin (T74445).
+            $isFile = AtEase::quietCall('is_file', $gitBin);
+            if ($isFile &&
+                is_executable($gitBin) &&
+                !Shell::isDisabled() &&
+                $this->getHead() !== false
+            ) {
+                $cmd = [
+                    $gitBin,
+                    'show',
+                    '-s',
+                    '--format=format:%ct',
+                    'HEAD',
+                ];
+                $gitDir = realpath($this->basedir);
+                $result = Shell::command($cmd)
+                    ->environment(['GIT_DIR' => $gitDir])
+                    ->restrict(Shell::RESTRICT_DEFAULT | Shell::NO_NETWORK)
+                    ->whitelistPaths([$gitDir, $this->repoDir])
+                    ->execute();
 
-	/**
-	 * Get the URL of the remote origin.
-	 * @return string|bool String if a URL is available or false otherwise.
-	 */
-	protected function getRemoteUrl() {
-		if ( !isset( $this->cache['remoteURL'] ) ) {
-			$config = "{$this->basedir}/config";
-			$url = false;
-			if ( is_readable( $config ) ) {
-				AtEase::suppressWarnings();
-				$configArray = parse_ini_file( $config, true );
-				AtEase::restoreWarnings();
-				$remote = false;
+                if ($result->getExitCode() === 0) {
+                    $date = (int)$result->getStdout();
+                }
+            }
+            $this->cache['headCommitDate'] = $date;
+        }
 
-				// Use the "origin" remote repo if available or any other repo if not.
-				if ( isset( $configArray['remote origin'] ) ) {
-					$remote = $configArray['remote origin'];
-				} elseif ( is_array( $configArray ) ) {
-					foreach ( $configArray as $sectionName => $sectionConf ) {
-						if ( substr( $sectionName, 0, 6 ) == 'remote' ) {
-							$remote = $sectionConf;
-						}
-					}
-				}
+        return $this->cache['headCommitDate'];
+    }
 
-				if ( $remote !== false && isset( $remote['url'] ) ) {
-					$url = $remote['url'];
-				}
-			}
-			$this->cache['remoteURL'] = $url;
-		}
-		return $this->cache['remoteURL'];
-	}
+    /**
+     * Get the name of the current branch, or HEAD if not found
+     *
+     * @return string|bool The branch name, HEAD, or false
+     */
+    public function getCurrentBranch()
+    {
+        if (!isset($this->cache['branch'])) {
+            $branch = $this->getHead();
+            if ($branch &&
+                preg_match("#^refs/heads/(.*)$#", $branch, $m)
+            ) {
+                $branch = $m[1];
+            }
+            $this->cache['branch'] = $branch;
+        }
 
-	/**
-	 * Check to see if the current cache is fully populated.
-	 *
-	 * Note: This method is public only to make unit testing easier. There's
-	 * really no strong reason that anything other than a test should want to
-	 * call this method.
-	 *
-	 * @return bool True if all expected cache keys exist, false otherwise
-	 */
-	public function cacheIsComplete() {
-		return isset( $this->cache['head'] ) &&
-			isset( $this->cache['headSHA1'] ) &&
-			isset( $this->cache['headCommitDate'] ) &&
-			isset( $this->cache['branch'] ) &&
-			isset( $this->cache['remoteURL'] );
-	}
+        return $this->cache['branch'];
+    }
 
-	/**
-	 * Precompute and cache git information.
-	 *
-	 * Creates a JSON file in the cache directory associated with this
-	 * GitInfo instance. This cache file will be used by subsequent GitInfo objects referencing
-	 * the same directory to avoid needing to examine the .git directory again.
-	 *
-	 * @since 1.24
-	 */
-	public function precomputeValues() {
-		if ( $this->cacheFile !== null ) {
-			// Try to completely populate the cache
-			$this->getHead();
-			$this->getHeadSHA1();
-			$this->getHeadCommitDate();
-			$this->getCurrentBranch();
-			$this->getRemoteUrl();
+    /**
+     * Get an URL to a web viewer link to the HEAD revision.
+     *
+     * @return string|bool String if a URL is available or false otherwise
+     */
+    public function getHeadViewUrl()
+    {
+        $url = $this->getRemoteUrl();
+        if ($url === false) {
+            return false;
+        }
+        foreach ($this->getViewers() as $repo => $viewer) {
+            $pattern = '#^' . $repo . '$#';
+            if (preg_match($pattern, $url, $matches)) {
+                $viewerUrl = preg_replace($pattern, $viewer, $url);
+                $headSHA1 = $this->getHeadSHA1();
+                $replacements = [
+                    '%h' => substr($headSHA1, 0, 7),
+                    '%H' => $headSHA1,
+                    '%r' => urlencode($matches[1]),
+                    '%R' => $matches[1],
+                ];
 
-			if ( !$this->cacheIsComplete() ) {
-				$this->logger->debug(
-					"Failed to compute GitInfo for \"{$this->basedir}\""
-				);
-				return;
-			}
+                return strtr($viewerUrl, $replacements);
+            }
+        }
 
-			$cacheDir = dirname( $this->cacheFile );
-			if ( !file_exists( $cacheDir ) &&
-				!wfMkdirParents( $cacheDir, null, __METHOD__ )
-			) {
-				throw new MWException( "Unable to create GitInfo cache \"{$cacheDir}\"" );
-			}
+        return false;
+    }
 
-			file_put_contents( $this->cacheFile, FormatJson::encode( $this->cache ) );
-		}
-	}
+    /**
+     * Get the URL of the remote origin.
+     * @return string|bool String if a URL is available or false otherwise.
+     */
+    protected function getRemoteUrl()
+    {
+        if (!isset($this->cache['remoteURL'])) {
+            $config = "{$this->basedir}/config";
+            $url = false;
+            if (is_readable($config)) {
+                AtEase::suppressWarnings();
+                $configArray = parse_ini_file($config, true);
+                AtEase::restoreWarnings();
+                $remote = false;
 
-	/**
-	 * @see self::getHeadSHA1
-	 * @return string
-	 */
-	public static function headSHA1() {
-		return self::repo()->getHeadSHA1();
-	}
+                // Use the "origin" remote repo if available or any other repo if not.
+                if (isset($configArray['remote origin'])) {
+                    $remote = $configArray['remote origin'];
+                } elseif (is_array($configArray)) {
+                    foreach ($configArray as $sectionName => $sectionConf) {
+                        if (substr($sectionName, 0, 6) == 'remote') {
+                            $remote = $sectionConf;
+                        }
+                    }
+                }
 
-	/**
-	 * @see self::getCurrentBranch
-	 * @return string
-	 */
-	public static function currentBranch() {
-		return self::repo()->getCurrentBranch();
-	}
+                if ($remote !== false && isset($remote['url'])) {
+                    $url = $remote['url'];
+                }
+            }
+            $this->cache['remoteURL'] = $url;
+        }
 
-	/**
-	 * @see self::getHeadViewUrl()
-	 * @return bool|string
-	 */
-	public static function headViewUrl() {
-		return self::repo()->getHeadViewUrl();
-	}
+        return $this->cache['remoteURL'];
+    }
 
-	/**
-	 * Gets the list of repository viewers
-	 * @return array
-	 */
-	private function getViewers() {
-		if ( self::$viewers === false ) {
-			self::$viewers = $this->options->get( MainConfigNames::GitRepositoryViewers );
-			$this->hookRunner->onGitViewers( self::$viewers );
-		}
+    /**
+     * Check to see if the current cache is fully populated.
+     *
+     * Note: This method is public only to make unit testing easier. There's
+     * really no strong reason that anything other than a test should want to
+     * call this method.
+     *
+     * @return bool True if all expected cache keys exist, false otherwise
+     */
+    public function cacheIsComplete()
+    {
+        return isset($this->cache['head']) &&
+            isset($this->cache['headSHA1']) &&
+            isset($this->cache['headCommitDate']) &&
+            isset($this->cache['branch']) &&
+            isset($this->cache['remoteURL']);
+    }
 
-		return self::$viewers;
-	}
+    /**
+     * Precompute and cache git information.
+     *
+     * Creates a JSON file in the cache directory associated with this
+     * GitInfo instance. This cache file will be used by subsequent GitInfo objects referencing
+     * the same directory to avoid needing to examine the .git directory again.
+     *
+     * @since 1.24
+     */
+    public function precomputeValues()
+    {
+        if ($this->cacheFile !== null) {
+            // Try to completely populate the cache
+            $this->getHead();
+            $this->getHeadSHA1();
+            $this->getHeadCommitDate();
+            $this->getCurrentBranch();
+            $this->getRemoteUrl();
+
+            if (!$this->cacheIsComplete()) {
+                $this->logger->debug(
+                    "Failed to compute GitInfo for \"{$this->basedir}\""
+                );
+
+                return;
+            }
+
+            $cacheDir = dirname($this->cacheFile);
+            if (!file_exists($cacheDir) &&
+                !wfMkdirParents($cacheDir, null, __METHOD__)
+            ) {
+                throw new MWException("Unable to create GitInfo cache \"{$cacheDir}\"");
+            }
+
+            file_put_contents($this->cacheFile, FormatJson::encode($this->cache));
+        }
+    }
+
+    /**
+     * @return string
+     * @see self::getHeadSHA1
+     */
+    public static function headSHA1()
+    {
+        return self::repo()->getHeadSHA1();
+    }
+
+    /**
+     * @return string
+     * @see self::getCurrentBranch
+     */
+    public static function currentBranch()
+    {
+        return self::repo()->getCurrentBranch();
+    }
+
+    /**
+     * @return bool|string
+     * @see self::getHeadViewUrl()
+     */
+    public static function headViewUrl()
+    {
+        return self::repo()->getHeadViewUrl();
+    }
+
+    /**
+     * Gets the list of repository viewers
+     * @return array
+     */
+    private function getViewers()
+    {
+        if (self::$viewers === false) {
+            self::$viewers = $this->options->get(MainConfigNames::GitRepositoryViewers);
+            $this->hookRunner->onGitViewers(self::$viewers);
+        }
+
+        return self::$viewers;
+    }
 }

@@ -3,37 +3,41 @@
 use MediaWiki\Languages\LanguageConverterFactory;
 use MediaWiki\MediaWikiServices;
 
-trait LanguageConverterTestTrait {
+trait LanguageConverterTestTrait
+{
 
-	private $codeRegex = '/^(.+)ConverterTest$/';
+    private $codeRegex = '/^(.+)ConverterTest$/';
 
-	protected function code(): string {
-		if ( preg_match( $this->codeRegex, get_class( $this ), $m ) ) {
-			return mb_strtolower( $m[1] );
-		}
-		return 'en';
-	}
+    protected function code(): string
+    {
+        if (preg_match($this->codeRegex, get_class($this), $m)) {
+            return mb_strtolower($m[1]);
+        }
 
-	/** Create and return LanguageConveter to be tested.
-	 *
-	 * @return ILanguageConverter
-	 */
-	protected function getLanguageConverter(): ILanguageConverter {
-		$code = $this->code();
+        return 'en';
+    }
 
-		$language = MediaWikiServices::getInstance()->getLanguageFactory()
-			->getLanguage( $code );
+    /** Create and return LanguageConveter to be tested.
+     *
+     * @return ILanguageConverter
+     */
+    protected function getLanguageConverter(): ILanguageConverter
+    {
+        $code = $this->code();
 
-		$factory = new LanguageConverterFactory(
-			MediaWikiServices::getInstance()->getObjectFactory(),
-			false,
-			false,
-			false,
-			static function () use ( $language ) {
-				return $language;
-			}
-		);
+        $language = MediaWikiServices::getInstance()->getLanguageFactory()
+            ->getLanguage($code);
 
-		return $factory->getLanguageConverter( $language );
-	}
+        $factory = new LanguageConverterFactory(
+            MediaWikiServices::getInstance()->getObjectFactory(),
+            false,
+            false,
+            false,
+            static function () use ($language) {
+                return $language;
+            }
+        );
+
+        return $factory->getLanguageConverter($language);
+    }
 }

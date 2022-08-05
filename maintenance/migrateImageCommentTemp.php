@@ -29,102 +29,108 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.32
  */
-class MigrateImageCommentTemp extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Merges image_comment_temp into the image table'
-		);
-	}
+class MigrateImageCommentTemp extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Merges image_comment_temp into the image table'
+        );
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function doDBUpdates() {
-		$batchSize = $this->getBatchSize();
+    protected function doDBUpdates()
+    {
+        $batchSize = $this->getBatchSize();
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbw->fieldExists( 'image', 'img_description_id', __METHOD__ ) ) {
-			$this->output( "Run update.php to create img_description_id.\n" );
-			return false;
-		}
-		if ( !$dbw->tableExists( 'image_comment_temp', __METHOD__ ) ) {
-			$this->output( "image_comment_temp does not exist, so nothing to do.\n" );
-			return true;
-		}
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbw->fieldExists('image', 'img_description_id', __METHOD__)) {
+            $this->output("Run update.php to create img_description_id.\n");
 
-		$this->output( "Merging image_comment_temp into the image table...\n" );
-		$conds = [];
-		$updated = 0;
-		$deleted = 0;
-		while ( true ) {
-			$this->beginTransaction( $dbw, __METHOD__ );
+            return false;
+        }
+        if (!$dbw->tableExists('image_comment_temp', __METHOD__)) {
+            $this->output("image_comment_temp does not exist, so nothing to do.\n");
 
-			$res = $dbw->select(
-				[ 'image_comment_temp', 'image' ],
-				[
-					'name' => 'imgcomment_name',
-					'oldid' => 'imgcomment_description_id',
-					'newid' => 'img_description_id',
-				],
-				$conds,
-				__METHOD__,
-				[ 'LIMIT' => $batchSize, 'ORDER BY' => [ 'name' ] ],
-				[ 'image' => [ 'JOIN', 'img_name = imgcomment_name' ] ]
-			);
-			$numRows = $res->numRows();
+            return true;
+        }
 
-			$toDelete = [];
-			$last = null;
-			foreach ( $res as $row ) {
-				$last = $row->name;
-				$toDelete[] = $row->name;
-				if ( !$row->newid ) {
-					$dbw->update(
-						'image',
-						[ 'img_description_id' => $row->oldid ],
-						[ 'img_name' => $row->name ],
-						__METHOD__
-					);
-					$updated++;
-				} elseif ( $row->newid !== $row->oldid ) {
-					$this->error(
-						"Image \"$row->name\" has img_description_id = $row->newid and "
-						. "imgcomment_description_id = $row->oldid. Ignoring the latter."
-					);
-				}
-			}
-			if ( $toDelete ) {
-				$dbw->delete( 'image_comment_temp', [ 'imgcomment_name' => $toDelete ], __METHOD__ );
-				$deleted += count( $toDelete );
-			}
+        $this->output("Merging image_comment_temp into the image table...\n");
+        $conds = [];
+        $updated = 0;
+        $deleted = 0;
+        while (true) {
+            $this->beginTransaction($dbw, __METHOD__);
 
-			$this->commitTransaction( $dbw, __METHOD__ );
+            $res = $dbw->select(
+                ['image_comment_temp', 'image'],
+                [
+                    'name'  => 'imgcomment_name',
+                    'oldid' => 'imgcomment_description_id',
+                    'newid' => 'img_description_id',
+                ],
+                $conds,
+                __METHOD__,
+                ['LIMIT' => $batchSize, 'ORDER BY' => ['name']],
+                ['image' => ['JOIN', 'img_name = imgcomment_name']]
+            );
+            $numRows = $res->numRows();
 
-			if ( $numRows < $batchSize ) {
-				// We must have reached the end
-				break;
-			}
+            $toDelete = [];
+            $last = null;
+            foreach ($res as $row) {
+                $last = $row->name;
+                $toDelete[] = $row->name;
+                if (!$row->newid) {
+                    $dbw->update(
+                        'image',
+                        ['img_description_id' => $row->oldid],
+                        ['img_name' => $row->name],
+                        __METHOD__
+                    );
+                    $updated++;
+                } elseif ($row->newid !== $row->oldid) {
+                    $this->error(
+                        "Image \"$row->name\" has img_description_id = $row->newid and "
+                        . "imgcomment_description_id = $row->oldid. Ignoring the latter."
+                    );
+                }
+            }
+            if ($toDelete) {
+                $dbw->delete('image_comment_temp', ['imgcomment_name' => $toDelete], __METHOD__);
+                $deleted += count($toDelete);
+            }
 
-			// @phan-suppress-next-line PhanTypeSuspiciousStringExpression last is not-null when used
-			$this->output( "... $last, updated $updated, deleted $deleted\n" );
-			$conds = [ 'imgcomment_name > ' . $dbw->addQuotes( $last ) ];
-		}
+            $this->commitTransaction($dbw, __METHOD__);
 
-		// This should be 0, so it should be very fast
-		$count = (int)$dbw->selectField( 'image_comment_temp', 'COUNT(*)', [], __METHOD__ );
-		if ( $count !== 0 ) {
-			$this->error( "Ignoring $count orphaned image_comment_temp row(s)." );
-		}
+            if ($numRows < $batchSize) {
+                // We must have reached the end
+                break;
+            }
 
-		$this->output(
-			"Completed merge of image_comment_temp into the image table, "
-			. "$updated image rows updated, $deleted image_comment_temp rows deleted.\n"
-		);
+            // @phan-suppress-next-line PhanTypeSuspiciousStringExpression last is not-null when used
+            $this->output("... $last, updated $updated, deleted $deleted\n");
+            $conds = ['imgcomment_name > ' . $dbw->addQuotes($last)];
+        }
 
-		return true;
-	}
+        // This should be 0, so it should be very fast
+        $count = (int)$dbw->selectField('image_comment_temp', 'COUNT(*)', [], __METHOD__);
+        if ($count !== 0) {
+            $this->error("Ignoring $count orphaned image_comment_temp row(s).");
+        }
+
+        $this->output(
+            "Completed merge of image_comment_temp into the image table, "
+            . "$updated image rows updated, $deleted image_comment_temp rows deleted.\n"
+        );
+
+        return true;
+    }
 }
 
 $maintClass = MigrateImageCommentTemp::class;

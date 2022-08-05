@@ -27,22 +27,25 @@
  * @newable
  * @ingroup Media
  */
-class TransformParameterError extends MediaTransformError {
+class TransformParameterError extends MediaTransformError
+{
 
-	/**
-	 * @stable to call
-	 *
-	 * @param array $params
-	 */
-	public function __construct( $params ) {
-		parent::__construct( 'thumbnail_error',
-			max( $params['width'] ?? 0, 120 ),
-			max( $params['height'] ?? 0, 120 ),
-			wfMessage( 'thumbnail_invalid_params' )
-		);
-	}
+    /**
+     * @stable to call
+     *
+     * @param array $params
+     */
+    public function __construct($params)
+    {
+        parent::__construct('thumbnail_error',
+            max($params['width'] ?? 0, 120),
+            max($params['height'] ?? 0, 120),
+            wfMessage('thumbnail_invalid_params')
+        );
+    }
 
-	public function getHttpStatusCode() {
-		return 400;
-	}
+    public function getHttpStatusCode()
+    {
+        return 400;
+    }
 }

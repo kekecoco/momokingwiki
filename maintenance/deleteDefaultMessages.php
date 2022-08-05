@@ -32,79 +32,84 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class DeleteDefaultMessages extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Deletes all pages in the MediaWiki namespace' .
-			' which were last edited by "MediaWiki default"' );
-		$this->addOption( 'dry-run', 'Perform a dry run, delete nothing' );
-	}
+class DeleteDefaultMessages extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Deletes all pages in the MediaWiki namespace' .
+            ' which were last edited by "MediaWiki default"');
+        $this->addOption('dry-run', 'Perform a dry run, delete nothing');
+    }
 
-	public function execute() {
-		$services = MediaWikiServices::getInstance();
+    public function execute()
+    {
+        $services = MediaWikiServices::getInstance();
 
-		$this->output( "Checking existence of old default messages..." );
-		$dbr = $this->getDB( DB_REPLICA );
+        $this->output("Checking existence of old default messages...");
+        $dbr = $this->getDB(DB_REPLICA);
 
-		$userFactory = $services->getUserFactory();
-		$actorQuery = ActorMigration::newMigration()
-			->getWhere( $dbr, 'rev_user', $userFactory->newFromName( 'MediaWiki default' ) );
+        $userFactory = $services->getUserFactory();
+        $actorQuery = ActorMigration::newMigration()
+            ->getWhere($dbr, 'rev_user', $userFactory->newFromName('MediaWiki default'));
 
-		$res = $dbr->newSelectQueryBuilder()
-			->select( [ 'page_namespace', 'page_title' ] )
-			->tables( [ 'page', 'revision' ] + $actorQuery['tables'] )
-			->where( [
-				'page_namespace' => NS_MEDIAWIKI,
-				$actorQuery['conds'],
-			] )
-			->joinConds( [ 'revision' => [ 'JOIN', 'page_latest=rev_id' ] ] + $actorQuery['joins'] )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+        $res = $dbr->newSelectQueryBuilder()
+            ->select(['page_namespace', 'page_title'])
+            ->tables(['page', 'revision'] + $actorQuery['tables'])
+            ->where([
+                'page_namespace' => NS_MEDIAWIKI,
+                $actorQuery['conds'],
+            ])
+            ->joinConds(['revision' => ['JOIN', 'page_latest=rev_id']] + $actorQuery['joins'])
+            ->caller(__METHOD__)
+            ->fetchResultSet();
 
-		if ( $res->numRows() == 0 ) {
-			// No more messages left
-			$this->output( "done.\n" );
-			return;
-		}
+        if ($res->numRows() == 0) {
+            // No more messages left
+            $this->output("done.\n");
 
-		$dryrun = $this->hasOption( 'dry-run' );
-		if ( $dryrun ) {
-			foreach ( $res as $row ) {
-				$title = Title::makeTitle( $row->page_namespace, $row->page_title );
-				$this->output( "\n* [[$title]]" );
-			}
-			$this->output( "\n\nRun again without --dry-run to delete these pages.\n" );
-			return;
-		}
+            return;
+        }
 
-		// Deletions will be made by $user temporarily added to the bot group
-		// in order to hide it in RecentChanges.
-		$user = User::newSystemUser( 'MediaWiki default', [ 'steal' => true ] );
-		if ( !$user ) {
-			$this->fatalError( "Invalid username" );
-		}
-		$userGroupManager = $services->getUserGroupManager();
-		$userGroupManager->addUserToGroup( $user, 'bot' );
-		StubGlobalUser::setUser( $user );
+        $dryrun = $this->hasOption('dry-run');
+        if ($dryrun) {
+            foreach ($res as $row) {
+                $title = Title::makeTitle($row->page_namespace, $row->page_title);
+                $this->output("\n* [[$title]]");
+            }
+            $this->output("\n\nRun again without --dry-run to delete these pages.\n");
 
-		// Handle deletion
-		$this->output( "\n...deleting old default messages (this may take a long time!)...", 'msg' );
-		$dbw = $this->getDB( DB_PRIMARY );
+            return;
+        }
 
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$wikiPageFactory = $services->getWikiPageFactory();
+        // Deletions will be made by $user temporarily added to the bot group
+        // in order to hide it in RecentChanges.
+        $user = User::newSystemUser('MediaWiki default', ['steal' => true]);
+        if (!$user) {
+            $this->fatalError("Invalid username");
+        }
+        $userGroupManager = $services->getUserGroupManager();
+        $userGroupManager->addUserToGroup($user, 'bot');
+        StubGlobalUser::setUser($user);
 
-		foreach ( $res as $row ) {
-			$lbFactory->waitForReplication();
-			$dbw->ping();
-			$title = Title::makeTitle( $row->page_namespace, $row->page_title );
-			$page = $wikiPageFactory->newFromTitle( $title );
-			// FIXME: Deletion failures should be reported, not silently ignored.
-			$page->doDeleteArticleReal( 'No longer required', $user );
-		}
+        // Handle deletion
+        $this->output("\n...deleting old default messages (this may take a long time!)...", 'msg');
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		$this->output( "done!\n", 'msg' );
-	}
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $wikiPageFactory = $services->getWikiPageFactory();
+
+        foreach ($res as $row) {
+            $lbFactory->waitForReplication();
+            $dbw->ping();
+            $title = Title::makeTitle($row->page_namespace, $row->page_title);
+            $page = $wikiPageFactory->newFromTitle($title);
+            // FIXME: Deletion failures should be reported, not silently ignored.
+            $page->doDeleteArticleReal('No longer required', $user);
+        }
+
+        $this->output("done!\n", 'msg');
+    }
 }
 
 $maintClass = DeleteDefaultMessages::class;

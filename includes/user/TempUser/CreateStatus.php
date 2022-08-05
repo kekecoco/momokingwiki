@@ -11,11 +11,13 @@ use User;
  * @since 1.39
  * @internal
  */
-class CreateStatus extends Status {
-	/**
-	 * @return User
-	 */
-	public function getUser(): User {
-		return $this->value;
-	}
+class CreateStatus extends Status
+{
+    /**
+     * @return User
+     */
+    public function getUser(): User
+    {
+        return $this->value;
+    }
 }

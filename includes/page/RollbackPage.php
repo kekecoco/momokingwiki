@@ -53,505 +53,522 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @since 1.37
  */
-class RollbackPage {
+class RollbackPage
+{
 
-	/**
-	 * @internal For use in PageCommandFactory only
-	 * @var array
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::UseRCPatrol,
-		MainConfigNames::DisableAnonTalk,
-	];
+    /**
+     * @internal For use in PageCommandFactory only
+     * @var array
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::UseRCPatrol,
+        MainConfigNames::DisableAnonTalk,
+    ];
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var UserFactory */
-	private $userFactory;
+    /** @var UserFactory */
+    private $userFactory;
 
-	/** @var ReadOnlyMode */
-	private $readOnlyMode;
+    /** @var ReadOnlyMode */
+    private $readOnlyMode;
 
-	/** @var TitleFormatter */
-	private $titleFormatter;
+    /** @var TitleFormatter */
+    private $titleFormatter;
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/** @var ActorMigration */
-	private $actorMigration;
+    /** @var ActorMigration */
+    private $actorMigration;
 
-	/** @var ActorNormalization */
-	private $actorNormalization;
+    /** @var ActorNormalization */
+    private $actorNormalization;
 
-	/** @var PageIdentity */
-	private $page;
+    /** @var PageIdentity */
+    private $page;
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var UserIdentity who made the edits we are rolling back */
-	private $byUser;
+    /** @var UserIdentity who made the edits we are rolling back */
+    private $byUser;
 
-	/** @var string */
-	private $summary = '';
+    /** @var string */
+    private $summary = '';
 
-	/** @var bool */
-	private $bot = false;
+    /** @var bool */
+    private $bot = false;
 
-	/** @var string[] */
-	private $tags = [];
+    /** @var string[] */
+    private $tags = [];
 
-	/**
-	 * @internal Create via the RollbackPageFactory service.
-	 * @param ServiceOptions $options
-	 * @param ILoadBalancer $loadBalancer
-	 * @param UserFactory $userFactory
-	 * @param ReadOnlyMode $readOnlyMode
-	 * @param RevisionStore $revisionStore
-	 * @param TitleFormatter $titleFormatter
-	 * @param HookContainer $hookContainer
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param ActorMigration $actorMigration
-	 * @param ActorNormalization $actorNormalization
-	 * @param PageIdentity $page
-	 * @param Authority $performer
-	 * @param UserIdentity $byUser who made the edits we are rolling back
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		ILoadBalancer $loadBalancer,
-		UserFactory $userFactory,
-		ReadOnlyMode $readOnlyMode,
-		RevisionStore $revisionStore,
-		TitleFormatter $titleFormatter,
-		HookContainer $hookContainer,
-		WikiPageFactory $wikiPageFactory,
-		ActorMigration $actorMigration,
-		ActorNormalization $actorNormalization,
-		PageIdentity $page,
-		Authority $performer,
-		UserIdentity $byUser
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->loadBalancer = $loadBalancer;
-		$this->userFactory = $userFactory;
-		$this->readOnlyMode = $readOnlyMode;
-		$this->revisionStore = $revisionStore;
-		$this->titleFormatter = $titleFormatter;
-		$this->hookRunner = new HookRunner( $hookContainer );
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->actorMigration = $actorMigration;
-		$this->actorNormalization = $actorNormalization;
+    /**
+     * @param ServiceOptions $options
+     * @param ILoadBalancer $loadBalancer
+     * @param UserFactory $userFactory
+     * @param ReadOnlyMode $readOnlyMode
+     * @param RevisionStore $revisionStore
+     * @param TitleFormatter $titleFormatter
+     * @param HookContainer $hookContainer
+     * @param WikiPageFactory $wikiPageFactory
+     * @param ActorMigration $actorMigration
+     * @param ActorNormalization $actorNormalization
+     * @param PageIdentity $page
+     * @param Authority $performer
+     * @param UserIdentity $byUser who made the edits we are rolling back
+     * @internal Create via the RollbackPageFactory service.
+     */
+    public function __construct(
+        ServiceOptions $options,
+        ILoadBalancer $loadBalancer,
+        UserFactory $userFactory,
+        ReadOnlyMode $readOnlyMode,
+        RevisionStore $revisionStore,
+        TitleFormatter $titleFormatter,
+        HookContainer $hookContainer,
+        WikiPageFactory $wikiPageFactory,
+        ActorMigration $actorMigration,
+        ActorNormalization $actorNormalization,
+        PageIdentity $page,
+        Authority $performer,
+        UserIdentity $byUser
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        $this->options = $options;
+        $this->loadBalancer = $loadBalancer;
+        $this->userFactory = $userFactory;
+        $this->readOnlyMode = $readOnlyMode;
+        $this->revisionStore = $revisionStore;
+        $this->titleFormatter = $titleFormatter;
+        $this->hookRunner = new HookRunner($hookContainer);
+        $this->wikiPageFactory = $wikiPageFactory;
+        $this->actorMigration = $actorMigration;
+        $this->actorNormalization = $actorNormalization;
 
-		$this->page = $page;
-		$this->performer = $performer;
-		$this->byUser = $byUser;
-	}
+        $this->page = $page;
+        $this->performer = $performer;
+        $this->byUser = $byUser;
+    }
 
-	/**
-	 * Set custom edit summary.
-	 *
-	 * @param string|null $summary
-	 * @return $this
-	 */
-	public function setSummary( ?string $summary ): self {
-		$this->summary = $summary ?? '';
-		return $this;
-	}
+    /**
+     * Set custom edit summary.
+     *
+     * @param string|null $summary
+     * @return $this
+     */
+    public function setSummary(?string $summary): self
+    {
+        $this->summary = $summary ?? '';
 
-	/**
-	 * Mark all reverted edits as bot.
-	 *
-	 * @param bool|null $bot
-	 * @return $this
-	 */
-	public function markAsBot( ?bool $bot ): self {
-		if ( $bot && $this->performer->isAllowedAny( 'markbotedits', 'bot' ) ) {
-			$this->bot = true;
-		} elseif ( !$bot ) {
-			$this->bot = false;
-		}
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Change tags to apply to the rollback.
-	 *
-	 * @note Callers are responsible for permission checks (with ChangeTags::canAddTagsAccompanyingChange)
-	 *
-	 * @param string[]|null $tags
-	 * @return $this
-	 */
-	public function setChangeTags( ?array $tags ): self {
-		$this->tags = $tags ?: [];
-		return $this;
-	}
+    /**
+     * Mark all reverted edits as bot.
+     *
+     * @param bool|null $bot
+     * @return $this
+     */
+    public function markAsBot(?bool $bot): self
+    {
+        if ($bot && $this->performer->isAllowedAny('markbotedits', 'bot')) {
+            $this->bot = true;
+        } elseif (!$bot) {
+            $this->bot = false;
+        }
 
-	/**
-	 * Authorize the rollback.
-	 *
-	 * @return PermissionStatus
-	 */
-	public function authorizeRollback(): PermissionStatus {
-		$permissionStatus = PermissionStatus::newEmpty();
-		$this->performer->authorizeWrite( 'edit', $this->page, $permissionStatus );
-		$this->performer->authorizeWrite( 'rollback', $this->page, $permissionStatus );
+        return $this;
+    }
 
-		if ( $this->readOnlyMode->isReadOnly() ) {
-			$permissionStatus->fatal( 'readonlytext' );
-		}
+    /**
+     * Change tags to apply to the rollback.
+     *
+     * @note Callers are responsible for permission checks (with ChangeTags::canAddTagsAccompanyingChange)
+     *
+     * @param string[]|null $tags
+     * @return $this
+     */
+    public function setChangeTags(?array $tags): self
+    {
+        $this->tags = $tags ?: [];
 
-		$user = $this->userFactory->newFromAuthority( $this->performer );
-		if ( $user->pingLimiter( 'rollback' ) || $user->pingLimiter() ) {
-			$permissionStatus->fatal( 'actionthrottledtext' );
-		}
-		return $permissionStatus;
-	}
+        return $this;
+    }
 
-	/**
-	 * Rollback the most recent consecutive set of edits to a page
-	 * from the same user; fails if there are no eligible edits to
-	 * roll back to, e.g. user is the sole contributor. This function
-	 * performs permissions checks and executes ::rollback.
-	 *
-	 * @return StatusValue see ::rollback for return value documentation.
-	 *   In case the rollback is not allowed, PermissionStatus is returned.
-	 */
-	public function rollbackIfAllowed(): StatusValue {
-		$permissionStatus = $this->authorizeRollback();
-		if ( !$permissionStatus->isGood() ) {
-			return $permissionStatus;
-		}
-		return $this->rollback();
-	}
+    /**
+     * Authorize the rollback.
+     *
+     * @return PermissionStatus
+     */
+    public function authorizeRollback(): PermissionStatus
+    {
+        $permissionStatus = PermissionStatus::newEmpty();
+        $this->performer->authorizeWrite('edit', $this->page, $permissionStatus);
+        $this->performer->authorizeWrite('rollback', $this->page, $permissionStatus);
 
-	/**
-	 * Backend implementation of rollbackIfAllowed().
-	 *
-	 * @note This function does NOT check ANY permissions, it just commits the
-	 * rollback to the DB. Therefore, you should only call this function directly
-	 * if you want to use custom permissions checks. If you don't, use
-	 * ::rollbackIfAllowed() instead.
-	 *
-	 * @return StatusValue On success, wrapping the array with the following keys:
-	 *   'summary' - rollback edit summary
-	 *   'current-revision-record' - revision record that was current before rollback
-	 *   'target-revision-record' - revision record we are rolling back to
-	 *   'newid' => the id of the rollback revision
-	 *   'tags' => the tags applied to the rollback
-	 */
-	public function rollback() {
-		// Begin revision creation cycle by creating a PageUpdater.
-		// If the page is changed concurrently after grabParentRevision(), the rollback will fail.
-		// TODO: move PageUpdater to PageStore or PageUpdaterFactory or something?
-		$updater = $this->wikiPageFactory->newFromTitle( $this->page )->newPageUpdater( $this->performer );
-		$currentRevision = $updater->grabParentRevision();
+        if ($this->readOnlyMode->isReadOnly()) {
+            $permissionStatus->fatal('readonlytext');
+        }
 
-		if ( !$currentRevision ) {
-			// Something wrong... no page?
-			return StatusValue::newFatal( 'notanarticle' );
-		}
+        $user = $this->userFactory->newFromAuthority($this->performer);
+        if ($user->pingLimiter('rollback') || $user->pingLimiter()) {
+            $permissionStatus->fatal('actionthrottledtext');
+        }
 
-		$currentEditor = $currentRevision->getUser( RevisionRecord::RAW );
-		$currentEditorForPublic = $currentRevision->getUser( RevisionRecord::FOR_PUBLIC );
-		// User name given should match up with the top revision.
-		if ( !$this->byUser->equals( $currentEditor ) ) {
-			$result = StatusValue::newGood( [
-				'current-revision-record' => $currentRevision
-			] );
-			$result->fatal(
-				'alreadyrolled',
-				htmlspecialchars( $this->titleFormatter->getPrefixedText( $this->page ) ),
-				htmlspecialchars( $this->byUser->getName() ),
-				htmlspecialchars( $currentEditorForPublic ? $currentEditorForPublic->getName() : '' )
-			);
-			return $result;
-		}
+        return $permissionStatus;
+    }
 
-		$dbw = $this->loadBalancer->getConnectionRef( DB_PRIMARY );
+    /**
+     * Rollback the most recent consecutive set of edits to a page
+     * from the same user; fails if there are no eligible edits to
+     * roll back to, e.g. user is the sole contributor. This function
+     * performs permissions checks and executes ::rollback.
+     *
+     * @return StatusValue see ::rollback for return value documentation.
+     *   In case the rollback is not allowed, PermissionStatus is returned.
+     */
+    public function rollbackIfAllowed(): StatusValue
+    {
+        $permissionStatus = $this->authorizeRollback();
+        if (!$permissionStatus->isGood()) {
+            return $permissionStatus;
+        }
 
-		// TODO: move this query to RevisionSelectQueryBuilder when it's available
-		// Get the last edit not by this person...
-		// Note: these may not be public values
-		$actorWhere = $this->actorMigration->getWhere( $dbw, 'rev_user', $currentEditor );
-		$targetRevisionRow = $dbw->selectRow(
-			[ 'revision' ] + $actorWhere['tables'],
-			[ 'rev_id', 'rev_timestamp', 'rev_deleted' ],
-			[
-				'rev_page' => $currentRevision->getPageId(),
-				'NOT(' . $actorWhere['conds'] . ')',
-			],
-			__METHOD__,
-			[
-				'USE INDEX' => [ 'revision' => 'rev_page_timestamp' ],
-				'ORDER BY' => [ 'rev_timestamp DESC', 'rev_id DESC' ]
-			],
-			$actorWhere['joins']
-		);
+        return $this->rollback();
+    }
 
-		if ( $targetRevisionRow === false ) {
-			// No one else ever edited this page
-			return StatusValue::newFatal( 'cantrollback' );
-		} elseif ( $targetRevisionRow->rev_deleted & RevisionRecord::DELETED_TEXT
-			|| $targetRevisionRow->rev_deleted & RevisionRecord::DELETED_USER
-		) {
-			// Only admins can see this text
-			return StatusValue::newFatal( 'notvisiblerev' );
-		}
+    /**
+     * Backend implementation of rollbackIfAllowed().
+     *
+     * @note This function does NOT check ANY permissions, it just commits the
+     * rollback to the DB. Therefore, you should only call this function directly
+     * if you want to use custom permissions checks. If you don't, use
+     * ::rollbackIfAllowed() instead.
+     *
+     * @return StatusValue On success, wrapping the array with the following keys:
+     *   'summary' - rollback edit summary
+     *   'current-revision-record' - revision record that was current before rollback
+     *   'target-revision-record' - revision record we are rolling back to
+     *   'newid' => the id of the rollback revision
+     *   'tags' => the tags applied to the rollback
+     */
+    public function rollback()
+    {
+        // Begin revision creation cycle by creating a PageUpdater.
+        // If the page is changed concurrently after grabParentRevision(), the rollback will fail.
+        // TODO: move PageUpdater to PageStore or PageUpdaterFactory or something?
+        $updater = $this->wikiPageFactory->newFromTitle($this->page)->newPageUpdater($this->performer);
+        $currentRevision = $updater->grabParentRevision();
 
-		// Generate the edit summary if necessary
-		$targetRevision = $this->revisionStore
-			->getRevisionById( $targetRevisionRow->rev_id, RevisionStore::READ_LATEST );
+        if (!$currentRevision) {
+            // Something wrong... no page?
+            return StatusValue::newFatal('notanarticle');
+        }
 
-		// Save
-		$flags = EDIT_UPDATE | EDIT_INTERNAL;
+        $currentEditor = $currentRevision->getUser(RevisionRecord::RAW);
+        $currentEditorForPublic = $currentRevision->getUser(RevisionRecord::FOR_PUBLIC);
+        // User name given should match up with the top revision.
+        if (!$this->byUser->equals($currentEditor)) {
+            $result = StatusValue::newGood([
+                'current-revision-record' => $currentRevision
+            ]);
+            $result->fatal(
+                'alreadyrolled',
+                htmlspecialchars($this->titleFormatter->getPrefixedText($this->page)),
+                htmlspecialchars($this->byUser->getName()),
+                htmlspecialchars($currentEditorForPublic ? $currentEditorForPublic->getName() : '')
+            );
 
-		if ( $this->performer->isAllowed( 'minoredit' ) ) {
-			$flags |= EDIT_MINOR;
-		}
+            return $result;
+        }
 
-		if ( $this->bot ) {
-			$flags |= EDIT_FORCE_BOT;
-		}
+        $dbw = $this->loadBalancer->getConnectionRef(DB_PRIMARY);
 
-		// TODO: MCR: also log model changes in other slots, in case that becomes possible!
-		$currentContent = $currentRevision->getContent( SlotRecord::MAIN );
-		$targetContent = $targetRevision->getContent( SlotRecord::MAIN );
-		$changingContentModel = $targetContent->getModel() !== $currentContent->getModel();
+        // TODO: move this query to RevisionSelectQueryBuilder when it's available
+        // Get the last edit not by this person...
+        // Note: these may not be public values
+        $actorWhere = $this->actorMigration->getWhere($dbw, 'rev_user', $currentEditor);
+        $targetRevisionRow = $dbw->selectRow(
+            ['revision'] + $actorWhere['tables'],
+            ['rev_id', 'rev_timestamp', 'rev_deleted'],
+            [
+                'rev_page' => $currentRevision->getPageId(),
+                'NOT(' . $actorWhere['conds'] . ')',
+            ],
+            __METHOD__,
+            [
+                'USE INDEX' => ['revision' => 'rev_page_timestamp'],
+                'ORDER BY'  => ['rev_timestamp DESC', 'rev_id DESC']
+            ],
+            $actorWhere['joins']
+        );
 
-		// Build rollback revision:
-		// Restore old content
-		// TODO: MCR: test this once we can store multiple slots
-		foreach ( $targetRevision->getSlots()->getSlots() as $slot ) {
-			$updater->inheritSlot( $slot );
-		}
+        if ($targetRevisionRow === false) {
+            // No one else ever edited this page
+            return StatusValue::newFatal('cantrollback');
+        } elseif ($targetRevisionRow->rev_deleted & RevisionRecord::DELETED_TEXT
+            || $targetRevisionRow->rev_deleted & RevisionRecord::DELETED_USER
+        ) {
+            // Only admins can see this text
+            return StatusValue::newFatal('notvisiblerev');
+        }
 
-		// Remove extra slots
-		// TODO: MCR: test this once we can store multiple slots
-		foreach ( $currentRevision->getSlotRoles() as $role ) {
-			if ( !$targetRevision->hasSlot( $role ) ) {
-				$updater->removeSlot( $role );
-			}
-		}
+        // Generate the edit summary if necessary
+        $targetRevision = $this->revisionStore
+            ->getRevisionById($targetRevisionRow->rev_id, RevisionStore::READ_LATEST);
 
-		$updater->markAsRevert(
-			EditResult::REVERT_ROLLBACK,
-			$currentRevision->getId(),
-			$targetRevision->getId()
-		);
+        // Save
+        $flags = EDIT_UPDATE | EDIT_INTERNAL;
 
-		// TODO: this logic should not be in the storage layer, it's here for compatibility
-		// with 1.31 behavior. Applying the 'autopatrol' right should be done in the same
-		// place the 'bot' right is handled, which is currently in EditPage::attemptSave.
-		if ( $this->options->get( MainConfigNames::UseRCPatrol ) &&
-			$this->performer->authorizeWrite( 'autopatrol', $this->page )
-		) {
-			$updater->setRcPatrolStatus( RecentChange::PRC_AUTOPATROLLED );
-		}
+        if ($this->performer->isAllowed('minoredit')) {
+            $flags |= EDIT_MINOR;
+        }
 
-		$summary = $this->getSummary( $currentRevision, $targetRevision );
+        if ($this->bot) {
+            $flags |= EDIT_FORCE_BOT;
+        }
 
-		// Actually store the rollback
-		$rev = $updater->saveRevision(
-			CommentStoreComment::newUnsavedComment( $summary ),
-			$flags
-		);
+        // TODO: MCR: also log model changes in other slots, in case that becomes possible!
+        $currentContent = $currentRevision->getContent(SlotRecord::MAIN);
+        $targetContent = $targetRevision->getContent(SlotRecord::MAIN);
+        $changingContentModel = $targetContent->getModel() !== $currentContent->getModel();
 
-		// This is done even on edit failure to have patrolling in that case (T64157).
-		$this->updateRecentChange( $dbw, $currentRevision, $targetRevision );
+        // Build rollback revision:
+        // Restore old content
+        // TODO: MCR: test this once we can store multiple slots
+        foreach ($targetRevision->getSlots()->getSlots() as $slot) {
+            $updater->inheritSlot($slot);
+        }
 
-		if ( !$updater->wasSuccessful() ) {
-			return $updater->getStatus();
-		}
+        // Remove extra slots
+        // TODO: MCR: test this once we can store multiple slots
+        foreach ($currentRevision->getSlotRoles() as $role) {
+            if (!$targetRevision->hasSlot($role)) {
+                $updater->removeSlot($role);
+            }
+        }
 
-		// Report if the edit was not created because it did not change the content.
-		if ( !$updater->wasRevisionCreated() ) {
-			$result = StatusValue::newGood( [
-				'current-revision-record' => $currentRevision
-			] );
-			$result->fatal(
-				'alreadyrolled',
-				htmlspecialchars( $this->titleFormatter->getPrefixedText( $this->page ) ),
-				htmlspecialchars( $this->byUser->getName() ),
-				htmlspecialchars( $currentEditorForPublic ? $currentEditorForPublic->getName() : '' )
-			);
-			return $result;
-		}
+        $updater->markAsRevert(
+            EditResult::REVERT_ROLLBACK,
+            $currentRevision->getId(),
+            $targetRevision->getId()
+        );
 
-		if ( $changingContentModel ) {
-			// If the content model changed during the rollback,
-			// make sure it gets logged to Special:Log/contentmodel
-			$log = new ManualLogEntry( 'contentmodel', 'change' );
-			$log->setPerformer( $this->performer->getUser() );
-			$log->setTarget( new TitleValue( $this->page->getNamespace(), $this->page->getDBkey() ) );
-			$log->setComment( $summary );
-			$log->setParameters( [
-				'4::oldmodel' => $currentContent->getModel(),
-				'5::newmodel' => $targetContent->getModel(),
-			] );
+        // TODO: this logic should not be in the storage layer, it's here for compatibility
+        // with 1.31 behavior. Applying the 'autopatrol' right should be done in the same
+        // place the 'bot' right is handled, which is currently in EditPage::attemptSave.
+        if ($this->options->get(MainConfigNames::UseRCPatrol) &&
+            $this->performer->authorizeWrite('autopatrol', $this->page)
+        ) {
+            $updater->setRcPatrolStatus(RecentChange::PRC_AUTOPATROLLED);
+        }
 
-			$logId = $log->insert( $dbw );
-			$log->publish( $logId );
-		}
+        $summary = $this->getSummary($currentRevision, $targetRevision);
 
-		$wikiPage = $this->wikiPageFactory->newFromTitle( $this->page );
+        // Actually store the rollback
+        $rev = $updater->saveRevision(
+            CommentStoreComment::newUnsavedComment($summary),
+            $flags
+        );
 
-		$this->hookRunner->onRollbackComplete(
-			$wikiPage,
-			$this->performer->getUser(),
-			$targetRevision,
-			$currentRevision
-		);
+        // This is done even on edit failure to have patrolling in that case (T64157).
+        $this->updateRecentChange($dbw, $currentRevision, $targetRevision);
 
-		return StatusValue::newGood( [
-			'summary' => $summary,
-			'current-revision-record' => $currentRevision,
-			'target-revision-record' => $targetRevision,
-			'newid' => $rev->getId(),
-			'tags' => array_merge( $this->tags, $updater->getEditResult()->getRevertTags() )
-		] );
-	}
+        if (!$updater->wasSuccessful()) {
+            return $updater->getStatus();
+        }
 
-	/**
-	 * Set patrolling and bot flag on the edits which get rolled back.
-	 *
-	 * @param IDatabase $dbw
-	 * @param RevisionRecord $current
-	 * @param RevisionRecord $target
-	 */
-	private function updateRecentChange(
-		IDatabase $dbw,
-		RevisionRecord $current,
-		RevisionRecord $target
-	) {
-		$useRCPatrol = $this->options->get( MainConfigNames::UseRCPatrol );
-		if ( !$this->bot && !$useRCPatrol ) {
-			return;
-		}
+        // Report if the edit was not created because it did not change the content.
+        if (!$updater->wasRevisionCreated()) {
+            $result = StatusValue::newGood([
+                'current-revision-record' => $currentRevision
+            ]);
+            $result->fatal(
+                'alreadyrolled',
+                htmlspecialchars($this->titleFormatter->getPrefixedText($this->page)),
+                htmlspecialchars($this->byUser->getName()),
+                htmlspecialchars($currentEditorForPublic ? $currentEditorForPublic->getName() : '')
+            );
 
-		$actorId = $this->actorNormalization
-			->acquireActorId( $current->getUser( RevisionRecord::RAW ), $dbw );
-		$timestamp = $dbw->timestamp( $target->getTimestamp() );
-		$rows = $dbw->select(
-			'recentchanges',
-			[ 'rc_id', 'rc_patrolled' ],
-			[
-				'rc_cur_id' => $current->getPageId(),
-				$dbw->makeList( [
-					'rc_timestamp > ' . $dbw->addQuotes( $timestamp ),
-					$dbw->makeList( [
-						'rc_timestamp' => $timestamp,
-						'rc_this_oldid > ' . $dbw->addQuotes( $target->getId() ),
-					], IDatabase::LIST_AND ),
-				], IDatabase::LIST_OR ),
-				'rc_actor' => $actorId,
-			],
-			__METHOD__
-		);
+            return $result;
+        }
 
-		$all = [];
-		$patrolled = [];
-		$unpatrolled = [];
-		foreach ( $rows as $row ) {
-			$all[] = (int)$row->rc_id;
-			if ( $row->rc_patrolled ) {
-				$patrolled[] = (int)$row->rc_id;
-			} else {
-				$unpatrolled[] = (int)$row->rc_id;
-			}
-		}
+        if ($changingContentModel) {
+            // If the content model changed during the rollback,
+            // make sure it gets logged to Special:Log/contentmodel
+            $log = new ManualLogEntry('contentmodel', 'change');
+            $log->setPerformer($this->performer->getUser());
+            $log->setTarget(new TitleValue($this->page->getNamespace(), $this->page->getDBkey()));
+            $log->setComment($summary);
+            $log->setParameters([
+                '4::oldmodel' => $currentContent->getModel(),
+                '5::newmodel' => $targetContent->getModel(),
+            ]);
 
-		if ( $useRCPatrol && $this->bot ) {
-			// Mark all reverted edits as if they were made by a bot
-			// Also mark only unpatrolled reverted edits as patrolled
-			if ( $unpatrolled ) {
-				$dbw->update(
-					'recentchanges',
-					[ 'rc_bot' => 1, 'rc_patrolled' => RecentChange::PRC_AUTOPATROLLED ],
-					[ 'rc_id' => $unpatrolled ],
-					__METHOD__
-				);
-			}
-			if ( $patrolled ) {
-				$dbw->update(
-					'recentchanges',
-					[ 'rc_bot' => 1 ],
-					[ 'rc_id' => $patrolled ],
-					__METHOD__
-				);
-			}
-		} elseif ( $useRCPatrol ) {
-			// Mark only unpatrolled reverted edits as patrolled
-			if ( $unpatrolled ) {
-				$dbw->update(
-					'recentchanges',
-					[ 'rc_patrolled' => RecentChange::PRC_AUTOPATROLLED ],
-					[ 'rc_id' => $unpatrolled ],
-					__METHOD__
-				);
-			}
-		} else { // if ( $this->bot )
-			$dbw->update(
-				'recentchanges',
-				[ 'rc_bot' => 1 ],
-				[ 'rc_id' => $all ],
-				__METHOD__
-			);
-		}
-	}
+            $logId = $log->insert($dbw);
+            $log->publish($logId);
+        }
 
-	/**
-	 * Generate and format summary for the rollback.
-	 *
-	 * @param RevisionRecord $current
-	 * @param RevisionRecord $target
-	 * @return string
-	 */
-	private function getSummary( RevisionRecord $current, RevisionRecord $target ): string {
-		$currentEditorForPublic = $current->getUser( RevisionRecord::FOR_PUBLIC );
-		if ( $this->summary === '' ) {
-			if ( !$currentEditorForPublic ) { // no public user name
-				$summary = MessageValue::new( 'revertpage-nouser' );
-			} elseif ( $this->options->get( MainConfigNames::DisableAnonTalk ) &&
-			!$currentEditorForPublic->isRegistered() ) {
-				$summary = MessageValue::new( 'revertpage-anon' );
-			} else {
-				$summary = MessageValue::new( 'revertpage' );
-			}
-		} else {
-			$summary = $this->summary;
-		}
+        $wikiPage = $this->wikiPageFactory->newFromTitle($this->page);
 
-		$targetEditorForPublic = $target->getUser( RevisionRecord::FOR_PUBLIC );
-		// Allow the custom summary to use the same args as the default message
-		$args = [
-			$targetEditorForPublic ? $targetEditorForPublic->getName() : null,
-			$currentEditorForPublic ? $currentEditorForPublic->getName() : null,
-			$target->getId(),
-			Message::dateTimeParam( $target->getTimestamp() ),
-			$current->getId(),
-			Message::dateTimeParam( $current->getTimestamp() ),
-		];
-		if ( $summary instanceof MessageValue ) {
-			$summary = ( new Converter() )->convertMessageValue( $summary );
-			$summary = $summary->params( $args )->inContentLanguage()->text();
-		} else {
-			$summary = ( new RawMessage( $summary, $args ) )->inContentLanguage()->plain();
-		}
+        $this->hookRunner->onRollbackComplete(
+            $wikiPage,
+            $this->performer->getUser(),
+            $targetRevision,
+            $currentRevision
+        );
 
-		// Trim spaces on user supplied text
-		return trim( $summary );
-	}
+        return StatusValue::newGood([
+            'summary'                 => $summary,
+            'current-revision-record' => $currentRevision,
+            'target-revision-record'  => $targetRevision,
+            'newid'                   => $rev->getId(),
+            'tags'                    => array_merge($this->tags, $updater->getEditResult()->getRevertTags())
+        ]);
+    }
+
+    /**
+     * Set patrolling and bot flag on the edits which get rolled back.
+     *
+     * @param IDatabase $dbw
+     * @param RevisionRecord $current
+     * @param RevisionRecord $target
+     */
+    private function updateRecentChange(
+        IDatabase $dbw,
+        RevisionRecord $current,
+        RevisionRecord $target
+    )
+    {
+        $useRCPatrol = $this->options->get(MainConfigNames::UseRCPatrol);
+        if (!$this->bot && !$useRCPatrol) {
+            return;
+        }
+
+        $actorId = $this->actorNormalization
+            ->acquireActorId($current->getUser(RevisionRecord::RAW), $dbw);
+        $timestamp = $dbw->timestamp($target->getTimestamp());
+        $rows = $dbw->select(
+            'recentchanges',
+            ['rc_id', 'rc_patrolled'],
+            [
+                'rc_cur_id' => $current->getPageId(),
+                $dbw->makeList([
+                    'rc_timestamp > ' . $dbw->addQuotes($timestamp),
+                    $dbw->makeList([
+                        'rc_timestamp' => $timestamp,
+                        'rc_this_oldid > ' . $dbw->addQuotes($target->getId()),
+                    ], IDatabase::LIST_AND),
+                ], IDatabase::LIST_OR),
+                'rc_actor'  => $actorId,
+            ],
+            __METHOD__
+        );
+
+        $all = [];
+        $patrolled = [];
+        $unpatrolled = [];
+        foreach ($rows as $row) {
+            $all[] = (int)$row->rc_id;
+            if ($row->rc_patrolled) {
+                $patrolled[] = (int)$row->rc_id;
+            } else {
+                $unpatrolled[] = (int)$row->rc_id;
+            }
+        }
+
+        if ($useRCPatrol && $this->bot) {
+            // Mark all reverted edits as if they were made by a bot
+            // Also mark only unpatrolled reverted edits as patrolled
+            if ($unpatrolled) {
+                $dbw->update(
+                    'recentchanges',
+                    ['rc_bot' => 1, 'rc_patrolled' => RecentChange::PRC_AUTOPATROLLED],
+                    ['rc_id' => $unpatrolled],
+                    __METHOD__
+                );
+            }
+            if ($patrolled) {
+                $dbw->update(
+                    'recentchanges',
+                    ['rc_bot' => 1],
+                    ['rc_id' => $patrolled],
+                    __METHOD__
+                );
+            }
+        } elseif ($useRCPatrol) {
+            // Mark only unpatrolled reverted edits as patrolled
+            if ($unpatrolled) {
+                $dbw->update(
+                    'recentchanges',
+                    ['rc_patrolled' => RecentChange::PRC_AUTOPATROLLED],
+                    ['rc_id' => $unpatrolled],
+                    __METHOD__
+                );
+            }
+        } else { // if ( $this->bot )
+            $dbw->update(
+                'recentchanges',
+                ['rc_bot' => 1],
+                ['rc_id' => $all],
+                __METHOD__
+            );
+        }
+    }
+
+    /**
+     * Generate and format summary for the rollback.
+     *
+     * @param RevisionRecord $current
+     * @param RevisionRecord $target
+     * @return string
+     */
+    private function getSummary(RevisionRecord $current, RevisionRecord $target): string
+    {
+        $currentEditorForPublic = $current->getUser(RevisionRecord::FOR_PUBLIC);
+        if ($this->summary === '') {
+            if (!$currentEditorForPublic) { // no public user name
+                $summary = MessageValue::new('revertpage-nouser');
+            } elseif ($this->options->get(MainConfigNames::DisableAnonTalk) &&
+                !$currentEditorForPublic->isRegistered()) {
+                $summary = MessageValue::new('revertpage-anon');
+            } else {
+                $summary = MessageValue::new('revertpage');
+            }
+        } else {
+            $summary = $this->summary;
+        }
+
+        $targetEditorForPublic = $target->getUser(RevisionRecord::FOR_PUBLIC);
+        // Allow the custom summary to use the same args as the default message
+        $args = [
+            $targetEditorForPublic ? $targetEditorForPublic->getName() : null,
+            $currentEditorForPublic ? $currentEditorForPublic->getName() : null,
+            $target->getId(),
+            Message::dateTimeParam($target->getTimestamp()),
+            $current->getId(),
+            Message::dateTimeParam($current->getTimestamp()),
+        ];
+        if ($summary instanceof MessageValue) {
+            $summary = (new Converter())->convertMessageValue($summary);
+            $summary = $summary->params($args)->inContentLanguage()->text();
+        } else {
+            $summary = (new RawMessage($summary, $args))->inContentLanguage()->plain();
+        }
+
+        // Trim spaces on user supplied text
+        return trim($summary);
+    }
 }

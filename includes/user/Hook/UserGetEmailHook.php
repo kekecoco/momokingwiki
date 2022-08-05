@@ -11,15 +11,16 @@ use User;
  * @stable to implement
  * @ingroup Hooks
  */
-interface UserGetEmailHook {
-	/**
-	 * This hook is called when getting an user email address.
-	 *
-	 * @since 1.35
-	 *
-	 * @param User $user
-	 * @param string &$email Email, change this to override local email
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onUserGetEmail( $user, &$email );
+interface UserGetEmailHook
+{
+    /**
+     * This hook is called when getting an user email address.
+     *
+     * @param User $user
+     * @param string &$email Email, change this to override local email
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onUserGetEmail($user, &$email);
 }

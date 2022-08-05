@@ -27,80 +27,90 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * @ingroup SpecialPage
  */
-class SpecialUnusedCategories extends QueryPage {
+class SpecialUnusedCategories extends QueryPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory
-	) {
-		parent::__construct( 'Unusedcategories' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory
+    )
+    {
+        parent::__construct('Unusedcategories');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	protected function getPageHeader() {
-		return $this->msg( 'unusedcategoriestext' )->parseAsBlock();
-	}
+    protected function getPageHeader()
+    {
+        return $this->msg('unusedcategoriestext')->parseAsBlock();
+    }
 
-	protected function getOrderFields() {
-		return [ 'title' ];
-	}
+    protected function getOrderFields()
+    {
+        return ['title'];
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'page', 'categorylinks', 'page_props' ],
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-			],
-			'conds' => [
-				'cl_from IS NULL',
-				'page_namespace' => NS_CATEGORY,
-				'page_is_redirect' => 0,
-				'pp_page IS NULL'
-			],
-			'join_conds' => [
-				'categorylinks' => [ 'LEFT JOIN', 'cl_to = page_title' ],
-				'page_props' => [ 'LEFT JOIN', [
-					'page_id = pp_page',
-					'pp_propname' => 'expectunusedcategory'
-				] ]
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'     => ['page', 'categorylinks', 'page_props'],
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+            ],
+            'conds'      => [
+                'cl_from IS NULL',
+                'page_namespace'   => NS_CATEGORY,
+                'page_is_redirect' => 0,
+                'pp_page IS NULL'
+            ],
+            'join_conds' => [
+                'categorylinks' => ['LEFT JOIN', 'cl_to = page_title'],
+                'page_props'    => ['LEFT JOIN', [
+                    'page_id = pp_page',
+                    'pp_propname' => 'expectunusedcategory'
+                ]]
+            ]
+        ];
+    }
 
-	/**
-	 * A should come before Z (T32907)
-	 * @return bool
-	 */
-	protected function sortDescending() {
-		return false;
-	}
+    /**
+     * A should come before Z (T32907)
+     * @return bool
+     */
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$title = Title::makeTitle( NS_CATEGORY, $result->title );
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $title = Title::makeTitle(NS_CATEGORY, $result->title);
 
-		return $this->getLinkRenderer()->makeLink( $title, $title->getText() );
-	}
+        return $this->getLinkRenderer()->makeLink($title, $title->getText());
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 }

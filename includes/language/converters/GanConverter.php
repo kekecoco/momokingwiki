@@ -23,100 +23,111 @@
  *
  * @ingroup Languages
  */
-class GanConverter extends LanguageConverter {
+class GanConverter extends LanguageConverter
+{
 
-	/**
-	 * Get Main language code.
-	 * @since 1.36
-	 *
-	 * @return string
-	 */
-	public function getMainCode(): string {
-		return 'gan';
-	}
+    /**
+     * Get Main language code.
+     * @return string
+     * @since 1.36
+     *
+     */
+    public function getMainCode(): string
+    {
+        return 'gan';
+    }
 
-	/**
-	 * Get supported variants of the language.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getLanguageVariants(): array {
-		return [ 'gan', 'gan-hans', 'gan-hant' ];
-	}
+    /**
+     * Get supported variants of the language.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getLanguageVariants(): array
+    {
+        return ['gan', 'gan-hans', 'gan-hant'];
+    }
 
-	/**
-	 * Get language variants fallbacks.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getVariantsFallbacks(): array {
-		return [
-			'gan' => [ 'gan-hans', 'gan-hant' ],
-			'gan-hans' => [ 'gan' ],
-			'gan-hant' => [ 'gan' ],
-		];
-	}
+    /**
+     * Get language variants fallbacks.
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getVariantsFallbacks(): array
+    {
+        return [
+            'gan'      => ['gan-hans', 'gan-hant'],
+            'gan-hans' => ['gan'],
+            'gan-hant' => ['gan'],
+        ];
+    }
 
-	/**
-	 * Get manual level limit for supported variants.
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	protected function getAdditionalManualLevel(): array {
-		return [ 'gan' => 'disable' ];
-	}
+    /**
+     * Get manual level limit for supported variants.
+     * @return array
+     * @since 1.36
+     *
+     */
+    protected function getAdditionalManualLevel(): array
+    {
+        return ['gan' => 'disable'];
+    }
 
-	/**
-	 * Get desc. code separator.
-	 * @since 1.36
-	 *
-	 * @return string
-	 */
-	public function getDescCodeSeparator(): string {
-		return ': ';
-	}
+    /**
+     * Get desc. code separator.
+     * @return string
+     * @since 1.36
+     *
+     */
+    public function getDescCodeSeparator(): string
+    {
+        return ': ';
+    }
 
-	/**
-	 * Get desc. var separator.
-	 * @since 1.36
-	 *
-	 * @return string
-	 */
-	public function getDescVarSeparator(): string {
-		return '; ';
-	}
+    /**
+     * Get desc. var separator.
+     * @return string
+     * @since 1.36
+     *
+     */
+    public function getDescVarSeparator(): string
+    {
+        return '; ';
+    }
 
-	/**
-	 * Get variant names. Overrides parent's implementation
-	 * @since 1.36
-	 *
-	 * @return array
-	 */
-	public function getVariantNames(): array {
-		$names = [
-			'gan' => '原文',
-			'gan-hans' => '简体',
-			'gan-hant' => '繁體',
-		];
-		return array_merge( parent::getVariantNames(), $names );
-	}
+    /**
+     * Get variant names. Overrides parent's implementation
+     * @return array
+     * @since 1.36
+     *
+     */
+    public function getVariantNames(): array
+    {
+        $names = [
+            'gan'      => '原文',
+            'gan-hans' => '简体',
+            'gan-hant' => '繁體',
+        ];
 
-	protected function loadDefaultTables() {
-		$this->mTables = [
-			'gan-hans' => new ReplacementArray( MediaWiki\Languages\Data\ZhConversion::$zh2Hans ),
-			'gan-hant' => new ReplacementArray( MediaWiki\Languages\Data\ZhConversion::$zh2Hant ),
-			'gan' => new ReplacementArray
-		];
-	}
+        return array_merge(parent::getVariantNames(), $names);
+    }
 
-	/**
-	 * @param string $key
-	 * @return string
-	 */
-	public function convertCategoryKey( $key ) {
-		return $this->autoConvert( $key, 'gan' );
-	}
+    protected function loadDefaultTables()
+    {
+        $this->mTables = [
+            'gan-hans' => new ReplacementArray(MediaWiki\Languages\Data\ZhConversion::$zh2Hans),
+            'gan-hant' => new ReplacementArray(MediaWiki\Languages\Data\ZhConversion::$zh2Hant),
+            'gan'      => new ReplacementArray
+        ];
+    }
+
+    /**
+     * @param string $key
+     * @return string
+     */
+    public function convertCategoryKey($key)
+    {
+        return $this->autoConvert($key, 'gan');
+    }
 }

@@ -26,70 +26,74 @@
  *
  * TODO convert to unit tests
  */
-class NaiveImportTitleFactoryTest extends MediaWikiIntegrationTestCase {
+class NaiveImportTitleFactoryTest extends MediaWikiIntegrationTestCase
+{
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->setContentLang( 'en' );
-		$this->setMwGlobals( [
-			'wgExtraNamespaces' => [ 100 => 'Portal' ],
-		] );
-	}
+        $this->setContentLang('en');
+        $this->setMwGlobals([
+            'wgExtraNamespaces' => [100 => 'Portal'],
+        ]);
+    }
 
-	public function basicProvider() {
-		return [
-			[
-				new ForeignTitle( 0, '', 'MainNamespaceArticle' ),
-				'MainNamespaceArticle'
-			],
-			[
-				new ForeignTitle( null, '', 'MainNamespaceArticle' ),
-				'MainNamespaceArticle'
-			],
-			[
-				new ForeignTitle( 1, 'Discussion', 'Nice_talk' ),
-				'Talk:Nice_talk'
-			],
-			[
-				new ForeignTitle( 0, '', 'Bogus:Nice_talk' ),
-				'Bogus:Nice_talk'
-			],
-			[
-				new ForeignTitle( 100, 'Bogus', 'Nice_talk' ),
-				'Bogus:Nice_talk' // not Portal:Nice_talk
-			],
-			[
-				new ForeignTitle( 1, 'Bogus', 'Nice_talk' ),
-				'Talk:Nice_talk' // not Bogus:Nice_talk
-			],
-			[
-				new ForeignTitle( 100, 'Portal', 'Nice_talk' ),
-				'Portal:Nice_talk'
-			],
-			[
-				new ForeignTitle( 724, 'Portal', 'Nice_talk' ),
-				'Portal:Nice_talk'
-			],
-			[
-				new ForeignTitle( 2, 'Portal', 'Nice_talk' ),
-				'User:Nice_talk'
-			],
-		];
-	}
+    public function basicProvider()
+    {
+        return [
+            [
+                new ForeignTitle(0, '', 'MainNamespaceArticle'),
+                'MainNamespaceArticle'
+            ],
+            [
+                new ForeignTitle(null, '', 'MainNamespaceArticle'),
+                'MainNamespaceArticle'
+            ],
+            [
+                new ForeignTitle(1, 'Discussion', 'Nice_talk'),
+                'Talk:Nice_talk'
+            ],
+            [
+                new ForeignTitle(0, '', 'Bogus:Nice_talk'),
+                'Bogus:Nice_talk'
+            ],
+            [
+                new ForeignTitle(100, 'Bogus', 'Nice_talk'),
+                'Bogus:Nice_talk' // not Portal:Nice_talk
+            ],
+            [
+                new ForeignTitle(1, 'Bogus', 'Nice_talk'),
+                'Talk:Nice_talk' // not Bogus:Nice_talk
+            ],
+            [
+                new ForeignTitle(100, 'Portal', 'Nice_talk'),
+                'Portal:Nice_talk'
+            ],
+            [
+                new ForeignTitle(724, 'Portal', 'Nice_talk'),
+                'Portal:Nice_talk'
+            ],
+            [
+                new ForeignTitle(2, 'Portal', 'Nice_talk'),
+                'User:Nice_talk'
+            ],
+        ];
+    }
 
-	/**
-	 * @dataProvider basicProvider
-	 */
-	public function testBasic( ForeignTitle $foreignTitle, $titleText ) {
-		$factory = new NaiveImportTitleFactory(
-			$this->getServiceContainer()->getContentLanguage(),
-			$this->getServiceContainer()->getNamespaceInfo(),
-			$this->getServiceContainer()->getTitleFactory()
-		);
-		$testTitle = $factory->createTitleFromForeignTitle( $foreignTitle );
-		$title = Title::newFromText( $titleText );
+    /**
+     * @dataProvider basicProvider
+     */
+    public function testBasic(ForeignTitle $foreignTitle, $titleText)
+    {
+        $factory = new NaiveImportTitleFactory(
+            $this->getServiceContainer()->getContentLanguage(),
+            $this->getServiceContainer()->getNamespaceInfo(),
+            $this->getServiceContainer()->getTitleFactory()
+        );
+        $testTitle = $factory->createTitleFromForeignTitle($foreignTitle);
+        $title = Title::newFromText($titleText);
 
-		$this->assertTrue( $title->equals( $testTitle ) );
-	}
+        $this->assertTrue($title->equals($testTitle));
+    }
 }

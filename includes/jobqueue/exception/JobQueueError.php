@@ -26,5 +26,6 @@
  * @ingroup JobQueue
  * @since 1.22
  */
-class JobQueueError extends MWException {
+class JobQueueError extends MWException
+{
 }

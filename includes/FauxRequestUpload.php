@@ -26,22 +26,24 @@
  * @ingroup HTTP
  * @since 1.37
  */
-class FauxRequestUpload extends WebRequestUpload {
+class FauxRequestUpload extends WebRequestUpload
+{
 
-	/**
-	 * Constructor. Should only be called by FauxRequest
-	 *
-	 * @param array $data Array of *non*-urlencoded key => value pairs, the
-	 *   fake (whole) FILES values
-	 * @param FauxRequest $request The associated faux request
-	 * @param string $key name of upload param
-	 */
-	public function __construct( $data, $request, $key ) {
-		$this->request = $request;
-		$this->doesExist = isset( $data[$key] );
-		if ( $this->doesExist ) {
-			$this->fileInfo = $data[$key];
-		}
-	}
+    /**
+     * Constructor. Should only be called by FauxRequest
+     *
+     * @param array $data Array of *non*-urlencoded key => value pairs, the
+     *   fake (whole) FILES values
+     * @param FauxRequest $request The associated faux request
+     * @param string $key name of upload param
+     */
+    public function __construct($data, $request, $key)
+    {
+        $this->request = $request;
+        $this->doesExist = isset($data[$key]);
+        if ($this->doesExist) {
+            $this->fileInfo = $data[$key];
+        }
+    }
 
 }

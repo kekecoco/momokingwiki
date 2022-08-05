@@ -19,34 +19,37 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-class SearchSuggestionSetIntegrationTest extends MediaWikiIntegrationTestCase {
-	/** @return iterable */
-	public function provideTitles(): iterable {
-		yield 'Array of 1 Title with NS:0' => [ [ Title::makeTitle( 0, 'Title' ) ], 1 ];
+class SearchSuggestionSetIntegrationTest extends MediaWikiIntegrationTestCase
+{
+    /** @return iterable */
+    public function provideTitles(): iterable
+    {
+        yield 'Array of 1 Title with NS:0' => [[Title::makeTitle(0, 'Title')], 1];
 
-		yield 'Array of 2 Titles with NS:0' => [
-			[ Title::makeTitle( 0, 'Title1' ), Title::makeTitle( 0, 'Title2' ) ],
-			2
-		];
+        yield 'Array of 2 Titles with NS:0' => [
+            [Title::makeTitle(0, 'Title1'), Title::makeTitle(0, 'Title2')],
+            2
+        ];
 
-		yield 'Array of another Title with NS:1' => [ [ Title::makeTitle( 1, 'Test' ) ], 1 ];
-	}
+        yield 'Array of another Title with NS:1' => [[Title::makeTitle(1, 'Test')], 1];
+    }
 
-	/**
-	 * NOTE: This is made an integration test because SearchSuggestion::fromText()
-	 *   calls Title::isValid() when following the execution and that tries to
-	 *   access MediaWiki services to get a Title Parser object which is not possible
-	 *   in a unit test as services are not available. That's why this ends up being
-	 *   an integration test instead.
-	 *
-	 * @covers SearchSuggestionSet::fromTitles
-	 * @dataProvider provideTitles
-	 */
-	public function testFromTitles( array $titles, $expected ): void {
-		$actual = SearchSuggestionSet::fromTitles( $titles );
+    /**
+     * NOTE: This is made an integration test because SearchSuggestion::fromText()
+     *   calls Title::isValid() when following the execution and that tries to
+     *   access MediaWiki services to get a Title Parser object which is not possible
+     *   in a unit test as services are not available. That's why this ends up being
+     *   an integration test instead.
+     *
+     * @covers       SearchSuggestionSet::fromTitles
+     * @dataProvider provideTitles
+     */
+    public function testFromTitles(array $titles, $expected): void
+    {
+        $actual = SearchSuggestionSet::fromTitles($titles);
 
-		$this->assertSame( $expected, $actual->getSize() );
-		$this->assertInstanceOf( SearchSuggestionSet::class, $actual );
-		$this->assertCount( $expected, $actual->getSuggestions() );
-	}
+        $this->assertSame($expected, $actual->getSize());
+        $this->assertInstanceOf(SearchSuggestionSet::class, $actual);
+        $this->assertCount($expected, $actual->getSuggestions());
+    }
 }

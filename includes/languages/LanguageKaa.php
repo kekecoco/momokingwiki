@@ -26,55 +26,63 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Languages
  */
-class LanguageKaa extends Language {
+class LanguageKaa extends Language
+{
 
-	# Convert from the nominative form of a noun to some other case
-	# Invoked with {{GRAMMAR:case|word}}
+    # Convert from the nominative form of a noun to some other case
+    # Invoked with {{GRAMMAR:case|word}}
 
-	/**
-	 * Cases: genitive, dative, accusative, locative, ablative, comitative + possessive forms
-	 *
-	 * @param string $word
-	 * @param string $case
-	 *
-	 * @return string
-	 */
-	public function convertGrammar( $word, $case ) {
-		$grammarForms =
-			MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::GrammarForms );
-		if ( isset( $grammarForms['kaa'][$case][$word] ) ) {
-			return $grammarForms['kaa'][$case][$word];
-		}
-		/* Full code of function convertGrammar() is in development. Updates coming soon. */
-		return $word;
-	}
+    /**
+     * Cases: genitive, dative, accusative, locative, ablative, comitative + possessive forms
+     *
+     * @param string $word
+     * @param string $case
+     *
+     * @return string
+     */
+    public function convertGrammar($word, $case)
+    {
+        $grammarForms =
+            MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::GrammarForms);
+        if (isset($grammarForms['kaa'][$case][$word])) {
+            return $grammarForms['kaa'][$case][$word];
+        }
 
-	/**
-	 * It fixes issue with ucfirst for transforming 'i' to 'İ'
-	 *
-	 * @param string $string
-	 *
-	 * @return string
-	 */
-	public function ucfirst( $string ) {
-		if ( substr( $string, 0, 1 ) === 'i' ) {
-			return 'İ' . substr( $string, 1 );
-		}
-		return parent::ucfirst( $string );
-	}
+        /* Full code of function convertGrammar() is in development. Updates coming soon. */
 
-	/**
-	 * It fixes issue with lcfirst for transforming 'I' to 'ı'
-	 *
-	 * @param string $string
-	 *
-	 * @return mixed|string
-	 */
-	public function lcfirst( $string ) {
-		if ( substr( $string, 0, 1 ) === 'I' ) {
-			return 'ı' . substr( $string, 1 );
-		}
-		return parent::lcfirst( $string );
-	}
+        return $word;
+    }
+
+    /**
+     * It fixes issue with ucfirst for transforming 'i' to 'İ'
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public function ucfirst($string)
+    {
+        if (substr($string, 0, 1) === 'i') {
+            return 'İ' . substr($string, 1);
+        }
+
+        return parent::ucfirst($string);
+    }
+
+    /**
+     * It fixes issue with lcfirst for transforming 'I' to 'ı'
+     *
+     * @param string $string
+     *
+     * @return mixed|string
+     */
+    public function lcfirst($string)
+    {
+        if (substr($string, 0, 1) === 'I') {
+            return 'ı' . substr($string, 1);
+        }
+
+        return parent::lcfirst($string);
+    }
 
 }

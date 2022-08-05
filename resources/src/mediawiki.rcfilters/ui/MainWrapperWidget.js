@@ -1,11 +1,11 @@
-var SavedLinksListWidget = require( './SavedLinksListWidget.js' ),
-	FilterWrapperWidget = require( './FilterWrapperWidget.js' ),
-	ChangesListWrapperWidget = require( './ChangesListWrapperWidget.js' ),
-	RcTopSectionWidget = require( './RcTopSectionWidget.js' ),
-	RclTopSectionWidget = require( './RclTopSectionWidget.js' ),
-	WatchlistTopSectionWidget = require( './WatchlistTopSectionWidget.js' ),
-	FormWrapperWidget = require( './FormWrapperWidget.js' ),
-	MainWrapperWidget;
+var SavedLinksListWidget = require('./SavedLinksListWidget.js'),
+    FilterWrapperWidget = require('./FilterWrapperWidget.js'),
+    ChangesListWrapperWidget = require('./ChangesListWrapperWidget.js'),
+    RcTopSectionWidget = require('./RcTopSectionWidget.js'),
+    RclTopSectionWidget = require('./RclTopSectionWidget.js'),
+    WatchlistTopSectionWidget = require('./WatchlistTopSectionWidget.js'),
+    FormWrapperWidget = require('./FormWrapperWidget.js'),
+    MainWrapperWidget;
 
 /**
  * Wrapper for changes list content
@@ -28,59 +28,59 @@ var SavedLinksListWidget = require( './SavedLinksListWidget.js' ),
  *  system. If not given, falls back to this widget's $element
  */
 MainWrapperWidget = function MwRcfiltersUiMainWrapperWidget(
-	controller, model, savedQueriesModel, changesListModel, config
+    controller, model, savedQueriesModel, changesListModel, config
 ) {
-	config = $.extend( {}, config );
+    config = $.extend({}, config);
 
-	// Parent
-	MainWrapperWidget.parent.call( this, config );
+    // Parent
+    MainWrapperWidget.parent.call(this, config);
 
-	this.controller = controller;
-	this.model = model;
-	this.changesListModel = changesListModel;
-	this.$topSection = config.$topSection;
-	this.$filtersContainer = config.$filtersContainer;
-	this.$changesListContainer = config.$changesListContainer;
-	this.$formContainer = config.$formContainer;
-	this.$overlay = $( '<div>' ).addClass( 'mw-rcfilters-ui-overlay oo-ui-defaultOverlay' );
-	this.$wrapper = config.$wrapper || this.$element;
+    this.controller = controller;
+    this.model = model;
+    this.changesListModel = changesListModel;
+    this.$topSection = config.$topSection;
+    this.$filtersContainer = config.$filtersContainer;
+    this.$changesListContainer = config.$changesListContainer;
+    this.$formContainer = config.$formContainer;
+    this.$overlay = $('<div>').addClass('mw-rcfilters-ui-overlay oo-ui-defaultOverlay');
+    this.$wrapper = config.$wrapper || this.$element;
 
-	this.savedLinksListWidget = new SavedLinksListWidget(
-		controller, savedQueriesModel, { $overlay: this.$overlay }
-	);
+    this.savedLinksListWidget = new SavedLinksListWidget(
+        controller, savedQueriesModel, {$overlay: this.$overlay}
+    );
 
-	this.filtersWidget = new FilterWrapperWidget(
-		controller,
-		model,
-		savedQueriesModel,
-		changesListModel,
-		{
-			$overlay: this.$overlay,
-			$wrapper: this.$wrapper,
-			collapsed: config.collapsed
-		}
-	);
+    this.filtersWidget = new FilterWrapperWidget(
+        controller,
+        model,
+        savedQueriesModel,
+        changesListModel,
+        {
+            $overlay: this.$overlay,
+            $wrapper: this.$wrapper,
+            collapsed: config.collapsed
+        }
+    );
 
-	this.changesListWidget = new ChangesListWrapperWidget(
-		model, changesListModel, controller, this.$changesListContainer );
+    this.changesListWidget = new ChangesListWrapperWidget(
+        model, changesListModel, controller, this.$changesListContainer);
 
-	/* Events */
+    /* Events */
 
-	// Toggle changes list overlay when filters menu opens/closes. We use overlay on changes list
-	// to prevent users from accidentally clicking on links in results, while menu is opened.
-	// Overlay on changes list is not the same as this.$overlay
-	this.filtersWidget.connect( this, { menuToggle: this.onFilterMenuToggle.bind( this ) } );
+    // Toggle changes list overlay when filters menu opens/closes. We use overlay on changes list
+    // to prevent users from accidentally clicking on links in results, while menu is opened.
+    // Overlay on changes list is not the same as this.$overlay
+    this.filtersWidget.connect(this, {menuToggle: this.onFilterMenuToggle.bind(this)});
 
-	// Initialize
-	this.$filtersContainer.append( this.filtersWidget.$element );
-	$( document.body )
-		.append( this.$overlay )
-		.addClass( 'mw-rcfilters-ui-initialized' );
+    // Initialize
+    this.$filtersContainer.append(this.filtersWidget.$element);
+    $(document.body)
+        .append(this.$overlay)
+        .addClass('mw-rcfilters-ui-initialized');
 };
 
 /* Initialization */
 
-OO.inheritClass( MainWrapperWidget, OO.ui.Widget );
+OO.inheritClass(MainWrapperWidget, OO.ui.Widget);
 
 /* Methods */
 
@@ -89,33 +89,33 @@ OO.inheritClass( MainWrapperWidget, OO.ui.Widget );
  *
  * @param {string} specialPage
  */
-MainWrapperWidget.prototype.setTopSection = function ( specialPage ) {
-	var topSection;
+MainWrapperWidget.prototype.setTopSection = function (specialPage) {
+    var topSection;
 
-	if ( specialPage === 'Recentchanges' ) {
-		topSection = new RcTopSectionWidget(
-			this.savedLinksListWidget, this.$topSection
-		);
-		this.filtersWidget.setTopSection( topSection.$element );
-	}
+    if (specialPage === 'Recentchanges') {
+        topSection = new RcTopSectionWidget(
+            this.savedLinksListWidget, this.$topSection
+        );
+        this.filtersWidget.setTopSection(topSection.$element);
+    }
 
-	if ( specialPage === 'Recentchangeslinked' ) {
-		topSection = new RclTopSectionWidget(
-			this.savedLinksListWidget, this.controller,
-			this.model.getGroup( 'toOrFrom' ).getItemByParamName( 'showlinkedto' ),
-			this.model.getGroup( 'page' ).getItemByParamName( 'target' )
-		);
+    if (specialPage === 'Recentchangeslinked') {
+        topSection = new RclTopSectionWidget(
+            this.savedLinksListWidget, this.controller,
+            this.model.getGroup('toOrFrom').getItemByParamName('showlinkedto'),
+            this.model.getGroup('page').getItemByParamName('target')
+        );
 
-		this.filtersWidget.setTopSection( topSection.$element );
-	}
+        this.filtersWidget.setTopSection(topSection.$element);
+    }
 
-	if ( specialPage === 'Watchlist' ) {
-		topSection = new WatchlistTopSectionWidget(
-			this.controller, this.changesListModel, this.savedLinksListWidget, this.$topSection
-		);
+    if (specialPage === 'Watchlist') {
+        topSection = new WatchlistTopSectionWidget(
+            this.controller, this.changesListModel, this.savedLinksListWidget, this.$topSection
+        );
 
-		this.filtersWidget.setTopSection( topSection.$element );
-	}
+        this.filtersWidget.setTopSection(topSection.$element);
+    }
 };
 
 /**
@@ -123,8 +123,8 @@ MainWrapperWidget.prototype.setTopSection = function ( specialPage ) {
  *
  * @param {boolean} isVisible
  */
-MainWrapperWidget.prototype.onFilterMenuToggle = function ( isVisible ) {
-	this.changesListWidget.toggleOverlay( isVisible );
+MainWrapperWidget.prototype.onFilterMenuToggle = function (isVisible) {
+    this.changesListWidget.toggleOverlay(isVisible);
 };
 
 /**
@@ -133,8 +133,8 @@ MainWrapperWidget.prototype.onFilterMenuToggle = function ( isVisible ) {
  * @return {mw.rcfilters.ui.FormWrapperWidget} Form wrapper widget
  */
 MainWrapperWidget.prototype.initFormWidget = function () {
-	return new FormWrapperWidget(
-		this.model, this.changesListModel, this.controller, this.$formContainer );
+    return new FormWrapperWidget(
+        this.model, this.changesListModel, this.controller, this.$formContainer);
 };
 
 module.exports = MainWrapperWidget;

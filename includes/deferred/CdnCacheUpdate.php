@@ -28,334 +28,347 @@ use Wikimedia\IPUtils;
  * Handles purging the appropriate CDN objects given a list of URLs or Title instances
  * @ingroup Cache
  */
-class CdnCacheUpdate implements DeferrableUpdate, MergeableUpdate {
-	/** @var array[] List of (URL, rebound purge delay) tuples */
-	private $urlTuples = [];
-	/** @var array[] List of (PageReference, rebound purge delay) tuples */
-	private $pageTuples = [];
+class CdnCacheUpdate implements DeferrableUpdate, MergeableUpdate
+{
+    /** @var array[] List of (URL, rebound purge delay) tuples */
+    private $urlTuples = [];
+    /** @var array[] List of (PageReference, rebound purge delay) tuples */
+    private $pageTuples = [];
 
-	/** @var int Maximum seconds of rebound purge delay */
-	private const MAX_REBOUND_DELAY = 300;
+    /** @var int Maximum seconds of rebound purge delay */
+    private const MAX_REBOUND_DELAY = 300;
 
-	/**
-	 * @param string[]|PageReference[] $targets Collection of URLs/titles to be purged from CDN
-	 * @param array $options Options map. Supports:
-	 *   - reboundDelay: how many seconds after the first purge to send a rebound purge.
-	 *      No rebound purge will be sent if this is not positive. [Default: 0]
-	 */
-	public function __construct( array $targets, array $options = [] ) {
-		$delay = min(
-			(int)max( $options['reboundDelay'] ?? 0, 0 ),
-			self::MAX_REBOUND_DELAY
-		);
+    /**
+     * @param string[]|PageReference[] $targets Collection of URLs/titles to be purged from CDN
+     * @param array $options Options map. Supports:
+     *   - reboundDelay: how many seconds after the first purge to send a rebound purge.
+     *      No rebound purge will be sent if this is not positive. [Default: 0]
+     */
+    public function __construct(array $targets, array $options = [])
+    {
+        $delay = min(
+            (int)max($options['reboundDelay'] ?? 0, 0),
+            self::MAX_REBOUND_DELAY
+        );
 
-		foreach ( $targets as $target ) {
-			if ( $target instanceof PageReference ) {
-				$this->pageTuples[] = [ $target, $delay ];
-			} else {
-				$this->urlTuples[] = [ $target, $delay ];
-			}
-		}
-	}
+        foreach ($targets as $target) {
+            if ($target instanceof PageReference) {
+                $this->pageTuples[] = [$target, $delay];
+            } else {
+                $this->urlTuples[] = [$target, $delay];
+            }
+        }
+    }
 
-	public function merge( MergeableUpdate $update ) {
-		/** @var self $update */
-		Assert::parameterType( __CLASS__, $update, '$update' );
-		'@phan-var self $update';
+    public function merge(MergeableUpdate $update)
+    {
+        /** @var self $update */
+        Assert::parameterType(__CLASS__, $update, '$update');
+        '@phan-var self $update';
 
-		$this->urlTuples = array_merge( $this->urlTuples, $update->urlTuples );
-		$this->pageTuples = array_merge( $this->pageTuples, $update->pageTuples );
-	}
+        $this->urlTuples = array_merge($this->urlTuples, $update->urlTuples);
+        $this->pageTuples = array_merge($this->pageTuples, $update->pageTuples);
+    }
 
-	/**
-	 * Create an update object from an array of Title objects, or a TitleArray object
-	 *
-	 * @param PageReference[] $pages
-	 * @param string[] $urls
-	 *
-	 * @return CdnCacheUpdate
-	 * @deprecated Since 1.35 Use HtmlCacheUpdater instead. Hard deprecated since 1.39.
-	 */
-	public static function newFromTitles( $pages, $urls = [] ) {
-		wfDeprecated( __METHOD__, '1.35' );
-		return new CdnCacheUpdate( array_merge( $pages, $urls ) );
-	}
+    /**
+     * Create an update object from an array of Title objects, or a TitleArray object
+     *
+     * @param PageReference[] $pages
+     * @param string[] $urls
+     *
+     * @return CdnCacheUpdate
+     * @deprecated Since 1.35 Use HtmlCacheUpdater instead. Hard deprecated since 1.39.
+     */
+    public static function newFromTitles($pages, $urls = [])
+    {
+        wfDeprecated(__METHOD__, '1.35');
 
-	public function doUpdate() {
-		// Resolve the final list of URLs just before purging them (T240083)
-		$reboundDelayByUrl = $this->resolveReboundDelayByUrl();
+        return new CdnCacheUpdate(array_merge($pages, $urls));
+    }
 
-		// Send the immediate purges to CDN
-		self::purge( array_keys( $reboundDelayByUrl ) );
-		$immediatePurgeTimestamp = time();
+    public function doUpdate()
+    {
+        // Resolve the final list of URLs just before purging them (T240083)
+        $reboundDelayByUrl = $this->resolveReboundDelayByUrl();
 
-		// Get the URLs that need rebound purges, grouped by seconds of purge delay
-		$urlsWithReboundByDelay = [];
-		foreach ( $reboundDelayByUrl as $url => $delay ) {
-			if ( $delay > 0 ) {
-				$urlsWithReboundByDelay[$delay][] = $url;
-			}
-		}
-		// Enqueue delayed purge jobs for these URLs (usually only one job)
-		$jobs = [];
-		foreach ( $urlsWithReboundByDelay as $delay => $urls ) {
-			$jobs[] = new CdnPurgeJob( [
-				'urls' => $urls,
-				'jobReleaseTimestamp' => $immediatePurgeTimestamp + $delay
-			] );
-		}
-		MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush( $jobs );
-	}
+        // Send the immediate purges to CDN
+        self::purge(array_keys($reboundDelayByUrl));
+        $immediatePurgeTimestamp = time();
 
-	/**
-	 * Purges a list of CDN nodes defined in $wgCdnServers.
-	 * $urlArr should contain the full URLs to purge as values
-	 * (example: $urlArr[] = 'http://my.host/something')
-	 *
-	 * @param string[] $urls List of full URLs to purge
-	 */
-	public static function purge( array $urls ) {
-		$cdnServers = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::CdnServers );
-		$htcpRouting = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::HTCPRouting );
-		if ( !$urls ) {
-			return;
-		}
+        // Get the URLs that need rebound purges, grouped by seconds of purge delay
+        $urlsWithReboundByDelay = [];
+        foreach ($reboundDelayByUrl as $url => $delay) {
+            if ($delay > 0) {
+                $urlsWithReboundByDelay[$delay][] = $url;
+            }
+        }
+        // Enqueue delayed purge jobs for these URLs (usually only one job)
+        $jobs = [];
+        foreach ($urlsWithReboundByDelay as $delay => $urls) {
+            $jobs[] = new CdnPurgeJob([
+                'urls'                => $urls,
+                'jobReleaseTimestamp' => $immediatePurgeTimestamp + $delay
+            ]);
+        }
+        MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush($jobs);
+    }
 
-		// Remove duplicate URLs from list
-		$urls = array_unique( $urls );
+    /**
+     * Purges a list of CDN nodes defined in $wgCdnServers.
+     * $urlArr should contain the full URLs to purge as values
+     * (example: $urlArr[] = 'http://my.host/something')
+     *
+     * @param string[] $urls List of full URLs to purge
+     */
+    public static function purge(array $urls)
+    {
+        $cdnServers = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::CdnServers);
+        $htcpRouting = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::HTCPRouting);
+        if (!$urls) {
+            return;
+        }
 
-		wfDebugLog( 'squid', __METHOD__ . ': ' . implode( ' ', $urls ) );
+        // Remove duplicate URLs from list
+        $urls = array_unique($urls);
 
-		// Reliably broadcast the purge to all edge nodes
-		$ts = microtime( true );
-		$relayerGroup = MediaWikiServices::getInstance()->getEventRelayerGroup();
-		$relayerGroup->getRelayer( 'cdn-url-purges' )->notifyMulti(
-			'cdn-url-purges',
-			array_map(
-				static function ( $url ) use ( $ts ) {
-					return [
-						'url' => $url,
-						'timestamp' => $ts,
-					];
-				},
-				$urls
-			)
-		);
+        wfDebugLog('squid', __METHOD__ . ': ' . implode(' ', $urls));
 
-		// Send lossy UDP broadcasting if enabled
-		if ( $htcpRouting ) {
-			self::HTCPPurge( $urls );
-		}
+        // Reliably broadcast the purge to all edge nodes
+        $ts = microtime(true);
+        $relayerGroup = MediaWikiServices::getInstance()->getEventRelayerGroup();
+        $relayerGroup->getRelayer('cdn-url-purges')->notifyMulti(
+            'cdn-url-purges',
+            array_map(
+                static function ($url) use ($ts) {
+                    return [
+                        'url'       => $url,
+                        'timestamp' => $ts,
+                    ];
+                },
+                $urls
+            )
+        );
 
-		// Do direct server purges if enabled (this does not scale very well)
-		if ( $cdnServers ) {
-			self::naivePurge( $urls );
-		}
-	}
+        // Send lossy UDP broadcasting if enabled
+        if ($htcpRouting) {
+            self::HTCPPurge($urls);
+        }
 
-	/**
-	 * @return string[] List of URLs
-	 */
-	public function getUrls() {
-		return array_keys( $this->resolveReboundDelayByUrl() );
-	}
+        // Do direct server purges if enabled (this does not scale very well)
+        if ($cdnServers) {
+            self::naivePurge($urls);
+        }
+    }
 
-	/**
-	 * @return int[] Map of (URL => rebound purge delay)
-	 */
-	private function resolveReboundDelayByUrl() {
-		$services = MediaWikiServices::getInstance();
-		/** @var PageReference $page */
+    /**
+     * @return string[] List of URLs
+     */
+    public function getUrls()
+    {
+        return array_keys($this->resolveReboundDelayByUrl());
+    }
 
-		// Avoid multiple queries for HtmlCacheUpdater::getUrls() call
-		$lb = $services->getLinkBatchFactory()->newLinkBatch();
-		foreach ( $this->pageTuples as list( $page, $delay ) ) {
-			$lb->addObj( $page );
-		}
-		$lb->execute();
+    /**
+     * @return int[] Map of (URL => rebound purge delay)
+     */
+    private function resolveReboundDelayByUrl()
+    {
+        $services = MediaWikiServices::getInstance();
+        /** @var PageReference $page */
 
-		$reboundDelayByUrl = [];
+        // Avoid multiple queries for HtmlCacheUpdater::getUrls() call
+        $lb = $services->getLinkBatchFactory()->newLinkBatch();
+        foreach ($this->pageTuples as [$page, $delay]) {
+            $lb->addObj($page);
+        }
+        $lb->execute();
 
-		// Resolve the titles into CDN URLs
-		$htmlCacheUpdater = $services->getHtmlCacheUpdater();
-		foreach ( $this->pageTuples as list( $page, $delay ) ) {
-			foreach ( $htmlCacheUpdater->getUrls( $page ) as $url ) {
-				// Use the highest rebound for duplicate URLs in order to handle the most lag
-				$reboundDelayByUrl[$url] = max( $reboundDelayByUrl[$url] ?? 0, $delay );
-			}
-		}
+        $reboundDelayByUrl = [];
 
-		foreach ( $this->urlTuples as list( $url, $delay ) ) {
-			// Use the highest rebound for duplicate URLs in order to handle the most lag
-			$reboundDelayByUrl[$url] = max( $reboundDelayByUrl[$url] ?? 0, $delay );
-		}
+        // Resolve the titles into CDN URLs
+        $htmlCacheUpdater = $services->getHtmlCacheUpdater();
+        foreach ($this->pageTuples as [$page, $delay]) {
+            foreach ($htmlCacheUpdater->getUrls($page) as $url) {
+                // Use the highest rebound for duplicate URLs in order to handle the most lag
+                $reboundDelayByUrl[$url] = max($reboundDelayByUrl[$url] ?? 0, $delay);
+            }
+        }
 
-		return $reboundDelayByUrl;
-	}
+        foreach ($this->urlTuples as [$url, $delay]) {
+            // Use the highest rebound for duplicate URLs in order to handle the most lag
+            $reboundDelayByUrl[$url] = max($reboundDelayByUrl[$url] ?? 0, $delay);
+        }
 
-	/**
-	 * Send Hyper Text Caching Protocol (HTCP) CLR requests
-	 *
-	 * @throws MWException
-	 * @param string[] $urls Collection of URLs to purge
-	 */
-	private static function HTCPPurge( array $urls ) {
-		$htcpRouting = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::HTCPRouting );
-		$htcpMulticastTTL = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::HTCPMulticastTTL );
-		// HTCP CLR operation
-		$htcpOpCLR = 4;
+        return $reboundDelayByUrl;
+    }
 
-		// @todo FIXME: PHP doesn't support these socket constants (include/linux/in.h)
-		if ( !defined( "IPPROTO_IP" ) ) {
-			define( "IPPROTO_IP", 0 );
-			define( "IP_MULTICAST_LOOP", 34 );
-			define( "IP_MULTICAST_TTL", 33 );
-		}
+    /**
+     * Send Hyper Text Caching Protocol (HTCP) CLR requests
+     *
+     * @param string[] $urls Collection of URLs to purge
+     * @throws MWException
+     */
+    private static function HTCPPurge(array $urls)
+    {
+        $htcpRouting = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::HTCPRouting);
+        $htcpMulticastTTL = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::HTCPMulticastTTL);
+        // HTCP CLR operation
+        $htcpOpCLR = 4;
 
-		// pfsockopen doesn't work because we need set_sock_opt
-		$conn = socket_create( AF_INET, SOCK_DGRAM, SOL_UDP );
-		if ( !$conn ) {
-			$errstr = socket_strerror( socket_last_error() );
-			wfDebugLog( 'squid', __METHOD__ .
-				": Error opening UDP socket: $errstr" );
+        // @todo FIXME: PHP doesn't support these socket constants (include/linux/in.h)
+        if (!defined("IPPROTO_IP")) {
+            define("IPPROTO_IP", 0);
+            define("IP_MULTICAST_LOOP", 34);
+            define("IP_MULTICAST_TTL", 33);
+        }
 
-			return;
-		}
+        // pfsockopen doesn't work because we need set_sock_opt
+        $conn = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (!$conn) {
+            $errstr = socket_strerror(socket_last_error());
+            wfDebugLog('squid', __METHOD__ .
+                ": Error opening UDP socket: $errstr");
 
-		// Set socket options
-		socket_set_option( $conn, IPPROTO_IP, IP_MULTICAST_LOOP, 0 );
-		if ( $htcpMulticastTTL != 1 ) {
-			// Set multicast time to live (hop count) option on socket
-			socket_set_option( $conn, IPPROTO_IP, IP_MULTICAST_TTL,
-				$htcpMulticastTTL );
-		}
+            return;
+        }
 
-		// Get sequential trx IDs for packet loss counting
-		$idGenerator = MediaWikiServices::getInstance()->getGlobalIdGenerator();
-		$ids = $idGenerator->newSequentialPerNodeIDs(
-			'squidhtcppurge',
-			32,
-			count( $urls )
-		);
+        // Set socket options
+        socket_set_option($conn, IPPROTO_IP, IP_MULTICAST_LOOP, 0);
+        if ($htcpMulticastTTL != 1) {
+            // Set multicast time to live (hop count) option on socket
+            socket_set_option($conn, IPPROTO_IP, IP_MULTICAST_TTL,
+                $htcpMulticastTTL);
+        }
 
-		foreach ( $urls as $url ) {
-			if ( !is_string( $url ) ) {
-				throw new MWException( 'Bad purge URL' );
-			}
-			$url = self::expand( $url );
-			$conf = self::getRuleForURL( $url, $htcpRouting );
-			if ( !$conf ) {
-				wfDebugLog( 'squid', __METHOD__ .
-					"No HTCP rule configured for URL {$url} , skipping" );
-				continue;
-			}
+        // Get sequential trx IDs for packet loss counting
+        $idGenerator = MediaWikiServices::getInstance()->getGlobalIdGenerator();
+        $ids = $idGenerator->newSequentialPerNodeIDs(
+            'squidhtcppurge',
+            32,
+            count($urls)
+        );
 
-			if ( isset( $conf['host'] ) && isset( $conf['port'] ) ) {
-				// Normalize single entries
-				$conf = [ $conf ];
-			}
-			foreach ( $conf as $subconf ) {
-				if ( !isset( $subconf['host'] ) || !isset( $subconf['port'] ) ) {
-					throw new MWException( "Invalid HTCP rule for URL $url\n" );
-				}
-			}
+        foreach ($urls as $url) {
+            if (!is_string($url)) {
+                throw new MWException('Bad purge URL');
+            }
+            $url = self::expand($url);
+            $conf = self::getRuleForURL($url, $htcpRouting);
+            if (!$conf) {
+                wfDebugLog('squid', __METHOD__ .
+                    "No HTCP rule configured for URL {$url} , skipping");
+                continue;
+            }
 
-			// Construct a minimal HTCP request diagram
-			// as per RFC 2756
-			// Opcode 'CLR', no response desired, no auth
-			$htcpTransID = current( $ids );
-			next( $ids );
+            if (isset($conf['host']) && isset($conf['port'])) {
+                // Normalize single entries
+                $conf = [$conf];
+            }
+            foreach ($conf as $subconf) {
+                if (!isset($subconf['host']) || !isset($subconf['port'])) {
+                    throw new MWException("Invalid HTCP rule for URL $url\n");
+                }
+            }
 
-			$htcpSpecifier = pack( 'na4na*na8n',
-				4, 'HEAD', strlen( $url ), $url,
-				8, 'HTTP/1.0', 0 );
+            // Construct a minimal HTCP request diagram
+            // as per RFC 2756
+            // Opcode 'CLR', no response desired, no auth
+            $htcpTransID = current($ids);
+            next($ids);
 
-			$htcpDataLen = 8 + 2 + strlen( $htcpSpecifier );
-			$htcpLen = 4 + $htcpDataLen + 2;
+            $htcpSpecifier = pack('na4na*na8n',
+                4, 'HEAD', strlen($url), $url,
+                8, 'HTTP/1.0', 0);
 
-			// Note! Squid gets the bit order of the first
-			// word wrong, wrt the RFC. Apparently no other
-			// implementation exists, so adapt to Squid
-			$htcpPacket = pack( 'nxxnCxNxxa*n',
-				$htcpLen, $htcpDataLen, $htcpOpCLR,
-				$htcpTransID, $htcpSpecifier, 2 );
+            $htcpDataLen = 8 + 2 + strlen($htcpSpecifier);
+            $htcpLen = 4 + $htcpDataLen + 2;
 
-			wfDebugLog( 'squid', __METHOD__ .
-				"Purging URL $url via HTCP" );
-			foreach ( $conf as $subconf ) {
-				socket_sendto( $conn, $htcpPacket, $htcpLen, 0,
-					$subconf['host'], $subconf['port'] );
-			}
-		}
-	}
+            // Note! Squid gets the bit order of the first
+            // word wrong, wrt the RFC. Apparently no other
+            // implementation exists, so adapt to Squid
+            $htcpPacket = pack('nxxnCxNxxa*n',
+                $htcpLen, $htcpDataLen, $htcpOpCLR,
+                $htcpTransID, $htcpSpecifier, 2);
 
-	/**
-	 * Send HTTP PURGE requests for each of the URLs to all of the cache servers
-	 *
-	 * @param string[] $urls
-	 * @throws Exception
-	 */
-	private static function naivePurge( array $urls ) {
-		$cdnServers = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::CdnServers );
+            wfDebugLog('squid', __METHOD__ .
+                "Purging URL $url via HTCP");
+            foreach ($conf as $subconf) {
+                socket_sendto($conn, $htcpPacket, $htcpLen, 0,
+                    $subconf['host'], $subconf['port']);
+            }
+        }
+    }
 
-		$reqs = [];
-		foreach ( $urls as $url ) {
-			$url = self::expand( $url );
-			$urlInfo = wfParseUrl( $url );
-			$urlHost = strlen( $urlInfo['port'] ?? '' )
-				? IPUtils::combineHostAndPort( $urlInfo['host'], (int)$urlInfo['port'] )
-				: $urlInfo['host'];
-			$baseReq = [
-				'method' => 'PURGE',
-				'url' => $url,
-				'headers' => [
-					'Host' => $urlHost,
-					'Connection' => 'Keep-Alive',
-					'Proxy-Connection' => 'Keep-Alive',
-					'User-Agent' => 'MediaWiki/' . MW_VERSION . ' ' . __CLASS__
-				]
-			];
-			foreach ( $cdnServers as $server ) {
-				$reqs[] = ( $baseReq + [ 'proxy' => $server ] );
-			}
-		}
+    /**
+     * Send HTTP PURGE requests for each of the URLs to all of the cache servers
+     *
+     * @param string[] $urls
+     * @throws Exception
+     */
+    private static function naivePurge(array $urls)
+    {
+        $cdnServers = MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::CdnServers);
 
-		$http = MediaWikiServices::getInstance()->getHttpRequestFactory()
-			->createMultiClient( [ 'maxConnsPerHost' => 8, 'usePipelining' => true ] );
-		$http->runMulti( $reqs );
-	}
+        $reqs = [];
+        foreach ($urls as $url) {
+            $url = self::expand($url);
+            $urlInfo = wfParseUrl($url);
+            $urlHost = strlen($urlInfo['port'] ?? '')
+                ? IPUtils::combineHostAndPort($urlInfo['host'], (int)$urlInfo['port'])
+                : $urlInfo['host'];
+            $baseReq = [
+                'method'  => 'PURGE',
+                'url'     => $url,
+                'headers' => [
+                    'Host'             => $urlHost,
+                    'Connection'       => 'Keep-Alive',
+                    'Proxy-Connection' => 'Keep-Alive',
+                    'User-Agent'       => 'MediaWiki/' . MW_VERSION . ' ' . __CLASS__
+                ]
+            ];
+            foreach ($cdnServers as $server) {
+                $reqs[] = ($baseReq + ['proxy' => $server]);
+            }
+        }
 
-	/**
-	 * Expand local URLs to fully-qualified URLs using the internal protocol
-	 * and host defined in $wgInternalServer. Input that's already fully-
-	 * qualified will be passed through unchanged.
-	 *
-	 * This is used to generate purge URLs that may be either local to the
-	 * main wiki or include a non-native host, such as images hosted on a
-	 * second internal server.
-	 *
-	 * Client functions should not need to call this.
-	 *
-	 * @param string $url
-	 * @return string
-	 */
-	private static function expand( $url ) {
-		return wfExpandUrl( $url, PROTO_INTERNAL );
-	}
+        $http = MediaWikiServices::getInstance()->getHttpRequestFactory()
+            ->createMultiClient(['maxConnsPerHost' => 8, 'usePipelining' => true]);
+        $http->runMulti($reqs);
+    }
 
-	/**
-	 * Find the HTCP routing rule to use for a given URL.
-	 * @param string $url URL to match
-	 * @param array $rules Array of rules, see $wgHTCPRouting for format and behavior
-	 * @return mixed Element of $rules that matched, or false if nothing matched
-	 */
-	private static function getRuleForURL( $url, $rules ) {
-		foreach ( $rules as $regex => $routing ) {
-			if ( $regex === '' || preg_match( $regex, $url ) ) {
-				return $routing;
-			}
-		}
+    /**
+     * Expand local URLs to fully-qualified URLs using the internal protocol
+     * and host defined in $wgInternalServer. Input that's already fully-
+     * qualified will be passed through unchanged.
+     *
+     * This is used to generate purge URLs that may be either local to the
+     * main wiki or include a non-native host, such as images hosted on a
+     * second internal server.
+     *
+     * Client functions should not need to call this.
+     *
+     * @param string $url
+     * @return string
+     */
+    private static function expand($url)
+    {
+        return wfExpandUrl($url, PROTO_INTERNAL);
+    }
 
-		return false;
-	}
+    /**
+     * Find the HTCP routing rule to use for a given URL.
+     * @param string $url URL to match
+     * @param array $rules Array of rules, see $wgHTCPRouting for format and behavior
+     * @return mixed Element of $rules that matched, or false if nothing matched
+     */
+    private static function getRuleForURL($url, $rules)
+    {
+        foreach ($rules as $regex => $routing) {
+            if ($regex === '' || preg_match($regex, $url)) {
+                return $routing;
+            }
+        }
+
+        return false;
+    }
 }

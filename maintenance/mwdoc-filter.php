@@ -25,11 +25,11 @@
  */
 
 // Warning: Converting this to a Maintenance script may reduce performance.
-if ( PHP_SAPI != 'cli' && PHP_SAPI != 'phpdbg' ) {
-	die( "This filter can only be run from the command line.\n" );
+if (PHP_SAPI != 'cli' && PHP_SAPI != 'phpdbg') {
+    die("This filter can only be run from the command line.\n");
 }
 
 require_once __DIR__ . '/includes/MWDoxygenFilter.php';
 
-$source = file_get_contents( $argv[1] );
-echo MWDoxygenFilter::filter( $source );
+$source = file_get_contents($argv[1]);
+echo MWDoxygenFilter::filter($source);

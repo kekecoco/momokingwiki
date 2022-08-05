@@ -10,7 +10,7 @@ require_once __DIR__ . '/Maintenance.php';
 
 // Tell Setup.php to load the config schema from MainConfigSchema rather than
 // any generated file, so we can use this script to re-generate a broken schema file.
-define( 'MW_USE_CONFIG_SCHEMA_CLASS', 1 );
+define('MW_USE_CONFIG_SCHEMA_CLASS', 1);
 
 /**
  * Maintenance script that generates configuration schema files:
@@ -21,342 +21,361 @@ define( 'MW_USE_CONFIG_SCHEMA_CLASS', 1 );
  *
  * @ingroup Maintenance
  */
-class GenerateConfigSchema extends Maintenance {
+class GenerateConfigSchema extends Maintenance
+{
 
-	/** @var string */
-	private const DEFAULT_NAMES_PATH = __DIR__ . '/../includes/MainConfigNames.php';
-	private const DEFAULT_VARS_PATH = __DIR__ . '/../includes/config-vars.php';
-	private const DEFAULT_ARRAY_PATH = __DIR__ . '/../includes/config-schema.php';
-	private const DEFAULT_SCHEMA_PATH = __DIR__ . '/../docs/config-schema.yaml';
-	private const STDOUT = 'php://stdout';
+    /** @var string */
+    private const DEFAULT_NAMES_PATH = __DIR__ . '/../includes/MainConfigNames.php';
+    private const DEFAULT_VARS_PATH = __DIR__ . '/../includes/config-vars.php';
+    private const DEFAULT_ARRAY_PATH = __DIR__ . '/../includes/config-schema.php';
+    private const DEFAULT_SCHEMA_PATH = __DIR__ . '/../docs/config-schema.yaml';
+    private const STDOUT = 'php://stdout';
 
-	public function __construct() {
-		parent::__construct();
+    public function __construct()
+    {
+        parent::__construct();
 
-		$this->addDescription( 'Generates various config schema files.' );
+        $this->addDescription('Generates various config schema files.');
 
-		$this->addOption(
-			'vars',
-			'Path to output variable stubs to. ' .
-				'Default if none of the options is given: ' .
-				self::DEFAULT_VARS_PATH,
-			false,
-			true
-		);
+        $this->addOption(
+            'vars',
+            'Path to output variable stubs to. ' .
+            'Default if none of the options is given: ' .
+            self::DEFAULT_VARS_PATH,
+            false,
+            true
+        );
 
-		$this->addOption(
-			'schema',
-			'Path to output the schema array to. ' .
-				'Default if none of the options is given: ' .
-				self::DEFAULT_ARRAY_PATH,
-			false,
-			true
-		);
+        $this->addOption(
+            'schema',
+            'Path to output the schema array to. ' .
+            'Default if none of the options is given: ' .
+            self::DEFAULT_ARRAY_PATH,
+            false,
+            true
+        );
 
-		$this->addOption(
-			'names',
-			'Path to output the name constants to. ' .
-				'Default if none of the options is given: ' .
-				self::DEFAULT_NAMES_PATH,
-			false,
-			true
-		);
+        $this->addOption(
+            'names',
+            'Path to output the name constants to. ' .
+            'Default if none of the options is given: ' .
+            self::DEFAULT_NAMES_PATH,
+            false,
+            true
+        );
 
-		$this->addOption(
-			'yaml',
-			'Path to output the schema YAML to. ' .
-				'Default if none of the options is given: ' .
-				self::DEFAULT_SCHEMA_PATH,
-			false,
-			true
-		);
-	}
+        $this->addOption(
+            'yaml',
+            'Path to output the schema YAML to. ' .
+            'Default if none of the options is given: ' .
+            self::DEFAULT_SCHEMA_PATH,
+            false,
+            true
+        );
+    }
 
-	public function getDbType() {
-		return self::DB_NONE;
-	}
+    public function getDbType()
+    {
+        return self::DB_NONE;
+    }
 
-	/**
-	 * Loads a template and injects the generated content.
-	 *
-	 * @param string $templatePath
-	 * @param string $generatedContent
-	 *
-	 * @return string The template's content with the generated content injected.
-	 */
-	private function processTemplate( string $templatePath, string $generatedContent ): string {
-		$oldContent = file_get_contents( $templatePath );
+    /**
+     * Loads a template and injects the generated content.
+     *
+     * @param string $templatePath
+     * @param string $generatedContent
+     *
+     * @return string The template's content with the generated content injected.
+     */
+    private function processTemplate(string $templatePath, string $generatedContent): string
+    {
+        $oldContent = file_get_contents($templatePath);
 
-		// avoid extra line breaks, indentation, etc.
-		$generatedContent = trim( $generatedContent );
+        // avoid extra line breaks, indentation, etc.
+        $generatedContent = trim($generatedContent);
 
-		return preg_replace_callback(
-			'/\{\{[-\w]+\}\}/',
-			static function ( $match ) use ( $generatedContent ) {
-				return $generatedContent;
-			},
-			$oldContent
-		);
-	}
+        return preg_replace_callback(
+            '/\{\{[-\w]+\}\}/',
+            static function ($match) use ($generatedContent) {
+                return $generatedContent;
+            },
+            $oldContent
+        );
+    }
 
-	/**
-	 * Loads the config schema from the MainConfigSchema class.
-	 *
-	 * @return array An associative array with a single key, 'config-schema',
-	 *         containing the config schema definition.
-	 */
-	private function loadSettingsSource(): array {
-		$source = new ReflectionSchemaSource( MainConfigSchema::class, true );
-		$settings = $source->load();
-		return $settings;
-	}
+    /**
+     * Loads the config schema from the MainConfigSchema class.
+     *
+     * @return array An associative array with a single key, 'config-schema',
+     *         containing the config schema definition.
+     */
+    private function loadSettingsSource(): array
+    {
+        $source = new ReflectionSchemaSource(MainConfigSchema::class, true);
+        $settings = $source->load();
 
-	/**
-	 * Loads the config schema from the MainConfigSchema class.
-	 *
-	 * @return array the config schema definition.
-	 */
-	private function loadSchema(): array {
-		return $this->loadSettingsSource()['config-schema'];
-	}
+        return $settings;
+    }
 
-	/**
-	 * @param string $path
-	 * @param string $content
-	 */
-	private function writeOutput( $path, $content ) {
-		// ensure a single line break at the end of the file
-		$content = trim( $content ) . "\n";
+    /**
+     * Loads the config schema from the MainConfigSchema class.
+     *
+     * @return array the config schema definition.
+     */
+    private function loadSchema(): array
+    {
+        return $this->loadSettingsSource()['config-schema'];
+    }
 
-		file_put_contents( $path, $content );
-	}
+    /**
+     * @param string $path
+     * @param string $content
+     */
+    private function writeOutput($path, $content)
+    {
+        // ensure a single line break at the end of the file
+        $content = trim($content) . "\n";
 
-	/**
-	 * @param string $name The name of the option
-	 *
-	 * @return ?string
-	 */
-	private function getOutputPath( string $name ): ?string {
-		$outputPath = $this->getOption( $name );
-		if ( $outputPath === '-' ) {
-			$outputPath = self::STDOUT;
-		}
-		return $outputPath;
-	}
+        file_put_contents($path, $content);
+    }
 
-	public function execute() {
-		$allSchemas = $this->loadSchema();
+    /**
+     * @param string $name The name of the option
+     *
+     * @return ?string
+     */
+    private function getOutputPath(string $name): ?string
+    {
+        $outputPath = $this->getOption($name);
+        if ($outputPath === '-') {
+            $outputPath = self::STDOUT;
+        }
 
-		$schemaPath = $this->getOutputPath( 'schema' );
-		$varsPath = $this->getOutputPath( 'vars' );
-		$yamlPath = $this->getOutputPath( 'yaml' );
-		$namesPath = $this->getOutputPath( 'names' );
+        return $outputPath;
+    }
 
-		if ( $schemaPath === null && $varsPath === null &&
-			$yamlPath === null && $namesPath === null
-		) {
-			// If no output path is specified explicitly, use the default path for all.
-			$schemaPath = self::DEFAULT_ARRAY_PATH;
-			$varsPath = self::DEFAULT_VARS_PATH;
-			$yamlPath = self::DEFAULT_SCHEMA_PATH;
-			$namesPath = self::DEFAULT_NAMES_PATH;
-		}
+    public function execute()
+    {
+        $allSchemas = $this->loadSchema();
 
-		if ( $schemaPath === self::STDOUT || $varsPath === self::STDOUT ||
-			$yamlPath === self::STDOUT || $namesPath === self::STDOUT
-		) {
-			// If any of the output is stdout, switch to quiet mode.
-			$this->mQuiet = true;
-		}
+        $schemaPath = $this->getOutputPath('schema');
+        $varsPath = $this->getOutputPath('vars');
+        $yamlPath = $this->getOutputPath('yaml');
+        $namesPath = $this->getOutputPath('names');
 
-		if ( $schemaPath !== null ) {
-			$this->output( "Writing schema array to $schemaPath\n" );
-			$this->writeOutput( $schemaPath, $this->generateSchemaArray( $allSchemas ) );
-		}
+        if ($schemaPath === null && $varsPath === null &&
+            $yamlPath === null && $namesPath === null
+        ) {
+            // If no output path is specified explicitly, use the default path for all.
+            $schemaPath = self::DEFAULT_ARRAY_PATH;
+            $varsPath = self::DEFAULT_VARS_PATH;
+            $yamlPath = self::DEFAULT_SCHEMA_PATH;
+            $namesPath = self::DEFAULT_NAMES_PATH;
+        }
 
-		if ( $varsPath !== null ) {
-			$this->output( "Writing variable stubs to $varsPath\n" );
-			$this->writeOutput( $varsPath, $this->generateVariableStubs( $allSchemas ) );
-		}
+        if ($schemaPath === self::STDOUT || $varsPath === self::STDOUT ||
+            $yamlPath === self::STDOUT || $namesPath === self::STDOUT
+        ) {
+            // If any of the output is stdout, switch to quiet mode.
+            $this->mQuiet = true;
+        }
 
-		if ( $yamlPath !== null ) {
-			$this->output( "Writing schema YAML to $yamlPath\n" );
-			$this->writeOutput( $yamlPath, $this->generateSchemaYaml( $allSchemas ) );
-		}
+        if ($schemaPath !== null) {
+            $this->output("Writing schema array to $schemaPath\n");
+            $this->writeOutput($schemaPath, $this->generateSchemaArray($allSchemas));
+        }
 
-		if ( $namesPath !== null ) {
-			$this->output( "Writing name constants to $namesPath\n" );
-			$this->writeOutput( $namesPath, $this->generateNames( $allSchemas ) );
-		}
-	}
+        if ($varsPath !== null) {
+            $this->output("Writing variable stubs to $varsPath\n");
+            $this->writeOutput($varsPath, $this->generateVariableStubs($allSchemas));
+        }
 
-	public function generateSchemaArray( array $allSchemas ) {
-		$aggregator = new ConfigSchemaAggregator();
-		foreach ( $allSchemas as $key => $schema ) {
-			$aggregator->addSchema( $key, $schema );
-		}
-		$schemaInverse = [
-			'default' => $aggregator->getDefaults(),
-			'type' => $aggregator->getTypes(),
-			'mergeStrategy' => $aggregator->getMergeStrategyNames(),
-			'dynamicDefault' => $aggregator->getDynamicDefaults(),
-		];
+        if ($yamlPath !== null) {
+            $this->output("Writing schema YAML to $yamlPath\n");
+            $this->writeOutput($yamlPath, $this->generateSchemaYaml($allSchemas));
+        }
 
-		$keyMask = array_flip( [
-			'default',
-			'type',
-			'mergeStrategy',
-			'dynamicDefault',
-			'description',
-			'properties'
-		] );
+        if ($namesPath !== null) {
+            $this->output("Writing name constants to $namesPath\n");
+            $this->writeOutput($namesPath, $this->generateNames($allSchemas));
+        }
+    }
 
-		$schemaExtra = [];
-		foreach ( $aggregator->getDefinedKeys() as $key ) {
-			$sch = $aggregator->getSchemaFor( $key );
-			$sch = array_diff_key( $sch, $keyMask );
+    public function generateSchemaArray(array $allSchemas)
+    {
+        $aggregator = new ConfigSchemaAggregator();
+        foreach ($allSchemas as $key => $schema) {
+            $aggregator->addSchema($key, $schema);
+        }
+        $schemaInverse = [
+            'default'        => $aggregator->getDefaults(),
+            'type'           => $aggregator->getTypes(),
+            'mergeStrategy'  => $aggregator->getMergeStrategyNames(),
+            'dynamicDefault' => $aggregator->getDynamicDefaults(),
+        ];
 
-			if ( $sch ) {
-				$schemaExtra[ $key ] = $sch;
-			}
-		}
+        $keyMask = array_flip([
+            'default',
+            'type',
+            'mergeStrategy',
+            'dynamicDefault',
+            'description',
+            'properties'
+        ]);
 
-		$content = ( new StaticArrayWriter() )->write(
-			[
-				'config-schema-inverse' => $schemaInverse,
-				'config-schema' => $schemaExtra,
-			],
-			"This file is automatically generated using maintenance/generateConfigSchema.php.\n" .
-			"Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n" .
-			"phpcs:disable Generic.Files.LineLength"
-		);
+        $schemaExtra = [];
+        foreach ($aggregator->getDefinedKeys() as $key) {
+            $sch = $aggregator->getSchemaFor($key);
+            $sch = array_diff_key($sch, $keyMask);
 
-		return $content;
-	}
+            if ($sch) {
+                $schemaExtra[$key] = $sch;
+            }
+        }
 
-	public function generateNames( array $allSchemas ) {
-		$code = '';
+        $content = (new StaticArrayWriter())->write(
+            [
+                'config-schema-inverse' => $schemaInverse,
+                'config-schema'         => $schemaExtra,
+            ],
+            "This file is automatically generated using maintenance/generateConfigSchema.php.\n" .
+            "Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n" .
+            "phpcs:disable Generic.Files.LineLength"
+        );
 
-		// Details about each config variable
-		foreach ( $allSchemas as $configKey => $configSchema ) {
-			$code .= "\n";
-			$code .= $this->getConstantDeclaration( $configKey, $configSchema );
-		}
+        return $content;
+    }
 
-		$newContent =
-			$this->processTemplate( MW_INSTALL_PATH . '/includes/MainConfigNames.template', $code );
+    public function generateNames(array $allSchemas)
+    {
+        $code = '';
 
-		return $newContent;
-	}
+        // Details about each config variable
+        foreach ($allSchemas as $configKey => $configSchema) {
+            $code .= "\n";
+            $code .= $this->getConstantDeclaration($configKey, $configSchema);
+        }
 
-	/**
-	 * @param string $name
-	 * @param array $schema
-	 *
-	 * @return string
-	 */
-	private function getConstantDeclaration( string $name, array $schema ): string {
-		$chunks = [];
+        $newContent =
+            $this->processTemplate(MW_INSTALL_PATH . '/includes/MainConfigNames.template', $code);
 
-		$chunks[] = "Name constant for the $name setting, for use with Config::get()";
-		$chunks[] = "@see MainConfigSchema::$name";
+        return $newContent;
+    }
 
-		if ( isset( $schema['since'] ) ) {
-			$chunks[] = "@since {$schema['since']}";
-		}
+    /**
+     * @param string $name
+     * @param array $schema
+     *
+     * @return string
+     */
+    private function getConstantDeclaration(string $name, array $schema): string
+    {
+        $chunks = [];
 
-		if ( isset( $schema['deprecated'] ) ) {
-			$deprecated = str_replace( "\n", "\n\t *    ", wordwrap( $schema['deprecated'] ) );
-			$chunks[] = "@deprecated {$deprecated}";
-		}
+        $chunks[] = "Name constant for the $name setting, for use with Config::get()";
+        $chunks[] = "@see MainConfigSchema::$name";
 
-		$code = "\t/**\n\t * ";
-		$code .= implode( "\n\t * ", $chunks );
-		$code .= "\n\t */\n";
+        if (isset($schema['since'])) {
+            $chunks[] = "@since {$schema['since']}";
+        }
 
-		$code .= "\tpublic const $name = '$name';\n";
-		return $code;
-	}
+        if (isset($schema['deprecated'])) {
+            $deprecated = str_replace("\n", "\n\t *    ", wordwrap($schema['deprecated']));
+            $chunks[] = "@deprecated {$deprecated}";
+        }
 
-	public function generateSchemaYaml( array $allSchemas ) {
-		foreach ( $allSchemas as &$sch ) {
-			// Cast empty arrays to objects if they are declared to be of type object.
-			// This ensures they get represented in yaml as {} rather than [].
-			if ( isset( $sch['default'] ) && isset( $sch['type'] ) ) {
-				$types = (array)$sch['type'];
-				if ( $sch['default'] === [] && in_array( 'object', $types ) ) {
-					$sch['default'] = new stdClass();
-				}
-			}
+        $code = "\t/**\n\t * ";
+        $code .= implode("\n\t * ", $chunks);
+        $code .= "\n\t */\n";
 
-			// Wrap long deprecation messages
-			if ( isset( $sch['deprecated'] ) ) {
-				$sch['deprecated'] = wordwrap( $sch['deprecated'] );
-			}
-		}
+        $code .= "\tpublic const $name = '$name';\n";
 
-		// Dynamic defaults are not relevant to yaml consumers
-		unset( $sch['dynamicDefault'] );
+        return $code;
+    }
 
-		$yamlFlags = Yaml::DUMP_OBJECT_AS_MAP
-			| Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK
-			| Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE;
+    public function generateSchemaYaml(array $allSchemas)
+    {
+        foreach ($allSchemas as &$sch) {
+            // Cast empty arrays to objects if they are declared to be of type object.
+            // This ensures they get represented in yaml as {} rather than [].
+            if (isset($sch['default']) && isset($sch['type'])) {
+                $types = (array)$sch['type'];
+                if ($sch['default'] === [] && in_array('object', $types)) {
+                    $sch['default'] = new stdClass();
+                }
+            }
 
-		$array = [ 'config-schema' => $allSchemas ];
-		$yaml = Yaml::dump( $array, 4, 4, $yamlFlags );
+            // Wrap long deprecation messages
+            if (isset($sch['deprecated'])) {
+                $sch['deprecated'] = wordwrap($sch['deprecated']);
+            }
+        }
 
-		$header = "# This file is automatically generated using maintenance/generateConfigSchema.php.\n";
-		$header .= "# Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n";
+        // Dynamic defaults are not relevant to yaml consumers
+        unset($sch['dynamicDefault']);
 
-		return $header . $yaml;
-	}
+        $yamlFlags = Yaml::DUMP_OBJECT_AS_MAP
+            | Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK
+            | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE;
 
-	public function generateVariableStubs( array $allSchemas ) {
-		$content = "<?php\n";
-		$content .= "/**\n" .
-			" * This file is automatically generated using maintenance/generateConfigSchema.php.\n" .
-			" * Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n" .
-			" */\n";
+        $array = ['config-schema' => $allSchemas];
+        $yaml = Yaml::dump($array, 4, 4, $yamlFlags);
 
-		$content .= "// phpcs:disable\n";
-		$content .= "throw new LogicException( 'Do not load config-vars.php, " .
-			"it exists as a documentation stub only' );\n";
+        $header = "# This file is automatically generated using maintenance/generateConfigSchema.php.\n";
+        $header .= "# Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n";
 
-		foreach ( $allSchemas as $name => $schema ) {
-			$content .= "\n";
-			$content .= $this->getVariableDeclaration( $name, $schema );
-		}
+        return $header . $yaml;
+    }
 
-		return $content;
-	}
+    public function generateVariableStubs(array $allSchemas)
+    {
+        $content = "<?php\n";
+        $content .= "/**\n" .
+            " * This file is automatically generated using maintenance/generateConfigSchema.php.\n" .
+            " * Do not modify this file manually, edit includes/MainConfigSchema.php instead.\n" .
+            " */\n";
 
-	/**
-	 * @param string $name
-	 * @param array $schema
-	 *
-	 * @return string
-	 */
-	private function getVariableDeclaration( string $name, array $schema ): string {
-		$chunks = [];
-		$chunks[] = "Config variable stub for the $name setting, for use by phpdoc and IDEs.";
-		$chunks[] = "@see MediaWiki\\MainConfigSchema::$name";
+        $content .= "// phpcs:disable\n";
+        $content .= "throw new LogicException( 'Do not load config-vars.php, " .
+            "it exists as a documentation stub only' );\n";
 
-		if ( isset( $schema['since'] ) ) {
-			$chunks[] = "@since {$schema['since']}";
-		}
+        foreach ($allSchemas as $name => $schema) {
+            $content .= "\n";
+            $content .= $this->getVariableDeclaration($name, $schema);
+        }
 
-		if ( isset( $schema['deprecated'] ) ) {
-			$deprecated = str_replace( "\n", "\n *    ", wordwrap( $schema['deprecated'] ) );
-			$chunks[] = "@deprecated {$deprecated}";
-		}
+        return $content;
+    }
 
-		$code = "/**\n * ";
-		$code .= implode( "\n * ", $chunks );
-		$code .= "\n */\n";
+    /**
+     * @param string $name
+     * @param array $schema
+     *
+     * @return string
+     */
+    private function getVariableDeclaration(string $name, array $schema): string
+    {
+        $chunks = [];
+        $chunks[] = "Config variable stub for the $name setting, for use by phpdoc and IDEs.";
+        $chunks[] = "@see MediaWiki\\MainConfigSchema::$name";
 
-		$code .= "\$wg{$name} = null;\n";
-		return $code;
-	}
+        if (isset($schema['since'])) {
+            $chunks[] = "@since {$schema['since']}";
+        }
+
+        if (isset($schema['deprecated'])) {
+            $deprecated = str_replace("\n", "\n *    ", wordwrap($schema['deprecated']));
+            $chunks[] = "@deprecated {$deprecated}";
+        }
+
+        $code = "/**\n * ";
+        $code .= implode("\n * ", $chunks);
+        $code .= "\n */\n";
+
+        $code .= "\$wg{$name} = null;\n";
+
+        return $code;
+    }
 }
 
 $maintClass = GenerateConfigSchema::class;

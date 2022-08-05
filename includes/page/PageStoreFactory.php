@@ -13,72 +13,75 @@ use Wikimedia\Rdbms\ILBFactory;
 /**
  * @since 1.36
  */
-class PageStoreFactory {
+class PageStoreFactory
+{
 
-	/**
-	 * @internal For use by service wiring
-	 */
-	public const CONSTRUCTOR_OPTIONS = PageStore::CONSTRUCTOR_OPTIONS;
+    /**
+     * @internal For use by service wiring
+     */
+    public const CONSTRUCTOR_OPTIONS = PageStore::CONSTRUCTOR_OPTIONS;
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/** @var ILBFactory */
-	private $dbLoadBalancerFactory;
+    /** @var ILBFactory */
+    private $dbLoadBalancerFactory;
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var TitleParser */
-	private $titleParser;
+    /** @var TitleParser */
+    private $titleParser;
 
-	/** @var LinkCache */
-	private $linkCache;
+    /** @var LinkCache */
+    private $linkCache;
 
-	/** @var StatsdDataFactoryInterface */
-	private $stats;
+    /** @var StatsdDataFactoryInterface */
+    private $stats;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param ILBFactory $dbLoadBalancerFactory
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TitleParser $titleParser
-	 * @param LinkCache $linkCache
-	 * @param StatsdDataFactoryInterface $stats
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		ILBFactory $dbLoadBalancerFactory,
-		NamespaceInfo $namespaceInfo,
-		TitleParser $titleParser,
-		LinkCache $linkCache,
-		StatsdDataFactoryInterface $stats
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
+    /**
+     * @param ServiceOptions $options
+     * @param ILBFactory $dbLoadBalancerFactory
+     * @param NamespaceInfo $namespaceInfo
+     * @param TitleParser $titleParser
+     * @param LinkCache $linkCache
+     * @param StatsdDataFactoryInterface $stats
+     */
+    public function __construct(
+        ServiceOptions $options,
+        ILBFactory $dbLoadBalancerFactory,
+        NamespaceInfo $namespaceInfo,
+        TitleParser $titleParser,
+        LinkCache $linkCache,
+        StatsdDataFactoryInterface $stats
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
 
-		$this->options = $options;
-		$this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
-		$this->namespaceInfo = $namespaceInfo;
-		$this->titleParser = $titleParser;
-		$this->linkCache = $linkCache;
-		$this->stats = $stats;
-	}
+        $this->options = $options;
+        $this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
+        $this->namespaceInfo = $namespaceInfo;
+        $this->titleParser = $titleParser;
+        $this->linkCache = $linkCache;
+        $this->stats = $stats;
+    }
 
-	/**
-	 * @param string|false $wikiId
-	 *
-	 * @return PageStore
-	 */
-	public function getPageStore( $wikiId = WikiAwareEntity::LOCAL ): PageStore {
-		return new PageStore(
-			$this->options,
-			$this->dbLoadBalancerFactory->getMainLB( $wikiId ),
-			$this->namespaceInfo,
-			$this->titleParser,
-			$wikiId !== WikiAwareEntity::LOCAL ? null : $this->linkCache,
-			$this->stats,
-			$wikiId
-		);
-	}
+    /**
+     * @param string|false $wikiId
+     *
+     * @return PageStore
+     */
+    public function getPageStore($wikiId = WikiAwareEntity::LOCAL): PageStore
+    {
+        return new PageStore(
+            $this->options,
+            $this->dbLoadBalancerFactory->getMainLB($wikiId),
+            $this->namespaceInfo,
+            $this->titleParser,
+            $wikiId !== WikiAwareEntity::LOCAL ? null : $this->linkCache,
+            $this->stats,
+            $wikiId
+        );
+    }
 
 }

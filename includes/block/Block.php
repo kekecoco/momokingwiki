@@ -37,120 +37,121 @@ use MediaWiki\User\UserIdentity;
  *
  * Extends WikiAwareEntity since 1.38.
  */
-interface Block extends WikiAwareEntity {
+interface Block extends WikiAwareEntity
+{
 
-	# TYPE constants
-	# Do not introduce negative constants without changing BlockUser command object.
-	public const TYPE_USER = 1;
-	public const TYPE_IP = 2;
-	public const TYPE_RANGE = 3;
-	public const TYPE_AUTO = 4;
-	public const TYPE_ID = 5;
+    # TYPE constants
+    # Do not introduce negative constants without changing BlockUser command object.
+    public const TYPE_USER = 1;
+    public const TYPE_IP = 2;
+    public const TYPE_RANGE = 3;
+    public const TYPE_AUTO = 4;
+    public const TYPE_ID = 5;
 
-	/**
-	 * Get the block ID
-	 *
-	 * @param string|false $wikiId (since 1.38)
-	 * @return ?int
-	 */
-	public function getId( $wikiId = self::LOCAL ): ?int;
+    /**
+     * Get the block ID
+     *
+     * @param string|false $wikiId (since 1.38)
+     * @return ?int
+     */
+    public function getId($wikiId = self::LOCAL): ?int;
 
-	/**
-	 * Get the information that identifies this block, such that a user could
-	 * look up everything that can be found about this block. Typically a scalar ID (integer
-	 * or string), but can also return a list of IDs, or an associative array encoding a composite
-	 * ID. Must be safe to serialize as JSON.
-	 *
-	 * @param string|false $wikiId (since 1.38)
-	 * @return mixed Identifying information
-	 */
-	public function getIdentifier( $wikiId = self::LOCAL );
+    /**
+     * Get the information that identifies this block, such that a user could
+     * look up everything that can be found about this block. Typically a scalar ID (integer
+     * or string), but can also return a list of IDs, or an associative array encoding a composite
+     * ID. Must be safe to serialize as JSON.
+     *
+     * @param string|false $wikiId (since 1.38)
+     * @return mixed Identifying information
+     */
+    public function getIdentifier($wikiId = self::LOCAL);
 
-	/**
-	 * Get the user who applied this block
-	 *
-	 * @return UserIdentity|null user identity or null. May be an external user.
-	 */
-	public function getBlocker(): ?UserIdentity;
+    /**
+     * Get the user who applied this block
+     *
+     * @return UserIdentity|null user identity or null. May be an external user.
+     */
+    public function getBlocker(): ?UserIdentity;
 
-	/**
-	 * Get the reason for creating the block.
-	 *
-	 * @return CommentStoreComment
-	 */
-	public function getReasonComment(): CommentStoreComment;
+    /**
+     * Get the reason for creating the block.
+     *
+     * @return CommentStoreComment
+     */
+    public function getReasonComment(): CommentStoreComment;
 
-	/**
-	 * Get the UserIdentity identifying the blocked user,
-	 * if the target is indeed a user (that is, if getType() returns TYPE_USER).
-	 *
-	 * @return ?UserIdentity
-	 */
-	public function getTargetUserIdentity(): ?UserIdentity;
+    /**
+     * Get the UserIdentity identifying the blocked user,
+     * if the target is indeed a user (that is, if getType() returns TYPE_USER).
+     *
+     * @return ?UserIdentity
+     */
+    public function getTargetUserIdentity(): ?UserIdentity;
 
-	/**
-	 * Return the name of the block target as a string.
-	 * Depending on the type returned by get Type(), this could be a user name,
-	 * an IP address or range, an internal ID, etc.
-	 *
-	 * @return string
-	 */
-	public function getTargetName(): string;
+    /**
+     * Return the name of the block target as a string.
+     * Depending on the type returned by get Type(), this could be a user name,
+     * an IP address or range, an internal ID, etc.
+     *
+     * @return string
+     */
+    public function getTargetName(): string;
 
-	/**
-	 * Determines whether this block is blocking the given target (and only that target).
-	 *
-	 * @param UserIdentity|string $target
-	 *
-	 * @return bool
-	 */
-	public function isBlocking( $target ): bool;
+    /**
+     * Determines whether this block is blocking the given target (and only that target).
+     *
+     * @param UserIdentity|string $target
+     *
+     * @return bool
+     */
+    public function isBlocking($target): bool;
 
-	/**
-	 * Get the block expiry time
-	 *
-	 * @return string
-	 */
-	public function getExpiry(): string;
+    /**
+     * Get the block expiry time
+     *
+     * @return string
+     */
+    public function getExpiry(): string;
 
-	/**
-	 * Get the type of target for this particular block.
-	 * @return int|null Block::TYPE_ constant, will never be TYPE_ID
-	 */
-	public function getType(): ?int;
+    /**
+     * Get the type of target for this particular block.
+     * @return int|null Block::TYPE_ constant, will never be TYPE_ID
+     */
+    public function getType(): ?int;
 
-	/**
-	 * Get the timestamp indicating when the block was created
-	 *
-	 * @return string
-	 */
-	public function getTimestamp(): string;
+    /**
+     * Get the timestamp indicating when the block was created
+     *
+     * @return string
+     */
+    public function getTimestamp(): string;
 
-	/**
-	 * Indicates that the block is a sitewide block. This means the user is
-	 * prohibited from editing any page on the site (other than their own talk
-	 * page).
-	 *
-	 * @return bool
-	 */
-	public function isSitewide(): bool;
+    /**
+     * Indicates that the block is a sitewide block. This means the user is
+     * prohibited from editing any page on the site (other than their own talk
+     * page).
+     *
+     * @return bool
+     */
+    public function isSitewide(): bool;
 
-	/**
-	 * Get the flag indicating whether this block blocks the target from
-	 * creating an account. (Note that the flag may be overridden depending on
-	 * global configs.)
-	 *
-	 * @return bool
-	 */
-	public function isCreateAccountBlocked(): bool;
+    /**
+     * Get the flag indicating whether this block blocks the target from
+     * creating an account. (Note that the flag may be overridden depending on
+     * global configs.)
+     *
+     * @return bool
+     */
+    public function isCreateAccountBlocked(): bool;
 
-	/**
-	 * Returns whether the block is a hardblock (affects logged-in users on a given IP/range)
-	 *
-	 * Note that users are always hardblocked, since they're logged in by definition.
-	 *
-	 * @return bool
-	 */
-	public function isHardblock(): bool;
+    /**
+     * Returns whether the block is a hardblock (affects logged-in users on a given IP/range)
+     *
+     * Note that users are always hardblocked, since they're logged in by definition.
+     *
+     * @return bool
+     */
+    public function isHardblock(): bool;
 
 }

@@ -28,27 +28,30 @@ use UserMailer;
  * @internal
  * @since 1.35
  */
-class Emailer implements IEmailer {
+class Emailer implements IEmailer
+{
 
-	/**
-	 * @since 1.35
-	 *
-	 * This function will perform a direct (authenticated) login to
-	 * a SMTP Server to use for mail relaying if 'wgSMTP' specifies an
-	 * array of parameters. It requires PEAR:Mail to do that.
-	 * Otherwise it just uses the standard PHP 'mail' function.
-	 *
-	 * @inheritDoc
-	 */
-	public function send(
-		$to,
-		MailAddress $from,
-		string $subject,
-		string $bodyText,
-		?string $bodyHtml = null,
-		array $options = []
-	): StatusValue {
-		$body = $bodyHtml ? [ 'text' => $bodyText, 'html' => $bodyHtml ] : $bodyText;
-		return UserMailer::send( $to, $from, $subject, $body, $options );
-	}
+    /**
+     * @since 1.35
+     *
+     * This function will perform a direct (authenticated) login to
+     * a SMTP Server to use for mail relaying if 'wgSMTP' specifies an
+     * array of parameters. It requires PEAR:Mail to do that.
+     * Otherwise it just uses the standard PHP 'mail' function.
+     *
+     * @inheritDoc
+     */
+    public function send(
+        $to,
+        MailAddress $from,
+        string $subject,
+        string $bodyText,
+        ?string $bodyHtml = null,
+        array $options = []
+    ): StatusValue
+    {
+        $body = $bodyHtml ? ['text' => $bodyText, 'html' => $bodyHtml] : $bodyText;
+
+        return UserMailer::send($to, $from, $subject, $body, $options);
+    }
 }

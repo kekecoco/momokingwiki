@@ -29,9 +29,11 @@
  * @see $wgRCFeeds
  * @since 1.22
  */
-class JSONRCFeedFormatter extends MachineReadableRCFeedFormatter {
+class JSONRCFeedFormatter extends MachineReadableRCFeedFormatter
+{
 
-	protected function formatArray( array $packet ) {
-		return FormatJson::encode( $packet );
-	}
+    protected function formatArray(array $packet)
+    {
+        return FormatJson::encode($packet);
+    }
 }

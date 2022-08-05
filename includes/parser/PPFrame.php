@@ -25,180 +25,181 @@
  * @property int $depth
  * @property PPFrame $parent
  */
-interface PPFrame {
-	public const NO_ARGS = 1;
-	public const NO_TEMPLATES = 2;
-	public const STRIP_COMMENTS = 4;
-	public const NO_IGNORE = 8;
-	public const RECOVER_COMMENTS = 16;
-	public const NO_TAGS = 32;
+interface PPFrame
+{
+    public const NO_ARGS = 1;
+    public const NO_TEMPLATES = 2;
+    public const STRIP_COMMENTS = 4;
+    public const NO_IGNORE = 8;
+    public const RECOVER_COMMENTS = 16;
+    public const NO_TAGS = 32;
 
-	public const RECOVER_ORIG = self::NO_ARGS | self::NO_TEMPLATES | self::NO_IGNORE |
-		self::RECOVER_COMMENTS | self::NO_TAGS;
+    public const RECOVER_ORIG = self::NO_ARGS | self::NO_TEMPLATES | self::NO_IGNORE |
+    self::RECOVER_COMMENTS | self::NO_TAGS;
 
-	/**
-	 * Create a child frame
-	 *
-	 * @param array|bool $args
-	 * @param bool|Title $title
-	 * @param int $indexOffset A number subtracted from the index attributes of the arguments
-	 *
-	 * @return PPFrame
-	 */
-	public function newChild( $args = false, $title = false, $indexOffset = 0 );
+    /**
+     * Create a child frame
+     *
+     * @param array|bool $args
+     * @param bool|Title $title
+     * @param int $indexOffset A number subtracted from the index attributes of the arguments
+     *
+     * @return PPFrame
+     */
+    public function newChild($args = false, $title = false, $indexOffset = 0);
 
-	/**
-	 * Expand a document tree node, caching the result on its parent with the given key
-	 * @param string|int $key
-	 * @param string|PPNode $root
-	 * @param int $flags
-	 * @return string
-	 */
-	public function cachedExpand( $key, $root, $flags = 0 );
+    /**
+     * Expand a document tree node, caching the result on its parent with the given key
+     * @param string|int $key
+     * @param string|PPNode $root
+     * @param int $flags
+     * @return string
+     */
+    public function cachedExpand($key, $root, $flags = 0);
 
-	/**
-	 * Expand a document tree node
-	 * @param string|PPNode $root
-	 * @param int $flags
-	 * @return string
-	 */
-	public function expand( $root, $flags = 0 );
+    /**
+     * Expand a document tree node
+     * @param string|PPNode $root
+     * @param int $flags
+     * @return string
+     */
+    public function expand($root, $flags = 0);
 
-	/**
-	 * Implode with flags for expand()
-	 * @param string $sep
-	 * @param int $flags
-	 * @param string|PPNode ...$params
-	 * @return string
-	 */
-	public function implodeWithFlags( $sep, $flags, ...$params );
+    /**
+     * Implode with flags for expand()
+     * @param string $sep
+     * @param int $flags
+     * @param string|PPNode ...$params
+     * @return string
+     */
+    public function implodeWithFlags($sep, $flags, ...$params);
 
-	/**
-	 * Implode with no flags specified
-	 * @param string $sep
-	 * @param string|PPNode ...$params
-	 * @return string
-	 */
-	public function implode( $sep, ...$params );
+    /**
+     * Implode with no flags specified
+     * @param string $sep
+     * @param string|PPNode ...$params
+     * @return string
+     */
+    public function implode($sep, ...$params);
 
-	/**
-	 * Makes an object that, when expand()ed, will be the same as one obtained
-	 * with implode()
-	 * @param string $sep
-	 * @param string|PPNode ...$params
-	 * @return PPNode
-	 */
-	public function virtualImplode( $sep, ...$params );
+    /**
+     * Makes an object that, when expand()ed, will be the same as one obtained
+     * with implode()
+     * @param string $sep
+     * @param string|PPNode ...$params
+     * @return PPNode
+     */
+    public function virtualImplode($sep, ...$params);
 
-	/**
-	 * Virtual implode with brackets
-	 * @param string $start
-	 * @param string $sep
-	 * @param string $end
-	 * @param string|PPNode ...$params
-	 * @return PPNode
-	 */
-	public function virtualBracketedImplode( $start, $sep, $end, ...$params );
+    /**
+     * Virtual implode with brackets
+     * @param string $start
+     * @param string $sep
+     * @param string $end
+     * @param string|PPNode ...$params
+     * @return PPNode
+     */
+    public function virtualBracketedImplode($start, $sep, $end, ...$params);
 
-	/**
-	 * Returns true if there are no arguments in this frame
-	 *
-	 * @return bool
-	 */
-	public function isEmpty();
+    /**
+     * Returns true if there are no arguments in this frame
+     *
+     * @return bool
+     */
+    public function isEmpty();
 
-	/**
-	 * Returns all arguments of this frame
-	 * @return array
-	 */
-	public function getArguments();
+    /**
+     * Returns all arguments of this frame
+     * @return array
+     */
+    public function getArguments();
 
-	/**
-	 * Returns all numbered arguments of this frame
-	 * @return array
-	 */
-	public function getNumberedArguments();
+    /**
+     * Returns all numbered arguments of this frame
+     * @return array
+     */
+    public function getNumberedArguments();
 
-	/**
-	 * Returns all named arguments of this frame
-	 * @return array
-	 */
-	public function getNamedArguments();
+    /**
+     * Returns all named arguments of this frame
+     * @return array
+     */
+    public function getNamedArguments();
 
-	/**
-	 * Get an argument to this frame by name
-	 * @param int|string $name
-	 * @return string|bool
-	 */
-	public function getArgument( $name );
+    /**
+     * Get an argument to this frame by name
+     * @param int|string $name
+     * @return string|bool
+     */
+    public function getArgument($name);
 
-	/**
-	 * Returns true if the infinite loop check is OK, false if a loop is detected
-	 *
-	 * @param Title $title
-	 * @return bool
-	 */
-	public function loopCheck( $title );
+    /**
+     * Returns true if the infinite loop check is OK, false if a loop is detected
+     *
+     * @param Title $title
+     * @return bool
+     */
+    public function loopCheck($title);
 
-	/**
-	 * Return true if the frame is a template frame
-	 * @return bool
-	 */
-	public function isTemplate();
+    /**
+     * Return true if the frame is a template frame
+     * @return bool
+     */
+    public function isTemplate();
 
-	/**
-	 * Set the "volatile" flag.
-	 *
-	 * Note that this is somewhat of a "hack" in order to make extensions
-	 * with side effects (such as Cite) work with the PHP parser. New
-	 * extensions should be written in a way that they do not need this
-	 * function, because other parsers (such as Parsoid) are not guaranteed
-	 * to respect it, and it may be removed in the future.
-	 *
-	 * @param bool $flag
-	 */
-	public function setVolatile( $flag = true );
+    /**
+     * Set the "volatile" flag.
+     *
+     * Note that this is somewhat of a "hack" in order to make extensions
+     * with side effects (such as Cite) work with the PHP parser. New
+     * extensions should be written in a way that they do not need this
+     * function, because other parsers (such as Parsoid) are not guaranteed
+     * to respect it, and it may be removed in the future.
+     *
+     * @param bool $flag
+     */
+    public function setVolatile($flag = true);
 
-	/**
-	 * Get the "volatile" flag.
-	 *
-	 * Callers should avoid caching the result of an expansion if it has the
-	 * volatile flag set.
-	 *
-	 * @see self::setVolatile()
-	 * @return bool
-	 */
-	public function isVolatile();
+    /**
+     * Get the "volatile" flag.
+     *
+     * Callers should avoid caching the result of an expansion if it has the
+     * volatile flag set.
+     *
+     * @return bool
+     * @see self::setVolatile()
+     */
+    public function isVolatile();
 
-	/**
-	 * Get the TTL of the frame's output.
-	 *
-	 * This is the maximum amount of time, in seconds, that this frame's
-	 * output should be cached for. A value of null indicates that no
-	 * maximum has been specified.
-	 *
-	 * Note that this TTL only applies to caching frames as parts of pages.
-	 * It is not relevant to caching the entire rendered output of a page.
-	 *
-	 * @return int|null
-	 */
-	public function getTTL();
+    /**
+     * Get the TTL of the frame's output.
+     *
+     * This is the maximum amount of time, in seconds, that this frame's
+     * output should be cached for. A value of null indicates that no
+     * maximum has been specified.
+     *
+     * Note that this TTL only applies to caching frames as parts of pages.
+     * It is not relevant to caching the entire rendered output of a page.
+     *
+     * @return int|null
+     */
+    public function getTTL();
 
-	/**
-	 * Set the TTL of the output of this frame and all of its ancestors.
-	 * Has no effect if the new TTL is greater than the one already set.
-	 * Note that it is the caller's responsibility to change the cache
-	 * expiry of the page as a whole, if such behavior is desired.
-	 *
-	 * @see self::getTTL()
-	 * @param int $ttl
-	 */
-	public function setTTL( $ttl );
+    /**
+     * Set the TTL of the output of this frame and all of its ancestors.
+     * Has no effect if the new TTL is greater than the one already set.
+     * Note that it is the caller's responsibility to change the cache
+     * expiry of the page as a whole, if such behavior is desired.
+     *
+     * @param int $ttl
+     * @see self::getTTL()
+     */
+    public function setTTL($ttl);
 
-	/**
-	 * Get a title of frame
-	 *
-	 * @return Title
-	 */
-	public function getTitle();
+    /**
+     * Get a title of frame
+     *
+     * @return Title
+     */
+    public function getTitle();
 }

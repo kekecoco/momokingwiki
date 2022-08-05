@@ -33,38 +33,41 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class CheckUsernames extends Maintenance {
+class CheckUsernames extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Verify that database usernames are actually valid' );
-		$this->setBatchSize( 1000 );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Verify that database usernames are actually valid');
+        $this->setBatchSize(1000);
+    }
 
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
-		$userNameUtils = MediaWikiServices::getInstance()->getUserNameUtils();
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        $userNameUtils = MediaWikiServices::getInstance()->getUserNameUtils();
 
-		$maxUserId = 0;
-		do {
-			$res = $dbr->newSelectQueryBuilder()
-				->select( [ 'user_id', 'user_name' ] )
-				->from( 'user' )
-				->where( 'user_id > ' . $maxUserId )
-				->orderBy( 'user_id' )
-				->limit( $this->getBatchSize() )
-				->fetchResultSet();
+        $maxUserId = 0;
+        do {
+            $res = $dbr->newSelectQueryBuilder()
+                ->select(['user_id', 'user_name'])
+                ->from('user')
+                ->where('user_id > ' . $maxUserId)
+                ->orderBy('user_id')
+                ->limit($this->getBatchSize())
+                ->fetchResultSet();
 
-			foreach ( $res as $row ) {
-				if ( !$userNameUtils->isValid( $row->user_name ) ) {
-					$this->output( sprintf( "Found: %6d: '%s'\n", $row->user_id, $row->user_name ) );
-					wfDebugLog( 'checkUsernames', $row->user_name );
-				}
-			}
-			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable $res has at at least one item
-			$maxUserId = $row->user_id;
-		} while ( $res->numRows() );
-	}
+            foreach ($res as $row) {
+                if (!$userNameUtils->isValid($row->user_name)) {
+                    $this->output(sprintf("Found: %6d: '%s'\n", $row->user_id, $row->user_name));
+                    wfDebugLog('checkUsernames', $row->user_name);
+                }
+            }
+            // @phan-suppress-next-line PhanPossiblyUndeclaredVariable $res has at at least one item
+            $maxUserId = $row->user_id;
+        } while ($res->numRows());
+    }
 }
 
 $maintClass = CheckUsernames::class;

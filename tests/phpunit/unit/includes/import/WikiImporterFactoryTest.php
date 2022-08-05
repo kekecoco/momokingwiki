@@ -12,32 +12,39 @@ use WikiImporterFactory;
 /**
  * @covers WikiImporterFactory
  */
-class WikiImporterFactoryTest extends MediaWikiUnitTestCase {
-	use FactoryArgTestTrait;
+class WikiImporterFactoryTest extends MediaWikiUnitTestCase
+{
+    use FactoryArgTestTrait;
 
-	protected static function getFactoryClass() {
-		return WikiImporterFactory::class;
-	}
+    protected static function getFactoryClass()
+    {
+        return WikiImporterFactory::class;
+    }
 
-	protected static function getInstanceClass() {
-		return WikiImporter::class;
-	}
+    protected static function getInstanceClass()
+    {
+        return WikiImporter::class;
+    }
 
-	protected static function getExtraClassArgCount() {
-		return 1;
-	}
+    protected static function getExtraClassArgCount()
+    {
+        return 1;
+    }
 
-	protected function getFactoryMethodName() {
-		return 'getWikiImporter';
-	}
+    protected function getFactoryMethodName()
+    {
+        return 'getWikiImporter';
+    }
 
-	protected function getOverriddenMockValueForParam( ReflectionParameter $param ) {
-		if ( $param->getType()->getName() !== ImportSource::class ) {
-			return [];
-		}
+    protected function getOverriddenMockValueForParam(ReflectionParameter $param)
+    {
+        if ($param->getType()->getName() !== ImportSource::class) {
+            return [];
+        }
 
-		$importSource = $this->createMock( ImportSource::class );
-		$importSource->method( 'atEnd' )->willReturn( true );
-		return [ $importSource ];
-	}
+        $importSource = $this->createMock(ImportSource::class);
+        $importSource->method('atEnd')->willReturn(true);
+
+        return [$importSource];
+    }
 }

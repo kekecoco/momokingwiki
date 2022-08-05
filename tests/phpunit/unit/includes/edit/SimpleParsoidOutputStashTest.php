@@ -8,16 +8,18 @@ use MediaWiki\Parser\Parsoid\ParsoidRenderID;
 use Wikimedia\Parsoid\Core\PageBundle;
 
 /** @covers \MediaWiki\Edit\SimpleParsoidOutputStash */
-class SimpleParsoidOutputStashTest extends \MediaWikiUnitTestCase {
+class SimpleParsoidOutputStashTest extends \MediaWikiUnitTestCase
+{
 
-	public function testSetAndGet() {
-		$stash = new SimpleParsoidOutputStash( new HashBagOStuff(), 12 );
+    public function testSetAndGet()
+    {
+        $stash = new SimpleParsoidOutputStash(new HashBagOStuff(), 12);
 
-		$key = new ParsoidRenderID( 7, 'acme' );
-		$pageBundle = new PageBundle( 'Hello World' );
+        $key = new ParsoidRenderID(7, 'acme');
+        $pageBundle = new PageBundle('Hello World');
 
-		$stash->set( $key, $pageBundle );
-		$this->assertEquals( $pageBundle, $stash->get( $key ) );
-	}
+        $stash->set($key, $pageBundle);
+        $this->assertEquals($pageBundle, $stash->get($key));
+    }
 
 }

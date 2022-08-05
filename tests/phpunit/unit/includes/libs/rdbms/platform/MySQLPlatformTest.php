@@ -21,76 +21,80 @@
 use MediaWiki\Tests\Unit\Libs\Rdbms\AddQuoterMock;
 use Wikimedia\Rdbms\Platform\MySQLPlatform;
 
-class MySQLPlatformTest extends PHPUnit\Framework\TestCase {
+class MySQLPlatformTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	/**
-	 * @dataProvider provideDiapers
-	 * @covers \Wikimedia\Rdbms\Platform\MySQLPlatform::addIdentifierQuotes
-	 */
-	public function testAddIdentifierQuotes( $expected, $in ) {
-		$platform = new MySQLPlatform( new AddQuoterMock() );
-		$quoted = $platform->addIdentifierQuotes( $in );
-		$this->assertEquals( $expected, $quoted );
-	}
+    /**
+     * @dataProvider provideDiapers
+     * @covers       \Wikimedia\Rdbms\Platform\MySQLPlatform::addIdentifierQuotes
+     */
+    public function testAddIdentifierQuotes($expected, $in)
+    {
+        $platform = new MySQLPlatform(new AddQuoterMock());
+        $quoted = $platform->addIdentifierQuotes($in);
+        $this->assertEquals($expected, $quoted);
+    }
 
-	/**
-	 * @covers \Wikimedia\Rdbms\Platform\MySQLPlatform::addIdentifierQuotes
-	 */
-	public function testAddIdentifierQuotesNull() {
-		$platform = new MySQLPlatform( new AddQuoterMock() );
-		// Ignore PHP 8.1+ warning about null to str_replace()
-		$quoted = @$platform->addIdentifierQuotes( null );
-		$this->assertEquals( '``', $quoted );
-	}
+    /**
+     * @covers \Wikimedia\Rdbms\Platform\MySQLPlatform::addIdentifierQuotes
+     */
+    public function testAddIdentifierQuotesNull()
+    {
+        $platform = new MySQLPlatform(new AddQuoterMock());
+        // Ignore PHP 8.1+ warning about null to str_replace()
+        $quoted = @$platform->addIdentifierQuotes(null);
+        $this->assertEquals('``', $quoted);
+    }
 
-	/**
-	 * Feeds testAddIdentifierQuotes
-	 *
-	 * Named per T22281 convention.
-	 */
-	public static function provideDiapers() {
-		return [
-			// Format: expected, input
-			[ '``', '' ],
+    /**
+     * Feeds testAddIdentifierQuotes
+     *
+     * Named per T22281 convention.
+     */
+    public static function provideDiapers()
+    {
+        return [
+            // Format: expected, input
+            ['``', ''],
 
-			// Dear codereviewer, guess what addIdentifierQuotes()
-			// will return with thoses:
-			[ '``', false ],
-			[ '`1`', true ],
+            // Dear codereviewer, guess what addIdentifierQuotes()
+            // will return with thoses:
+            ['``', false],
+            ['`1`', true],
 
-			// We never know what could happen
-			[ '`0`', 0 ],
-			[ '`1`', 1 ],
+            // We never know what could happen
+            ['`0`', 0],
+            ['`1`', 1],
 
-			// Whatchout! Should probably use something more meaningful
-			[ "`'`", "'" ],  # single quote
-			[ '`"`', '"' ],  # double quote
-			[ '````', '`' ], # backtick
-			[ '`’`', '’' ],  # apostrophe (look at your encyclopedia)
+            // Whatchout! Should probably use something more meaningful
+            ["`'`", "'"],  # single quote
+            ['`"`', '"'],  # double quote
+            ['````', '`'], # backtick
+            ['`’`', '’'],  # apostrophe (look at your encyclopedia)
 
-			// sneaky NUL bytes are lurking everywhere
-			[ '``', "\0" ],
-			[ '`xyzzy`', "\0x\0y\0z\0z\0y\0" ],
+            // sneaky NUL bytes are lurking everywhere
+            ['``', "\0"],
+            ['`xyzzy`', "\0x\0y\0z\0z\0y\0"],
 
-			// unicode chars
-			[
-				"`\u{0001}a\u{FFFF}b`",
-				"\u{0001}a\u{FFFF}b"
-			],
-			[
-				"`\u{0001}\u{FFFF}`",
-				"\u{0001}\u{0000}\u{FFFF}\u{0000}"
-			],
-			[ '`☃`', '☃' ],
-			[ '`メインページ`', 'メインページ' ],
-			[ '`Басты_бет`', 'Басты_бет' ],
+            // unicode chars
+            [
+                "`\u{0001}a\u{FFFF}b`",
+                "\u{0001}a\u{FFFF}b"
+            ],
+            [
+                "`\u{0001}\u{FFFF}`",
+                "\u{0001}\u{0000}\u{FFFF}\u{0000}"
+            ],
+            ['`☃`', '☃'],
+            ['`メインページ`', 'メインページ'],
+            ['`Басты_бет`', 'Басты_бет'],
 
-			// Real world:
-			[ '`Alix`', 'Alix' ],  # while( ! $recovered ) { sleep(); }
-			[ '`Backtick: ```', 'Backtick: `' ],
-			[ '`This is a test`', 'This is a test' ],
-		];
-	}
+            // Real world:
+            ['`Alix`', 'Alix'],  # while( ! $recovered ) { sleep(); }
+            ['`Backtick: ```', 'Backtick: `'],
+            ['`This is a test`', 'This is a test'],
+        ];
+    }
 }

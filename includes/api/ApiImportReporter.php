@@ -27,39 +27,42 @@ use MediaWiki\Page\PageIdentity;
  * Import reporter for the API
  * @ingroup API
  */
-class ApiImportReporter extends ImportReporter {
-	private $mResultArr = [];
+class ApiImportReporter extends ImportReporter
+{
+    private $mResultArr = [];
 
-	/**
-	 * @param ?PageIdentity $pageIdentity
-	 * @param ForeignTitle $foreignTitle
-	 * @param int $revisionCount
-	 * @param int $successCount
-	 * @param array $pageInfo
-	 * @return void
-	 */
-	public function reportPage( ?PageIdentity $pageIdentity, $foreignTitle, $revisionCount, $successCount, $pageInfo ) {
-		// Add a result entry
-		$r = [];
+    /**
+     * @param ?PageIdentity $pageIdentity
+     * @param ForeignTitle $foreignTitle
+     * @param int $revisionCount
+     * @param int $successCount
+     * @param array $pageInfo
+     * @return void
+     */
+    public function reportPage(?PageIdentity $pageIdentity, $foreignTitle, $revisionCount, $successCount, $pageInfo)
+    {
+        // Add a result entry
+        $r = [];
 
-		if ( $pageIdentity === null ) {
-			# Invalid or non-importable title
-			$r['title'] = $pageInfo['title'];
-			$r['invalid'] = true;
-		} else {
-			$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
-			ApiQueryBase::addTitleInfo( $r, $titleFactory->castFromPageIdentity( $pageIdentity ) );
-			$r['revisions'] = (int)$successCount;
-		}
+        if ($pageIdentity === null) {
+            # Invalid or non-importable title
+            $r['title'] = $pageInfo['title'];
+            $r['invalid'] = true;
+        } else {
+            $titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+            // @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
+            ApiQueryBase::addTitleInfo($r, $titleFactory->castFromPageIdentity($pageIdentity));
+            $r['revisions'] = (int)$successCount;
+        }
 
-		$this->mResultArr[] = $r;
+        $this->mResultArr[] = $r;
 
-		// Piggyback on the parent to do the logging
-		parent::reportPage( $pageIdentity, $foreignTitle, $revisionCount, $successCount, $pageInfo );
-	}
+        // Piggyback on the parent to do the logging
+        parent::reportPage($pageIdentity, $foreignTitle, $revisionCount, $successCount, $pageInfo);
+    }
 
-	public function getData() {
-		return $this->mResultArr;
-	}
+    public function getData()
+    {
+        return $this->mResultArr;
+    }
 }

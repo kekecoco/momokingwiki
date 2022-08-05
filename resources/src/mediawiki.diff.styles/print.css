@@ -5,13 +5,13 @@
 td.diff-context,
 td.diff-addedline .diffchange,
 td.diff-deletedline .diffchange {
-	background-color: transparent;
+    background-color: transparent;
 }
 
 td.diff-addedline .diffchange {
-	text-decoration: underline;
+    text-decoration: underline;
 }
 
 td.diff-deletedline .diffchange {
-	text-decoration: line-through;
+    text-decoration: line-through;
 }

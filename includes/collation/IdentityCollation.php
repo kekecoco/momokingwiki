@@ -26,28 +26,33 @@
  *
  * @since 1.18
  */
-class IdentityCollation extends Collation {
+class IdentityCollation extends Collation
+{
 
-	/** @var Language */
-	private $contentLanguage;
+    /** @var Language */
+    private $contentLanguage;
 
-	/**
-	 * @param Language $contentLanguage
-	 */
-	public function __construct( Language $contentLanguage ) {
-		$this->contentLanguage = $contentLanguage;
-	}
+    /**
+     * @param Language $contentLanguage
+     */
+    public function __construct(Language $contentLanguage)
+    {
+        $this->contentLanguage = $contentLanguage;
+    }
 
-	public function getSortKey( $string ) {
-		return $string;
-	}
+    public function getSortKey($string)
+    {
+        return $string;
+    }
 
-	public function getFirstLetter( $string ) {
-		// Copied from UppercaseCollation.
-		// I'm kind of unclear on when this could happen...
-		if ( $string[0] == "\0" ) {
-			$string = substr( $string, 1 );
-		}
-		return $this->contentLanguage->firstChar( $string );
-	}
+    public function getFirstLetter($string)
+    {
+        // Copied from UppercaseCollation.
+        // I'm kind of unclear on when this could happen...
+        if ($string[0] == "\0") {
+            $string = substr($string, 1);
+        }
+
+        return $this->contentLanguage->firstChar($string);
+    }
 }

@@ -35,69 +35,79 @@ use Wikimedia\Parsoid\ParserTests\Test as ParserTest;
  *
  * @since 1.22
  */
-class TestRecorder {
+class TestRecorder
+{
 
-	/**
-	 * Called at beginning of the parser test run
-	 */
-	public function start() {
-	}
+    /**
+     * Called at beginning of the parser test run
+     */
+    public function start()
+    {
+    }
 
-	/**
-	 * Called before starting a test
-	 * @param ParserTest $test
-	 * @param ParserTestMode $mode
-	 */
-	public function startTest( ParserTest $test, ParserTestMode $mode ) {
-	}
+    /**
+     * Called before starting a test
+     * @param ParserTest $test
+     * @param ParserTestMode $mode
+     */
+    public function startTest(ParserTest $test, ParserTestMode $mode)
+    {
+    }
 
-	/**
-	 * Called before starting an input file
-	 * @param string $path
-	 */
-	public function startSuite( string $path ) {
-	}
+    /**
+     * Called before starting an input file
+     * @param string $path
+     */
+    public function startSuite(string $path)
+    {
+    }
 
-	/**
-	 * Called after ending an input file
-	 * @param string $path
-	 */
-	public function endSuite( string $path ) {
-	}
+    /**
+     * Called after ending an input file
+     * @param string $path
+     */
+    public function endSuite(string $path)
+    {
+    }
 
-	/**
-	 * Called after each test
-	 * @param ParserTestResult $result
-	 */
-	public function record( ParserTestResult $result ) {
-	}
+    /**
+     * Called after each test
+     * @param ParserTestResult $result
+     */
+    public function record(ParserTestResult $result)
+    {
+    }
 
-	/**
-	 * Show a warning to the user
-	 * @param string $message
-	 */
-	public function warning( string $message ) {
-	}
+    /**
+     * Show a warning to the user
+     * @param string $message
+     */
+    public function warning(string $message)
+    {
+    }
 
-	/**
-	 * Mark a test skipped
-	 * @param ParserTest $test
-	 * @param ParserTestMode $mode
-	 * @param string $reason
-	 */
-	public function skipped( ParserTest $test, ParserTestMode $mode, string $reason ) {
-	}
+    /**
+     * Mark a test skipped
+     * @param ParserTest $test
+     * @param ParserTestMode $mode
+     * @param string $reason
+     */
+    public function skipped(ParserTest $test, ParserTestMode $mode, string $reason)
+    {
+    }
 
-	/**
-	 * Called before finishing the test run
-	 */
-	public function report() {
-	}
+    /**
+     * Called before finishing the test run
+     */
+    public function report()
+    {
+    }
 
-	/**
-	 * Called at the end of the parser test run
-	 */
-	public function end() {
-	}
+    /**
+     * Called at the end of the parser test run
+     */
+    public function end()
+    {
+    }
 
 }

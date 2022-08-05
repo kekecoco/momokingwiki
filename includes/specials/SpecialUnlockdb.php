@@ -29,71 +29,82 @@ use Wikimedia\AtEase\AtEase;
  *
  * @ingroup SpecialPage
  */
-class SpecialUnlockdb extends FormSpecialPage {
+class SpecialUnlockdb extends FormSpecialPage
+{
 
-	public function __construct() {
-		parent::__construct( 'Unlockdb', 'siteadmin' );
-	}
+    public function __construct()
+    {
+        parent::__construct('Unlockdb', 'siteadmin');
+    }
 
-	public function doesWrites() {
-		return false;
-	}
+    public function doesWrites()
+    {
+        return false;
+    }
 
-	public function requiresWrite() {
-		return false;
-	}
+    public function requiresWrite()
+    {
+        return false;
+    }
 
-	public function checkExecutePermissions( User $user ) {
-		parent::checkExecutePermissions( $user );
-		# If the lock file isn't writable, we can do sweet bugger all
-		if ( !file_exists( $this->getConfig()->get( MainConfigNames::ReadOnlyFile ) ) ) {
-			throw new ErrorPageError( 'lockdb', 'databasenotlocked' );
-		}
-	}
+    public function checkExecutePermissions(User $user)
+    {
+        parent::checkExecutePermissions($user);
+        # If the lock file isn't writable, we can do sweet bugger all
+        if (!file_exists($this->getConfig()->get(MainConfigNames::ReadOnlyFile))) {
+            throw new ErrorPageError('lockdb', 'databasenotlocked');
+        }
+    }
 
-	protected function getFormFields() {
-		return [
-			'Confirm' => [
-				'type' => 'toggle',
-				'label-message' => 'unlockconfirm',
-			],
-		];
-	}
+    protected function getFormFields()
+    {
+        return [
+            'Confirm' => [
+                'type'          => 'toggle',
+                'label-message' => 'unlockconfirm',
+            ],
+        ];
+    }
 
-	protected function alterForm( HTMLForm $form ) {
-		$form->setWrapperLegend( false )
-			->setHeaderText( $this->msg( 'unlockdbtext' )->parseAsBlock() )
-			->setSubmitTextMsg( 'unlockbtn' );
-	}
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->setWrapperLegend(false)
+            ->setHeaderText($this->msg('unlockdbtext')->parseAsBlock())
+            ->setSubmitTextMsg('unlockbtn');
+    }
 
-	public function onSubmit( array $data ) {
-		if ( !$data['Confirm'] ) {
-			return Status::newFatal( 'locknoconfirm' );
-		}
+    public function onSubmit(array $data)
+    {
+        if (!$data['Confirm']) {
+            return Status::newFatal('locknoconfirm');
+        }
 
-		$readOnlyFile = $this->getConfig()->get( MainConfigNames::ReadOnlyFile );
-		AtEase::suppressWarnings();
-		$res = unlink( $readOnlyFile );
-		AtEase::restoreWarnings();
+        $readOnlyFile = $this->getConfig()->get(MainConfigNames::ReadOnlyFile);
+        AtEase::suppressWarnings();
+        $res = unlink($readOnlyFile);
+        AtEase::restoreWarnings();
 
-		if ( $res ) {
-			return Status::newGood();
-		} else {
-			return Status::newFatal( 'filedeleteerror', $readOnlyFile );
-		}
-	}
+        if ($res) {
+            return Status::newGood();
+        } else {
+            return Status::newFatal('filedeleteerror', $readOnlyFile);
+        }
+    }
 
-	public function onSuccess() {
-		$out = $this->getOutput();
-		$out->addSubtitle( $this->msg( 'unlockdbsuccesssub' ) );
-		$out->addWikiMsg( 'unlockdbsuccesstext' );
-	}
+    public function onSuccess()
+    {
+        $out = $this->getOutput();
+        $out->addSubtitle($this->msg('unlockdbsuccesssub'));
+        $out->addWikiMsg('unlockdbsuccesstext');
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-	protected function getGroupName() {
-		return 'wiki';
-	}
+    protected function getGroupName()
+    {
+        return 'wiki';
+    }
 }

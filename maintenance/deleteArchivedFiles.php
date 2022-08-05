@@ -32,103 +32,107 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class DeleteArchivedFiles extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Deletes all archived images.' );
-		$this->addOption( 'delete', 'Perform the deletion' );
-		$this->addOption( 'force', 'Force deletion of rows from filearchive' );
-	}
+class DeleteArchivedFiles extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Deletes all archived images.');
+        $this->addOption('delete', 'Perform the deletion');
+        $this->addOption('force', 'Force deletion of rows from filearchive');
+    }
 
-	public function execute() {
-		if ( !$this->hasOption( 'delete' ) ) {
-			$this->output( "Use --delete to actually confirm this script\n" );
-			return;
-		}
+    public function execute()
+    {
+        if (!$this->hasOption('delete')) {
+            $this->output("Use --delete to actually confirm this script\n");
 
-		# Data should come off the master, wrapped in a transaction
-		$dbw = $this->getDB( DB_PRIMARY );
-		$this->beginTransaction( $dbw, __METHOD__ );
-		$repo = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo();
+            return;
+        }
 
-		# Get "active" revisions from the filearchive table
-		$this->output( "Searching for and deleting archived files...\n" );
-		$res = $dbw->newSelectQueryBuilder()
-			->select( [ 'fa_id', 'fa_storage_group', 'fa_storage_key', 'fa_sha1', 'fa_name' ] )
-			->from( 'filearchive' )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+        # Data should come off the master, wrapped in a transaction
+        $dbw = $this->getDB(DB_PRIMARY);
+        $this->beginTransaction($dbw, __METHOD__);
+        $repo = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo();
 
-		$count = 0;
-		foreach ( $res as $row ) {
-			$key = $row->fa_storage_key;
-			if ( !strlen( $key ) ) {
-				$this->output( "Entry with ID {$row->fa_id} has empty key, skipping\n" );
-				continue;
-			}
+        # Get "active" revisions from the filearchive table
+        $this->output("Searching for and deleting archived files...\n");
+        $res = $dbw->newSelectQueryBuilder()
+            ->select(['fa_id', 'fa_storage_group', 'fa_storage_key', 'fa_sha1', 'fa_name'])
+            ->from('filearchive')
+            ->caller(__METHOD__)
+            ->fetchResultSet();
 
-			$file = $repo->newFile( $row->fa_name );
-			$status = $file->acquireFileLock( 10 );
-			if ( !$status->isOK() ) {
-				$this->error( "Could not acquire lock on '{$row->fa_name}', skipping\n" );
-				continue;
-			}
+        $count = 0;
+        foreach ($res as $row) {
+            $key = $row->fa_storage_key;
+            if (!strlen($key)) {
+                $this->output("Entry with ID {$row->fa_id} has empty key, skipping\n");
+                continue;
+            }
 
-			$group = $row->fa_storage_group;
-			$id = $row->fa_id;
-			$path = $repo->getZonePath( 'deleted' ) .
-				'/' . $repo->getDeletedHashPath( $key ) . $key;
-			if ( isset( $row->fa_sha1 ) ) {
-				$sha1 = $row->fa_sha1;
-			} else {
-				// old row, populate from key
-				$sha1 = LocalRepo::getHashFromKey( $key );
-			}
+            $file = $repo->newFile($row->fa_name);
+            $status = $file->acquireFileLock(10);
+            if (!$status->isOK()) {
+                $this->error("Could not acquire lock on '{$row->fa_name}', skipping\n");
+                continue;
+            }
 
-			// Check if the file is used anywhere...
-			$inuse = (bool)$dbw->newSelectQueryBuilder()
-				->select( '1' )
-				->from( 'oldimage' )
-				->where( [
-					'oi_sha1' => $sha1,
-					$dbw->bitAnd( 'oi_deleted', File::DELETED_FILE ) => File::DELETED_FILE
-				] )
-				->caller( __METHOD__ )
-				->forUpdate()
-				->fetchField();
+            $group = $row->fa_storage_group;
+            $id = $row->fa_id;
+            $path = $repo->getZonePath('deleted') .
+                '/' . $repo->getDeletedHashPath($key) . $key;
+            if (isset($row->fa_sha1)) {
+                $sha1 = $row->fa_sha1;
+            } else {
+                // old row, populate from key
+                $sha1 = LocalRepo::getHashFromKey($key);
+            }
 
-			$needForce = true;
-			if ( !$repo->fileExists( $path ) ) {
-				$this->output( "Notice - file '$key' not found in group '$group'\n" );
-			} elseif ( $inuse ) {
-				$this->output( "Notice - file '$key' is still in use\n" );
-			} elseif ( !$repo->quickPurge( $path ) ) {
-				$this->output( "Unable to remove file $path, skipping\n" );
-				$file->releaseFileLock();
+            // Check if the file is used anywhere...
+            $inuse = (bool)$dbw->newSelectQueryBuilder()
+                ->select('1')
+                ->from('oldimage')
+                ->where([
+                    'oi_sha1'                                      => $sha1,
+                    $dbw->bitAnd('oi_deleted', File::DELETED_FILE) => File::DELETED_FILE
+                ])
+                ->caller(__METHOD__)
+                ->forUpdate()
+                ->fetchField();
 
-				// don't delete even with --force
-				continue;
-			} else {
-				$needForce = false;
-			}
+            $needForce = true;
+            if (!$repo->fileExists($path)) {
+                $this->output("Notice - file '$key' not found in group '$group'\n");
+            } elseif ($inuse) {
+                $this->output("Notice - file '$key' is still in use\n");
+            } elseif (!$repo->quickPurge($path)) {
+                $this->output("Unable to remove file $path, skipping\n");
+                $file->releaseFileLock();
 
-			if ( $needForce ) {
-				if ( $this->hasOption( 'force' ) ) {
-					$this->output( "Got --force, deleting DB entry\n" );
-				} else {
-					$file->releaseFileLock();
-					continue;
-				}
-			}
+                // don't delete even with --force
+                continue;
+            } else {
+                $needForce = false;
+            }
 
-			$count++;
-			$dbw->delete( 'filearchive', [ 'fa_id' => $id ], __METHOD__ );
-			$file->releaseFileLock();
-		}
+            if ($needForce) {
+                if ($this->hasOption('force')) {
+                    $this->output("Got --force, deleting DB entry\n");
+                } else {
+                    $file->releaseFileLock();
+                    continue;
+                }
+            }
 
-		$this->commitTransaction( $dbw, __METHOD__ );
-		$this->output( "Done! [$count file(s)]\n" );
-	}
+            $count++;
+            $dbw->delete('filearchive', ['fa_id' => $id], __METHOD__);
+            $file->releaseFileLock();
+        }
+
+        $this->commitTransaction($dbw, __METHOD__);
+        $this->output("Done! [$count file(s)]\n");
+    }
 }
 
 $maintClass = DeleteArchivedFiles::class;

@@ -1,35 +1,35 @@
 <template>
-	<!-- Outer comment -->
-	<div class="mw-vue-test">
-		<!--
-			Inner comment
-			with multiple lines
-			and tabs
-		-->
-		<p>Hello\n</p>
-		<p>{{ hello }}</p>
-		<pre>
+    <!-- Outer comment -->
+    <div class="mw-vue-test">
+        <!--
+            Inner comment
+            with multiple lines
+            and tabs
+        -->
+        <p>Hello\n</p>
+        <p>{{ hello }}</p>
+        <pre>
 			foo\
 			bar
 		</pre>
-	</div>
+    </div>
 </template>
 
 <script>
-// @vue/component
-module.exports = {
-	data: function () {
-		return {
-			hello: 'world'
-		};
-	}
-};
+    // @vue/component
+    module.exports = {
+        data: function () {
+            return {
+                hello: 'world'
+            };
+        }
+    };
 </script>
 
 <style lang="less">
-.mw-vue-test {
-	&:hover {
-		background-color: red;
-	}
-}
+    .mw-vue-test {
+        &:hover {
+            background-color: red;
+        }
+    }
 </style>

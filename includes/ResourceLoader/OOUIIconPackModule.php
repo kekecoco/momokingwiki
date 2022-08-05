@@ -28,63 +28,69 @@ use InvalidArgumentException;
  * @ingroup ResourceLoader
  * @since 1.34
  */
-class OOUIIconPackModule extends OOUIImageModule {
-	public function __construct( array $options = [], $localBasePath = null ) {
-		parent::__construct( $options, $localBasePath );
+class OOUIIconPackModule extends OOUIImageModule
+{
+    public function __construct(array $options = [], $localBasePath = null)
+    {
+        parent::__construct($options, $localBasePath);
 
-		if ( !isset( $this->definition['icons'] ) || !$this->definition['icons'] ) {
-			throw new InvalidArgumentException( "Parameter 'icons' must be given." );
-		}
+        if (!isset($this->definition['icons']) || !$this->definition['icons']) {
+            throw new InvalidArgumentException("Parameter 'icons' must be given.");
+        }
 
-		// A few things check for the "icons" prefix on this value, so specify it even though
-		// we don't use it for actually loading the data, like in the other modules.
-		$this->definition['themeImages'] = 'icons';
-	}
+        // A few things check for the "icons" prefix on this value, so specify it even though
+        // we don't use it for actually loading the data, like in the other modules.
+        $this->definition['themeImages'] = 'icons';
+    }
 
-	private function getIcons(): array {
-		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable Checked in the constructor
-		return $this->definition['icons'];
-	}
+    private function getIcons(): array
+    {
+        // @phan-suppress-next-line PhanTypeArraySuspiciousNullable Checked in the constructor
+        return $this->definition['icons'];
+    }
 
-	protected function loadOOUIDefinition( $theme, $unused ): array {
-		// This is shared between instances of this class, so we only have to load the JSON files once
-		static $data = [];
+    protected function loadOOUIDefinition($theme, $unused): array
+    {
+        // This is shared between instances of this class, so we only have to load the JSON files once
+        static $data = [];
 
-		if ( !isset( $data[$theme] ) ) {
-			$data[$theme] = [];
-			// Load and merge the JSON data for all "icons-foo" modules
-			foreach ( self::$knownImagesModules as $module ) {
-				if ( substr( $module, 0, 5 ) === 'icons' ) {
-					$moreData = $this->readJSONFile( $this->getThemeImagesPath( $theme, $module ) );
-					if ( $moreData ) {
-						$data[$theme] = array_replace_recursive( $data[$theme], $moreData );
-					}
-				}
-			}
-		}
+        if (!isset($data[$theme])) {
+            $data[$theme] = [];
+            // Load and merge the JSON data for all "icons-foo" modules
+            foreach (self::$knownImagesModules as $module) {
+                if (substr($module, 0, 5) === 'icons') {
+                    $moreData = $this->readJSONFile($this->getThemeImagesPath($theme, $module));
+                    if ($moreData) {
+                        $data[$theme] = array_replace_recursive($data[$theme], $moreData);
+                    }
+                }
+            }
+        }
 
-		$definition = $data[$theme];
+        $definition = $data[$theme];
 
-		// Filter out the data for all other icons, leaving only the ones we want for this module
-		$iconsNames = $this->getIcons();
-		foreach ( array_keys( $definition['images'] ) as $iconName ) {
-			if ( !in_array( $iconName, $iconsNames ) ) {
-				unset( $definition['images'][$iconName] );
-			}
-		}
+        // Filter out the data for all other icons, leaving only the ones we want for this module
+        $iconsNames = $this->getIcons();
+        foreach (array_keys($definition['images']) as $iconName) {
+            if (!in_array($iconName, $iconsNames)) {
+                unset($definition['images'][$iconName]);
+            }
+        }
 
-		return $definition;
-	}
+        return $definition;
+    }
 
-	public static function extractLocalBasePath( array $options, $localBasePath = null ) {
-		global $IP;
-		if ( $localBasePath === null ) {
-			$localBasePath = $IP;
-		}
-		// Ignore any 'localBasePath' present in $options, this always refers to files in MediaWiki core
-		return $localBasePath;
-	}
+    public static function extractLocalBasePath(array $options, $localBasePath = null)
+    {
+        global $IP;
+        if ($localBasePath === null) {
+            $localBasePath = $IP;
+        }
+
+        // Ignore any 'localBasePath' present in $options, this always refers to files in MediaWiki core
+        return $localBasePath;
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( OOUIIconPackModule::class, 'ResourceLoaderOOUIIconPackModule' );
+class_alias(OOUIIconPackModule::class, 'ResourceLoaderOOUIIconPackModule');

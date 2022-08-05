@@ -23,26 +23,26 @@
  * This defines constants for the value returned by File::getMediaType()
  */
 // unknown format
-define( 'MEDIATYPE_UNKNOWN', 'UNKNOWN' );
+define('MEDIATYPE_UNKNOWN', 'UNKNOWN');
 // some bitmap image or image source (like psd, etc). Can't scale up.
-define( 'MEDIATYPE_BITMAP', 'BITMAP' );
+define('MEDIATYPE_BITMAP', 'BITMAP');
 // some vector drawing (SVG, WMF, PS, ...) or image source (oo-draw, etc). Can scale up.
-define( 'MEDIATYPE_DRAWING', 'DRAWING' );
+define('MEDIATYPE_DRAWING', 'DRAWING');
 // simple audio file (ogg, mp3, wav, midi, whatever)
-define( 'MEDIATYPE_AUDIO', 'AUDIO' );
+define('MEDIATYPE_AUDIO', 'AUDIO');
 // simple video file (ogg, mpg, etc;
 // no not include formats here that may contain executable sections or scripts!)
-define( 'MEDIATYPE_VIDEO', 'VIDEO' );
+define('MEDIATYPE_VIDEO', 'VIDEO');
 // Scriptable Multimedia (flash, advanced video container formats, etc)
-define( 'MEDIATYPE_MULTIMEDIA', 'MULTIMEDIA' );
+define('MEDIATYPE_MULTIMEDIA', 'MULTIMEDIA');
 // Office Documents, Spreadsheets (office formats possibly containing apples, scripts, etc)
-define( 'MEDIATYPE_OFFICE', 'OFFICE' );
+define('MEDIATYPE_OFFICE', 'OFFICE');
 // Plain text (possibly containing program code or scripts)
-define( 'MEDIATYPE_TEXT', 'TEXT' );
+define('MEDIATYPE_TEXT', 'TEXT');
 // binary executable
-define( 'MEDIATYPE_EXECUTABLE', 'EXECUTABLE' );
+define('MEDIATYPE_EXECUTABLE', 'EXECUTABLE');
 // archive file (zip, tar, etc)
-define( 'MEDIATYPE_ARCHIVE', 'ARCHIVE' );
+define('MEDIATYPE_ARCHIVE', 'ARCHIVE');
 // 3D file types (stl)
-define( 'MEDIATYPE_3D', '3D' );
+define('MEDIATYPE_3D', '3D');
 /** @} */

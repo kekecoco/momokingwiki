@@ -16,295 +16,314 @@ use Wikimedia\Parsoid\Parsoid;
  * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess
  * @group Database
  */
-class ParsoidOutputAccessTest extends MediaWikiIntegrationTestCase {
-	private const WIKITEXT = 'Hello \'\'\'Parsoid\'\'\'!';
-	private const MOCKED_HTML = 'mocked HTML';
+class ParsoidOutputAccessTest extends MediaWikiIntegrationTestCase
+{
+    private const WIKITEXT = 'Hello \'\'\'Parsoid\'\'\'!';
+    private const MOCKED_HTML = 'mocked HTML';
 
-	/**
-	 * @param int $expectedCalls
-	 *
-	 * @return MockObject|Parsoid
-	 */
-	private function newMockParsoid( $expectedCalls = 1 ) {
-		$parsoid = $this->createNoOpMock( Parsoid::class, [ 'wikitext2html' ] );
-		$parsoid->expects( $this->exactly( $expectedCalls ) )->method( 'wikitext2html' )->willReturnCallback(
-			static function ( PageConfig $pageConfig ) {
-				$wikitext = $pageConfig->getRevisionContent()->getContent( SlotRecord::MAIN );
-				return new PageBundle( self::MOCKED_HTML . ' of ' . $wikitext, [ 'parsoid-data' ], [ 'mw-data' ], '1.0' );
-			}
-		);
+    /**
+     * @param int $expectedCalls
+     *
+     * @return MockObject|Parsoid
+     */
+    private function newMockParsoid($expectedCalls = 1)
+    {
+        $parsoid = $this->createNoOpMock(Parsoid::class, ['wikitext2html']);
+        $parsoid->expects($this->exactly($expectedCalls))->method('wikitext2html')->willReturnCallback(
+            static function (PageConfig $pageConfig) {
+                $wikitext = $pageConfig->getRevisionContent()->getContent(SlotRecord::MAIN);
 
-		return $parsoid;
-	}
+                return new PageBundle(self::MOCKED_HTML . ' of ' . $wikitext, ['parsoid-data'], ['mw-data'], '1.0');
+            }
+        );
 
-	/**
-	 * @param int $expectedParses
-	 * @param array $parsoidCacheConfig
-	 *
-	 * @return ParsoidOutputAccess
-	 * @throws Exception
-	 */
-	private function getParsoidOutputAccessWithCache( $expectedParses, $parsoidCacheConfig = [] ) {
-		$stats = new NullStatsdDataFactory();
-		$services = $this->getServiceContainer();
+        return $parsoid;
+    }
 
-		$parsoidCacheConfig += [
-			'CacheThresholdTime' => 0,
-		];
+    /**
+     * @param int $expectedParses
+     * @param array $parsoidCacheConfig
+     *
+     * @return ParsoidOutputAccess
+     * @throws Exception
+     */
+    private function getParsoidOutputAccessWithCache($expectedParses, $parsoidCacheConfig = [])
+    {
+        $stats = new NullStatsdDataFactory();
+        $services = $this->getServiceContainer();
 
-		$parserCacheFactoryOptions = new ServiceOptions( ParserCacheFactory::CONSTRUCTOR_OPTIONS, [
-			'CacheEpoch' => '20200202112233',
-			'OldRevisionParserCacheExpireTime' => 60 * 60,
-		] );
+        $parsoidCacheConfig += [
+            'CacheThresholdTime' => 0,
+        ];
 
-		$parserCacheFactory = new ParserCacheFactory(
-			new HashBagOStuff(),
-			new WANObjectCache( [ 'cache' => new HashBagOStuff(), ] ),
-			$this->createHookContainer(),
-			new JsonCodec(),
-			new NullStatsdDataFactory(),
-			new NullLogger(),
-			$parserCacheFactoryOptions,
-			$services->getTitleFactory(),
-			$services->getWikiPageFactory()
-		);
+        $parserCacheFactoryOptions = new ServiceOptions(ParserCacheFactory::CONSTRUCTOR_OPTIONS, [
+            'CacheEpoch'                       => '20200202112233',
+            'OldRevisionParserCacheExpireTime' => 60 * 60,
+        ]);
 
-		return new ParsoidOutputAccess(
-			new ServiceOptions(
-				ParsoidOutputAccess::CONSTRUCTOR_OPTIONS,
-				[ 'ParsoidCacheConfig' => $parsoidCacheConfig ]
-			),
-			$parserCacheFactory,
-			$services->getRevisionLookup(),
-			$services->getGlobalIdGenerator(),
-			$stats,
-			$this->newMockParsoid( $expectedParses ),
-			$services->getParsoidSiteConfig(),
-			$services->getParsoidPageConfigFactory()
-		);
-	}
+        $parserCacheFactory = new ParserCacheFactory(
+            new HashBagOStuff(),
+            new WANObjectCache(['cache' => new HashBagOStuff(),]),
+            $this->createHookContainer(),
+            new JsonCodec(),
+            new NullStatsdDataFactory(),
+            new NullLogger(),
+            $parserCacheFactoryOptions,
+            $services->getTitleFactory(),
+            $services->getWikiPageFactory()
+        );
 
-	/**
-	 * @return ParserOptions
-	 */
-	private function getParserOptions() {
-		return ParserOptions::newFromAnon();
-	}
+        return new ParsoidOutputAccess(
+            new ServiceOptions(
+                ParsoidOutputAccess::CONSTRUCTOR_OPTIONS,
+                ['ParsoidCacheConfig' => $parsoidCacheConfig]
+            ),
+            $parserCacheFactory,
+            $services->getRevisionLookup(),
+            $services->getGlobalIdGenerator(),
+            $stats,
+            $this->newMockParsoid($expectedParses),
+            $services->getParsoidSiteConfig(),
+            $services->getParsoidPageConfigFactory()
+        );
+    }
 
-	private function getHtml( $value ) {
-		if ( $value instanceof StatusValue ) {
-			$value = $value->getValue();
-		}
+    /**
+     * @return ParserOptions
+     */
+    private function getParserOptions()
+    {
+        return ParserOptions::newFromAnon();
+    }
 
-		if ( $value instanceof ParserOutput ) {
-			$value = $value->getRawText();
-		}
+    private function getHtml($value)
+    {
+        if ($value instanceof StatusValue) {
+            $value = $value->getValue();
+        }
 
-		$html = preg_replace( '/<!--.*?-->/s', '', $value );
-		$html = trim( preg_replace( '/[\r\n]{2,}/s', "\n", $html ) );
-		$html = trim( preg_replace( '/\s{2,}/s', ' ', $html ) );
-		return $html;
-	}
+        if ($value instanceof ParserOutput) {
+            $value = $value->getRawText();
+        }
 
-	private function assertContainsHtml( $needle, $actual, $msg = '' ) {
-		$this->assertNotNull( $actual );
+        $html = preg_replace('/<!--.*?-->/s', '', $value);
+        $html = trim(preg_replace('/[\r\n]{2,}/s', "\n", $html));
+        $html = trim(preg_replace('/\s{2,}/s', ' ', $html));
 
-		if ( $actual instanceof StatusValue ) {
-			$this->assertStatusOK( $actual, 'isOK' );
-		}
+        return $html;
+    }
 
-		$this->assertStringContainsString( $needle, $this->getHtml( $actual ), $msg );
-	}
+    private function assertContainsHtml($needle, $actual, $msg = '')
+    {
+        $this->assertNotNull($actual);
 
-	/**
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
-	 */
-	public function testGetParserOutputThrowsIfRevisionNotFound() {
-		$access = $this->getParsoidOutputAccessWithCache( 0 );
-		$parserOptions = $this->getParserOptions();
+        if ($actual instanceof StatusValue) {
+            $this->assertStatusOK($actual, 'isOK');
+        }
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
+        $this->assertStringContainsString($needle, $this->getHtml($actual), $msg);
+    }
 
-		$this->expectException( RevisionAccessException::class );
-		$access->getParserOutput( $page, $parserOptions );
-	}
+    /**
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
+     */
+    public function testGetParserOutputThrowsIfRevisionNotFound()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(0);
+        $parserOptions = $this->getParserOptions();
 
-	/**
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
-	 */
-	public function testGetParserOutputThrowsIfNotWikitext() {
-		$access = $this->getParsoidOutputAccessWithCache( 0 );
-		$parserOptions = $this->getParserOptions();
+        $page = $this->getNonexistingTestPage(__METHOD__);
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$updater = $page->newPageUpdater( $this->getTestUser()->getUserIdentity() );
-		$updater->setContent( SlotRecord::MAIN, new JavaScriptContent( '{}' ) );
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'testing' ) );
+        $this->expectException(RevisionAccessException::class);
+        $access->getParserOutput($page, $parserOptions);
+    }
 
-		$this->expectException( UnexpectedValueException::class );
-		$access->getParserOutput( $page, $parserOptions );
-	}
+    /**
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
+     */
+    public function testGetParserOutputThrowsIfNotWikitext()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(0);
+        $parserOptions = $this->getParserOptions();
 
-	/**
-	 * Tests that getParserOutput() will return output.
-	 *
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParsoidRenderID
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParsoidPageBundle
-	 */
-	public function testGetParserOutput() {
-		$access = $this->getParsoidOutputAccessWithCache( 1 );
-		$parserOptions = $this->getParserOptions();
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $updater = $page->newPageUpdater($this->getTestUser()->getUserIdentity());
+        $updater->setContent(SlotRecord::MAIN, new JavaScriptContent('{}'));
+        $updater->saveRevision(CommentStoreComment::newUnsavedComment('testing'));
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$this->editPage( $page, self::WIKITEXT );
+        $this->expectException(UnexpectedValueException::class);
+        $access->getParserOutput($page, $parserOptions);
+    }
 
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
+    /**
+     * Tests that getParserOutput() will return output.
+     *
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParsoidRenderID
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParsoidPageBundle
+     */
+    public function testGetParserOutput()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(1);
+        $parserOptions = $this->getParserOptions();
 
-		$output = $status->getValue();
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $this->editPage($page, self::WIKITEXT);
 
-		// check that getParsoidRenderID() doesn't throw
-		$this->assertNotNull( $access->getParsoidRenderID( $output ) );
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
 
-		// check that getParsoidPageBundle() returns the correct data
-		$pageBundle = $access->getParsoidPageBundle( $output );
-		$this->assertSame( $output->getRawText(), $pageBundle->html );
+        $output = $status->getValue();
 
-		// The actual values of these fields come from newMockParsoid(). We could check them here.
-		$this->assertNotEmpty( $pageBundle->mw );
-		$this->assertNotEmpty( $pageBundle->parsoid );
-	}
+        // check that getParsoidRenderID() doesn't throw
+        $this->assertNotNull($access->getParsoidRenderID($output));
 
-	/**
-	 * Tests that getParserOutput() will place the generated output for the latest revision
-	 * in the parsoid parser cache.
-	 *
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getCachedParserOutput
-	 */
-	public function testLatestRevisionIsCached() {
-		$access = $this->getParsoidOutputAccessWithCache( 1 );
-		$parserOptions = $this->getParserOptions();
+        // check that getParsoidPageBundle() returns the correct data
+        $pageBundle = $access->getParsoidPageBundle($output);
+        $this->assertSame($output->getRawText(), $pageBundle->html);
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$this->editPage( $page, self::WIKITEXT );
+        // The actual values of these fields come from newMockParsoid(). We could check them here.
+        $this->assertNotEmpty($pageBundle->mw);
+        $this->assertNotEmpty($pageBundle->parsoid);
+    }
 
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
+    /**
+     * Tests that getParserOutput() will place the generated output for the latest revision
+     * in the parsoid parser cache.
+     *
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getCachedParserOutput
+     */
+    public function testLatestRevisionIsCached()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(1);
+        $parserOptions = $this->getParserOptions();
 
-		// Get the ParserOutput again, this should not trigger a new parse.
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
-	}
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $this->editPage($page, self::WIKITEXT);
 
-	/**
-	 * Tests that getParserOutput() will force a parse since we know that
-	 * the revision is not in the cache.
-	 *
-	 * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
-	 */
-	public function testLatestRevisionWithForceParse() {
-		$access = $this->getParsoidOutputAccessWithCache( 2 );
-		$parserOptions = $this->getParserOptions();
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$this->editPage( $page, self::WIKITEXT );
+        // Get the ParserOutput again, this should not trigger a new parse.
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
+    }
 
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
+    /**
+     * Tests that getParserOutput() will force a parse since we know that
+     * the revision is not in the cache.
+     *
+     * @covers \MediaWiki\Parser\Parsoid\ParsoidOutputAccess::getParserOutput
+     */
+    public function testLatestRevisionWithForceParse()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(2);
+        $parserOptions = $this->getParserOptions();
 
-		// Get the ParserOutput again, this should trigger a new parse
-		// since we're forcing it to.
-		$status = $access->getParserOutput(
-			$page,
-			$parserOptions,
-			null,
-			ParsoidOutputAccess::OPT_FORCE_PARSE
-		);
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
-	}
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $this->editPage($page, self::WIKITEXT);
 
-	public function provideCacheThresholdData() {
-		return [
-			yield "fast parse" => [ 1, 2 ], // high threshold, no caching
-			yield "slow parse" => [ 0, 1 ], // low threshold, caching
-		];
-	}
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
 
-	/**
-	 * @dataProvider provideCacheThresholdData()
-	 */
-	public function testHtmlWithCacheThreshold(
-		$cacheThresholdTime,
-		$expectedCalls
-	) {
-		$page = $this->getExistingTestPage( __METHOD__ );
-		$parsoidCacheConfig = [
-			'CacheThresholdTime' => $cacheThresholdTime
-		];
-		$parserOptions = $this->getParserOptions();
+        // Get the ParserOutput again, this should trigger a new parse
+        // since we're forcing it to.
+        $status = $access->getParserOutput(
+            $page,
+            $parserOptions,
+            null,
+            ParsoidOutputAccess::OPT_FORCE_PARSE
+        );
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
+    }
 
-		$access = $this->getParsoidOutputAccessWithCache( $expectedCalls, $parsoidCacheConfig );
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML, $status );
+    public function provideCacheThresholdData()
+    {
+        return [
+            yield "fast parse" => [1, 2], // high threshold, no caching
+            yield "slow parse" => [0, 1], // low threshold, caching
+        ];
+    }
 
-		$status = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML, $status );
-	}
+    /**
+     * @dataProvider provideCacheThresholdData()
+     */
+    public function testHtmlWithCacheThreshold(
+        $cacheThresholdTime,
+        $expectedCalls
+    )
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
+        $parsoidCacheConfig = [
+            'CacheThresholdTime' => $cacheThresholdTime
+        ];
+        $parserOptions = $this->getParserOptions();
 
-	public function testOldRevisionIsCached() {
-		$access = $this->getParsoidOutputAccessWithCache( 1 );
-		$parserOptions = $this->getParserOptions();
+        $access = $this->getParsoidOutputAccessWithCache($expectedCalls, $parsoidCacheConfig);
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML, $status);
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$status1 = $this->editPage( $page, self::WIKITEXT );
-		$rev = $status1->getValue()['revision-record'];
+        $status = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML, $status);
+    }
 
-		// Make an edit so that the revision we're getting output
-		// for below is not the current revision.
-		$this->editPage( $page, 'Second revision' );
+    public function testOldRevisionIsCached()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(1);
+        $parserOptions = $this->getParserOptions();
 
-		$access->getParserOutput( $page, $parserOptions, $rev );
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $status1 = $this->editPage($page, self::WIKITEXT);
+        $rev = $status1->getValue()['revision-record'];
 
-		// Get the ParserOutput again, this should not trigger a new parse.
-		$status = $access->getParserOutput( $page, $parserOptions, $rev );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status );
-	}
+        // Make an edit so that the revision we're getting output
+        // for below is not the current revision.
+        $this->editPage($page, 'Second revision');
 
-	public function testGetParserOutputWithOldRevision() {
-		$access = $this->getParsoidOutputAccessWithCache( 2 );
-		$parserOptions = $this->getParserOptions();
+        $access->getParserOutput($page, $parserOptions, $rev);
 
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$status1 = $this->editPage( $page, self::WIKITEXT );
-		$rev1 = $status1->getValue()['revision-record'];
+        // Get the ParserOutput again, this should not trigger a new parse.
+        $status = $access->getParserOutput($page, $parserOptions, $rev);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status);
+    }
 
-		$this->editPage( $page, 'Second revision' );
+    public function testGetParserOutputWithOldRevision()
+    {
+        $access = $this->getParsoidOutputAccessWithCache(2);
+        $parserOptions = $this->getParserOptions();
 
-		$status2 = $access->getParserOutput( $page, $parserOptions );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of Second revision', $status2 );
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $status1 = $this->editPage($page, self::WIKITEXT);
+        $rev1 = $status1->getValue()['revision-record'];
 
-		$status1 = $access->getParserOutput( $page, $parserOptions, $rev1 );
-		$this->assertContainsHtml( self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status1 );
+        $this->editPage($page, 'Second revision');
 
-		// check that getParsoidRenderID() doesn't throw
-		$output1 = $status1->getValue();
-		$this->assertNotNull( $access->getParsoidRenderID( $output1 ) );
-	}
+        $status2 = $access->getParserOutput($page, $parserOptions);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of Second revision', $status2);
 
-	public function provideSupportsContentModels() {
-		yield [ CONTENT_MODEL_WIKITEXT, true ];
-		yield [ CONTENT_MODEL_JSON, true ];
-		yield [ CONTENT_MODEL_JAVASCRIPT, false ];
-		yield [ 'xyzzy', false ];
-	}
+        $status1 = $access->getParserOutput($page, $parserOptions, $rev1);
+        $this->assertContainsHtml(self::MOCKED_HTML . ' of ' . self::WIKITEXT, $status1);
 
-	/**
-	 * @dataProvider provideSupportsContentModels
-	 */
-	public function testSupportsContentModel( $model, $expected ) {
-		$access = $this->getParsoidOutputAccessWithCache( 0 );
-		$this->assertSame( $expected, $access->supportsContentModel( $model ) );
-	}
+        // check that getParsoidRenderID() doesn't throw
+        $output1 = $status1->getValue();
+        $this->assertNotNull($access->getParsoidRenderID($output1));
+    }
+
+    public function provideSupportsContentModels()
+    {
+        yield [CONTENT_MODEL_WIKITEXT, true];
+        yield [CONTENT_MODEL_JSON, true];
+        yield [CONTENT_MODEL_JAVASCRIPT, false];
+        yield ['xyzzy', false];
+    }
+
+    /**
+     * @dataProvider provideSupportsContentModels
+     */
+    public function testSupportsContentModel($model, $expected)
+    {
+        $access = $this->getParsoidOutputAccessWithCache(0);
+        $this->assertSame($expected, $access->supportsContentModel($model));
+    }
 }

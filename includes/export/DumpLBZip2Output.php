@@ -28,12 +28,14 @@
  * @ingroup Dump
  * @since 1.33
  */
-class DumpLBZip2Output extends DumpPipeOutput {
-	/**
-	 * @param string $file
-	 */
-	public function __construct( $file ) {
-		# use only one core
-		parent::__construct( "lbzip2 -n 1", $file );
-	}
+class DumpLBZip2Output extends DumpPipeOutput
+{
+    /**
+     * @param string $file
+     */
+    public function __construct($file)
+    {
+        # use only one core
+        parent::__construct("lbzip2 -n 1", $file);
+    }
 }

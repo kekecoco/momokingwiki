@@ -26,99 +26,109 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * @ingroup Pager
  */
-class CategoryPager extends AlphabeticPager {
+class CategoryPager extends AlphabeticPager
+{
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/**
-	 * @param IContextSource $context
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LinkRenderer $linkRenderer
-	 * @param ILoadBalancer $loadBalancer
-	 * @param string $from
-	 */
-	public function __construct(
-		IContextSource $context,
-		LinkBatchFactory $linkBatchFactory,
-		LinkRenderer $linkRenderer,
-		ILoadBalancer $loadBalancer,
-		$from
-	) {
-		// Set database before parent constructor to avoid setting it there with wfGetDB
-		$this->mDb = $loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-		parent::__construct( $context, $linkRenderer );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$from = str_replace( ' ', '_', $from );
-		if ( $from !== '' ) {
-			$from = Title::capitalize( $from, NS_CATEGORY );
-			$this->setOffset( $from );
-			$this->setIncludeOffset( true );
-		}
-	}
+    /**
+     * @param IContextSource $context
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LinkRenderer $linkRenderer
+     * @param ILoadBalancer $loadBalancer
+     * @param string $from
+     */
+    public function __construct(
+        IContextSource $context,
+        LinkBatchFactory $linkBatchFactory,
+        LinkRenderer $linkRenderer,
+        ILoadBalancer $loadBalancer,
+        $from
+    )
+    {
+        // Set database before parent constructor to avoid setting it there with wfGetDB
+        $this->mDb = $loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+        parent::__construct($context, $linkRenderer);
+        $this->linkBatchFactory = $linkBatchFactory;
+        $from = str_replace(' ', '_', $from);
+        if ($from !== '') {
+            $from = Title::capitalize($from, NS_CATEGORY);
+            $this->setOffset($from);
+            $this->setIncludeOffset(true);
+        }
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'category' ],
-			'fields' => [ 'cat_title', 'cat_pages' ],
-			'options' => [ 'USE INDEX' => 'cat_title' ],
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'  => ['category'],
+            'fields'  => ['cat_title', 'cat_pages'],
+            'options' => ['USE INDEX' => 'cat_title'],
+        ];
+    }
 
-	public function getIndexField() {
-		return 'cat_title';
-	}
+    public function getIndexField()
+    {
+        return 'cat_title';
+    }
 
-	public function getDefaultQuery() {
-		parent::getDefaultQuery();
-		unset( $this->mDefaultQuery['from'] );
+    public function getDefaultQuery()
+    {
+        parent::getDefaultQuery();
+        unset($this->mDefaultQuery['from']);
 
-		return $this->mDefaultQuery;
-	}
+        return $this->mDefaultQuery;
+    }
 
-	/* Override getBody to apply LinksBatch on resultset before actually outputting anything. */
-	public function getBody() {
-		$batch = $this->linkBatchFactory->newLinkBatch();
+    /* Override getBody to apply LinksBatch on resultset before actually outputting anything. */
+    public function getBody()
+    {
+        $batch = $this->linkBatchFactory->newLinkBatch();
 
-		$this->mResult->rewind();
+        $this->mResult->rewind();
 
-		foreach ( $this->mResult as $row ) {
-			$batch->add( NS_CATEGORY, $row->cat_title );
-		}
-		$batch->execute();
-		$this->mResult->rewind();
+        foreach ($this->mResult as $row) {
+            $batch->add(NS_CATEGORY, $row->cat_title);
+        }
+        $batch->execute();
+        $this->mResult->rewind();
 
-		return parent::getBody();
-	}
+        return parent::getBody();
+    }
 
-	public function formatRow( $result ) {
-		$title = new TitleValue( NS_CATEGORY, $result->cat_title );
-		$text = $title->getText();
-		$link = $this->getLinkRenderer()->makeLink( $title, $text );
+    public function formatRow($result)
+    {
+        $title = new TitleValue(NS_CATEGORY, $result->cat_title);
+        $text = $title->getText();
+        $link = $this->getLinkRenderer()->makeLink($title, $text);
 
-		$count = $this->msg( 'nmembers' )->numParams( $result->cat_pages )->escaped();
-		return Html::rawElement( 'li', [], $this->getLanguage()->specialList( $link, $count ) ) . "\n";
-	}
+        $count = $this->msg('nmembers')->numParams($result->cat_pages)->escaped();
 
-	public function getStartForm( $from ) {
-		$formDescriptor = [
-			'from' => [
-				'type' => 'title',
-				'namespace' => NS_CATEGORY,
-				'relative' => true,
-				'label-message' => 'categoriesfrom',
-				'name' => 'from',
-				'id' => 'from',
-				'size' => 20,
-				'default' => $from,
-			],
-		];
+        return Html::rawElement('li', [], $this->getLanguage()->specialList($link, $count)) . "\n";
+    }
 
-		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() )
-			->setSubmitTextMsg( 'categories-submit' )
-			->setWrapperLegendMsg( 'categories' )
-			->setMethod( 'get' );
-		return $htmlForm->prepareForm()->getHTML( false );
-	}
+    public function getStartForm($from)
+    {
+        $formDescriptor = [
+            'from' => [
+                'type'          => 'title',
+                'namespace'     => NS_CATEGORY,
+                'relative'      => true,
+                'label-message' => 'categoriesfrom',
+                'name'          => 'from',
+                'id'            => 'from',
+                'size'          => 20,
+                'default'       => $from,
+            ],
+        ];
+
+        $htmlForm = HTMLForm::factory('ooui', $formDescriptor, $this->getContext())
+            ->setSubmitTextMsg('categories-submit')
+            ->setWrapperLegendMsg('categories')
+            ->setMethod('get');
+
+        return $htmlForm->prepareForm()->getHTML(false);
+    }
 
 }

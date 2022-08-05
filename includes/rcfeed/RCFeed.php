@@ -22,56 +22,60 @@
  * @see $wgRCFeeds
  * @since 1.29
  */
-abstract class RCFeed {
-	/**
-	 * @param array $params
-	 */
-	public function __construct( array $params = [] ) {
-	}
+abstract class RCFeed
+{
+    /**
+     * @param array $params
+     */
+    public function __construct(array $params = [])
+    {
+    }
 
-	/**
-	 * Dispatch the recent changes notification.
-	 *
-	 * @param RecentChange $rc
-	 * @param string|null $actionComment
-	 * @return bool Success
-	 */
-	abstract public function notify( RecentChange $rc, $actionComment = null );
+    /**
+     * Dispatch the recent changes notification.
+     *
+     * @param RecentChange $rc
+     * @param string|null $actionComment
+     * @return bool Success
+     */
+    abstract public function notify(RecentChange $rc, $actionComment = null);
 
-	/**
-	 * @param array $params
-	 * @return RCFeed
-	 */
-	final public static function factory( array $params ): RCFeed {
-		if ( !isset( $params['class'] ) ) {
-			if ( !isset( $params['uri'] ) ) {
-				throw new InvalidArgumentException( 'RCFeeds must have a class set' );
-			}
-			if ( strpos( $params['uri'], 'udp:' ) === 0 ) {
-				$params['class'] = UDPRCFeedEngine::class;
-			} elseif ( strpos( $params['uri'], 'redis:' ) === 0 ) {
-				$params['class'] = RedisPubSubFeedEngine::class;
-			} else {
-				global $wgRCEngines;
-				wfDeprecated( '$wgRCFeeds without class', '1.38' );
-				$scheme = parse_url( $params['uri'], PHP_URL_SCHEME );
-				if ( !$scheme ) {
-					throw new InvalidArgumentException( "Invalid RCFeed uri: {$params['uri']}" );
-				}
-				if ( !isset( $wgRCEngines[$scheme] ) ) {
-					throw new InvalidArgumentException( "Unknown RCFeed engine: $scheme" );
-				}
-				$params['class'] = $wgRCEngines[$scheme];
-			}
-		}
+    /**
+     * @param array $params
+     * @return RCFeed
+     */
+    final public static function factory(array $params): RCFeed
+    {
+        if (!isset($params['class'])) {
+            if (!isset($params['uri'])) {
+                throw new InvalidArgumentException('RCFeeds must have a class set');
+            }
+            if (strpos($params['uri'], 'udp:') === 0) {
+                $params['class'] = UDPRCFeedEngine::class;
+            } elseif (strpos($params['uri'], 'redis:') === 0) {
+                $params['class'] = RedisPubSubFeedEngine::class;
+            } else {
+                global $wgRCEngines;
+                wfDeprecated('$wgRCFeeds without class', '1.38');
+                $scheme = parse_url($params['uri'], PHP_URL_SCHEME);
+                if (!$scheme) {
+                    throw new InvalidArgumentException("Invalid RCFeed uri: {$params['uri']}");
+                }
+                if (!isset($wgRCEngines[$scheme])) {
+                    throw new InvalidArgumentException("Unknown RCFeed engine: $scheme");
+                }
+                $params['class'] = $wgRCEngines[$scheme];
+            }
+        }
 
-		$class = $params['class'];
-		if ( defined( 'MW_PHPUNIT_TEST' ) && is_object( $class ) ) {
-			return $class;
-		}
-		if ( !class_exists( $class ) ) {
-			throw new InvalidArgumentException( "Unknown class '$class'." );
-		}
-		return new $class( $params );
-	}
+        $class = $params['class'];
+        if (defined('MW_PHPUNIT_TEST') && is_object($class)) {
+            return $class;
+        }
+        if (!class_exists($class)) {
+            throw new InvalidArgumentException("Unknown class '$class'.");
+        }
+
+        return new $class($params);
+    }
 }

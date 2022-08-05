@@ -25,13 +25,15 @@ namespace Wikimedia\Rdbms;
  * @newable
  * @ingroup Database
  */
-class DBTransactionSizeError extends DBTransactionError {
-	public function getKey() {
-		return 'transaction-duration-limit-exceeded';
-	}
+class DBTransactionSizeError extends DBTransactionError
+{
+    public function getKey()
+    {
+        return 'transaction-duration-limit-exceeded';
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBTransactionSizeError::class, 'DBTransactionSizeError' );
+class_alias(DBTransactionSizeError::class, 'DBTransactionSizeError');

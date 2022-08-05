@@ -22,34 +22,36 @@
  * @author Russ Nelson
  */
 
-class SwiftFileOpHandle extends FileBackendStoreOpHandle {
-	/** @var array[] List of HTTP request maps for MultiHttpClient */
-	public $httpOp;
-	/** @var Closure Function to run after each HTTP request finishes */
-	public $callback;
+class SwiftFileOpHandle extends FileBackendStoreOpHandle
+{
+    /** @var array[] List of HTTP request maps for MultiHttpClient */
+    public $httpOp;
+    /** @var Closure Function to run after each HTTP request finishes */
+    public $callback;
 
-	/** @var int Class CONTINUE_* constant */
-	public $state = self::CONTINUE_IF_OK;
+    /** @var int Class CONTINUE_* constant */
+    public $state = self::CONTINUE_IF_OK;
 
-	/** @var int Continue with the next requests stages if no errors occurred */
-	public const CONTINUE_IF_OK = 0;
-	/** @var int Cancel the next requests stages */
-	public const CONTINUE_NO = 1;
+    /** @var int Continue with the next requests stages if no errors occurred */
+    public const CONTINUE_IF_OK = 0;
+    /** @var int Cancel the next requests stages */
+    public const CONTINUE_NO = 1;
 
-	/**
-	 * Construct a handle to be use with SwiftFileOpHandle::doExecuteOpHandlesInternal()
-	 *
-	 * The callback returns a class CONTINUE_* constant and takes the following parameters:
-	 *   - An HTTP request map array with 'response' filled
-	 *   - A StatusValue instance to be updated as needed
-	 *
-	 * @param SwiftFileBackend $backend
-	 * @param Closure $callback
-	 * @param array $httpOp MultiHttpClient op
-	 */
-	public function __construct( SwiftFileBackend $backend, Closure $callback, array $httpOp ) {
-		$this->backend = $backend;
-		$this->callback = $callback;
-		$this->httpOp = $httpOp;
-	}
+    /**
+     * Construct a handle to be use with SwiftFileOpHandle::doExecuteOpHandlesInternal()
+     *
+     * The callback returns a class CONTINUE_* constant and takes the following parameters:
+     *   - An HTTP request map array with 'response' filled
+     *   - A StatusValue instance to be updated as needed
+     *
+     * @param SwiftFileBackend $backend
+     * @param Closure $callback
+     * @param array $httpOp MultiHttpClient op
+     */
+    public function __construct(SwiftFileBackend $backend, Closure $callback, array $httpOp)
+    {
+        $this->backend = $backend;
+        $this->callback = $callback;
+        $this->httpOp = $httpOp;
+    }
 }

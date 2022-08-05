@@ -26,87 +26,96 @@ use MediaWiki\SpecialPage\SpecialPageFactory;
  * @ingroup Actions
  * @since 1.25
  */
-class SpecialPageAction extends FormlessAction {
-	/**
-	 * @var array A mapping of action names to special page names.
-	 */
-	public static $actionToSpecialPageMapping = [
-		'revisiondelete' => 'Revisiondelete',
-		'editchangetags' => 'EditTags',
-	];
+class SpecialPageAction extends FormlessAction
+{
+    /**
+     * @var array A mapping of action names to special page names.
+     */
+    public static $actionToSpecialPageMapping = [
+        'revisiondelete' => 'Revisiondelete',
+        'editchangetags' => 'EditTags',
+    ];
 
-	/** @var SpecialPageFactory */
-	private $specialPageFactory;
+    /** @var SpecialPageFactory */
+    private $specialPageFactory;
 
-	/** @var string Name of this action, must exist as a key in $actionToSpecialPageMapping */
-	private $actionName;
+    /** @var string Name of this action, must exist as a key in $actionToSpecialPageMapping */
+    private $actionName;
 
-	/**
-	 * @param Page $page
-	 * @param IContextSource $context
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param string $actionName
-	 */
-	public function __construct(
-		Page $page,
-		IContextSource $context,
-		SpecialPageFactory $specialPageFactory,
-		string $actionName
-	) {
-		parent::__construct( $page, $context );
-		$this->specialPageFactory = $specialPageFactory;
-		if ( !isset( self::$actionToSpecialPageMapping[$actionName] ) ) {
-			throw new InvalidArgumentException(
-				__CLASS__ . " does not support the action $actionName"
-			);
-		}
-		$this->actionName = $actionName;
-	}
+    /**
+     * @param Page $page
+     * @param IContextSource $context
+     * @param SpecialPageFactory $specialPageFactory
+     * @param string $actionName
+     */
+    public function __construct(
+        Page $page,
+        IContextSource $context,
+        SpecialPageFactory $specialPageFactory,
+        string $actionName
+    )
+    {
+        parent::__construct($page, $context);
+        $this->specialPageFactory = $specialPageFactory;
+        if (!isset(self::$actionToSpecialPageMapping[$actionName])) {
+            throw new InvalidArgumentException(
+                __CLASS__ . " does not support the action $actionName"
+            );
+        }
+        $this->actionName = $actionName;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getName() {
-		return $this->actionName;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getName()
+    {
+        return $this->actionName;
+    }
 
-	public function requiresUnblock() {
-		return false;
-	}
+    public function requiresUnblock()
+    {
+        return false;
+    }
 
-	public function getDescription() {
-		return '';
-	}
+    public function getDescription()
+    {
+        return '';
+    }
 
-	public function onView() {
-		return '';
-	}
+    public function onView()
+    {
+        return '';
+    }
 
-	public function show() {
-		$special = $this->getSpecialPage();
-		if ( !$special ) {
-			throw new ErrorPageError(
-				$this->msg( 'nosuchaction' ), $this->msg( 'nosuchactiontext' ) );
-		}
+    public function show()
+    {
+        $special = $this->getSpecialPage();
+        if (!$special) {
+            throw new ErrorPageError(
+                $this->msg('nosuchaction'), $this->msg('nosuchactiontext'));
+        }
 
-		$special->setContext( $this->getContext() );
-		$special->getContext()->setTitle( $special->getPageTitle() );
-		$special->run( '' );
-	}
+        $special->setContext($this->getContext());
+        $special->getContext()->setTitle($special->getPageTitle());
+        $special->run('');
+    }
 
-	public function doesWrites() {
-		$special = $this->getSpecialPage();
+    public function doesWrites()
+    {
+        $special = $this->getSpecialPage();
 
-		return $special ? $special->doesWrites() : false;
-	}
+        return $special ? $special->doesWrites() : false;
+    }
 
-	/**
-	 * @return SpecialPage|null
-	 */
-	protected function getSpecialPage() {
-		// map actions to (allowed) special pages
-		return $this->specialPageFactory->getPage(
-			self::$actionToSpecialPageMapping[$this->actionName]
-		);
-	}
+    /**
+     * @return SpecialPage|null
+     */
+    protected function getSpecialPage()
+    {
+        // map actions to (allowed) special pages
+        return $this->specialPageFactory->getPage(
+            self::$actionToSpecialPageMapping[$this->actionName]
+        );
+    }
 }

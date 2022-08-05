@@ -32,163 +32,172 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * @ingroup API
  */
-class ApiUndelete extends ApiBase {
+class ApiUndelete extends ApiBase
+{
 
-	use ApiWatchlistTrait;
+    use ApiWatchlistTrait;
 
-	/** @var UndeletePageFactory */
-	private $undeletePageFactory;
+    /** @var UndeletePageFactory */
+    private $undeletePageFactory;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param WatchlistManager $watchlistManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UndeletePageFactory $undeletePageFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
-	public function __construct(
-		ApiMain $mainModule,
-		$moduleName,
-		WatchlistManager $watchlistManager,
-		UserOptionsLookup $userOptionsLookup,
-		UndeletePageFactory $undeletePageFactory,
-		WikiPageFactory $wikiPageFactory
-	) {
-		parent::__construct( $mainModule, $moduleName );
+    /**
+     * @param ApiMain $mainModule
+     * @param string $moduleName
+     * @param WatchlistManager $watchlistManager
+     * @param UserOptionsLookup $userOptionsLookup
+     * @param UndeletePageFactory $undeletePageFactory
+     * @param WikiPageFactory $wikiPageFactory
+     */
+    public function __construct(
+        ApiMain $mainModule,
+        $moduleName,
+        WatchlistManager $watchlistManager,
+        UserOptionsLookup $userOptionsLookup,
+        UndeletePageFactory $undeletePageFactory,
+        WikiPageFactory $wikiPageFactory
+    )
+    {
+        parent::__construct($mainModule, $moduleName);
 
-		// Variables needed in ApiWatchlistTrait trait
-		$this->watchlistExpiryEnabled = $this->getConfig()->get( MainConfigNames::WatchlistExpiry );
-		$this->watchlistMaxDuration =
-			$this->getConfig()->get( MainConfigNames::WatchlistExpiryMaxDuration );
-		$this->watchlistManager = $watchlistManager;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->undeletePageFactory = $undeletePageFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-	}
+        // Variables needed in ApiWatchlistTrait trait
+        $this->watchlistExpiryEnabled = $this->getConfig()->get(MainConfigNames::WatchlistExpiry);
+        $this->watchlistMaxDuration =
+            $this->getConfig()->get(MainConfigNames::WatchlistExpiryMaxDuration);
+        $this->watchlistManager = $watchlistManager;
+        $this->userOptionsLookup = $userOptionsLookup;
+        $this->undeletePageFactory = $undeletePageFactory;
+        $this->wikiPageFactory = $wikiPageFactory;
+    }
 
-	public function execute() {
-		$this->useTransactionalTimeLimit();
+    public function execute()
+    {
+        $this->useTransactionalTimeLimit();
 
-		$params = $this->extractRequestParams();
+        $params = $this->extractRequestParams();
 
-		$user = $this->getUser();
-		$block = $user->getBlock( Authority::READ_LATEST );
-		if ( $block && $block->isSitewide() ) {
-			$this->dieBlocked( $block );
-		}
+        $user = $this->getUser();
+        $block = $user->getBlock(Authority::READ_LATEST);
+        if ($block && $block->isSitewide()) {
+            $this->dieBlocked($block);
+        }
 
-		$titleObj = Title::newFromText( $params['title'] );
-		if ( !$titleObj || $titleObj->isExternal() ) {
-			$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $params['title'] ) ] );
-		}
+        $titleObj = Title::newFromText($params['title']);
+        if (!$titleObj || $titleObj->isExternal()) {
+            $this->dieWithError(['apierror-invalidtitle', wfEscapeWikiText($params['title'])]);
+        }
 
-		// Convert timestamps
-		if ( !isset( $params['timestamps'] ) ) {
-			$params['timestamps'] = [];
-		}
-		if ( !is_array( $params['timestamps'] ) ) {
-			$params['timestamps'] = [ $params['timestamps'] ];
-		}
-		foreach ( $params['timestamps'] as $i => $ts ) {
-			$params['timestamps'][$i] = wfTimestamp( TS_MW, $ts );
-		}
+        // Convert timestamps
+        if (!isset($params['timestamps'])) {
+            $params['timestamps'] = [];
+        }
+        if (!is_array($params['timestamps'])) {
+            $params['timestamps'] = [$params['timestamps']];
+        }
+        foreach ($params['timestamps'] as $i => $ts) {
+            $params['timestamps'][$i] = wfTimestamp(TS_MW, $ts);
+        }
 
-		$undeletePage = $this->undeletePageFactory->newUndeletePage(
-				$this->wikiPageFactory->newFromTitle( $titleObj ),
-				$this->getAuthority()
-			)
-			->setUndeleteOnlyTimestamps( $params['timestamps'] ?? [] )
-			->setUndeleteOnlyFileVersions( $params['fileids'] ?: [] )
-			->setTags( $params['tags'] ?: [] );
+        $undeletePage = $this->undeletePageFactory->newUndeletePage(
+            $this->wikiPageFactory->newFromTitle($titleObj),
+            $this->getAuthority()
+        )
+            ->setUndeleteOnlyTimestamps($params['timestamps'] ?? [])
+            ->setUndeleteOnlyFileVersions($params['fileids'] ?: [])
+            ->setTags($params['tags'] ?: []);
 
-		if ( $params['undeletetalk'] ) {
-			$undeletePage->setUndeleteAssociatedTalk( true );
-		}
+        if ($params['undeletetalk']) {
+            $undeletePage->setUndeleteAssociatedTalk(true);
+        }
 
-		$status = $undeletePage->undeleteIfAllowed( $params['reason'] );
-		if ( $status->isOK() ) {
-			// in case there are warnings
-			$this->addMessagesFromStatus( $status );
-		} else {
-			$this->dieStatus( $status );
-		}
+        $status = $undeletePage->undeleteIfAllowed($params['reason']);
+        if ($status->isOK()) {
+            // in case there are warnings
+            $this->addMessagesFromStatus($status);
+        } else {
+            $this->dieStatus($status);
+        }
 
-		$restoredRevs = $status->getValue()[UndeletePage::REVISIONS_RESTORED];
-		$restoredFiles = $status->getValue()[UndeletePage::FILES_RESTORED];
+        $restoredRevs = $status->getValue()[UndeletePage::REVISIONS_RESTORED];
+        $restoredFiles = $status->getValue()[UndeletePage::FILES_RESTORED];
 
-		if ( $restoredRevs === 0 && $restoredFiles === 0 ) {
-			// BC for code that predates UndeletePage
-			$this->dieWithError( 'apierror-cantundelete' );
-		}
+        if ($restoredRevs === 0 && $restoredFiles === 0) {
+            // BC for code that predates UndeletePage
+            $this->dieWithError('apierror-cantundelete');
+        }
 
-		if ( $restoredFiles ) {
-			$this->getHookRunner()->onFileUndeleteComplete(
-				$titleObj, $params['fileids'],
-				$this->getUser(), $params['reason'] );
-		}
+        if ($restoredFiles) {
+            $this->getHookRunner()->onFileUndeleteComplete(
+                $titleObj, $params['fileids'],
+                $this->getUser(), $params['reason']);
+        }
 
-		$watchlistExpiry = $this->getExpiryFromParams( $params );
-		$this->setWatch( $params['watchlist'], $titleObj, $user, null, $watchlistExpiry );
+        $watchlistExpiry = $this->getExpiryFromParams($params);
+        $this->setWatch($params['watchlist'], $titleObj, $user, null, $watchlistExpiry);
 
-		$info = [
-			'title' => $titleObj->getPrefixedText(),
-			'revisions' => $restoredRevs,
-			'fileversions' => $restoredFiles,
-			'reason' => $params['reason']
-		];
-		$this->getResult()->addValue( null, $this->getModuleName(), $info );
-	}
+        $info = [
+            'title'        => $titleObj->getPrefixedText(),
+            'revisions'    => $restoredRevs,
+            'fileversions' => $restoredFiles,
+            'reason'       => $params['reason']
+        ];
+        $this->getResult()->addValue(null, $this->getModuleName(), $info);
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'title' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true
-			],
-			'reason' => '',
-			'tags' => [
-				ParamValidator::PARAM_TYPE => 'tags',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'timestamps' => [
-				ParamValidator::PARAM_TYPE => 'timestamp',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'fileids' => [
-				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'undeletetalk' => false,
-		] + $this->getWatchlistParams();
-	}
+    public function getAllowedParams()
+    {
+        return [
+                'title'        => [
+                    ParamValidator::PARAM_TYPE     => 'string',
+                    ParamValidator::PARAM_REQUIRED => true
+                ],
+                'reason'       => '',
+                'tags'         => [
+                    ParamValidator::PARAM_TYPE    => 'tags',
+                    ParamValidator::PARAM_ISMULTI => true,
+                ],
+                'timestamps'   => [
+                    ParamValidator::PARAM_TYPE    => 'timestamp',
+                    ParamValidator::PARAM_ISMULTI => true,
+                ],
+                'fileids'      => [
+                    ParamValidator::PARAM_TYPE    => 'integer',
+                    ParamValidator::PARAM_ISMULTI => true,
+                ],
+                'undeletetalk' => false,
+            ] + $this->getWatchlistParams();
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=undelete&title=Main%20Page&token=123ABC&reason=Restoring%20main%20page'
-				=> 'apihelp-undelete-example-page',
-			'action=undelete&title=Main%20Page&token=123ABC' .
-				'&timestamps=2007-07-03T22:00:45Z|2007-07-02T19:48:56Z'
-				=> 'apihelp-undelete-example-revisions',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=undelete&title=Main%20Page&token=123ABC&reason=Restoring%20main%20page'
+            => 'apihelp-undelete-example-page',
+            'action=undelete&title=Main%20Page&token=123ABC' .
+            '&timestamps=2007-07-03T22:00:45Z|2007-07-02T19:48:56Z'
+            => 'apihelp-undelete-example-revisions',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Undelete';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Undelete';
+    }
 }

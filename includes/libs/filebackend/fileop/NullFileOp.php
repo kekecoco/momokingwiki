@@ -24,5 +24,6 @@
 /**
  * Placeholder operation that has no params and does nothing
  */
-class NullFileOp extends FileOp {
+class NullFileOp extends FileOp
+{
 }

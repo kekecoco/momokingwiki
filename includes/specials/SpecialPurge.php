@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Redirect from Special:Purge/$1 to index.php?title=$1&action=purge.
  *
@@ -21,18 +22,20 @@
  * @ingroup SpecialPage
  * @author DannyS712
  */
-class SpecialPurge extends SpecialRedirectWithAction {
+class SpecialPurge extends SpecialRedirectWithAction
+{
 
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
-	public function __construct(
-		SearchEngineFactory $searchEngineFactory
-	) {
-		parent::__construct( 'Purge', 'purge', 'purge', $searchEngineFactory );
-	}
+    /**
+     * @param SearchEngineFactory $searchEngineFactory
+     */
+    public function __construct(
+        SearchEngineFactory $searchEngineFactory
+    )
+    {
+        parent::__construct('Purge', 'purge', 'purge', $searchEngineFactory);
+    }
 
-	// Messages, for grep:
-	// specialpurge-page
-	// specialpurge-submit
+    // Messages, for grep:
+    // specialpurge-page
+    // specialpurge-submit
 }

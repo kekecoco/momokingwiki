@@ -28,42 +28,48 @@ use MediaWiki\EditPage\Constraint\IEditConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\DefaultTextConstraint
  */
-class DefaultTextConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class DefaultTextConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	private function getTitle( $defaultText ) {
-		$title = $this->createMock( Title::class );
-		$title->method( 'getNamespace' )->willReturn( NS_MEDIAWIKI );
-		$title->method( 'getDefaultMessageText' )->willReturn( $defaultText );
-		return $title;
-	}
+    private function getTitle($defaultText)
+    {
+        $title = $this->createMock(Title::class);
+        $title->method('getNamespace')->willReturn(NS_MEDIAWIKI);
+        $title->method('getDefaultMessageText')->willReturn($defaultText);
 
-	public function testPass() {
-		$constraint = new DefaultTextConstraint(
-			$this->getTitle( 'DefaultMessageTextGoesHere' ),
-			false, // Allow blank
-			'User provided text goes here'
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        return $title;
+    }
 
-	/**
-	 * @dataProvider provideTestFailure
-	 * @param string|bool $defaultText
-	 * @param string $userInput
-	 */
-	public function testFailure( $defaultText, $userInput ) {
-		$constraint = new DefaultTextConstraint(
-			$this->getTitle( $defaultText ),
-			false, // Allow blank
-			$userInput
-		);
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_BLANK_ARTICLE );
-	}
+    public function testPass()
+    {
+        $constraint = new DefaultTextConstraint(
+            $this->getTitle('DefaultMessageTextGoesHere'),
+            false, // Allow blank
+            'User provided text goes here'
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function provideTestFailure() {
-		yield 'Matching message text' => [ 'MessageText', 'MessageText' ];
-		yield 'Blank page and no default' => [ false, '' ];
-	}
+    /**
+     * @dataProvider provideTestFailure
+     * @param string|bool $defaultText
+     * @param string $userInput
+     */
+    public function testFailure($defaultText, $userInput)
+    {
+        $constraint = new DefaultTextConstraint(
+            $this->getTitle($defaultText),
+            false, // Allow blank
+            $userInput
+        );
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_BLANK_ARTICLE);
+    }
+
+    public function provideTestFailure()
+    {
+        yield 'Matching message text' => ['MessageText', 'MessageText'];
+        yield 'Blank page and no default' => [false, ''];
+    }
 
 }

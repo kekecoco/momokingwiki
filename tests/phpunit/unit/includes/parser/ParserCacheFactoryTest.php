@@ -10,54 +10,58 @@ use Psr\Log\NullLogger;
 /**
  * @covers \MediaWiki\Parser\ParserCacheFactory
  */
-class ParserCacheFactoryTest extends MediaWikiUnitTestCase {
+class ParserCacheFactoryTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @return ParserCacheFactory
-	 */
-	private function newParserCacheFactory() {
-		$options = new ServiceOptions( ParserCacheFactory::CONSTRUCTOR_OPTIONS, [
-			'CacheEpoch' => '20200202112233',
-			'OldRevisionParserCacheExpireTime' => 60,
-		] );
+    /**
+     * @return ParserCacheFactory
+     */
+    private function newParserCacheFactory()
+    {
+        $options = new ServiceOptions(ParserCacheFactory::CONSTRUCTOR_OPTIONS, [
+            'CacheEpoch'                       => '20200202112233',
+            'OldRevisionParserCacheExpireTime' => 60,
+        ]);
 
-		return new ParserCacheFactory(
-			new HashBagOStuff(),
-			new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
-			$this->createHookContainer(),
-			new JsonCodec(),
-			new NullStatsdDataFactory(),
-			new NullLogger(),
-			$options,
-			$this->createNoOpMock( TitleFactory::class ),
-			$this->createNoOpMock( WikiPageFactory::class )
-		);
-	}
+        return new ParserCacheFactory(
+            new HashBagOStuff(),
+            new WANObjectCache(['cache' => new HashBagOStuff()]),
+            $this->createHookContainer(),
+            new JsonCodec(),
+            new NullStatsdDataFactory(),
+            new NullLogger(),
+            $options,
+            $this->createNoOpMock(TitleFactory::class),
+            $this->createNoOpMock(WikiPageFactory::class)
+        );
+    }
 
-	public function testGetParserCache() {
-		$factory = $this->newParserCacheFactory();
+    public function testGetParserCache()
+    {
+        $factory = $this->newParserCacheFactory();
 
-		$a = $factory->getParserCache( 'test' );
-		$this->assertInstanceOf( ParserCache::class, $a );
+        $a = $factory->getParserCache('test');
+        $this->assertInstanceOf(ParserCache::class, $a);
 
-		$b = $factory->getParserCache( 'test' );
-		$this->assertSame( $a, $b );
+        $b = $factory->getParserCache('test');
+        $this->assertSame($a, $b);
 
-		$c = $factory->getParserCache( 'xyzzy' );
-		$this->assertNotSame( $a, $c );
-	}
+        $c = $factory->getParserCache('xyzzy');
+        $this->assertNotSame($a, $c);
+    }
 
-	public function testGetRevisionOutputCache() {
-		$factory = $this->newParserCacheFactory();
+    public function testGetRevisionOutputCache()
+    {
+        $factory = $this->newParserCacheFactory();
 
-		$a = $factory->getRevisionOutputCache( 'test' );
-		$this->assertInstanceOf( RevisionOutputCache::class, $a );
+        $a = $factory->getRevisionOutputCache('test');
+        $this->assertInstanceOf(RevisionOutputCache::class, $a);
 
-		$b = $factory->getRevisionOutputCache( 'test' );
-		$this->assertSame( $a, $b );
+        $b = $factory->getRevisionOutputCache('test');
+        $this->assertSame($a, $b);
 
-		$c = $factory->getRevisionOutputCache( 'xyzzy' );
-		$this->assertNotSame( $a, $c );
-	}
+        $c = $factory->getRevisionOutputCache('xyzzy');
+        $this->assertNotSame($a, $c);
+    }
 
 }

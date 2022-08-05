@@ -32,27 +32,29 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialUncategorizedTemplates extends SpecialUncategorizedPages {
+class SpecialUncategorizedTemplates extends SpecialUncategorizedPages
+{
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct(
-			$namespaceInfo,
-			$loadBalancer,
-			$linkBatchFactory,
-			$languageConverterFactory
-		);
-		$this->mName = 'Uncategorizedtemplates';
-		$this->requestedNamespace = NS_TEMPLATE;
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct(
+            $namespaceInfo,
+            $loadBalancer,
+            $linkBatchFactory,
+            $languageConverterFactory
+        );
+        $this->mName = 'Uncategorizedtemplates';
+        $this->requestedNamespace = NS_TEMPLATE;
+    }
 }

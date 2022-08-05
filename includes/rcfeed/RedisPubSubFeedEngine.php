@@ -43,39 +43,42 @@
  * @see $wgRCFeeds
  * @since 1.22
  */
-class RedisPubSubFeedEngine extends FormattedRCFeed {
+class RedisPubSubFeedEngine extends FormattedRCFeed
+{
 
-	/**
-	 * @see FormattedRCFeed::send
-	 * @param array $feed
-	 * @param string $line
-	 * @return bool
-	 */
-	public function send( array $feed, $line ) {
-		$parsed = wfParseUrl( $feed['uri'] );
-		$server = $parsed['host'];
-		$options = [ 'serializer' => 'none' ];
-		$channel = 'rc';
+    /**
+     * @param array $feed
+     * @param string $line
+     * @return bool
+     * @see FormattedRCFeed::send
+     */
+    public function send(array $feed, $line)
+    {
+        $parsed = wfParseUrl($feed['uri']);
+        $server = $parsed['host'];
+        $options = ['serializer' => 'none'];
+        $channel = 'rc';
 
-		if ( isset( $parsed['port'] ) ) {
-			$server .= ":{$parsed['port']}";
-		}
-		if ( isset( $parsed['query'] ) ) {
-			parse_str( $parsed['query'], $options );
-		}
-		if ( isset( $parsed['pass'] ) ) {
-			$options['password'] = $parsed['pass'];
-		}
-		if ( isset( $parsed['path'] ) ) {
-			$channel = str_replace( '/', '.', ltrim( $parsed['path'], '/' ) );
-		}
-		$pool = RedisConnectionPool::singleton( $options );
-		$conn = $pool->getConnection( $server );
-		if ( $conn !== false ) {
-			$conn->publish( $channel, $line );
-			return true;
-		}
+        if (isset($parsed['port'])) {
+            $server .= ":{$parsed['port']}";
+        }
+        if (isset($parsed['query'])) {
+            parse_str($parsed['query'], $options);
+        }
+        if (isset($parsed['pass'])) {
+            $options['password'] = $parsed['pass'];
+        }
+        if (isset($parsed['path'])) {
+            $channel = str_replace('/', '.', ltrim($parsed['path'], '/'));
+        }
+        $pool = RedisConnectionPool::singleton($options);
+        $conn = $pool->getConnection($server);
+        if ($conn !== false) {
+            $conn->publish($channel, $line);
 
-		return false;
-	}
+            return true;
+        }
+
+        return false;
+    }
 }

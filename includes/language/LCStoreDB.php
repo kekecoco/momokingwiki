@@ -28,121 +28,128 @@ use Wikimedia\ScopedCallback;
  *
  * @ingroup Language
  */
-class LCStoreDB implements LCStore {
-	/** @var string|null Language code */
-	private $code;
-	/** @var array Server configuration map */
-	private $server;
+class LCStoreDB implements LCStore
+{
+    /** @var string|null Language code */
+    private $code;
+    /** @var array Server configuration map */
+    private $server;
 
-	/** @var array Rows buffered for insertion */
-	private $batch = [];
+    /** @var array Rows buffered for insertion */
+    private $batch = [];
 
-	/** @var IDatabase|null */
-	private $dbw;
-	/** @var bool Whether a batch of writes were recently written */
-	private $writesDone = false;
-	/** @var bool Whether the DB is read-only or otherwise unavailable for writes */
-	private $readOnly = false;
+    /** @var IDatabase|null */
+    private $dbw;
+    /** @var bool Whether a batch of writes were recently written */
+    private $writesDone = false;
+    /** @var bool Whether the DB is read-only or otherwise unavailable for writes */
+    private $readOnly = false;
 
-	public function __construct( $params ) {
-		$this->server = $params['server'] ?? [];
-	}
+    public function __construct($params)
+    {
+        $this->server = $params['server'] ?? [];
+    }
 
-	public function get( $code, $key ) {
-		if ( $this->server || $this->writesDone ) {
-			// If a server configuration map is specified, always used that connection
-			// for reads and writes. Otherwise, if writes occurred in finishWrite(), make
-			// sure those changes are always visible.
-			$db = $this->getWriteConnection();
-		} else {
-			$db = wfGetDB( DB_REPLICA );
-		}
+    public function get($code, $key)
+    {
+        if ($this->server || $this->writesDone) {
+            // If a server configuration map is specified, always used that connection
+            // for reads and writes. Otherwise, if writes occurred in finishWrite(), make
+            // sure those changes are always visible.
+            $db = $this->getWriteConnection();
+        } else {
+            $db = wfGetDB(DB_REPLICA);
+        }
 
-		$value = $db->selectField(
-			'l10n_cache',
-			'lc_value',
-			[ 'lc_lang' => $code, 'lc_key' => $key ],
-			__METHOD__
-		);
+        $value = $db->selectField(
+            'l10n_cache',
+            'lc_value',
+            ['lc_lang' => $code, 'lc_key' => $key],
+            __METHOD__
+        );
 
-		return ( $value !== false ) ? unserialize( $db->decodeBlob( $value ) ) : null;
-	}
+        return ($value !== false) ? unserialize($db->decodeBlob($value)) : null;
+    }
 
-	public function startWrite( $code ) {
-		if ( $this->readOnly ) {
-			return;
-		} elseif ( !$code ) {
-			throw new MWException( __METHOD__ . ": Invalid language \"$code\"" );
-		}
+    public function startWrite($code)
+    {
+        if ($this->readOnly) {
+            return;
+        } elseif (!$code) {
+            throw new MWException(__METHOD__ . ": Invalid language \"$code\"");
+        }
 
-		$dbw = $this->getWriteConnection();
-		$this->readOnly = $dbw->isReadOnly();
+        $dbw = $this->getWriteConnection();
+        $this->readOnly = $dbw->isReadOnly();
 
-		$this->code = $code;
-		$this->batch = [];
-	}
+        $this->code = $code;
+        $this->batch = [];
+    }
 
-	public function finishWrite() {
-		if ( $this->readOnly ) {
-			return;
-		} elseif ( $this->code === null ) {
-			throw new MWException( __CLASS__ . ': must call startWrite() before finishWrite()' );
-		}
+    public function finishWrite()
+    {
+        if ($this->readOnly) {
+            return;
+        } elseif ($this->code === null) {
+            throw new MWException(__CLASS__ . ': must call startWrite() before finishWrite()');
+        }
 
-		$scope = Profiler::instance()->getTransactionProfiler()->silenceForScope();
-		$dbw = $this->getWriteConnection();
-		$dbw->startAtomic( __METHOD__ );
-		try {
-			$dbw->delete( 'l10n_cache', [ 'lc_lang' => $this->code ], __METHOD__ );
-			foreach ( array_chunk( $this->batch, 500 ) as $rows ) {
-				$dbw->insert( 'l10n_cache', $rows, __METHOD__ );
-			}
-			$this->writesDone = true;
-		} catch ( DBQueryError $e ) {
-			if ( $dbw->wasReadOnlyError() ) {
-				$this->readOnly = true; // just avoid site down time
-			} else {
-				throw $e;
-			}
-		}
-		$dbw->endAtomic( __METHOD__ );
-		ScopedCallback::consume( $scope );
+        $scope = Profiler::instance()->getTransactionProfiler()->silenceForScope();
+        $dbw = $this->getWriteConnection();
+        $dbw->startAtomic(__METHOD__);
+        try {
+            $dbw->delete('l10n_cache', ['lc_lang' => $this->code], __METHOD__);
+            foreach (array_chunk($this->batch, 500) as $rows) {
+                $dbw->insert('l10n_cache', $rows, __METHOD__);
+            }
+            $this->writesDone = true;
+        } catch (DBQueryError $e) {
+            if ($dbw->wasReadOnlyError()) {
+                $this->readOnly = true; // just avoid site down time
+            } else {
+                throw $e;
+            }
+        }
+        $dbw->endAtomic(__METHOD__);
+        ScopedCallback::consume($scope);
 
-		$this->code = null;
-		$this->batch = [];
-	}
+        $this->code = null;
+        $this->batch = [];
+    }
 
-	public function set( $key, $value ) {
-		if ( $this->readOnly ) {
-			return;
-		} elseif ( $this->code === null ) {
-			throw new MWException( __CLASS__ . ': must call startWrite() before set()' );
-		}
+    public function set($key, $value)
+    {
+        if ($this->readOnly) {
+            return;
+        } elseif ($this->code === null) {
+            throw new MWException(__CLASS__ . ': must call startWrite() before set()');
+        }
 
-		$dbw = $this->getWriteConnection();
+        $dbw = $this->getWriteConnection();
 
-		$this->batch[] = [
-			'lc_lang' => $this->code,
-			'lc_key' => $key,
-			'lc_value' => $dbw->encodeBlob( serialize( $value ) )
-		];
-	}
+        $this->batch[] = [
+            'lc_lang'  => $this->code,
+            'lc_key'   => $key,
+            'lc_value' => $dbw->encodeBlob(serialize($value))
+        ];
+    }
 
-	/**
-	 * @return IDatabase
-	 */
-	private function getWriteConnection() {
-		if ( !$this->dbw ) {
-			if ( $this->server ) {
-				$this->dbw = Database::factory( $this->server['type'], $this->server );
-				if ( !$this->dbw ) {
-					throw new MWException( __CLASS__ . ': failed to obtain a DB connection' );
-				}
-			} else {
-				$this->dbw = wfGetDB( DB_PRIMARY );
-			}
-		}
+    /**
+     * @return IDatabase
+     */
+    private function getWriteConnection()
+    {
+        if (!$this->dbw) {
+            if ($this->server) {
+                $this->dbw = Database::factory($this->server['type'], $this->server);
+                if (!$this->dbw) {
+                    throw new MWException(__CLASS__ . ': failed to obtain a DB connection');
+                }
+            } else {
+                $this->dbw = wfGetDB(DB_PRIMARY);
+            }
+        }
 
-		return $this->dbw;
-	}
+        return $this->dbw;
+    }
 }

@@ -55,102 +55,103 @@ use MediaWiki\Session\CsrfTokenSetProvider;
  *
  * @unstable for implementation, extensions should subclass ContextSource instead.
  */
-interface IContextSource extends MessageLocalizer, CsrfTokenSetProvider {
+interface IContextSource extends MessageLocalizer, CsrfTokenSetProvider
+{
 
-	/**
-	 * @return WebRequest
-	 */
-	public function getRequest();
+    /**
+     * @return WebRequest
+     */
+    public function getRequest();
 
-	/**
-	 * @return Title|null
-	 */
-	public function getTitle();
+    /**
+     * @return Title|null
+     */
+    public function getTitle();
 
-	/**
-	 * Check whether a WikiPage object can be get with getWikiPage().
-	 * Callers should expect that an exception is thrown from getWikiPage()
-	 * if this method returns false.
-	 *
-	 * @since 1.19
-	 * @return bool
-	 */
-	public function canUseWikiPage();
+    /**
+     * Check whether a WikiPage object can be get with getWikiPage().
+     * Callers should expect that an exception is thrown from getWikiPage()
+     * if this method returns false.
+     *
+     * @return bool
+     * @since 1.19
+     */
+    public function canUseWikiPage();
 
-	/**
-	 * Get the WikiPage object.
-	 * May throw an exception if there's no Title object set or the Title object
-	 * belongs to a special namespace that doesn't have WikiPage, so use first
-	 * canUseWikiPage() to check whether this method can be called safely.
-	 *
-	 * @since 1.19
-	 * @return WikiPage
-	 */
-	public function getWikiPage();
+    /**
+     * Get the WikiPage object.
+     * May throw an exception if there's no Title object set or the Title object
+     * belongs to a special namespace that doesn't have WikiPage, so use first
+     * canUseWikiPage() to check whether this method can be called safely.
+     *
+     * @return WikiPage
+     * @since 1.19
+     */
+    public function getWikiPage();
 
-	/**
-	 * Get the action name for the current web request.
-	 *
-	 * @since 1.38
-	 * @return string
-	 */
-	public function getActionName(): string;
+    /**
+     * Get the action name for the current web request.
+     *
+     * @return string
+     * @since 1.38
+     */
+    public function getActionName(): string;
 
-	/**
-	 * @return OutputPage
-	 */
-	public function getOutput();
+    /**
+     * @return OutputPage
+     */
+    public function getOutput();
 
-	/**
-	 * @return User
-	 */
-	public function getUser();
+    /**
+     * @return User
+     */
+    public function getUser();
 
-	/**
-	 * @since 1.36
-	 * @return Authority
-	 */
-	public function getAuthority(): Authority;
+    /**
+     * @return Authority
+     * @since 1.36
+     */
+    public function getAuthority(): Authority;
 
-	/**
-	 * @return Language
-	 * @since 1.19
-	 */
-	public function getLanguage();
+    /**
+     * @return Language
+     * @since 1.19
+     */
+    public function getLanguage();
 
-	/**
-	 * @return Skin
-	 */
-	public function getSkin();
+    /**
+     * @return Skin
+     */
+    public function getSkin();
 
-	/**
-	 * Get the site configuration
-	 *
-	 * @since 1.23
-	 * @return Config
-	 */
-	public function getConfig();
+    /**
+     * Get the site configuration
+     *
+     * @return Config
+     * @since 1.23
+     */
+    public function getConfig();
 
-	/**
-	 * @deprecated since 1.27 use a StatsdDataFactory from MediaWikiServices (preferably injected)
-	 *
-	 * @since 1.25
-	 * @return IBufferingStatsdDataFactory
-	 */
-	public function getStats();
+    /**
+     * @return IBufferingStatsdDataFactory
+     * @since 1.25
+     * @deprecated since 1.27 use a StatsdDataFactory from MediaWikiServices (preferably injected)
+     *
+     */
+    public function getStats();
 
-	/**
-	 * @since 1.27
-	 * @return Timing
-	 */
-	public function getTiming();
+    /**
+     * @return Timing
+     * @since 1.27
+     */
+    public function getTiming();
 
-	/**
-	 * Export the resolved user IP, HTTP headers, user ID, and session ID.
-	 * The result will be reasonably sized to allow for serialization.
-	 *
-	 * @return array
-	 * @since 1.21
-	 */
-	public function exportSession();
+    /**
+     * Export the resolved user IP, HTTP headers, user ID, and session ID.
+     * The result will be reasonably sized to allow for serialization.
+     *
+     * @return array
+     * @since 1.21
+     */
+    public function exportSession();
 }

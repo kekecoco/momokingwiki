@@ -29,39 +29,45 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class AccidentalRecreationConstraint implements IEditConstraint {
+class AccidentalRecreationConstraint implements IEditConstraint
+{
 
-	/** @var bool */
-	private $deletedSinceLastEdit;
+    /** @var bool */
+    private $deletedSinceLastEdit;
 
-	/** @var bool */
-	private $allowRecreation;
+    /** @var bool */
+    private $allowRecreation;
 
-	/**
-	 * @param bool $deletedSinceLastEdit
-	 * @param bool $allowRecreation
-	 */
-	public function __construct(
-		bool $deletedSinceLastEdit,
-		bool $allowRecreation
-	) {
-		$this->deletedSinceLastEdit = $deletedSinceLastEdit;
-		$this->allowRecreation = $allowRecreation;
-	}
+    /**
+     * @param bool $deletedSinceLastEdit
+     * @param bool $allowRecreation
+     */
+    public function __construct(
+        bool $deletedSinceLastEdit,
+        bool $allowRecreation
+    )
+    {
+        $this->deletedSinceLastEdit = $deletedSinceLastEdit;
+        $this->allowRecreation = $allowRecreation;
+    }
 
-	public function checkConstraint(): string {
-		if ( $this->deletedSinceLastEdit && !$this->allowRecreation ) {
-			return self::CONSTRAINT_FAILED;
-		}
-		return self::CONSTRAINT_PASSED;
-	}
+    public function checkConstraint(): string
+    {
+        if ($this->deletedSinceLastEdit && !$this->allowRecreation) {
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->deletedSinceLastEdit && !$this->allowRecreation ) {
-			$statusValue->setResult( false, self::AS_ARTICLE_WAS_DELETED );
-		}
-		return $statusValue;
-	}
+        return self::CONSTRAINT_PASSED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->deletedSinceLastEdit && !$this->allowRecreation) {
+            $statusValue->setResult(false, self::AS_ARTICLE_WAS_DELETED);
+        }
+
+        return $statusValue;
+    }
 
 }

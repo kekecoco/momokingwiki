@@ -30,48 +30,51 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class FormatInstallDoc extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addArg( 'path', 'The file name to format', false );
-		$this->addOption( 'outfile', 'The output file name', false, true );
-		$this->addOption( 'html', 'Use HTML output format. By default, wikitext is used.' );
-	}
+class FormatInstallDoc extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addArg('path', 'The file name to format', false);
+        $this->addOption('outfile', 'The output file name', false, true);
+        $this->addOption('html', 'Use HTML output format. By default, wikitext is used.');
+    }
 
-	public function execute() {
-		if ( $this->hasArg( 0 ) ) {
-			$fileName = $this->getArg( 0 );
-			$inFile = fopen( $fileName, 'r' );
-			if ( !$inFile ) {
-				$this->fatalError( "Unable to open input file \"$fileName\"" );
-			}
-		} else {
-			$inFile = STDIN;
-		}
+    public function execute()
+    {
+        if ($this->hasArg(0)) {
+            $fileName = $this->getArg(0);
+            $inFile = fopen($fileName, 'r');
+            if (!$inFile) {
+                $this->fatalError("Unable to open input file \"$fileName\"");
+            }
+        } else {
+            $inFile = STDIN;
+        }
 
-		if ( $this->hasOption( 'outfile' ) ) {
-			$fileName = $this->getOption( 'outfile' );
-			$outFile = fopen( $fileName, 'w' );
-			if ( !$outFile ) {
-				$this->fatalError( "Unable to open output file \"$fileName\"" );
-			}
-		} else {
-			$outFile = STDOUT;
-		}
+        if ($this->hasOption('outfile')) {
+            $fileName = $this->getOption('outfile');
+            $outFile = fopen($fileName, 'w');
+            if (!$outFile) {
+                $this->fatalError("Unable to open output file \"$fileName\"");
+            }
+        } else {
+            $outFile = STDOUT;
+        }
 
-		$inText = stream_get_contents( $inFile );
-		$outText = InstallDocFormatter::format( $inText );
+        $inText = stream_get_contents($inFile);
+        $outText = InstallDocFormatter::format($inText);
 
-		if ( $this->hasOption( 'html' ) ) {
-			$parser = MediaWikiServices::getInstance()->getParser();
-			$opt = ParserOptions::newFromAnon();
-			$title = Title::newFromText( 'Text file' );
-			$out = $parser->parse( $outText, $title, $opt );
-			$outText = "<html><body>\n" . $out->getText() . "\n</body></html>\n";
-		}
+        if ($this->hasOption('html')) {
+            $parser = MediaWikiServices::getInstance()->getParser();
+            $opt = ParserOptions::newFromAnon();
+            $title = Title::newFromText('Text file');
+            $out = $parser->parse($outText, $title, $opt);
+            $outText = "<html><body>\n" . $out->getText() . "\n</body></html>\n";
+        }
 
-		fwrite( $outFile, $outText );
-	}
+        fwrite($outFile, $outText);
+    }
 }
 
 $maintClass = FormatInstallDoc::class;

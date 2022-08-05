@@ -23,75 +23,88 @@
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPNode_Hash_Text implements PPNode {
+class PPNode_Hash_Text implements PPNode
+{
 
-	/** @var string */
-	public $value;
-	/** @var array */
-	private $store;
-	/** @var int */
-	private $index;
+    /** @var string */
+    public $value;
+    /** @var array */
+    private $store;
+    /** @var int */
+    private $index;
 
-	/**
-	 * Construct an object using the data from $store[$index]. The rest of the
-	 * store array can be accessed via getNextSibling().
-	 *
-	 * @param array $store
-	 * @param int $index
-	 */
-	public function __construct( array $store, $index ) {
-		$this->value = $store[$index];
-		if ( !is_scalar( $this->value ) ) {
-			throw new MWException( __CLASS__ . ' given object instead of string' );
-		}
-		$this->store = $store;
-		$this->index = $index;
-	}
+    /**
+     * Construct an object using the data from $store[$index]. The rest of the
+     * store array can be accessed via getNextSibling().
+     *
+     * @param array $store
+     * @param int $index
+     */
+    public function __construct(array $store, $index)
+    {
+        $this->value = $store[$index];
+        if (!is_scalar($this->value)) {
+            throw new MWException(__CLASS__ . ' given object instead of string');
+        }
+        $this->store = $store;
+        $this->index = $index;
+    }
 
-	public function __toString() {
-		return htmlspecialchars( $this->value, ENT_COMPAT );
-	}
+    public function __toString()
+    {
+        return htmlspecialchars($this->value, ENT_COMPAT);
+    }
 
-	public function getNextSibling() {
-		return PPNode_Hash_Tree::factory( $this->store, $this->index + 1 );
-	}
+    public function getNextSibling()
+    {
+        return PPNode_Hash_Tree::factory($this->store, $this->index + 1);
+    }
 
-	public function getChildren() {
-		return false;
-	}
+    public function getChildren()
+    {
+        return false;
+    }
 
-	public function getFirstChild() {
-		return false;
-	}
+    public function getFirstChild()
+    {
+        return false;
+    }
 
-	public function getChildrenOfType( $name ) {
-		return false;
-	}
+    public function getChildrenOfType($name)
+    {
+        return false;
+    }
 
-	public function getLength() {
-		return false;
-	}
+    public function getLength()
+    {
+        return false;
+    }
 
-	public function item( $i ) {
-		return false;
-	}
+    public function item($i)
+    {
+        return false;
+    }
 
-	public function getName() {
-		return '#text';
-	}
+    public function getName()
+    {
+        return '#text';
+    }
 
-	public function splitArg() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitArg()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitExt() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitExt()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitHeading() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitHeading()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 }

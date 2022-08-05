@@ -29,41 +29,45 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class PatchSql extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Run an SQL file into the DB, replacing prefix and charset vars' );
-		$this->addArg(
-			'patch-name',
-			'Name of the patch file, either full path or in maintenance/archives'
-		);
-	}
+class PatchSql extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Run an SQL file into the DB, replacing prefix and charset vars');
+        $this->addArg(
+            'patch-name',
+            'Name of the patch file, either full path or in maintenance/archives'
+        );
+    }
 
-	public function getDbType() {
-		return Maintenance::DB_ADMIN;
-	}
+    public function getDbType()
+    {
+        return Maintenance::DB_ADMIN;
+    }
 
-	public function execute() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$updater = DatabaseUpdater::newForDB( $dbw, true, $this );
+    public function execute()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $updater = DatabaseUpdater::newForDB($dbw, true, $this);
 
-		foreach ( $this->mArgs as $arg ) {
-			$files = [
-				$arg,
-				$updater->patchPath( $dbw, $arg ),
-				$updater->patchPath( $dbw, "patch-$arg.sql" ),
-			];
-			foreach ( $files as $file ) {
-				if ( file_exists( $file ) ) {
-					$this->output( "$file ...\n" );
-					$dbw->sourceFile( $file );
-					continue 2;
-				}
-			}
-			$this->error( "Could not find $arg\n" );
-		}
-		$this->output( "done.\n" );
-	}
+        foreach ($this->mArgs as $arg) {
+            $files = [
+                $arg,
+                $updater->patchPath($dbw, $arg),
+                $updater->patchPath($dbw, "patch-$arg.sql"),
+            ];
+            foreach ($files as $file) {
+                if (file_exists($file)) {
+                    $this->output("$file ...\n");
+                    $dbw->sourceFile($file);
+                    continue 2;
+                }
+            }
+            $this->error("Could not find $arg\n");
+        }
+        $this->output("done.\n");
+    }
 }
 
 $maintClass = PatchSql::class;

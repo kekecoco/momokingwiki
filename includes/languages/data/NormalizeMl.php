@@ -3,13 +3,14 @@
 
 namespace MediaWiki\Languages\Data;
 
-class NormalizeMl {
-	public const PAIRS = [
-		'ണ്‍' => 'ൺ',
-		'ന്‍' => 'ൻ',
-		'ര്‍' => 'ർ',
-		'ല്‍' => 'ൽ',
-		'ള്‍' => 'ൾ',
-		'ക്‍' => 'ൿ',
-	];
+class NormalizeMl
+{
+    public const PAIRS = [
+        'ണ്‍' => 'ൺ',
+        'ന്‍' => 'ൻ',
+        'ര്‍' => 'ർ',
+        'ല്‍' => 'ൽ',
+        'ള്‍' => 'ൾ',
+        'ക്‍' => 'ൿ',
+    ];
 }

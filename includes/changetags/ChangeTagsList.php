@@ -30,62 +30,66 @@ use MediaWiki\Permissions\Authority;
  * @method ChangeTagsLogItem reset()
  * @method ChangeTagsLogItem current()
  */
-abstract class ChangeTagsList extends RevisionListBase {
-	public function __construct( IContextSource $context, PageIdentity $page, array $ids ) {
-		parent::__construct( $context, $page );
-		$this->ids = $ids;
-	}
+abstract class ChangeTagsList extends RevisionListBase
+{
+    public function __construct(IContextSource $context, PageIdentity $page, array $ids)
+    {
+        parent::__construct($context, $page);
+        $this->ids = $ids;
+    }
 
-	/**
-	 * Creates a ChangeTags*List of the requested type.
-	 *
-	 * @param string $typeName 'revision' or 'logentry'
-	 * @param IContextSource $context
-	 * @param PageIdentity $page
-	 * @param array $ids
-	 * @return ChangeTagsList An instance of the requested subclass
-	 * @throws Exception If you give an unknown $typeName
-	 */
-	public static function factory( $typeName, IContextSource $context,
-		PageIdentity $page, array $ids
-	) {
-		switch ( $typeName ) {
-			case 'revision':
-				$className = ChangeTagsRevisionList::class;
-				break;
-			case 'logentry':
-				$className = ChangeTagsLogList::class;
-				break;
-			default:
-				throw new Exception( "Class $typeName requested, but does not exist" );
-		}
+    /**
+     * Creates a ChangeTags*List of the requested type.
+     *
+     * @param string $typeName 'revision' or 'logentry'
+     * @param IContextSource $context
+     * @param PageIdentity $page
+     * @param array $ids
+     * @return ChangeTagsList An instance of the requested subclass
+     * @throws Exception If you give an unknown $typeName
+     */
+    public static function factory($typeName, IContextSource $context,
+                                   PageIdentity $page, array $ids
+    )
+    {
+        switch ($typeName) {
+            case 'revision':
+                $className = ChangeTagsRevisionList::class;
+                break;
+            case 'logentry':
+                $className = ChangeTagsLogList::class;
+                break;
+            default:
+                throw new Exception("Class $typeName requested, but does not exist");
+        }
 
-		return new $className( $context, $page, $ids );
-	}
+        return new $className($context, $page, $ids);
+    }
 
-	/**
-	 * Reload the list data from the primary DB.
-	 */
-	public function reloadFromPrimary() {
-		$dbw = wfGetDB( DB_PRIMARY );
-		$this->res = $this->doQuery( $dbw );
-	}
+    /**
+     * Reload the list data from the primary DB.
+     */
+    public function reloadFromPrimary()
+    {
+        $dbw = wfGetDB(DB_PRIMARY);
+        $this->res = $this->doQuery($dbw);
+    }
 
-	/**
-	 * Add/remove change tags from all the items in the list.
-	 *
-	 * @param string[] $tagsToAdd
-	 * @param string[] $tagsToRemove
-	 * @param string|null $params
-	 * @param string $reason
-	 * @param Authority $performer
-	 * @return Status
-	 */
-	abstract public function updateChangeTagsOnAll(
-		array $tagsToAdd,
-		array $tagsToRemove,
-		?string $params,
-		string $reason,
-		Authority $performer
-	);
+    /**
+     * Add/remove change tags from all the items in the list.
+     *
+     * @param string[] $tagsToAdd
+     * @param string[] $tagsToRemove
+     * @param string|null $params
+     * @param string $reason
+     * @param Authority $performer
+     * @return Status
+     */
+    abstract public function updateChangeTagsOnAll(
+        array $tagsToAdd,
+        array $tagsToRemove,
+        ?string $params,
+        string $reason,
+        Authority $performer
+    );
 }

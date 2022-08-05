@@ -34,121 +34,132 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup SpecialPage
  */
-class SpecialMostLinkedTemplates extends QueryPage {
+class SpecialMostLinkedTemplates extends QueryPage
+{
 
-	/** @var LinksMigration */
-	private $linksMigration;
+    /** @var LinksMigration */
+    private $linksMigration;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LinksMigration $linksMigration
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LinksMigration $linksMigration
-	) {
-		parent::__construct( 'Mostlinkedtemplates' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->linksMigration = $linksMigration;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LinksMigration $linksMigration
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LinksMigration $linksMigration
+    )
+    {
+        parent::__construct('Mostlinkedtemplates');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->linksMigration = $linksMigration;
+    }
 
-	/**
-	 * Is this report expensive, i.e should it be cached?
-	 *
-	 * @return bool
-	 */
-	public function isExpensive() {
-		return true;
-	}
+    /**
+     * Is this report expensive, i.e should it be cached?
+     *
+     * @return bool
+     */
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	/**
-	 * Is there a feed available?
-	 *
-	 * @return bool
-	 */
-	public function isSyndicated() {
-		return false;
-	}
+    /**
+     * Is there a feed available?
+     *
+     * @return bool
+     */
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	/**
-	 * Sort the results in descending order?
-	 *
-	 * @return bool
-	 */
-	public function sortDescending() {
-		return true;
-	}
+    /**
+     * Sort the results in descending order?
+     *
+     * @return bool
+     */
+    public function sortDescending()
+    {
+        return true;
+    }
 
-	public function getQueryInfo() {
-		$queryInfo = $this->linksMigration->getQueryInfo( 'templatelinks' );
-		list( $ns, $title ) = $this->linksMigration->getTitleFields( 'templatelinks' );
-		return [
-			'tables' => $queryInfo['tables'],
-			'fields' => [
-				'namespace' => $ns,
-				'title' => $title,
-				'value' => 'COUNT(*)'
-			],
-			'options' => [ 'GROUP BY' => [ $ns, $title ] ],
-			'join_conds' => $queryInfo['joins']
-		];
-	}
+    public function getQueryInfo()
+    {
+        $queryInfo = $this->linksMigration->getQueryInfo('templatelinks');
+        [$ns, $title] = $this->linksMigration->getTitleFields('templatelinks');
 
-	/**
-	 * Pre-cache page existence to speed up link generation
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+        return [
+            'tables'     => $queryInfo['tables'],
+            'fields'     => [
+                'namespace' => $ns,
+                'title'     => $title,
+                'value'     => 'COUNT(*)'
+            ],
+            'options'    => ['GROUP BY' => [$ns, $title]],
+            'join_conds' => $queryInfo['joins']
+        ];
+    }
 
-	/**
-	 * Format a result row
-	 *
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$title = Title::makeTitleSafe( $result->namespace, $result->title );
-		if ( !$title ) {
-			return Html::element(
-				'span',
-				[ 'class' => 'mw-invalidtitle' ],
-				Linker::getInvalidTitleDescription(
-					$this->getContext(),
-					$result->namespace,
-					$result->title
-				)
-			);
-		}
+    /**
+     * Pre-cache page existence to speed up link generation
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-		return $this->getLanguage()->specialList(
-			$this->getLinkRenderer()->makeLink( $title ),
-			$this->makeWlhLink( $title, $result )
-		);
-	}
+    /**
+     * Format a result row
+     *
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $title = Title::makeTitleSafe($result->namespace, $result->title);
+        if (!$title) {
+            return Html::element(
+                'span',
+                ['class' => 'mw-invalidtitle'],
+                Linker::getInvalidTitleDescription(
+                    $this->getContext(),
+                    $result->namespace,
+                    $result->title
+                )
+            );
+        }
 
-	/**
-	 * Make a "what links here" link for a given title
-	 *
-	 * @param Title $title Title to make the link for
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	private function makeWlhLink( $title, $result ) {
-		$wlh = SpecialPage::getTitleFor( 'Whatlinkshere', $title->getPrefixedText() );
-		$label = $this->msg( 'ntransclusions' )->numParams( $result->value )->text();
+        return $this->getLanguage()->specialList(
+            $this->getLinkRenderer()->makeLink($title),
+            $this->makeWlhLink($title, $result)
+        );
+    }
 
-		return $this->getLinkRenderer()->makeLink( $wlh, $label );
-	}
+    /**
+     * Make a "what links here" link for a given title
+     *
+     * @param Title $title Title to make the link for
+     * @param stdClass $result Result row
+     * @return string
+     */
+    private function makeWlhLink($title, $result)
+    {
+        $wlh = SpecialPage::getTitleFor('Whatlinkshere', $title->getPrefixedText());
+        $label = $this->msg('ntransclusions')->numParams($result->value)->text();
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+        return $this->getLinkRenderer()->makeLink($wlh, $label);
+    }
+
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

@@ -26,27 +26,30 @@ use MediaWiki\MainConfigNames;
  * @group GlobalFunctions
  * @covers ::wfParseUrl
  */
-class WfParseUrlTest extends MediaWikiIntegrationTestCase {
-	protected function setUp(): void {
-		parent::setUp();
+class WfParseUrlTest extends MediaWikiIntegrationTestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->overrideConfigValue( MainConfigNames::UrlProtocols, [
-			'//',
-			'http://',
-			'https://',
-			'file://',
-			'mailto:',
-		] );
-	}
+        $this->overrideConfigValue(MainConfigNames::UrlProtocols, [
+            '//',
+            'http://',
+            'https://',
+            'file://',
+            'mailto:',
+        ]);
+    }
 
-	/**
-	 * Same tests as the UrlUtils method
-	 * @dataProvider UrlUtilsProviders::provideParse
-	 */
-	public function testWfParseUrl( $url, $parts ) {
-		$this->assertEquals(
-			$parts,
-			wfParseUrl( $url )
-		);
-	}
+    /**
+     * Same tests as the UrlUtils method
+     * @dataProvider UrlUtilsProviders::provideParse
+     */
+    public function testWfParseUrl($url, $parts)
+    {
+        $this->assertEquals(
+            $parts,
+            wfParseUrl($url)
+        );
+    }
 }

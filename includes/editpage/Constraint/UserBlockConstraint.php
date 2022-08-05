@@ -33,54 +33,60 @@ use User;
  * @internal
  * @author DannyS712
  */
-class UserBlockConstraint implements IEditConstraint {
+class UserBlockConstraint implements IEditConstraint
+{
 
-	/** @var PermissionManager */
-	private $permissionManager;
+    /** @var PermissionManager */
+    private $permissionManager;
 
-	/** @var LinkTarget */
-	private $title;
+    /** @var LinkTarget */
+    private $title;
 
-	/** @var User */
-	private $user;
+    /** @var User */
+    private $user;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param PermissionManager $permissionManager
-	 * @param LinkTarget $title
-	 * @param User $user
-	 */
-	public function __construct(
-		PermissionManager $permissionManager,
-		LinkTarget $title,
-		User $user
-	) {
-		$this->permissionManager = $permissionManager;
-		$this->title = $title;
-		$this->user = $user;
-	}
+    /**
+     * @param PermissionManager $permissionManager
+     * @param LinkTarget $title
+     * @param User $user
+     */
+    public function __construct(
+        PermissionManager $permissionManager,
+        LinkTarget $title,
+        User $user
+    )
+    {
+        $this->permissionManager = $permissionManager;
+        $this->title = $title;
+        $this->user = $user;
+    }
 
-	public function checkConstraint(): string {
-		// Check isn't simple enough to just repeat when getting the status
-		if ( $this->permissionManager->isBlockedFrom( $this->user, $this->title ) ) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+    public function checkConstraint(): string
+    {
+        // Check isn't simple enough to just repeat when getting the status
+        if ($this->permissionManager->isBlockedFrom($this->user, $this->title)) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        $this->result = self::CONSTRAINT_PASSED;
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->setResult( false, self::AS_BLOCKED_PAGE_FOR_USER );
-		}
+        return self::CONSTRAINT_PASSED;
+    }
 
-		return $statusValue;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->setResult(false, self::AS_BLOCKED_PAGE_FOR_USER);
+        }
+
+        return $statusValue;
+    }
 
 }

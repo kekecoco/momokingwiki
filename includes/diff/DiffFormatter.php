@@ -33,222 +33,236 @@
  * @todo document
  * @ingroup DifferenceEngine
  */
-abstract class DiffFormatter {
+abstract class DiffFormatter
+{
 
-	/** @var int Number of leading context "lines" to preserve.
-	 *
-	 * This should be left at zero for this class, but subclasses
-	 * may want to set this to other values.
-	 */
-	protected $leadingContextLines = 0;
+    /** @var int Number of leading context "lines" to preserve.
+     *
+     * This should be left at zero for this class, but subclasses
+     * may want to set this to other values.
+     */
+    protected $leadingContextLines = 0;
 
-	/** @var int Number of trailing context "lines" to preserve.
-	 *
-	 * This should be left at zero for this class, but subclasses
-	 * may want to set this to other values.
-	 */
-	protected $trailingContextLines = 0;
+    /** @var int Number of trailing context "lines" to preserve.
+     *
+     * This should be left at zero for this class, but subclasses
+     * may want to set this to other values.
+     */
+    protected $trailingContextLines = 0;
 
-	/** @var string The output buffer; holds the output while it is built. */
-	private $result = '';
+    /** @var string The output buffer; holds the output while it is built. */
+    private $result = '';
 
-	/**
-	 * Format a diff.
-	 *
-	 * @param Diff $diff
-	 *
-	 * @return string The formatted output.
-	 */
-	public function format( $diff ) {
-		$xi = $yi = 1;
-		$block = false;
-		$context = [];
+    /**
+     * Format a diff.
+     *
+     * @param Diff $diff
+     *
+     * @return string The formatted output.
+     */
+    public function format($diff)
+    {
+        $xi = $yi = 1;
+        $block = false;
+        $context = [];
 
-		$nlead = $this->leadingContextLines;
-		$ntrail = $this->trailingContextLines;
+        $nlead = $this->leadingContextLines;
+        $ntrail = $this->trailingContextLines;
 
-		$this->startDiff();
+        $this->startDiff();
 
-		// Initialize $x0 and $y0 to prevent IDEs from getting confused.
-		$x0 = $y0 = 0;
-		foreach ( $diff->edits as $edit ) {
-			if ( $edit->type == 'copy' ) {
-				if ( is_array( $block ) ) {
-					if ( count( $edit->orig ) <= $nlead + $ntrail ) {
-						$block[] = $edit;
-					} else {
-						if ( $ntrail ) {
-							$context = array_slice( $edit->orig, 0, $ntrail );
-							$block[] = new DiffOpCopy( $context );
-						}
-						$this->block( $x0, $ntrail + $xi - $x0,
-							$y0, $ntrail + $yi - $y0,
-							$block );
-						$block = false;
-					}
-				}
-				$context = $edit->orig;
-			} else {
-				if ( !is_array( $block ) ) {
-					$context = array_slice( $context, count( $context ) - $nlead );
-					$x0 = $xi - count( $context );
-					$y0 = $yi - count( $context );
-					$block = [];
-					if ( $context ) {
-						$block[] = new DiffOpCopy( $context );
-					}
-				}
-				$block[] = $edit;
-			}
+        // Initialize $x0 and $y0 to prevent IDEs from getting confused.
+        $x0 = $y0 = 0;
+        foreach ($diff->edits as $edit) {
+            if ($edit->type == 'copy') {
+                if (is_array($block)) {
+                    if (count($edit->orig) <= $nlead + $ntrail) {
+                        $block[] = $edit;
+                    } else {
+                        if ($ntrail) {
+                            $context = array_slice($edit->orig, 0, $ntrail);
+                            $block[] = new DiffOpCopy($context);
+                        }
+                        $this->block($x0, $ntrail + $xi - $x0,
+                            $y0, $ntrail + $yi - $y0,
+                            $block);
+                        $block = false;
+                    }
+                }
+                $context = $edit->orig;
+            } else {
+                if (!is_array($block)) {
+                    $context = array_slice($context, count($context) - $nlead);
+                    $x0 = $xi - count($context);
+                    $y0 = $yi - count($context);
+                    $block = [];
+                    if ($context) {
+                        $block[] = new DiffOpCopy($context);
+                    }
+                }
+                $block[] = $edit;
+            }
 
-			if ( $edit->orig ) {
-				$xi += count( $edit->orig );
-			}
-			if ( $edit->closing ) {
-				$yi += count( $edit->closing );
-			}
-		}
+            if ($edit->orig) {
+                $xi += count($edit->orig);
+            }
+            if ($edit->closing) {
+                $yi += count($edit->closing);
+            }
+        }
 
-		if ( is_array( $block ) ) {
-			$this->block( $x0, $xi - $x0,
-				$y0, $yi - $y0,
-				$block );
-		}
+        if (is_array($block)) {
+            $this->block($x0, $xi - $x0,
+                $y0, $yi - $y0,
+                $block);
+        }
 
-		$end = $this->endDiff();
+        $end = $this->endDiff();
 
-		return $end;
-	}
+        return $end;
+    }
 
-	/**
-	 * @param int $xbeg
-	 * @param int $xlen
-	 * @param int $ybeg
-	 * @param int $ylen
-	 * @param array &$edits
-	 *
-	 * @throws MWException If the edit type is not known.
-	 */
-	protected function block( $xbeg, $xlen, $ybeg, $ylen, &$edits ) {
-		$this->startBlock( $this->blockHeader( $xbeg, $xlen, $ybeg, $ylen ) );
-		foreach ( $edits as $edit ) {
-			if ( $edit->type == 'copy' ) {
-				$this->context( $edit->orig );
-			} elseif ( $edit->type == 'add' ) {
-				$this->added( $edit->closing );
-			} elseif ( $edit->type == 'delete' ) {
-				$this->deleted( $edit->orig );
-			} elseif ( $edit->type == 'change' ) {
-				$this->changed( $edit->orig, $edit->closing );
-			} else {
-				throw new MWException( "Unknown edit type: {$edit->type}" );
-			}
-		}
-		$this->endBlock();
-	}
+    /**
+     * @param int $xbeg
+     * @param int $xlen
+     * @param int $ybeg
+     * @param int $ylen
+     * @param array &$edits
+     *
+     * @throws MWException If the edit type is not known.
+     */
+    protected function block($xbeg, $xlen, $ybeg, $ylen, &$edits)
+    {
+        $this->startBlock($this->blockHeader($xbeg, $xlen, $ybeg, $ylen));
+        foreach ($edits as $edit) {
+            if ($edit->type == 'copy') {
+                $this->context($edit->orig);
+            } elseif ($edit->type == 'add') {
+                $this->added($edit->closing);
+            } elseif ($edit->type == 'delete') {
+                $this->deleted($edit->orig);
+            } elseif ($edit->type == 'change') {
+                $this->changed($edit->orig, $edit->closing);
+            } else {
+                throw new MWException("Unknown edit type: {$edit->type}");
+            }
+        }
+        $this->endBlock();
+    }
 
-	protected function startDiff() {
-		$this->result = '';
-	}
+    protected function startDiff()
+    {
+        $this->result = '';
+    }
 
-	/**
-	 * Writes a string to the output buffer.
-	 *
-	 * @param string $text
-	 */
-	protected function writeOutput( $text ) {
-		$this->result .= $text;
-	}
+    /**
+     * Writes a string to the output buffer.
+     *
+     * @param string $text
+     */
+    protected function writeOutput($text)
+    {
+        $this->result .= $text;
+    }
 
-	/**
-	 * @return string
-	 */
-	protected function endDiff() {
-		$val = $this->result;
-		$this->result = '';
+    /**
+     * @return string
+     */
+    protected function endDiff()
+    {
+        $val = $this->result;
+        $this->result = '';
 
-		return $val;
-	}
+        return $val;
+    }
 
-	/**
-	 * @param int $xbeg
-	 * @param int $xlen
-	 * @param int $ybeg
-	 * @param int $ylen
-	 *
-	 * @return string
-	 */
-	protected function blockHeader( $xbeg, $xlen, $ybeg, $ylen ) {
-		if ( $xlen > 1 ) {
-			$xbeg .= ',' . ( $xbeg + $xlen - 1 );
-		}
-		if ( $ylen > 1 ) {
-			$ybeg .= ',' . ( $ybeg + $ylen - 1 );
-		}
+    /**
+     * @param int $xbeg
+     * @param int $xlen
+     * @param int $ybeg
+     * @param int $ylen
+     *
+     * @return string
+     */
+    protected function blockHeader($xbeg, $xlen, $ybeg, $ylen)
+    {
+        if ($xlen > 1) {
+            $xbeg .= ',' . ($xbeg + $xlen - 1);
+        }
+        if ($ylen > 1) {
+            $ybeg .= ',' . ($ybeg + $ylen - 1);
+        }
 
-		return $xbeg . ( $xlen ? ( $ylen ? 'c' : 'd' ) : 'a' ) . $ybeg;
-	}
+        return $xbeg . ($xlen ? ($ylen ? 'c' : 'd') : 'a') . $ybeg;
+    }
 
-	/**
-	 * Called at the start of a block of connected edits.
-	 * This default implementation writes the header and a newline to the output buffer.
-	 *
-	 * @param string $header
-	 */
-	protected function startBlock( $header ) {
-		$this->writeOutput( $header . "\n" );
-	}
+    /**
+     * Called at the start of a block of connected edits.
+     * This default implementation writes the header and a newline to the output buffer.
+     *
+     * @param string $header
+     */
+    protected function startBlock($header)
+    {
+        $this->writeOutput($header . "\n");
+    }
 
-	/**
-	 * Called at the end of a block of connected edits.
-	 * This default implementation does nothing.
-	 */
-	protected function endBlock() {
-	}
+    /**
+     * Called at the end of a block of connected edits.
+     * This default implementation does nothing.
+     */
+    protected function endBlock()
+    {
+    }
 
-	/**
-	 * Writes all (optionally prefixed) lines to the output buffer, separated by newlines.
-	 *
-	 * @param string[] $lines
-	 * @param string $prefix
-	 */
-	protected function lines( $lines, $prefix = ' ' ) {
-		foreach ( $lines as $line ) {
-			$this->writeOutput( "$prefix $line\n" );
-		}
-	}
+    /**
+     * Writes all (optionally prefixed) lines to the output buffer, separated by newlines.
+     *
+     * @param string[] $lines
+     * @param string $prefix
+     */
+    protected function lines($lines, $prefix = ' ')
+    {
+        foreach ($lines as $line) {
+            $this->writeOutput("$prefix $line\n");
+        }
+    }
 
-	/**
-	 * @param string[] $lines
-	 */
-	protected function context( $lines ) {
-		$this->lines( $lines );
-	}
+    /**
+     * @param string[] $lines
+     */
+    protected function context($lines)
+    {
+        $this->lines($lines);
+    }
 
-	/**
-	 * @param string[] $lines
-	 */
-	protected function added( $lines ) {
-		$this->lines( $lines, '>' );
-	}
+    /**
+     * @param string[] $lines
+     */
+    protected function added($lines)
+    {
+        $this->lines($lines, '>');
+    }
 
-	/**
-	 * @param string[] $lines
-	 */
-	protected function deleted( $lines ) {
-		$this->lines( $lines, '<' );
-	}
+    /**
+     * @param string[] $lines
+     */
+    protected function deleted($lines)
+    {
+        $this->lines($lines, '<');
+    }
 
-	/**
-	 * Writes the two sets of lines to the output buffer, separated by "---" and a newline.
-	 *
-	 * @param string[] $orig
-	 * @param string[] $closing
-	 */
-	protected function changed( $orig, $closing ) {
-		$this->deleted( $orig );
-		$this->writeOutput( "---\n" );
-		$this->added( $closing );
-	}
+    /**
+     * Writes the two sets of lines to the output buffer, separated by "---" and a newline.
+     *
+     * @param string[] $orig
+     * @param string[] $closing
+     */
+    protected function changed($orig, $closing)
+    {
+        $this->deleted($orig);
+        $this->writeOutput("---\n");
+        $this->added($closing);
+    }
 
 }

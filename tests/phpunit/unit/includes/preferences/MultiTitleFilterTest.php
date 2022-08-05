@@ -27,125 +27,136 @@ use MediaWiki\Preferences\MultiTitleFilter;
  * @group Preferences
  * @coversDefaultClass \MediaWiki\Preferences\MultiTitleFilter
  */
-class MultiTitleFilterTest extends MediaWikiUnitTestCase {
+class MultiTitleFilterTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @covers ::__construct
-	 */
-	public function testConstructNoArgs() {
-		$this->assertInstanceOf( MultiTitleFilter::class, new MultiTitleFilter() );
-	}
+    /**
+     * @covers ::__construct
+     */
+    public function testConstructNoArgs()
+    {
+        $this->assertInstanceOf(MultiTitleFilter::class, new MultiTitleFilter());
+    }
 
-	/**
-	 * @covers ::__construct
-	 */
-	public function testConstructTitleFactory() {
-		$this->assertInstanceOf(
-			MultiTitleFilter::class,
-			new MultiTitleFilter( new TitleFactory() )
-		);
-	}
+    /**
+     * @covers ::__construct
+     */
+    public function testConstructTitleFactory()
+    {
+        $this->assertInstanceOf(
+            MultiTitleFilter::class,
+            new MultiTitleFilter(new TitleFactory())
+        );
+    }
 
-	/**
-	 * @covers ::filterForForm
-	 * @dataProvider filterForFormDataProvider
-	 */
-	public function testFilterForForm( $expected, $inputValue, $newFromIDsReturnValue ) {
-		$titleFormatter = $this->createMock( TitleFormatter::class );
-		$titleFormatter->method( 'getPrefixedText' )
-			->willReturnOnConsecutiveCalls(
-				...array_map(
-					static function ( $t ) {
-						return $t->getPrefixedText();
-					},
-					$newFromIDsReturnValue
-				)
-			);
-		$pageStore = $this->getPageStore( $newFromIDsReturnValue );
-		$multiTitleFilter = new MultiTitleFilter( null, $pageStore, $titleFormatter );
-		$this->assertSame( $expected, $multiTitleFilter->filterForForm( $inputValue ) );
-	}
+    /**
+     * @covers ::filterForForm
+     * @dataProvider filterForFormDataProvider
+     */
+    public function testFilterForForm($expected, $inputValue, $newFromIDsReturnValue)
+    {
+        $titleFormatter = $this->createMock(TitleFormatter::class);
+        $titleFormatter->method('getPrefixedText')
+            ->willReturnOnConsecutiveCalls(
+                ...array_map(
+                    static function ($t) {
+                        return $t->getPrefixedText();
+                    },
+                    $newFromIDsReturnValue
+                )
+            );
+        $pageStore = $this->getPageStore($newFromIDsReturnValue);
+        $multiTitleFilter = new MultiTitleFilter(null, $pageStore, $titleFormatter);
+        $this->assertSame($expected, $multiTitleFilter->filterForForm($inputValue));
+    }
 
-	private function getPageStore( $mockFetchPageRecordsReturn ): PageStore {
-		$pageSelectQueryBuilder = $this->getMockBuilder( PageSelectQueryBuilder::class )
-			->disableOriginalConstructor()
-			->onlyMethods( [ 'fetchPageRecords' ] )
-			->getMock();
-		$pageSelectQueryBuilder->method( 'fetchPageRecords' )
-			->willReturn( new ArrayIterator( $mockFetchPageRecordsReturn ) );
+    private function getPageStore($mockFetchPageRecordsReturn): PageStore
+    {
+        $pageSelectQueryBuilder = $this->getMockBuilder(PageSelectQueryBuilder::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['fetchPageRecords'])
+            ->getMock();
+        $pageSelectQueryBuilder->method('fetchPageRecords')
+            ->willReturn(new ArrayIterator($mockFetchPageRecordsReturn));
 
-		$pageStore = $this->createMock( PageStore::class );
-		$pageStore->method( 'newSelectQueryBuilder' )
-			->willReturn( $pageSelectQueryBuilder );
+        $pageStore = $this->createMock(PageStore::class);
+        $pageStore->method('newSelectQueryBuilder')
+            ->willReturn($pageSelectQueryBuilder);
 
-		return $pageStore;
-	}
+        return $pageStore;
+    }
 
-	public function filterForFormDataProvider(): array {
-		return [
-			[
-				'',
-				'',
-				[]
-			],
-			[
-				'',
-				"2\n\3\n\42",
-				[]
-			],
-			[
-				"Foo\nBar",
-				"2\n\3\n\42",
-				[
-					$this->getMockTitle( 'Foo' ),
-					$this->getMockTitle( 'Bar' )
-				]
-			]
-		];
-	}
+    public function filterForFormDataProvider(): array
+    {
+        return [
+            [
+                '',
+                '',
+                []
+            ],
+            [
+                '',
+                "2\n\3\n\42",
+                []
+            ],
+            [
+                "Foo\nBar",
+                "2\n\3\n\42",
+                [
+                    $this->getMockTitle('Foo'),
+                    $this->getMockTitle('Bar')
+                ]
+            ]
+        ];
+    }
 
-	/**
-	 * @covers ::filterFromForm
-	 * @dataProvider filterFromFormDataProvider
-	 */
-	public function testFilterFromForm( $expected, $titles, $newFromTextValue ) {
-		$pageStore = $this->createMock( PageStore::class );
-		$pageStore->method( 'getPageByText' )
-			->willReturnOnConsecutiveCalls( $newFromTextValue );
-		$multiTitleFilter = new MultiTitleFilter( null, $pageStore );
-		$this->assertSame( $expected, $multiTitleFilter->filterFromForm( $titles ) );
-	}
+    /**
+     * @covers ::filterFromForm
+     * @dataProvider filterFromFormDataProvider
+     */
+    public function testFilterFromForm($expected, $titles, $newFromTextValue)
+    {
+        $pageStore = $this->createMock(PageStore::class);
+        $pageStore->method('getPageByText')
+            ->willReturnOnConsecutiveCalls($newFromTextValue);
+        $multiTitleFilter = new MultiTitleFilter(null, $pageStore);
+        $this->assertSame($expected, $multiTitleFilter->filterFromForm($titles));
+    }
 
-	public function filterFromFormDataProvider(): array {
-		return [
-			[
-				null,
-				'',
-				$this->getMockPageIdentityValue( 0, 'Foo' ),
-			],
-			[
-				"42",
-				"Foo",
-				$this->getMockPageIdentityValue( 42, 'Foo' )
-			],
-			[
-				"",
-				"Bar",
-				$this->getMockPageIdentityValue( 0, 'Bar' )
-			]
+    public function filterFromFormDataProvider(): array
+    {
+        return [
+            [
+                null,
+                '',
+                $this->getMockPageIdentityValue(0, 'Foo'),
+            ],
+            [
+                "42",
+                "Foo",
+                $this->getMockPageIdentityValue(42, 'Foo')
+            ],
+            [
+                "",
+                "Bar",
+                $this->getMockPageIdentityValue(0, 'Bar')
+            ]
 
-		];
-	}
+        ];
+    }
 
-	private function getMockPageIdentityValue( int $pageId, string $dbKey ) {
-		return new PageIdentityValue( $pageId, NS_MAIN, $dbKey, PageIdentityValue::LOCAL );
-	}
+    private function getMockPageIdentityValue(int $pageId, string $dbKey)
+    {
+        return new PageIdentityValue($pageId, NS_MAIN, $dbKey, PageIdentityValue::LOCAL);
+    }
 
-	private function getMockTitle( $getTextResult, $articleId = 0 ) {
-		$title = $this->createMock( Title::class );
-		$title->method( 'getPrefixedText' )->willReturn( $getTextResult );
-		$title->method( 'getArticleID' )->willReturn( $articleId );
-		return $title;
-	}
+    private function getMockTitle($getTextResult, $articleId = 0)
+    {
+        $title = $this->createMock(Title::class);
+        $title->method('getPrefixedText')->willReturn($getTextResult);
+        $title->method('getArticleID')->willReturn($articleId);
+
+        return $title;
+    }
 
 }

@@ -26,56 +26,59 @@
  *
  * @since 1.26
  */
-class DBAccessObjectUtils implements IDBAccessObject {
-	/**
-	 * @param int $bitfield
-	 * @param int $flags IDBAccessObject::READ_* constant
-	 * @return bool Bitfield has flag $flag set
-	 */
-	public static function hasFlags( $bitfield, $flags ) {
-		return ( $bitfield & $flags ) == $flags;
-	}
+class DBAccessObjectUtils implements IDBAccessObject
+{
+    /**
+     * @param int $bitfield
+     * @param int $flags IDBAccessObject::READ_* constant
+     * @return bool Bitfield has flag $flag set
+     */
+    public static function hasFlags($bitfield, $flags)
+    {
+        return ($bitfield & $flags) == $flags;
+    }
 
-	/**
-	 * Get an appropriate DB index, options, and fallback DB index for a query
-	 *
-	 * The fallback DB index and options are to be used if the entity is not found
-	 * with the initial DB index, typically querying the primary DB to avoid lag
-	 *
-	 * @param int $bitfield Bitfield of IDBAccessObject::READ_* constants
-	 * @return array List of DB indexes and options in this order:
-	 *   - DB_PRIMARY or DB_REPLICA constant for the initial query
-	 *   - SELECT options array for the initial query
-	 *   - DB_PRIMARY constant for the fallback query; null if no fallback should happen
-	 *   - SELECT options array for the fallback query; empty if no fallback should happen
-	 */
-	public static function getDBOptions( $bitfield ) {
-		if ( self::hasFlags( $bitfield, self::READ_LATEST_IMMUTABLE ) ) {
-			$index = DB_REPLICA; // override READ_LATEST if set
-			$fallbackIndex = DB_PRIMARY;
-		} elseif ( self::hasFlags( $bitfield, self::READ_LATEST ) ) {
-			$index = DB_PRIMARY;
-			$fallbackIndex = null;
-		} else {
-			$index = DB_REPLICA;
-			$fallbackIndex = null;
-		}
+    /**
+     * Get an appropriate DB index, options, and fallback DB index for a query
+     *
+     * The fallback DB index and options are to be used if the entity is not found
+     * with the initial DB index, typically querying the primary DB to avoid lag
+     *
+     * @param int $bitfield Bitfield of IDBAccessObject::READ_* constants
+     * @return array List of DB indexes and options in this order:
+     *   - DB_PRIMARY or DB_REPLICA constant for the initial query
+     *   - SELECT options array for the initial query
+     *   - DB_PRIMARY constant for the fallback query; null if no fallback should happen
+     *   - SELECT options array for the fallback query; empty if no fallback should happen
+     */
+    public static function getDBOptions($bitfield)
+    {
+        if (self::hasFlags($bitfield, self::READ_LATEST_IMMUTABLE)) {
+            $index = DB_REPLICA; // override READ_LATEST if set
+            $fallbackIndex = DB_PRIMARY;
+        } elseif (self::hasFlags($bitfield, self::READ_LATEST)) {
+            $index = DB_PRIMARY;
+            $fallbackIndex = null;
+        } else {
+            $index = DB_REPLICA;
+            $fallbackIndex = null;
+        }
 
-		$lockingOptions = [];
-		if ( self::hasFlags( $bitfield, self::READ_EXCLUSIVE ) ) {
-			$lockingOptions[] = 'FOR UPDATE';
-		} elseif ( self::hasFlags( $bitfield, self::READ_LOCKING ) ) {
-			$lockingOptions[] = 'LOCK IN SHARE MODE';
-		}
+        $lockingOptions = [];
+        if (self::hasFlags($bitfield, self::READ_EXCLUSIVE)) {
+            $lockingOptions[] = 'FOR UPDATE';
+        } elseif (self::hasFlags($bitfield, self::READ_LOCKING)) {
+            $lockingOptions[] = 'LOCK IN SHARE MODE';
+        }
 
-		if ( $fallbackIndex !== null ) {
-			$options = []; // locks on DB_REPLICA make no sense
-			$fallbackOptions = $lockingOptions;
-		} else {
-			$options = $lockingOptions;
-			$fallbackOptions = []; // no fallback
-		}
+        if ($fallbackIndex !== null) {
+            $options = []; // locks on DB_REPLICA make no sense
+            $fallbackOptions = $lockingOptions;
+        } else {
+            $options = $lockingOptions;
+            $fallbackOptions = []; // no fallback
+        }
 
-		return [ $index, $options, $fallbackIndex, $fallbackOptions ];
-	}
+        return [$index, $options, $fallbackIndex, $fallbackOptions];
+    }
 }

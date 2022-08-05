@@ -36,49 +36,54 @@ use Wikimedia\StaticArrayWriter;
 
 require_once __DIR__ . '/../Maintenance.php';
 
-class GenerateUcfirstOverrides extends Maintenance {
+class GenerateUcfirstOverrides extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Generates a php source file containing a definition for mb_strtoupper overrides' );
-		$this->addOption( 'outfile', 'Output file', true, true, 'o' );
-		$this->addOption( 'override', 'Char table we want to override', true, true );
-		$this->addOption( 'with', 'Char table we want to obtain', true, true );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Generates a php source file containing a definition for mb_strtoupper overrides');
+        $this->addOption('outfile', 'Output file', true, true, 'o');
+        $this->addOption('override', 'Char table we want to override', true, true);
+        $this->addOption('with', 'Char table we want to obtain', true, true);
+    }
 
-	public function execute() {
-		$outfile = $this->getOption( 'outfile' );
-		$from = $this->loadJson( $this->getOption( 'override' ) );
-		$to = $this->loadJson( $this->getOption( 'with' ) );
-		$overrides = [];
+    public function execute()
+    {
+        $outfile = $this->getOption('outfile');
+        $from = $this->loadJson($this->getOption('override'));
+        $to = $this->loadJson($this->getOption('with'));
+        $overrides = [];
 
-		foreach ( $from as $lc => $uc ) {
-			$ref = $to[$lc] ?? null;
-			if ( $ref !== null && $ref !== $uc ) {
-				$overrides[$lc] = $ref;
-			}
-		}
-		$writer = new StaticArrayWriter();
-		file_put_contents(
-			$outfile,
-			$writer->create( $overrides, 'File created by generateUcfirstOverrides.php' )
-		);
-	}
+        foreach ($from as $lc => $uc) {
+            $ref = $to[$lc] ?? null;
+            if ($ref !== null && $ref !== $uc) {
+                $overrides[$lc] = $ref;
+            }
+        }
+        $writer = new StaticArrayWriter();
+        file_put_contents(
+            $outfile,
+            $writer->create($overrides, 'File created by generateUcfirstOverrides.php')
+        );
+    }
 
-	private function loadJson( $filename ) {
-		$data = file_get_contents( $filename );
-		if ( $data === false ) {
-			$msg = sprintf( "Could not load data from file '%s'\n", $filename );
-			$this->fatalError( $msg );
-		}
-		$json = json_decode( $data, true );
-		if ( $json === null ) {
-			$msg = sprintf( "Invalid json in the data file %s\n", $filename );
-			$this->fatalError( $msg, 2 );
-		}
-		return $json;
-	}
+    private function loadJson($filename)
+    {
+        $data = file_get_contents($filename);
+        if ($data === false) {
+            $msg = sprintf("Could not load data from file '%s'\n", $filename);
+            $this->fatalError($msg);
+        }
+        $json = json_decode($data, true);
+        if ($json === null) {
+            $msg = sprintf("Invalid json in the data file %s\n", $filename);
+            $this->fatalError($msg, 2);
+        }
+
+        return $json;
+    }
 }
 
 $maintClass = GenerateUcfirstOverrides::class;

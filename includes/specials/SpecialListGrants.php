@@ -30,73 +30,77 @@ use MediaWiki\Permissions\GrantsLocalization;
  *
  * @ingroup SpecialPage
  */
-class SpecialListGrants extends SpecialPage {
-	/** @var GrantsLocalization */
-	private $grantsLocalization;
+class SpecialListGrants extends SpecialPage
+{
+    /** @var GrantsLocalization */
+    private $grantsLocalization;
 
-	public function __construct( GrantsLocalization $grantsLocalization ) {
-		parent::__construct( 'Listgrants' );
-		$this->grantsLocalization = $grantsLocalization;
-	}
+    public function __construct(GrantsLocalization $grantsLocalization)
+    {
+        parent::__construct('Listgrants');
+        $this->grantsLocalization = $grantsLocalization;
+    }
 
-	/**
-	 * Show the special page
-	 * @param string|null $par
-	 */
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
+    /**
+     * Show the special page
+     * @param string|null $par
+     */
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
 
-		$out = $this->getOutput();
-		$out->addModuleStyles( 'mediawiki.special' );
+        $out = $this->getOutput();
+        $out->addModuleStyles('mediawiki.special');
 
-		$out->addHTML(
-			\Html::openElement( 'table',
-				[ 'class' => 'wikitable mw-listgrouprights-table' ] ) .
-				'<tr>' .
-				\Html::element( 'th', [], $this->msg( 'listgrants-grant' )->text() ) .
-				\Html::element( 'th', [], $this->msg( 'listgrants-rights' )->text() ) .
-				'</tr>'
-		);
+        $out->addHTML(
+            \Html::openElement('table',
+                ['class' => 'wikitable mw-listgrouprights-table']) .
+            '<tr>' .
+            \Html::element('th', [], $this->msg('listgrants-grant')->text()) .
+            \Html::element('th', [], $this->msg('listgrants-rights')->text()) .
+            '</tr>'
+        );
 
-		$lang = $this->getLanguage();
+        $lang = $this->getLanguage();
 
-		foreach (
-			$this->getConfig()->get( MainConfigNames::GrantPermissions ) as $grant => $rights
-		) {
-			$descs = [];
-			$rights = array_filter( $rights ); // remove ones with 'false'
-			foreach ( $rights as $permission => $granted ) {
-				$descs[] = $this->msg(
-					'listgrouprights-right-display',
-					\User::getRightDescription( $permission ),
-					'<span class="mw-listgrants-right-name">' . $permission . '</span>'
-				)->parse();
-			}
-			if ( $descs === [] ) {
-				$grantCellHtml = '';
-			} else {
-				sort( $descs );
-				$grantCellHtml = '<ul><li>' . implode( "</li>\n<li>", $descs ) . '</li></ul>';
-			}
+        foreach (
+            $this->getConfig()->get(MainConfigNames::GrantPermissions) as $grant => $rights
+        ) {
+            $descs = [];
+            $rights = array_filter($rights); // remove ones with 'false'
+            foreach ($rights as $permission => $granted) {
+                $descs[] = $this->msg(
+                    'listgrouprights-right-display',
+                    \User::getRightDescription($permission),
+                    '<span class="mw-listgrants-right-name">' . $permission . '</span>'
+                )->parse();
+            }
+            if ($descs === []) {
+                $grantCellHtml = '';
+            } else {
+                sort($descs);
+                $grantCellHtml = '<ul><li>' . implode("</li>\n<li>", $descs) . '</li></ul>';
+            }
 
-			$id = Sanitizer::escapeIdForAttribute( $grant );
-			$out->addHTML( \Html::rawElement( 'tr', [ 'id' => $id ],
-				"<td>" .
-				$this->msg(
-					"listgrants-grant-display",
-					$this->grantsLocalization->getGrantDescription( $grant, $lang ),
-					"<span class='mw-listgrants-grant-name'>" . $id . "</span>"
-				)->parse() .
-				"</td>" .
-				"<td>" . $grantCellHtml . "</td>"
-			) );
-		}
+            $id = Sanitizer::escapeIdForAttribute($grant);
+            $out->addHTML(\Html::rawElement('tr', ['id' => $id],
+                "<td>" .
+                $this->msg(
+                    "listgrants-grant-display",
+                    $this->grantsLocalization->getGrantDescription($grant, $lang),
+                    "<span class='mw-listgrants-grant-name'>" . $id . "</span>"
+                )->parse() .
+                "</td>" .
+                "<td>" . $grantCellHtml . "</td>"
+            ));
+        }
 
-		$out->addHTML( \Html::closeElement( 'table' ) );
-	}
+        $out->addHTML(\Html::closeElement('table'));
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 }

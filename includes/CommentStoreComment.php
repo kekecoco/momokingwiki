@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -27,65 +28,69 @@ use MediaWiki\MediaWikiServices;
  * @ingroup CommentStore
  * @since 1.30
  */
-class CommentStoreComment {
+class CommentStoreComment
+{
 
-	/** @var int|null Comment ID, if any */
-	public $id;
+    /** @var int|null Comment ID, if any */
+    public $id;
 
-	/** @var string Text version of the comment */
-	public $text;
+    /** @var string Text version of the comment */
+    public $text;
 
-	/** @var Message Message version of the comment. Might be a RawMessage */
-	public $message;
+    /** @var Message Message version of the comment. Might be a RawMessage */
+    public $message;
 
-	/** @var array|null Structured data of the comment */
-	public $data;
+    /** @var array|null Structured data of the comment */
+    public $data;
 
-	/**
-	 * @internal For use by CommentStore only. Use self::newUnsavedComment() instead.
-	 * @param int|null $id
-	 * @param string $text
-	 * @param Message|null $message
-	 * @param array|null $data
-	 */
-	public function __construct( $id, $text, Message $message = null, array $data = null ) {
-		$this->id = $id;
-		$this->text = $text;
-		$this->message = $message ?: new RawMessage( '$1', [ Message::plaintextParam( $text ) ] );
-		$this->data = $data;
-	}
+    /**
+     * @param int|null $id
+     * @param string $text
+     * @param Message|null $message
+     * @param array|null $data
+     * @internal For use by CommentStore only. Use self::newUnsavedComment() instead.
+     */
+    public function __construct($id, $text, Message $message = null, array $data = null)
+    {
+        $this->id = $id;
+        $this->text = $text;
+        $this->message = $message ?: new RawMessage('$1', [Message::plaintextParam($text)]);
+        $this->data = $data;
+    }
 
-	/**
-	 * Create a new, unsaved CommentStoreComment
-	 *
-	 * @param string|Message|CommentStoreComment $comment Comment text or Message object.
-	 *  A CommentStoreComment is also accepted here, in which case it is returned unchanged.
-	 * @param array|null $data Structured data to store. Keys beginning with '_' are reserved.
-	 *  Ignored if $comment is a CommentStoreComment.
-	 * @return CommentStoreComment
-	 */
-	public static function newUnsavedComment( $comment, array $data = null ) {
-		if ( $comment instanceof CommentStoreComment ) {
-			return $comment;
-		}
+    /**
+     * Create a new, unsaved CommentStoreComment
+     *
+     * @param string|Message|CommentStoreComment $comment Comment text or Message object.
+     *  A CommentStoreComment is also accepted here, in which case it is returned unchanged.
+     * @param array|null $data Structured data to store. Keys beginning with '_' are reserved.
+     *  Ignored if $comment is a CommentStoreComment.
+     * @return CommentStoreComment
+     */
+    public static function newUnsavedComment($comment, array $data = null)
+    {
+        if ($comment instanceof CommentStoreComment) {
+            return $comment;
+        }
 
-		if ( $data !== null ) {
-			foreach ( $data as $k => $v ) {
-				if ( substr( $k, 0, 1 ) === '_' ) {
-					throw new InvalidArgumentException( 'Keys in $data beginning with "_" are reserved' );
-				}
-			}
-		}
+        if ($data !== null) {
+            foreach ($data as $k => $v) {
+                if (substr($k, 0, 1) === '_') {
+                    throw new InvalidArgumentException('Keys in $data beginning with "_" are reserved');
+                }
+            }
+        }
 
-		if ( $comment instanceof Message ) {
-			$message = clone $comment;
-			// Avoid $wgForceUIMsgAsContentMsg
-			$text = $message->inLanguage( MediaWikiServices::getInstance()->getContentLanguage() )
-				->setInterfaceMessageFlag( true )
-				->text();
-			return new CommentStoreComment( null, $text, $message, $data );
-		} else {
-			return new CommentStoreComment( null, $comment, null, $data );
-		}
-	}
+        if ($comment instanceof Message) {
+            $message = clone $comment;
+            // Avoid $wgForceUIMsgAsContentMsg
+            $text = $message->inLanguage(MediaWikiServices::getInstance()->getContentLanguage())
+                ->setInterfaceMessageFlag(true)
+                ->text();
+
+            return new CommentStoreComment(null, $text, $message, $data);
+        } else {
+            return new CommentStoreComment(null, $comment, null, $data);
+        }
+    }
 }

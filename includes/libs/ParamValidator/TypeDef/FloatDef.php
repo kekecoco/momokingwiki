@@ -26,37 +26,42 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @since 1.34
  * @unstable
  */
-class FloatDef extends NumericDef {
+class FloatDef extends NumericDef
+{
 
-	protected $valueType = 'double';
+    protected $valueType = 'double';
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		// Use a regex so as to avoid any potential oddness PHP's default conversion might allow.
-		if ( !preg_match( '/^[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?$/D', $value ) ) {
-			$this->failure( 'badfloat', $name, $value, $settings, $options );
-		}
+    public function validate($name, $value, array $settings, array $options)
+    {
+        // Use a regex so as to avoid any potential oddness PHP's default conversion might allow.
+        if (!preg_match('/^[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?$/D', $value)) {
+            $this->failure('badfloat', $name, $value, $settings, $options);
+        }
 
-		$ret = (float)$value;
-		if ( !is_finite( $ret ) ) {
-			$this->failure( 'badfloat-notfinite', $name, $value, $settings, $options );
-		}
+        $ret = (float)$value;
+        if (!is_finite($ret)) {
+            $this->failure('badfloat-notfinite', $name, $value, $settings, $options);
+        }
 
-		return $this->checkRange( $ret, $name, $value, $settings, $options );
-	}
+        return $this->checkRange($ret, $name, $value, $settings, $options);
+    }
 
-	public function stringifyValue( $name, $value, array $settings, array $options ) {
-		// Ensure sufficient precision for round-tripping. PHP_FLOAT_DIG was added in PHP 7.2.
-		$digits = defined( 'PHP_FLOAT_DIG' ) ? PHP_FLOAT_DIG : 15;
-		return sprintf( "%.{$digits}g", $value );
-	}
+    public function stringifyValue($name, $value, array $settings, array $options)
+    {
+        // Ensure sufficient precision for round-tripping. PHP_FLOAT_DIG was added in PHP 7.2.
+        $digits = defined('PHP_FLOAT_DIG') ? PHP_FLOAT_DIG : 15;
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+        return sprintf("%.{$digits}g", $value);
+    }
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new( 'paramvalidator-help-type-float' )
-			->params( empty( $settings[ParamValidator::PARAM_ISMULTI] ) ? 1 : 2 );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		return $info;
-	}
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new('paramvalidator-help-type-float')
+            ->params(empty($settings[ParamValidator::PARAM_ISMULTI]) ? 1 : 2);
+
+        return $info;
+    }
 
 }

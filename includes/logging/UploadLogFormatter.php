@@ -27,23 +27,25 @@
  *
  * @since 1.25
  */
-class UploadLogFormatter extends LogFormatter {
+class UploadLogFormatter extends LogFormatter
+{
 
-	protected function getParametersForApi() {
-		$entry = $this->entry;
-		$params = $entry->getParameters();
+    protected function getParametersForApi()
+    {
+        $entry = $this->entry;
+        $params = $entry->getParameters();
 
-		static $map = [
-			'img_timestamp' => ':timestamp:img_timestamp',
-		];
-		foreach ( $map as $index => $key ) {
-			if ( isset( $params[$index] ) ) {
-				$params[$key] = $params[$index];
-				unset( $params[$index] );
-			}
-		}
+        static $map = [
+            'img_timestamp' => ':timestamp:img_timestamp',
+        ];
+        foreach ($map as $index => $key) {
+            if (isset($params[$index])) {
+                $params[$key] = $params[$index];
+                unset($params[$index]);
+            }
+        }
 
-		return $params;
-	}
+        return $params;
+    }
 
 }

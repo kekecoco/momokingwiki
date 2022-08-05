@@ -27,76 +27,83 @@ use Wikimedia\AtEase\AtEase;
  * Store a file into the backend from a file on the file system.
  * Parameters for this operation are outlined in FileBackend::doOperations().
  */
-class StoreFileOp extends FileOp {
-	protected function allowedParams() {
-		return [
-			[ 'src', 'dst' ],
-			[ 'overwrite', 'overwriteSame', 'headers' ],
-			[ 'src', 'dst' ]
-		];
-	}
+class StoreFileOp extends FileOp
+{
+    protected function allowedParams()
+    {
+        return [
+            ['src', 'dst'],
+            ['overwrite', 'overwriteSame', 'headers'],
+            ['src', 'dst']
+        ];
+    }
 
-	protected function doPrecheck( array &$predicates ) {
-		$status = StatusValue::newGood();
+    protected function doPrecheck(array &$predicates)
+    {
+        $status = StatusValue::newGood();
 
-		// Check if the source file exists in the file system and is not too big
-		if ( !is_file( $this->params['src'] ) ) {
-			$status->fatal( 'backend-fail-notexists', $this->params['src'] );
+        // Check if the source file exists in the file system and is not too big
+        if (!is_file($this->params['src'])) {
+            $status->fatal('backend-fail-notexists', $this->params['src']);
 
-			return $status;
-		}
-		// Check if the source file is too big
-		$maxBytes = $this->backend->maxFileSizeInternal();
-		if ( filesize( $this->params['src'] ) > $maxBytes ) {
-			$status->fatal( 'backend-fail-maxsize', $this->params['dst'], $maxBytes );
+            return $status;
+        }
+        // Check if the source file is too big
+        $maxBytes = $this->backend->maxFileSizeInternal();
+        if (filesize($this->params['src']) > $maxBytes) {
+            $status->fatal('backend-fail-maxsize', $this->params['dst'], $maxBytes);
 
-			return $status;
-		}
-		// Check if an incompatible destination file exists
-		$status->merge( $this->precheckDestExistence( $predicates ) );
-		$this->params['dstExists'] = $this->destExists; // see FileBackendStore::setFileCache()
+            return $status;
+        }
+        // Check if an incompatible destination file exists
+        $status->merge($this->precheckDestExistence($predicates));
+        $this->params['dstExists'] = $this->destExists; // see FileBackendStore::setFileCache()
 
-		// Update file existence predicates if the operation is expected to be allowed to run
-		if ( $status->isOK() ) {
-			$predicates[self::ASSUMED_EXISTS][$this->params['dst']] = true;
-			$predicates[self::ASSUMED_SIZE][$this->params['dst']] = $this->sourceSize;
-			$predicates[self::ASSUMED_SHA1][$this->params['dst']] = $this->sourceSha1;
-		}
+        // Update file existence predicates if the operation is expected to be allowed to run
+        if ($status->isOK()) {
+            $predicates[self::ASSUMED_EXISTS][$this->params['dst']] = true;
+            $predicates[self::ASSUMED_SIZE][$this->params['dst']] = $this->sourceSize;
+            $predicates[self::ASSUMED_SHA1][$this->params['dst']] = $this->sourceSha1;
+        }
 
-		return $status; // safe to call attempt()
-	}
+        return $status; // safe to call attempt()
+    }
 
-	protected function doAttempt() {
-		if ( $this->overwriteSameCase ) {
-			$status = StatusValue::newGood(); // nothing to do
-		} else {
-			// Store the file at the destination
-			$status = $this->backend->storeInternal( $this->setFlags( $this->params ) );
-		}
+    protected function doAttempt()
+    {
+        if ($this->overwriteSameCase) {
+            $status = StatusValue::newGood(); // nothing to do
+        } else {
+            // Store the file at the destination
+            $status = $this->backend->storeInternal($this->setFlags($this->params));
+        }
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function getSourceSize() {
-		AtEase::suppressWarnings();
-		$size = filesize( $this->params['src'] );
-		AtEase::restoreWarnings();
+    protected function getSourceSize()
+    {
+        AtEase::suppressWarnings();
+        $size = filesize($this->params['src']);
+        AtEase::restoreWarnings();
 
-		return $size;
-	}
+        return $size;
+    }
 
-	protected function getSourceSha1Base36() {
-		AtEase::suppressWarnings();
-		$hash = sha1_file( $this->params['src'] );
-		AtEase::restoreWarnings();
-		if ( $hash !== false ) {
-			$hash = Wikimedia\base_convert( $hash, 16, 36, 31 );
-		}
+    protected function getSourceSha1Base36()
+    {
+        AtEase::suppressWarnings();
+        $hash = sha1_file($this->params['src']);
+        AtEase::restoreWarnings();
+        if ($hash !== false) {
+            $hash = Wikimedia\base_convert($hash, 16, 36, 31);
+        }
 
-		return $hash;
-	}
+        return $hash;
+    }
 
-	public function storagePathsChanged() {
-		return [ $this->params['dst'] ];
-	}
+    public function storagePathsChanged()
+    {
+        return [$this->params['dst']];
+    }
 }

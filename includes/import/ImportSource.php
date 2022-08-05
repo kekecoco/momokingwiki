@@ -29,23 +29,24 @@
  *
  * @ingroup SpecialPage
  */
-interface ImportSource {
+interface ImportSource
+{
 
-	/**
-	 * Indicates whether the end of the input has been reached.
-	 * Will return true after a finite number of calls to readChunk.
-	 *
-	 * @return bool true if there is no more input, false otherwise.
-	 */
-	public function atEnd();
+    /**
+     * Indicates whether the end of the input has been reached.
+     * Will return true after a finite number of calls to readChunk.
+     *
+     * @return bool true if there is no more input, false otherwise.
+     */
+    public function atEnd();
 
-	/**
-	 * Return a chunk of the input, as a (possibly empty) string.
-	 * When the end of input is reached, readChunk() returns false.
-	 * If atEnd() returns false, readChunk() will return a string.
-	 * If atEnd() returns true, readChunk() will return false.
-	 *
-	 * @return bool|string
-	 */
-	public function readChunk();
+    /**
+     * Return a chunk of the input, as a (possibly empty) string.
+     * When the end of input is reached, readChunk() returns false.
+     * If atEnd() returns false, readChunk() will return a string.
+     * If atEnd() returns true, readChunk() will return false.
+     *
+     * @return bool|string
+     */
+    public function readChunk();
 }

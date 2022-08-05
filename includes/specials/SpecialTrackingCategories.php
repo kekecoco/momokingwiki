@@ -32,122 +32,125 @@ use MediaWiki\Cache\LinkBatchFactory;
  * @ingroup SpecialPage
  * @since 1.23
  */
+class SpecialTrackingCategories extends SpecialPage
+{
 
-class SpecialTrackingCategories extends SpecialPage {
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var TrackingCategories */
+    private $trackingCategories;
 
-	/** @var TrackingCategories */
-	private $trackingCategories;
+    /**
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param TrackingCategories $trackingCategories
+     */
+    public function __construct(
+        LinkBatchFactory $linkBatchFactory,
+        TrackingCategories $trackingCategories
+    )
+    {
+        parent::__construct('TrackingCategories');
+        $this->linkBatchFactory = $linkBatchFactory;
+        $this->trackingCategories = $trackingCategories;
+    }
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param TrackingCategories $trackingCategories
-	 */
-	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		TrackingCategories $trackingCategories
-	) {
-		parent::__construct( 'TrackingCategories' );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->trackingCategories = $trackingCategories;
-	}
-
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
-		$this->addHelpLink( 'Help:Categories' );
-		$this->getOutput()->setPreventClickjacking( false );
-		$this->getOutput()->addModuleStyles( [
-			'jquery.tablesorter.styles',
-			'mediawiki.pager.styles'
-		] );
-		$this->getOutput()->addModules( 'jquery.tablesorter' );
-		$this->getOutput()->addHTML(
-			Html::openElement( 'table', [ 'class' => 'mw-datatable sortable',
-				'id' => 'mw-trackingcategories-table' ] ) . "\n" .
-			"<thead><tr>
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
+        $this->addHelpLink('Help:Categories');
+        $this->getOutput()->setPreventClickjacking(false);
+        $this->getOutput()->addModuleStyles([
+            'jquery.tablesorter.styles',
+            'mediawiki.pager.styles'
+        ]);
+        $this->getOutput()->addModules('jquery.tablesorter');
+        $this->getOutput()->addHTML(
+            Html::openElement('table', ['class' => 'mw-datatable sortable',
+                                        'id'    => 'mw-trackingcategories-table']) . "\n" .
+            "<thead><tr>
 			<th>" .
-				$this->msg( 'trackingcategories-msg' )->escaped() . "
+            $this->msg('trackingcategories-msg')->escaped() . "
 			</th>
 			<th>" .
-				$this->msg( 'trackingcategories-name' )->escaped() .
-			"</th>
+            $this->msg('trackingcategories-name')->escaped() .
+            "</th>
 			<th>" .
-				$this->msg( 'trackingcategories-desc' )->escaped() . "
+            $this->msg('trackingcategories-desc')->escaped() . "
 			</th>
 			</tr></thead>"
-		);
+        );
 
-		$categoryList = $this->trackingCategories->getTrackingCategories();
+        $categoryList = $this->trackingCategories->getTrackingCategories();
 
-		$batch = $this->linkBatchFactory->newLinkBatch();
-		foreach ( $categoryList as $catMsg => $data ) {
-			$batch->addObj( $data['msg'] );
-			foreach ( $data['cats'] as $catTitle ) {
-				$batch->addObj( $catTitle );
-			}
-		}
-		$batch->execute();
+        $batch = $this->linkBatchFactory->newLinkBatch();
+        foreach ($categoryList as $catMsg => $data) {
+            $batch->addObj($data['msg']);
+            foreach ($data['cats'] as $catTitle) {
+                $batch->addObj($catTitle);
+            }
+        }
+        $batch->execute();
 
-		$this->getHookRunner()->onSpecialTrackingCategories__preprocess( $this, $categoryList );
+        $this->getHookRunner()->onSpecialTrackingCategories__preprocess($this, $categoryList);
 
-		$linkRenderer = $this->getLinkRenderer();
+        $linkRenderer = $this->getLinkRenderer();
 
-		foreach ( $categoryList as $catMsg => $data ) {
-			$allMsgs = [];
-			$catDesc = $catMsg . '-desc';
+        foreach ($categoryList as $catMsg => $data) {
+            $allMsgs = [];
+            $catDesc = $catMsg . '-desc';
 
-			$catMsgTitleText = $linkRenderer->makeLink(
-				$data['msg'],
-				$catMsg
-			);
+            $catMsgTitleText = $linkRenderer->makeLink(
+                $data['msg'],
+                $catMsg
+            );
 
-			foreach ( $data['cats'] as $catTitle ) {
-				$html = $linkRenderer->makeLink(
-					$catTitle,
-					$catTitle->getText()
-				);
+            foreach ($data['cats'] as $catTitle) {
+                $html = $linkRenderer->makeLink(
+                    $catTitle,
+                    $catTitle->getText()
+                );
 
-				$this->getHookRunner()->onSpecialTrackingCategories__generateCatLink(
-					$this, $catTitle, $html );
+                $this->getHookRunner()->onSpecialTrackingCategories__generateCatLink(
+                    $this, $catTitle, $html);
 
-				$allMsgs[] = $html;
-			}
+                $allMsgs[] = $html;
+            }
 
-			# Extra message, when no category was found
-			if ( $allMsgs === [] ) {
-				$allMsgs[] = $this->msg( 'trackingcategories-disabled' )->parse();
-			}
+            # Extra message, when no category was found
+            if ($allMsgs === []) {
+                $allMsgs[] = $this->msg('trackingcategories-disabled')->parse();
+            }
 
-			/*
-			 * Show category description if it exists as a system message
-			 * as category-name-desc
-			 */
-			$descMsg = $this->msg( $catDesc );
-			if ( $descMsg->isBlank() ) {
-				$descMsg = $this->msg( 'trackingcategories-nodesc' );
-			}
+            /*
+             * Show category description if it exists as a system message
+             * as category-name-desc
+             */
+            $descMsg = $this->msg($catDesc);
+            if ($descMsg->isBlank()) {
+                $descMsg = $this->msg('trackingcategories-nodesc');
+            }
 
-			$this->getOutput()->addHTML(
-				Html::openElement( 'tr' ) .
-				Html::openElement( 'td', [ 'class' => 'mw-trackingcategories-name' ] ) .
-					$this->getLanguage()->commaList( array_unique( $allMsgs ) ) .
-				Html::closeElement( 'td' ) .
-				Html::openElement( 'td', [ 'class' => 'mw-trackingcategories-msg' ] ) .
-					$catMsgTitleText .
-				Html::closeElement( 'td' ) .
-				Html::openElement( 'td', [ 'class' => 'mw-trackingcategories-desc' ] ) .
-					$descMsg->parse() .
-				Html::closeElement( 'td' ) .
-				Html::closeElement( 'tr' )
-			);
-		}
-		$this->getOutput()->addHTML( Html::closeElement( 'table' ) );
-	}
+            $this->getOutput()->addHTML(
+                Html::openElement('tr') .
+                Html::openElement('td', ['class' => 'mw-trackingcategories-name']) .
+                $this->getLanguage()->commaList(array_unique($allMsgs)) .
+                Html::closeElement('td') .
+                Html::openElement('td', ['class' => 'mw-trackingcategories-msg']) .
+                $catMsgTitleText .
+                Html::closeElement('td') .
+                Html::openElement('td', ['class' => 'mw-trackingcategories-desc']) .
+                $descMsg->parse() .
+                Html::closeElement('td') .
+                Html::closeElement('tr')
+            );
+        }
+        $this->getOutput()->addHTML(Html::closeElement('table'));
+    }
 
-	protected function getGroupName() {
-		return 'pages';
-	}
+    protected function getGroupName()
+    {
+        return 'pages';
+    }
 }

@@ -26,72 +26,77 @@ use Title;
  *
  * @since 1.28
  */
-class ParserOutputSearchDataExtractor {
+class ParserOutputSearchDataExtractor
+{
 
-	/**
-	 * Get a list of categories, as an array with title text strings.
-	 *
-	 * @param ParserOutput $parserOutput
-	 * @return string[]
-	 */
-	public function getCategories( ParserOutput $parserOutput ) {
-		$categories = [];
+    /**
+     * Get a list of categories, as an array with title text strings.
+     *
+     * @param ParserOutput $parserOutput
+     * @return string[]
+     */
+    public function getCategories(ParserOutput $parserOutput)
+    {
+        $categories = [];
 
-		foreach ( $parserOutput->getCategoryNames() as $key ) {
-			$name = Category::newFromName( $key )->getName();
-			$categories[] = str_replace( '_', ' ', $name );
-		}
+        foreach ($parserOutput->getCategoryNames() as $key) {
+            $name = Category::newFromName($key)->getName();
+            $categories[] = str_replace('_', ' ', $name);
+        }
 
-		return $categories;
-	}
+        return $categories;
+    }
 
-	/**
-	 * Get a list of external links from ParserOutput, as an array of strings.
-	 *
-	 * @param ParserOutput $parserOutput
-	 * @return string[]
-	 */
-	public function getExternalLinks( ParserOutput $parserOutput ) {
-		return array_keys( $parserOutput->getExternalLinks() );
-	}
+    /**
+     * Get a list of external links from ParserOutput, as an array of strings.
+     *
+     * @param ParserOutput $parserOutput
+     * @return string[]
+     */
+    public function getExternalLinks(ParserOutput $parserOutput)
+    {
+        return array_keys($parserOutput->getExternalLinks());
+    }
 
-	/**
-	 * Get a list of outgoing wiki links (including interwiki links), as
-	 * an array of prefixed title strings.
-	 *
-	 * @param ParserOutput $parserOutput
-	 * @return string[]
-	 */
-	public function getOutgoingLinks( ParserOutput $parserOutput ) {
-		$outgoingLinks = [];
+    /**
+     * Get a list of outgoing wiki links (including interwiki links), as
+     * an array of prefixed title strings.
+     *
+     * @param ParserOutput $parserOutput
+     * @return string[]
+     */
+    public function getOutgoingLinks(ParserOutput $parserOutput)
+    {
+        $outgoingLinks = [];
 
-		foreach ( $parserOutput->getLinks() as $linkedNamespace => $namespaceLinks ) {
-			foreach ( array_keys( $namespaceLinks ) as $linkedDbKey ) {
-				$outgoingLinks[] =
-					Title::makeTitle( $linkedNamespace, $linkedDbKey )->getPrefixedDBkey();
-			}
-		}
+        foreach ($parserOutput->getLinks() as $linkedNamespace => $namespaceLinks) {
+            foreach (array_keys($namespaceLinks) as $linkedDbKey) {
+                $outgoingLinks[] =
+                    Title::makeTitle($linkedNamespace, $linkedDbKey)->getPrefixedDBkey();
+            }
+        }
 
-		return $outgoingLinks;
-	}
+        return $outgoingLinks;
+    }
 
-	/**
-	 * Get a list of templates used in the ParserOutput content, as prefixed title strings
-	 *
-	 * @param ParserOutput $parserOutput
-	 * @return string[]
-	 */
-	public function getTemplates( ParserOutput $parserOutput ) {
-		$templates = [];
+    /**
+     * Get a list of templates used in the ParserOutput content, as prefixed title strings
+     *
+     * @param ParserOutput $parserOutput
+     * @return string[]
+     */
+    public function getTemplates(ParserOutput $parserOutput)
+    {
+        $templates = [];
 
-		foreach ( $parserOutput->getTemplates() as $tNS => $templatesInNS ) {
-			foreach ( array_keys( $templatesInNS ) as $tDbKey ) {
-				$templateTitle = Title::makeTitle( $tNS, $tDbKey );
-				$templates[] = $templateTitle->getPrefixedText();
-			}
-		}
+        foreach ($parserOutput->getTemplates() as $tNS => $templatesInNS) {
+            foreach (array_keys($templatesInNS) as $tDbKey) {
+                $templateTitle = Title::makeTitle($tNS, $tDbKey);
+                $templates[] = $templateTitle->getPrefixedText();
+            }
+        }
 
-		return $templates;
-	}
+        return $templates;
+    }
 
 }

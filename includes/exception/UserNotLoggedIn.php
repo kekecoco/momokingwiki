@@ -51,60 +51,64 @@
  * @since 1.20
  * @ingroup Exception
  */
-class UserNotLoggedIn extends ErrorPageError {
+class UserNotLoggedIn extends ErrorPageError
+{
 
-	/**
-	 * @stable to call
-	 *
-	 * @note The value of the $reasonMsg parameter must be set with the LoginFormValidErrorMessages
-	 * hook if you want the user to be automatically redirected to the login form.
-	 *
-	 * @param string $reasonMsg A message key containing the reason for the error.
-	 *        Optional, default: 'exception-nologin-text'
-	 * @param string $titleMsg A message key to set the page title.
-	 *        Optional, default: 'exception-nologin'
-	 * @param array $params Parameters to wfMessage().
-	 *        Optional, default: []
-	 */
-	public function __construct(
-		$reasonMsg = 'exception-nologin-text',
-		$titleMsg = 'exception-nologin',
-		$params = []
-	) {
-		parent::__construct( $titleMsg, $reasonMsg, $params );
-	}
+    /**
+     * @stable to call
+     *
+     * @note The value of the $reasonMsg parameter must be set with the LoginFormValidErrorMessages
+     * hook if you want the user to be automatically redirected to the login form.
+     *
+     * @param string $reasonMsg A message key containing the reason for the error.
+     *        Optional, default: 'exception-nologin-text'
+     * @param string $titleMsg A message key to set the page title.
+     *        Optional, default: 'exception-nologin'
+     * @param array $params Parameters to wfMessage().
+     *        Optional, default: []
+     */
+    public function __construct(
+        $reasonMsg = 'exception-nologin-text',
+        $titleMsg = 'exception-nologin',
+        $params = []
+    )
+    {
+        parent::__construct($titleMsg, $reasonMsg, $params);
+    }
 
-	/**
-	 * Redirect to Special:Userlogin if the specified message is compatible. Otherwise,
-	 * show an error page as usual.
-	 * @param int $action
-	 */
-	public function report( $action = self::SEND_OUTPUT ) {
-		// If an unsupported message is used, don't try redirecting to Special:Userlogin,
-		// since the message may not be compatible.
-		if ( !in_array( $this->msg, LoginHelper::getValidErrorMessages() ) ) {
-			parent::report( $action );
-			return;
-		}
+    /**
+     * Redirect to Special:Userlogin if the specified message is compatible. Otherwise,
+     * show an error page as usual.
+     * @param int $action
+     */
+    public function report($action = self::SEND_OUTPUT)
+    {
+        // If an unsupported message is used, don't try redirecting to Special:Userlogin,
+        // since the message may not be compatible.
+        if (!in_array($this->msg, LoginHelper::getValidErrorMessages())) {
+            parent::report($action);
 
-		// Message is valid. Redirect to Special:Userlogin
+            return;
+        }
 
-		$context = RequestContext::getMain();
+        // Message is valid. Redirect to Special:Userlogin
 
-		$output = $context->getOutput();
-		$query = $context->getRequest()->getValues();
-		// Title will be overridden by returnto
-		unset( $query['title'] );
-		// Redirect to Special:Userlogin
-		$output->redirect( SpecialPage::getTitleFor( 'Userlogin' )->getFullURL( [
-			// Return to this page when the user logs in
-			'returnto' => $context->getTitle()->getFullText(),
-			'returntoquery' => wfArrayToCgi( $query ),
-			'warning' => $this->msg,
-		] ) );
+        $context = RequestContext::getMain();
 
-		if ( $action === self::SEND_OUTPUT ) {
-			$output->output();
-		}
-	}
+        $output = $context->getOutput();
+        $query = $context->getRequest()->getValues();
+        // Title will be overridden by returnto
+        unset($query['title']);
+        // Redirect to Special:Userlogin
+        $output->redirect(SpecialPage::getTitleFor('Userlogin')->getFullURL([
+            // Return to this page when the user logs in
+            'returnto'      => $context->getTitle()->getFullText(),
+            'returntoquery' => wfArrayToCgi($query),
+            'warning'       => $this->msg,
+        ]));
+
+        if ($action === self::SEND_OUTPUT) {
+            $output->output();
+        }
+    }
 }

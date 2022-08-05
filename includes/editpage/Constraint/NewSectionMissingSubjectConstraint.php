@@ -29,50 +29,56 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class NewSectionMissingSubjectConstraint implements IEditConstraint {
+class NewSectionMissingSubjectConstraint implements IEditConstraint
+{
 
-	/** @var string */
-	private $subject;
+    /** @var string */
+    private $subject;
 
-	/** @var bool */
-	private $allowBlankSubject;
+    /** @var bool */
+    private $allowBlankSubject;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param string $subject
-	 * @param bool $allowBlankSubject
-	 */
-	public function __construct(
-		string $subject,
-		bool $allowBlankSubject
-	) {
-		$this->subject = $subject;
-		$this->allowBlankSubject = $allowBlankSubject;
-	}
+    /**
+     * @param string $subject
+     * @param bool $allowBlankSubject
+     */
+    public function __construct(
+        string $subject,
+        bool $allowBlankSubject
+    )
+    {
+        $this->subject = $subject;
+        $this->allowBlankSubject = $allowBlankSubject;
+    }
 
-	public function checkConstraint(): string {
-		if ( !$this->allowBlankSubject && trim( $this->subject ) == '' ) {
-			// TODO this was == in EditPage, can it be === ?
-			$this->result = self::CONSTRAINT_FAILED;
-		} else {
-			$this->result = self::CONSTRAINT_PASSED;
-		}
-		return $this->result;
-	}
+    public function checkConstraint(): string
+    {
+        if (!$this->allowBlankSubject && trim($this->subject) == '') {
+            // TODO this was == in EditPage, can it be === ?
+            $this->result = self::CONSTRAINT_FAILED;
+        } else {
+            $this->result = self::CONSTRAINT_PASSED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			// From EditPage, regarding the fatal:
-			// or 'missingcommentheader' if $section == 'new'. Blegh
-			// For new sections, the subject is also used for the summary,
-			// so we report missing summaries if the section is missing
-			$statusValue->fatal( 'missingsummary' );
-			$statusValue->value = self::AS_SUMMARY_NEEDED;
-		}
-		return $statusValue;
-	}
+        return $this->result;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            // From EditPage, regarding the fatal:
+            // or 'missingcommentheader' if $section == 'new'. Blegh
+            // For new sections, the subject is also used for the summary,
+            // so we report missing summaries if the section is missing
+            $statusValue->fatal('missingsummary');
+            $statusValue->value = self::AS_SUMMARY_NEEDED;
+        }
+
+        return $statusValue;
+    }
 
 }

@@ -26,86 +26,89 @@
  * @stable to extend
  * @ingroup Pager
  */
-abstract class AlphabeticPager extends IndexPager {
+abstract class AlphabeticPager extends IndexPager
+{
 
-	/**
-	 * Shamelessly stolen bits from ReverseChronologicalPager,
-	 * didn't want to do class magic as may be still revamped
-	 *
-	 * @stable to override
-	 *
-	 * @return string HTML
-	 */
-	public function getNavigationBar() {
-		if ( !$this->isNavigationBarShown() ) {
-			return '';
-		}
+    /**
+     * Shamelessly stolen bits from ReverseChronologicalPager,
+     * didn't want to do class magic as may be still revamped
+     *
+     * @stable to override
+     *
+     * @return string HTML
+     */
+    public function getNavigationBar()
+    {
+        if (!$this->isNavigationBarShown()) {
+            return '';
+        }
 
-		if ( isset( $this->mNavigationBar ) ) {
-			return $this->mNavigationBar;
-		}
+        if (isset($this->mNavigationBar)) {
+            return $this->mNavigationBar;
+        }
 
-		$linkTexts = [
-			'prev' => $this->msg( 'prevn' )->numParams( $this->mLimit )->escaped(),
-			'next' => $this->msg( 'nextn' )->numParams( $this->mLimit )->escaped(),
-			'first' => $this->msg( 'page_first' )->escaped(),
-			'last' => $this->msg( 'page_last' )->escaped()
-		];
+        $linkTexts = [
+            'prev'  => $this->msg('prevn')->numParams($this->mLimit)->escaped(),
+            'next'  => $this->msg('nextn')->numParams($this->mLimit)->escaped(),
+            'first' => $this->msg('page_first')->escaped(),
+            'last'  => $this->msg('page_last')->escaped()
+        ];
 
-		$lang = $this->getLanguage();
+        $lang = $this->getLanguage();
 
-		$pagingLinks = $this->getPagingLinks( $linkTexts );
-		$limitLinks = $this->getLimitLinks();
-		$limits = $lang->pipeList( $limitLinks );
+        $pagingLinks = $this->getPagingLinks($linkTexts);
+        $limitLinks = $this->getLimitLinks();
+        $limits = $lang->pipeList($limitLinks);
 
-		$this->mNavigationBar = $this->msg( 'parentheses' )->rawParams(
-			$lang->pipeList( [ $pagingLinks['first'],
-			$pagingLinks['last'] ] ) )->escaped() . " " .
-			$this->msg( 'viewprevnext' )->rawParams( $pagingLinks['prev'],
-				$pagingLinks['next'], $limits )->escaped();
+        $this->mNavigationBar = $this->msg('parentheses')->rawParams(
+                $lang->pipeList([$pagingLinks['first'],
+                    $pagingLinks['last']]))->escaped() . " " .
+            $this->msg('viewprevnext')->rawParams($pagingLinks['prev'],
+                $pagingLinks['next'], $limits)->escaped();
 
-		if ( is_array( $this->getIndexField() ) ) {
-			$extra = '';
-			$msgs = $this->getOrderTypeMessages();
-			foreach ( $msgs as $order => $msg ) {
-				if ( $extra !== '' ) {
-					$extra .= $this->msg( 'pipe-separator' )->escaped();
-				}
+        if (is_array($this->getIndexField())) {
+            $extra = '';
+            $msgs = $this->getOrderTypeMessages();
+            foreach ($msgs as $order => $msg) {
+                if ($extra !== '') {
+                    $extra .= $this->msg('pipe-separator')->escaped();
+                }
 
-				if ( $order == $this->mOrderType ) {
-					$extra .= $this->msg( $msg )->escaped();
-				} else {
-					$extra .= $this->makeLink(
-						$this->msg( $msg )->escaped(),
-						[ 'order' => $order ]
-					);
-				}
-			}
+                if ($order == $this->mOrderType) {
+                    $extra .= $this->msg($msg)->escaped();
+                } else {
+                    $extra .= $this->makeLink(
+                        $this->msg($msg)->escaped(),
+                        ['order' => $order]
+                    );
+                }
+            }
 
-			if ( $extra !== '' ) {
-				$extra = ' ' . $this->msg( 'parentheses' )->rawParams( $extra )->escaped();
-				$this->mNavigationBar .= $extra;
-			}
-		}
+            if ($extra !== '') {
+                $extra = ' ' . $this->msg('parentheses')->rawParams($extra)->escaped();
+                $this->mNavigationBar .= $extra;
+            }
+        }
 
-		$this->mNavigationBar = Html::rawElement( 'div', [ 'class' => 'mw-pager-navigation-bar' ],
-			$this->mNavigationBar
-		);
+        $this->mNavigationBar = Html::rawElement('div', ['class' => 'mw-pager-navigation-bar'],
+            $this->mNavigationBar
+        );
 
-		return $this->mNavigationBar;
-	}
+        return $this->mNavigationBar;
+    }
 
-	/**
-	 * If this supports multiple order type messages, give the message key for
-	 * enabling each one in getNavigationBar.  The return type is an associative
-	 * array whose keys must exactly match the keys of the array returned
-	 * by getIndexField(), and whose values are message keys.
-	 *
-	 * @stable to override
-	 *
-	 * @return array|null
-	 */
-	protected function getOrderTypeMessages() {
-		return null;
-	}
+    /**
+     * If this supports multiple order type messages, give the message key for
+     * enabling each one in getNavigationBar.  The return type is an associative
+     * array whose keys must exactly match the keys of the array returned
+     * by getIndexField(), and whose values are message keys.
+     *
+     * @stable to override
+     *
+     * @return array|null
+     */
+    protected function getOrderTypeMessages()
+    {
+        return null;
+    }
 }

@@ -14,28 +14,29 @@ use MediaWiki\Revision\RevisionRecord;
  * @stable to implement
  * @ingroup Hooks
  */
-interface PageDeleteCompleteHook {
-	/**
-	 * This hook is called after a page is deleted.
-	 *
-	 * @since 1.37
-	 *
-	 * @param ProperPageIdentity $page Page that was deleted.
-	 * @param Authority $deleter Who deleted the page
-	 * @param string $reason Reason the page was deleted
-	 * @param int $pageID ID of the page that was deleted
-	 * @param RevisionRecord $deletedRev Last revision of the deleted page
-	 * @param ManualLogEntry $logEntry ManualLogEntry used to record the deletion
-	 * @param int $archivedRevisionCount Number of revisions archived during the deletion
-	 * @return true|void
-	 */
-	public function onPageDeleteComplete(
-		ProperPageIdentity $page,
-		Authority $deleter,
-		string $reason,
-		int $pageID,
-		RevisionRecord $deletedRev,
-		ManualLogEntry $logEntry,
-		int $archivedRevisionCount
-	);
+interface PageDeleteCompleteHook
+{
+    /**
+     * This hook is called after a page is deleted.
+     *
+     * @param ProperPageIdentity $page Page that was deleted.
+     * @param Authority $deleter Who deleted the page
+     * @param string $reason Reason the page was deleted
+     * @param int $pageID ID of the page that was deleted
+     * @param RevisionRecord $deletedRev Last revision of the deleted page
+     * @param ManualLogEntry $logEntry ManualLogEntry used to record the deletion
+     * @param int $archivedRevisionCount Number of revisions archived during the deletion
+     * @return true|void
+     * @since 1.37
+     *
+     */
+    public function onPageDeleteComplete(
+        ProperPageIdentity $page,
+        Authority $deleter,
+        string $reason,
+        int $pageID,
+        RevisionRecord $deletedRev,
+        ManualLogEntry $logEntry,
+        int $archivedRevisionCount
+    );
 }

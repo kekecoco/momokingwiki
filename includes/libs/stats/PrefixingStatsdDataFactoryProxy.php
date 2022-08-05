@@ -26,71 +26,81 @@ use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
  *
  * @since 1.32
  */
-class PrefixingStatsdDataFactoryProxy implements StatsdDataFactoryInterface {
+class PrefixingStatsdDataFactoryProxy implements StatsdDataFactoryInterface
+{
 
-	/**
-	 * @var string
-	 */
-	private $prefix;
+    /**
+     * @var string
+     */
+    private $prefix;
 
-	/**
-	 * @var StatsdDataFactoryInterface
-	 */
-	private $factory;
+    /**
+     * @var StatsdDataFactoryInterface
+     */
+    private $factory;
 
-	/**
-	 * @param StatsdDataFactoryInterface $factory
-	 * @param string $prefix
-	 */
-	public function __construct(
-		StatsdDataFactoryInterface $factory,
-		$prefix
-	) {
-		$this->factory = $factory;
-		$this->prefix = rtrim( $prefix, '.' );
-	}
+    /**
+     * @param StatsdDataFactoryInterface $factory
+     * @param string $prefix
+     */
+    public function __construct(
+        StatsdDataFactoryInterface $factory,
+        $prefix
+    )
+    {
+        $this->factory = $factory;
+        $this->prefix = rtrim($prefix, '.');
+    }
 
-	/**
-	 * @param string $key
-	 * @return string
-	 */
-	private function addPrefixToKey( $key ) {
-		return $this->prefix . '.' . $key;
-	}
+    /**
+     * @param string $key
+     * @return string
+     */
+    private function addPrefixToKey($key)
+    {
+        return $this->prefix . '.' . $key;
+    }
 
-	public function timing( $key, $time ) {
-		return $this->factory->timing( $this->addPrefixToKey( $key ), $time );
-	}
+    public function timing($key, $time)
+    {
+        return $this->factory->timing($this->addPrefixToKey($key), $time);
+    }
 
-	public function gauge( $key, $value ) {
-		return $this->factory->gauge( $this->addPrefixToKey( $key ), $value );
-	}
+    public function gauge($key, $value)
+    {
+        return $this->factory->gauge($this->addPrefixToKey($key), $value);
+    }
 
-	public function set( $key, $value ) {
-		return $this->factory->set( $this->addPrefixToKey( $key ), $value );
-	}
+    public function set($key, $value)
+    {
+        return $this->factory->set($this->addPrefixToKey($key), $value);
+    }
 
-	public function increment( $key ) {
-		return $this->factory->increment( $this->addPrefixToKey( $key ) );
-	}
+    public function increment($key)
+    {
+        return $this->factory->increment($this->addPrefixToKey($key));
+    }
 
-	public function decrement( $key ) {
-		return $this->factory->decrement( $this->addPrefixToKey( $key ) );
-	}
+    public function decrement($key)
+    {
+        return $this->factory->decrement($this->addPrefixToKey($key));
+    }
 
-	public function updateCount( $key, $delta ) {
-		return $this->factory->updateCount( $this->addPrefixToKey( $key ), $delta );
-	}
+    public function updateCount($key, $delta)
+    {
+        return $this->factory->updateCount($this->addPrefixToKey($key), $delta);
+    }
 
-	public function produceStatsdData(
-		$key,
-		$value = 1,
-		$metric = StatsdDataInterface::STATSD_METRIC_COUNT
-	) {
-		return $this->factory->produceStatsdData(
-			$this->addPrefixToKey( $key ),
-			$value,
-			$metric
-		);
-	}
+    public function produceStatsdData(
+        $key,
+        $value = 1,
+        $metric = StatsdDataInterface::STATSD_METRIC_COUNT
+    )
+    {
+        return $this->factory->produceStatsdData(
+            $this->addPrefixToKey($key),
+            $value,
+            $metric
+        );
+    }
 }

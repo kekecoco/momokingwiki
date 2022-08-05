@@ -51,106 +51,108 @@ use MediaWiki\Page\PageIdentity;
  * @ingroup JobQueue
  * @since 1.23
  */
-class BacklinkJobUtils {
-	/**
-	 * Break down $job into approximately ($bSize/$cSize) leaf jobs and a single partition
-	 * job that covers the remaining backlink range (if needed). Jobs for the first $bSize
-	 * titles are collated ($cSize per job) into leaf jobs to do actual work. All the
-	 * resulting jobs are of the same class as $job. No partition job is returned if the
-	 * range covered by $job was less than $bSize, as the leaf jobs have full coverage.
-	 *
-	 * The leaf jobs have the 'pages' param set to a (<page ID>:(<namespace>,<DB key>),...)
-	 * map so that the run() function knows what pages to act on. The leaf jobs will keep
-	 * the same job title as the parent job (e.g. $job).
-	 *
-	 * The partition jobs have the 'range' parameter set to a map of the format
-	 * (start:<integer>, end:<integer>, batchSize:<integer>, subranges:((<start>,<end>),...)),
-	 * the 'table' parameter set to that of $job, and the 'recursive' parameter set to true.
-	 * This method can be called on the resulting job to repeat the process again.
-	 *
-	 * The job provided ($job) must have the 'recursive' parameter set to true and the 'table'
-	 * parameter must be set to a backlink table. The job title will be used as the title to
-	 * find backlinks for. Any 'range' parameter must follow the same format as mentioned above.
-	 * This should be managed by recursive calls to this method.
-	 *
-	 * The first jobs return are always the leaf jobs. This lets the caller use push() to
-	 * put them directly into the queue and works well if the queue is FIFO. In such a queue,
-	 * the leaf jobs have to get finished first before anything can resolve the next partition
-	 * job, which keeps the queue very small.
-	 *
-	 * $opts includes:
-	 *   - params : extra job parameters to include in each job
-	 *
-	 * @param Job $job
-	 * @param int $bSize BacklinkCache partition size; usually $wgUpdateRowsPerJob
-	 * @param int $cSize Max titles per leaf job; Usually 1 or a modest value
-	 * @param array $opts Optional parameter map
-	 * @return Job[]
-	 */
-	public static function partitionBacklinkJob( Job $job, $bSize, $cSize, $opts = [] ) {
-		$class = get_class( $job );
-		$title = $job->getTitle();
-		$params = $job->getParams();
+class BacklinkJobUtils
+{
+    /**
+     * Break down $job into approximately ($bSize/$cSize) leaf jobs and a single partition
+     * job that covers the remaining backlink range (if needed). Jobs for the first $bSize
+     * titles are collated ($cSize per job) into leaf jobs to do actual work. All the
+     * resulting jobs are of the same class as $job. No partition job is returned if the
+     * range covered by $job was less than $bSize, as the leaf jobs have full coverage.
+     *
+     * The leaf jobs have the 'pages' param set to a (<page ID>:(<namespace>,<DB key>),...)
+     * map so that the run() function knows what pages to act on. The leaf jobs will keep
+     * the same job title as the parent job (e.g. $job).
+     *
+     * The partition jobs have the 'range' parameter set to a map of the format
+     * (start:<integer>, end:<integer>, batchSize:<integer>, subranges:((<start>,<end>),...)),
+     * the 'table' parameter set to that of $job, and the 'recursive' parameter set to true.
+     * This method can be called on the resulting job to repeat the process again.
+     *
+     * The job provided ($job) must have the 'recursive' parameter set to true and the 'table'
+     * parameter must be set to a backlink table. The job title will be used as the title to
+     * find backlinks for. Any 'range' parameter must follow the same format as mentioned above.
+     * This should be managed by recursive calls to this method.
+     *
+     * The first jobs return are always the leaf jobs. This lets the caller use push() to
+     * put them directly into the queue and works well if the queue is FIFO. In such a queue,
+     * the leaf jobs have to get finished first before anything can resolve the next partition
+     * job, which keeps the queue very small.
+     *
+     * $opts includes:
+     *   - params : extra job parameters to include in each job
+     *
+     * @param Job $job
+     * @param int $bSize BacklinkCache partition size; usually $wgUpdateRowsPerJob
+     * @param int $cSize Max titles per leaf job; Usually 1 or a modest value
+     * @param array $opts Optional parameter map
+     * @return Job[]
+     */
+    public static function partitionBacklinkJob(Job $job, $bSize, $cSize, $opts = [])
+    {
+        $class = get_class($job);
+        $title = $job->getTitle();
+        $params = $job->getParams();
 
-		$backlinkCache = MediaWikiServices::getInstance()->getBacklinkCacheFactory()
-			->getBacklinkCache( $title );
-		if ( isset( $params['pages'] ) || empty( $params['recursive'] ) ) {
-			// this is a leaf node
-			$ranges = [];
-			$realBSize = 0;
-			wfWarn( __METHOD__ . " called on {$job->getType()} leaf job (explosive recursion)." );
-		} elseif ( isset( $params['range'] ) ) {
-			// This is a range job to trigger the insertion of partitioned/title jobs...
-			$ranges = $params['range']['subranges'];
-			$realBSize = $params['range']['batchSize'];
-		} else {
-			// This is a base job to trigger the insertion of partitioned jobs...
-			$ranges = $backlinkCache->partition( $params['table'], $bSize );
-			$realBSize = $bSize;
-		}
+        $backlinkCache = MediaWikiServices::getInstance()->getBacklinkCacheFactory()
+            ->getBacklinkCache($title);
+        if (isset($params['pages']) || empty($params['recursive'])) {
+            // this is a leaf node
+            $ranges = [];
+            $realBSize = 0;
+            wfWarn(__METHOD__ . " called on {$job->getType()} leaf job (explosive recursion).");
+        } elseif (isset($params['range'])) {
+            // This is a range job to trigger the insertion of partitioned/title jobs...
+            $ranges = $params['range']['subranges'];
+            $realBSize = $params['range']['batchSize'];
+        } else {
+            // This is a base job to trigger the insertion of partitioned jobs...
+            $ranges = $backlinkCache->partition($params['table'], $bSize);
+            $realBSize = $bSize;
+        }
 
-		$extraParams = $opts['params'] ?? [];
+        $extraParams = $opts['params'] ?? [];
 
-		$jobs = [];
-		// Combine the first range (of size $bSize) backlinks into leaf jobs
-		if ( isset( $ranges[0] ) ) {
-			list( $start, $end ) = $ranges[0];
+        $jobs = [];
+        // Combine the first range (of size $bSize) backlinks into leaf jobs
+        if (isset($ranges[0])) {
+            [$start, $end] = $ranges[0];
 
-			$iter = $backlinkCache->getLinkPages( $params['table'], $start, $end );
-			$pageSources = iterator_to_array( $iter );
-			/** @var PageIdentity[] $pageBatch */
-			foreach ( array_chunk( $pageSources, $cSize ) as $pageBatch ) {
-				$pages = [];
-				foreach ( $pageBatch as $page ) {
-					$pages[$page->getId()] = [ $page->getNamespace(), $page->getDBkey() ];
-				}
-				$jobs[] = new $class(
-					$title, // maintain parent job title
-					[ 'pages' => $pages ] + $extraParams
-				);
-			}
-		}
-		// Take all of the remaining ranges and build a partition job from it
-		if ( isset( $ranges[1] ) ) {
-			$jobs[] = new $class(
-				$title, // maintain parent job title
-				[
-					'recursive'     => true,
-					'table'         => $params['table'],
-					'range'         => [
-						'start'     => $ranges[1][0],
-						'end'       => $ranges[count( $ranges ) - 1][1],
-						'batchSize' => $realBSize,
-						'subranges' => array_slice( $ranges, 1 )
-					],
-					// Track how many times the base job divided for debugging
-					'division'      => isset( $params['division'] )
-						? ( $params['division'] + 1 )
-						: 1
-				] + $extraParams
-			);
-		}
+            $iter = $backlinkCache->getLinkPages($params['table'], $start, $end);
+            $pageSources = iterator_to_array($iter);
+            /** @var PageIdentity[] $pageBatch */
+            foreach (array_chunk($pageSources, $cSize) as $pageBatch) {
+                $pages = [];
+                foreach ($pageBatch as $page) {
+                    $pages[$page->getId()] = [$page->getNamespace(), $page->getDBkey()];
+                }
+                $jobs[] = new $class(
+                    $title, // maintain parent job title
+                    ['pages' => $pages] + $extraParams
+                );
+            }
+        }
+        // Take all of the remaining ranges and build a partition job from it
+        if (isset($ranges[1])) {
+            $jobs[] = new $class(
+                $title, // maintain parent job title
+                [
+                    'recursive' => true,
+                    'table'     => $params['table'],
+                    'range'     => [
+                        'start'     => $ranges[1][0],
+                        'end'       => $ranges[count($ranges) - 1][1],
+                        'batchSize' => $realBSize,
+                        'subranges' => array_slice($ranges, 1)
+                    ],
+                    // Track how many times the base job divided for debugging
+                    'division'  => isset($params['division'])
+                        ? ($params['division'] + 1)
+                        : 1
+                ] + $extraParams
+            );
+        }
 
-		return $jobs;
-	}
+        return $jobs;
+    }
 }

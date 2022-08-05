@@ -29,135 +29,148 @@ use MediaWiki\MainConfigNames;
  * @ingroup SpecialPage
  * @deprecated since 1.26
  */
-class SpecialResetTokens extends FormSpecialPage {
-	private $tokensList;
+class SpecialResetTokens extends FormSpecialPage
+{
+    private $tokensList;
 
-	public function __construct() {
-		parent::__construct( 'ResetTokens' );
-	}
+    public function __construct()
+    {
+        parent::__construct('ResetTokens');
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function requiresUnblock() {
-		return false;
-	}
+    public function requiresUnblock()
+    {
+        return false;
+    }
 
-	/**
-	 * Returns the token information list for this page after running
-	 * the hook and filtering out disabled preferences.
-	 *
-	 * @return array
-	 */
-	protected function getTokensList() {
-		if ( !isset( $this->tokensList ) ) {
-			$tokens = [
-				[ 'preference' => 'watchlisttoken', 'label-message' => 'resettokens-watchlist-token' ],
-			];
-			$this->getHookRunner()->onSpecialResetTokensTokens( $tokens );
+    /**
+     * Returns the token information list for this page after running
+     * the hook and filtering out disabled preferences.
+     *
+     * @return array
+     */
+    protected function getTokensList()
+    {
+        if (!isset($this->tokensList)) {
+            $tokens = [
+                ['preference' => 'watchlisttoken', 'label-message' => 'resettokens-watchlist-token'],
+            ];
+            $this->getHookRunner()->onSpecialResetTokensTokens($tokens);
 
-			$hiddenPrefs = $this->getConfig()->get( MainConfigNames::HiddenPrefs );
-			$tokens = array_filter( $tokens, static function ( $tok ) use ( $hiddenPrefs ) {
-				return !in_array( $tok['preference'], $hiddenPrefs );
-			} );
+            $hiddenPrefs = $this->getConfig()->get(MainConfigNames::HiddenPrefs);
+            $tokens = array_filter($tokens, static function ($tok) use ($hiddenPrefs) {
+                return !in_array($tok['preference'], $hiddenPrefs);
+            });
 
-			$this->tokensList = $tokens;
-		}
+            $this->tokensList = $tokens;
+        }
 
-		return $this->tokensList;
-	}
+        return $this->tokensList;
+    }
 
-	public function execute( $par ) {
-		// This is a preferences page, so no user JS for y'all.
-		$this->getOutput()->disallowUserJs();
-		$this->requireNamedUser();
+    public function execute($par)
+    {
+        // This is a preferences page, so no user JS for y'all.
+        $this->getOutput()->disallowUserJs();
+        $this->requireNamedUser();
 
-		parent::execute( $par );
+        parent::execute($par);
 
-		$this->getOutput()->addReturnTo( SpecialPage::getTitleFor( 'Preferences' ) );
-	}
+        $this->getOutput()->addReturnTo(SpecialPage::getTitleFor('Preferences'));
+    }
 
-	public function onSuccess() {
-		$this->getOutput()->wrapWikiMsg(
-			Html::successBox( '$1' ),
-			'resettokens-done'
-		);
-	}
+    public function onSuccess()
+    {
+        $this->getOutput()->wrapWikiMsg(
+            Html::successBox('$1'),
+            'resettokens-done'
+        );
+    }
 
-	/**
-	 * Display appropriate message if there's nothing to do.
-	 * The submit button is also suppressed in this case (see alterForm()).
-	 * @return array
-	 */
-	protected function getFormFields() {
-		$user = $this->getUser();
-		$tokens = $this->getTokensList();
+    /**
+     * Display appropriate message if there's nothing to do.
+     * The submit button is also suppressed in this case (see alterForm()).
+     * @return array
+     */
+    protected function getFormFields()
+    {
+        $user = $this->getUser();
+        $tokens = $this->getTokensList();
 
-		if ( $tokens ) {
-			$tokensForForm = [];
-			foreach ( $tokens as $tok ) {
-				$label = $this->msg( 'resettokens-token-label' )
-					->rawParams( $this->msg( $tok['label-message'] )->parse() )
-					->params( $user->getTokenFromOption( $tok['preference'] ) )
-					->escaped();
-				$tokensForForm[$label] = $tok['preference'];
-			}
+        if ($tokens) {
+            $tokensForForm = [];
+            foreach ($tokens as $tok) {
+                $label = $this->msg('resettokens-token-label')
+                    ->rawParams($this->msg($tok['label-message'])->parse())
+                    ->params($user->getTokenFromOption($tok['preference']))
+                    ->escaped();
+                $tokensForForm[$label] = $tok['preference'];
+            }
 
-			$desc = [
-				'label-message' => 'resettokens-tokens',
-				'type' => 'multiselect',
-				'options' => $tokensForForm,
-			];
-		} else {
-			$desc = [
-				'label-message' => 'resettokens-no-tokens',
-				'type' => 'info',
-			];
-		}
+            $desc = [
+                'label-message' => 'resettokens-tokens',
+                'type'          => 'multiselect',
+                'options'       => $tokensForForm,
+            ];
+        } else {
+            $desc = [
+                'label-message' => 'resettokens-no-tokens',
+                'type'          => 'info',
+            ];
+        }
 
-		return [
-			'tokens' => $desc,
-		];
-	}
+        return [
+            'tokens' => $desc,
+        ];
+    }
 
-	/**
-	 * Suppress the submit button if there's nothing to do;
-	 * provide additional message on it otherwise.
-	 * @param HTMLForm $form
-	 */
-	protected function alterForm( HTMLForm $form ) {
-		$form->setSubmitDestructive();
-		if ( $this->getTokensList() ) {
-			$form->setSubmitTextMsg( 'resettokens-resetbutton' );
-		} else {
-			$form->suppressDefaultSubmit();
-		}
-	}
+    /**
+     * Suppress the submit button if there's nothing to do;
+     * provide additional message on it otherwise.
+     * @param HTMLForm $form
+     */
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->setSubmitDestructive();
+        if ($this->getTokensList()) {
+            $form->setSubmitTextMsg('resettokens-resetbutton');
+        } else {
+            $form->suppressDefaultSubmit();
+        }
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-	public function onSubmit( array $formData ) {
-		if ( $formData['tokens'] ) {
-			$user = $this->getUser();
-			foreach ( $formData['tokens'] as $tokenPref ) {
-				$user->resetTokenFromOption( $tokenPref );
-			}
-			$user->saveSettings();
+    public function onSubmit(array $formData)
+    {
+        if ($formData['tokens']) {
+            $user = $this->getUser();
+            foreach ($formData['tokens'] as $tokenPref) {
+                $user->resetTokenFromOption($tokenPref);
+            }
+            $user->saveSettings();
 
-			return true;
-		}
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	protected function getGroupName() {
-		return 'users';
-	}
+    protected function getGroupName()
+    {
+        return 'users';
+    }
 
-	public function isListed() {
-		return (bool)$this->getTokensList();
-	}
+    public function isListed()
+    {
+        return (bool)$this->getTokensList();
+    }
 }

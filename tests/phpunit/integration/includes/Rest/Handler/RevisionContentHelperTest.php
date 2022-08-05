@@ -17,281 +17,295 @@ use MediaWikiIntegrationTestCase;
  * @covers \MediaWiki\Rest\Handler\RevisionContentHelper
  * @group Database
  */
-class RevisionContentHelperTest extends MediaWikiIntegrationTestCase {
-	use MockAuthorityTrait;
+class RevisionContentHelperTest extends MediaWikiIntegrationTestCase
+{
+    use MockAuthorityTrait;
 
-	private const NO_REVISION_ETAG = '"b620cd7841f9ea8f545f11cc44ce794f848fa2d3"';
+    private const NO_REVISION_ETAG = '"b620cd7841f9ea8f545f11cc44ce794f848fa2d3"';
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		// Clean up these tables after each test
-		$this->tablesUsed = [
-			'page',
-			'revision',
-			'comment',
-			'text',
-			'content'
-		];
-	}
+        // Clean up these tables after each test
+        $this->tablesUsed = [
+            'page',
+            'revision',
+            'comment',
+            'text',
+            'content'
+        ];
+    }
 
-	/**
-	 * @param array $params
-	 * @param Authority|null $authority
-	 * @return RevisionContentHelper
-	 * @throws \Exception
-	 */
-	private function newHelper(
-		array $params = [],
-		Authority $authority = null
-	): RevisionContentHelper {
-		$helper = new RevisionContentHelper(
-			new HashConfig( [
-				'RightsUrl' => 'https://example.com/rights',
-				'RightsText' => 'some rights',
-			] ),
-			$this->getServiceContainer()->getRevisionLookup(),
-			$this->getServiceContainer()->getTitleFormatter(),
-			$this->getServiceContainer()->getPageStore()
-		);
+    /**
+     * @param array $params
+     * @param Authority|null $authority
+     * @return RevisionContentHelper
+     * @throws \Exception
+     */
+    private function newHelper(
+        array $params = [],
+        Authority $authority = null
+    ): RevisionContentHelper
+    {
+        $helper = new RevisionContentHelper(
+            new HashConfig([
+                'RightsUrl'  => 'https://example.com/rights',
+                'RightsText' => 'some rights',
+            ]),
+            $this->getServiceContainer()->getRevisionLookup(),
+            $this->getServiceContainer()->getTitleFormatter(),
+            $this->getServiceContainer()->getPageStore()
+        );
 
-		$authority = $authority ?: $this->mockRegisteredUltimateAuthority();
-		$helper->init( $authority, $params );
-		return $helper;
-	}
+        $authority = $authority ?: $this->mockRegisteredUltimateAuthority();
+        $helper->init($authority, $params);
 
-	private function getExistingPageWithRevisions( $name ) {
-		$page = $this->getNonexistingTestPage( $name );
+        return $helper;
+    }
 
-		$this->editPage( $page, 'First revision of ' . $name );
-		$revisions['first'] = $page->getRevisionRecord();
+    private function getExistingPageWithRevisions($name)
+    {
+        $page = $this->getNonexistingTestPage($name);
 
-		$this->editPage( $page, 'DEAD BEEF' );
-		$revisions['latest'] = $page->getRevisionRecord();
+        $this->editPage($page, 'First revision of ' . $name);
+        $revisions['first'] = $page->getRevisionRecord();
 
-		return [ $page, $revisions ];
-	}
+        $this->editPage($page, 'DEAD BEEF');
+        $revisions['latest'] = $page->getRevisionRecord();
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getRole()
-	 */
-	public function testGetRole() {
-		$helper = $this->newHelper();
-		$this->assertSame( SlotRecord::MAIN, $helper->getRole() );
-	}
+        return [$page, $revisions];
+    }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
-	 */
-	public function testGetPage() {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getRole()
+     */
+    public function testGetRole()
+    {
+        $helper = $this->newHelper();
+        $this->assertSame(SlotRecord::MAIN, $helper->getRole());
+    }
 
-		$helper = $this->newHelper( [ 'id' => $revisions['first']->getId() ] );
-		$this->assertSame( $page->getTitle()->getPrefixedDBKey(), $helper->getTitleText() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
+     */
+    public function testGetPage()
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
 
-		$this->assertInstanceOf( ExistingPageRecord::class, $helper->getPage() );
-		$this->assertTrue( $helper->getPage()->isSamePageAs( $page->getTitle() ) );
-	}
+        $helper = $this->newHelper(['id' => $revisions['first']->getId()]);
+        $this->assertSame($page->getTitle()->getPrefixedDBKey(), $helper->getTitleText());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
-	 */
-	public function testGetTargetRevisionAndContent() {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
+        $this->assertInstanceOf(ExistingPageRecord::class, $helper->getPage());
+        $this->assertTrue($helper->getPage()->isSamePageAs($page->getTitle()));
+    }
 
-		$helper = $this->newHelper( [ 'id' => $revisions['first']->getId() ] );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
+     */
+    public function testGetTargetRevisionAndContent()
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
 
-		$targetRev = $helper->getTargetRevision();
-		$this->assertInstanceOf( RevisionRecord::class, $targetRev );
-		$this->assertSame( $revisions['first']->getId(), $targetRev->getId() );
+        $helper = $this->newHelper(['id' => $revisions['first']->getId()]);
 
-		$pageContent = $helper->getContent();
-		$this->assertSame(
-			$revisions['first']->getContent( SlotRecord::MAIN )->serialize(),
-			$pageContent->serialize()
-		);
-	}
+        $targetRev = $helper->getTargetRevision();
+        $this->assertInstanceOf(RevisionRecord::class, $targetRev);
+        $this->assertSame($revisions['first']->getId(), $targetRev->getId());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
-	 */
-	public function testNoTitle() {
-		$helper = $this->newHelper();
+        $pageContent = $helper->getContent();
+        $this->assertSame(
+            $revisions['first']->getContent(SlotRecord::MAIN)->serialize(),
+            $pageContent->serialize()
+        );
+    }
 
-		$this->assertNull( $helper->getTitleText() );
-		$this->assertNull( $helper->getPage() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
+     */
+    public function testNoTitle()
+    {
+        $helper = $this->newHelper();
 
-		$this->assertFalse( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertNull($helper->getTitleText());
+        $this->assertNull($helper->getPage());
 
-		$this->assertNull( $helper->getTargetRevision() );
+        $this->assertFalse($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		$this->assertNull( $helper->getLastModified() );
-		$this->assertSame( self::NO_REVISION_ETAG, $helper->getETag() );
+        $this->assertNull($helper->getTargetRevision());
 
-		try {
-			$helper->getContent();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
+        $this->assertNull($helper->getLastModified());
+        $this->assertSame(self::NO_REVISION_ETAG, $helper->getETag());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
-	}
+        try {
+            $helper->getContent();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
-	 */
-	public function testNonExistingRevision() {
-		$helper = $this->newHelper( [ 'id' => 287436534 ] );
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
+    }
 
-		$this->assertSame( 287436534, $helper->getRevisionId() );
-		$this->assertNull( $helper->getTitleText() );
-		$this->assertNull( $helper->getPage() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
+     */
+    public function testNonExistingRevision()
+    {
+        $helper = $this->newHelper(['id' => 287436534]);
 
-		$this->assertFalse( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertSame(287436534, $helper->getRevisionId());
+        $this->assertNull($helper->getTitleText());
+        $this->assertNull($helper->getPage());
 
-		$this->assertNull( $helper->getTargetRevision() );
+        $this->assertFalse($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		$this->assertNull( $helper->getLastModified() );
-		$this->assertSame( self::NO_REVISION_ETAG, $helper->getETag() );
+        $this->assertNull($helper->getTargetRevision());
 
-		try {
-			$helper->getContent();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
+        $this->assertNull($helper->getLastModified());
+        $this->assertSame(self::NO_REVISION_ETAG, $helper->getETag());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
-	}
+        try {
+            $helper->getContent();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
-	 */
-	public function testForbidenPage() {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
-		$title = $page->getTitle();
-		$helper = $this->newHelper(
-			[ 'id' => $revisions['first']->getId() ],
-			$this->mockAnonNullAuthority()
-		);
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
+    }
 
-		$this->assertSame( $title->getPrefixedDBkey(), $helper->getTitleText() );
-		$this->assertTrue( $helper->getPage()->isSamePageAs( $title ) );
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::checkAccess()
+     */
+    public function testForbidenPage()
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
+        $title = $page->getTitle();
+        $helper = $this->newHelper(
+            ['id' => $revisions['first']->getId()],
+            $this->mockAnonNullAuthority()
+        );
 
-		$this->assertTrue( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertSame($title->getPrefixedDBkey(), $helper->getTitleText());
+        $this->assertTrue($helper->getPage()->isSamePageAs($title));
 
-		$this->assertNull( $helper->getLastModified() );
+        $this->assertTrue($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 403, $ex->getCode() );
-		}
-	}
+        $this->assertNull($helper->getLastModified());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getParamSettings()
-	 */
-	public function testParameterSettings() {
-		$helper = $this->newHelper();
-		$settings = $helper->getParamSettings();
-		$this->assertArrayHasKey( 'id', $settings );
-	}
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(403, $ex->getCode());
+        }
+    }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::setCacheControl()
-	 */
-	public function testCacheControl() {
-		$helper = $this->newHelper();
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::getParamSettings()
+     */
+    public function testParameterSettings()
+    {
+        $helper = $this->newHelper();
+        $settings = $helper->getParamSettings();
+        $this->assertArrayHasKey('id', $settings);
+    }
 
-		$response = new Response();
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::setCacheControl()
+     */
+    public function testCacheControl()
+    {
+        $helper = $this->newHelper();
 
-		$helper->setCacheControl( $response ); // default
-		$this->assertStringContainsString( 'max-age=5', $response->getHeaderLine( 'Cache-Control' ) );
+        $response = new Response();
 
-		$helper->setCacheControl( $response, 2 ); // explicit
-		$this->assertStringContainsString( 'max-age=2', $response->getHeaderLine( 'Cache-Control' ) );
+        $helper->setCacheControl($response); // default
+        $this->assertStringContainsString('max-age=5', $response->getHeaderLine('Cache-Control'));
 
-		$helper->setCacheControl( $response, 1000 * 1000 ); // too big
-		$this->assertStringContainsString( 'max-age=5', $response->getHeaderLine( 'Cache-Control' ) );
-	}
+        $helper->setCacheControl($response, 2); // explicit
+        $this->assertStringContainsString('max-age=2', $response->getHeaderLine('Cache-Control'));
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::constructMetadata()
-	 */
-	public function testConstructMetadata() {
-		[ $page, $revisions ] = $this->getExistingPageWithRevisions( __METHOD__ );
-		$title = $page->getTitle();
+        $helper->setCacheControl($response, 1000 * 1000); // too big
+        $this->assertStringContainsString('max-age=5', $response->getHeaderLine('Cache-Control'));
+    }
 
-		$revision = $revisions['first'];
-		$content = $revision->getContent( SlotRecord::MAIN );
-		$expected = [
-			'id' => $revision->getId(),
-			'size' => $revision->getSize(),
-			'minor' => $revision->isMinor(),
-			'timestamp' => wfTimestampOrNull( TS_ISO_8601, $revision->getTimestamp() ),
-			'content_model' => $content->getModel(),
-			'page' => [
-				'id' => $title->getArticleID(),
-				'key' => $title->getPrefixedDBkey(),
-				'title' => $title->getPrefixedText(),
-			],
-			'license' => [
-				'url' => 'https://example.com/rights',
-				'title' => 'some rights',
-			],
-			'user' => [
-				'id' => $revision->getUser()->getId(),
-				'name' => $revision->getUser()->getName(),
-			],
-			'comment' => '',
-			'delta' => null, // first revision doesn't have a delta for now
-		];
+    /**
+     * @covers \MediaWiki\Rest\Handler\RevisionContentHelper::constructMetadata()
+     */
+    public function testConstructMetadata()
+    {
+        [$page, $revisions] = $this->getExistingPageWithRevisions(__METHOD__);
+        $title = $page->getTitle();
 
-		$helper = $this->newHelper( [ 'id' => $revision->getId() ] );
-		$data = $helper->constructMetadata();
-		$this->assertEquals( $expected, $data );
-	}
+        $revision = $revisions['first'];
+        $content = $revision->getContent(SlotRecord::MAIN);
+        $expected = [
+            'id'            => $revision->getId(),
+            'size'          => $revision->getSize(),
+            'minor'         => $revision->isMinor(),
+            'timestamp'     => wfTimestampOrNull(TS_ISO_8601, $revision->getTimestamp()),
+            'content_model' => $content->getModel(),
+            'page'          => [
+                'id'    => $title->getArticleID(),
+                'key'   => $title->getPrefixedDBkey(),
+                'title' => $title->getPrefixedText(),
+            ],
+            'license'       => [
+                'url'   => 'https://example.com/rights',
+                'title' => 'some rights',
+            ],
+            'user'          => [
+                'id'   => $revision->getUser()->getId(),
+                'name' => $revision->getUser()->getName(),
+            ],
+            'comment'       => '',
+            'delta'         => null, // first revision doesn't have a delta for now
+        ];
+
+        $helper = $this->newHelper(['id' => $revision->getId()]);
+        $data = $helper->constructMetadata();
+        $this->assertEquals($expected, $data);
+    }
 
 }

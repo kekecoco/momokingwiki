@@ -32,77 +32,82 @@ use Wikimedia\Rdbms\IDatabase;
  * @ingroup Maintenance
  * @since 1.22
  */
-class PopulateRecentChangesSource extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Populates rc_source field of the recentchanges table with the data in rc_type.' );
-		$this->setBatchSize( 100 );
-	}
+class PopulateRecentChangesSource extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Populates rc_source field of the recentchanges table with the data in rc_type.');
+        $this->setBatchSize(100);
+    }
 
-	protected function doDBUpdates() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$batchSize = $this->getBatchSize();
-		if ( !$dbw->fieldExists( 'recentchanges', 'rc_source', __METHOD__ ) ) {
-			$this->error( 'rc_source field in recentchanges table does not exist.' );
-		}
+    protected function doDBUpdates()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $batchSize = $this->getBatchSize();
+        if (!$dbw->fieldExists('recentchanges', 'rc_source', __METHOD__)) {
+            $this->error('rc_source field in recentchanges table does not exist.');
+        }
 
-		$start = $dbw->selectField( 'recentchanges', 'MIN(rc_id)', '', __METHOD__ );
-		if ( !$start ) {
-			$this->output( "Nothing to do.\n" );
+        $start = $dbw->selectField('recentchanges', 'MIN(rc_id)', '', __METHOD__);
+        if (!$start) {
+            $this->output("Nothing to do.\n");
 
-			return true;
-		}
-		$end = $dbw->selectField( 'recentchanges', 'MAX(rc_id)', '', __METHOD__ );
-		$end += $batchSize - 1;
-		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
+            return true;
+        }
+        $end = $dbw->selectField('recentchanges', 'MAX(rc_id)', '', __METHOD__);
+        $end += $batchSize - 1;
+        $blockStart = $start;
+        $blockEnd = $start + $batchSize - 1;
 
-		$updatedValues = $this->buildUpdateCondition( $dbw );
+        $updatedValues = $this->buildUpdateCondition($dbw);
 
-		while ( $blockEnd <= $end ) {
-			$dbw->update(
-				'recentchanges',
-				[ $updatedValues ],
-				[
-					"rc_source = ''",
-					"rc_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd
-				],
-				__METHOD__
-			);
+        while ($blockEnd <= $end) {
+            $dbw->update(
+                'recentchanges',
+                [$updatedValues],
+                [
+                    "rc_source = ''",
+                    "rc_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd
+                ],
+                __METHOD__
+            );
 
-			$this->output( "." );
-			MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->waitForReplication();
+            $this->output(".");
+            MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->waitForReplication();
 
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
-		}
+            $blockStart += $batchSize;
+            $blockEnd += $batchSize;
+        }
 
-		$this->output( "\nDone.\n" );
-	}
+        $this->output("\nDone.\n");
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function buildUpdateCondition( IDatabase $dbw ) {
-		$rcNew = $dbw->addQuotes( RC_NEW );
-		$rcSrcNew = $dbw->addQuotes( RecentChange::SRC_NEW );
-		$rcEdit = $dbw->addQuotes( RC_EDIT );
-		$rcSrcEdit = $dbw->addQuotes( RecentChange::SRC_EDIT );
-		$rcLog = $dbw->addQuotes( RC_LOG );
-		$rcSrcLog = $dbw->addQuotes( RecentChange::SRC_LOG );
-		$rcExternal = $dbw->addQuotes( RC_EXTERNAL );
-		$rcSrcExternal = $dbw->addQuotes( RecentChange::SRC_EXTERNAL );
+    protected function buildUpdateCondition(IDatabase $dbw)
+    {
+        $rcNew = $dbw->addQuotes(RC_NEW);
+        $rcSrcNew = $dbw->addQuotes(RecentChange::SRC_NEW);
+        $rcEdit = $dbw->addQuotes(RC_EDIT);
+        $rcSrcEdit = $dbw->addQuotes(RecentChange::SRC_EDIT);
+        $rcLog = $dbw->addQuotes(RC_LOG);
+        $rcSrcLog = $dbw->addQuotes(RecentChange::SRC_LOG);
+        $rcExternal = $dbw->addQuotes(RC_EXTERNAL);
+        $rcSrcExternal = $dbw->addQuotes(RecentChange::SRC_EXTERNAL);
 
-		return "rc_source = CASE
+        return "rc_source = CASE
 					WHEN rc_type = $rcNew THEN $rcSrcNew
 					WHEN rc_type = $rcEdit THEN $rcSrcEdit
 					WHEN rc_type = $rcLog THEN $rcSrcLog
 					WHEN rc_type = $rcExternal THEN $rcSrcExternal
 					ELSE ''
 				END";
-	}
+    }
 }
 
 $maintClass = PopulateRecentChangesSource::class;

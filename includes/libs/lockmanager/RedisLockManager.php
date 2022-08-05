@@ -37,74 +37,77 @@
  * @ingroup LockManager
  * @since 1.22
  */
-class RedisLockManager extends QuorumLockManager {
-	/** @var array Mapping of lock types to the type actually used */
-	protected $lockTypeMap = [
-		self::LOCK_SH => self::LOCK_SH,
-		self::LOCK_UW => self::LOCK_SH,
-		self::LOCK_EX => self::LOCK_EX
-	];
+class RedisLockManager extends QuorumLockManager
+{
+    /** @var array Mapping of lock types to the type actually used */
+    protected $lockTypeMap = [
+        self::LOCK_SH => self::LOCK_SH,
+        self::LOCK_UW => self::LOCK_SH,
+        self::LOCK_EX => self::LOCK_EX
+    ];
 
-	/** @var RedisConnectionPool */
-	protected $redisPool;
+    /** @var RedisConnectionPool */
+    protected $redisPool;
 
-	/** @var array Map server names to hostname/IP and port numbers */
-	protected $lockServers = [];
+    /** @var array Map server names to hostname/IP and port numbers */
+    protected $lockServers = [];
 
-	/**
-	 * Construct a new instance from configuration.
-	 *
-	 * @param array $config Parameters include:
-	 *   - lockServers  : Associative array of server names to "<IP>:<port>" strings.
-	 *   - srvsByBucket : An array of up to 16 arrays, each containing the server names
-	 *                    in a bucket. Each bucket should have an odd number of servers.
-	 *                    If omitted, all servers will be in one bucket. (optional).
-	 *   - redisConfig  : Configuration for RedisConnectionPool::singleton() (optional).
-	 * @throws Exception
-	 */
-	public function __construct( array $config ) {
-		parent::__construct( $config );
+    /**
+     * Construct a new instance from configuration.
+     *
+     * @param array $config Parameters include:
+     *   - lockServers  : Associative array of server names to "<IP>:<port>" strings.
+     *   - srvsByBucket : An array of up to 16 arrays, each containing the server names
+     *                    in a bucket. Each bucket should have an odd number of servers.
+     *                    If omitted, all servers will be in one bucket. (optional).
+     *   - redisConfig  : Configuration for RedisConnectionPool::singleton() (optional).
+     * @throws Exception
+     */
+    public function __construct(array $config)
+    {
+        parent::__construct($config);
 
-		$this->lockServers = $config['lockServers'];
-		if ( isset( $config['srvsByBucket'] ) ) {
-			// Sanitize srvsByBucket config to prevent PHP errors
-			$this->srvsByBucket = array_filter( $config['srvsByBucket'], 'is_array' );
-			$this->srvsByBucket = array_values( $this->srvsByBucket ); // consecutive
-		} else {
-			$this->srvsByBucket = [ array_keys( $this->lockServers ) ];
-		}
+        $this->lockServers = $config['lockServers'];
+        if (isset($config['srvsByBucket'])) {
+            // Sanitize srvsByBucket config to prevent PHP errors
+            $this->srvsByBucket = array_filter($config['srvsByBucket'], 'is_array');
+            $this->srvsByBucket = array_values($this->srvsByBucket); // consecutive
+        } else {
+            $this->srvsByBucket = [array_keys($this->lockServers)];
+        }
 
-		$config['redisConfig']['serializer'] = 'none';
-		$this->redisPool = RedisConnectionPool::singleton( $config['redisConfig'] );
-	}
+        $config['redisConfig']['serializer'] = 'none';
+        $this->redisPool = RedisConnectionPool::singleton($config['redisConfig']);
+    }
 
-	protected function getLocksOnServer( $lockSrv, array $pathsByType ) {
-		$status = StatusValue::newGood();
+    protected function getLocksOnServer($lockSrv, array $pathsByType)
+    {
+        $status = StatusValue::newGood();
 
-		$pathList = array_merge( ...array_values( $pathsByType ) );
+        $pathList = array_merge(...array_values($pathsByType));
 
-		$server = $this->lockServers[$lockSrv];
-		$conn = $this->redisPool->getConnection( $server, $this->logger );
-		if ( !$conn ) {
-			foreach ( $pathList as $path ) {
-				$status->fatal( 'lockmanager-fail-acquirelock', $path );
-			}
+        $server = $this->lockServers[$lockSrv];
+        $conn = $this->redisPool->getConnection($server, $this->logger);
+        if (!$conn) {
+            foreach ($pathList as $path) {
+                $status->fatal('lockmanager-fail-acquirelock', $path);
+            }
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$pathsByKey = []; // (type:hash => path) map
-		foreach ( $pathsByType as $type => $paths ) {
-			$typeString = ( $type == LockManager::LOCK_SH ) ? 'SH' : 'EX';
-			foreach ( $paths as $path ) {
-				$pathsByKey[$this->recordKeyForPath( $path, $typeString )] = $path;
-			}
-		}
+        $pathsByKey = []; // (type:hash => path) map
+        foreach ($pathsByType as $type => $paths) {
+            $typeString = ($type == LockManager::LOCK_SH) ? 'SH' : 'EX';
+            foreach ($paths as $path) {
+                $pathsByKey[$this->recordKeyForPath($path, $typeString)] = $path;
+            }
+        }
 
-		try {
-			static $script =
-			/** @lang Lua */
-<<<LUA
+        try {
+            static $script =
+                /** @lang Lua */
+                <<<LUA
 			local failed = {}
 			-- Load input params (e.g. session, ttl, time of request)
 			local rSession, rTTL, rMaxTTL, rTime = unpack(ARGV)
@@ -143,61 +146,62 @@ class RedisLockManager extends QuorumLockManager {
 			end
 			return failed
 LUA;
-			$res = $conn->luaEval( $script,
-				array_merge(
-					array_keys( $pathsByKey ), // KEYS[0], KEYS[1],...,KEYS[N]
-					[
-						$this->session, // ARGV[1]
-						$this->lockTTL, // ARGV[2]
-						self::MAX_LOCK_TTL, // ARGV[3]
-						time() // ARGV[4]
-					]
-				),
-				count( $pathsByKey ) # number of first argument(s) that are keys
-			);
-		} catch ( RedisException $e ) {
-			$res = false;
-			$this->redisPool->handleError( $conn, $e );
-		}
+            $res = $conn->luaEval($script,
+                array_merge(
+                    array_keys($pathsByKey), // KEYS[0], KEYS[1],...,KEYS[N]
+                    [
+                        $this->session, // ARGV[1]
+                        $this->lockTTL, // ARGV[2]
+                        self::MAX_LOCK_TTL, // ARGV[3]
+                        time() // ARGV[4]
+                    ]
+                ),
+                count($pathsByKey) # number of first argument(s) that are keys
+            );
+        } catch (RedisException $e) {
+            $res = false;
+            $this->redisPool->handleError($conn, $e);
+        }
 
-		if ( $res === false ) {
-			foreach ( $pathList as $path ) {
-				$status->fatal( 'lockmanager-fail-acquirelock', $path );
-			}
-		} elseif ( count( $res ) ) {
-			$status->fatal( 'lockmanager-fail-conflict' );
-		}
+        if ($res === false) {
+            foreach ($pathList as $path) {
+                $status->fatal('lockmanager-fail-acquirelock', $path);
+            }
+        } elseif (count($res)) {
+            $status->fatal('lockmanager-fail-conflict');
+        }
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function freeLocksOnServer( $lockSrv, array $pathsByType ) {
-		$status = StatusValue::newGood();
+    protected function freeLocksOnServer($lockSrv, array $pathsByType)
+    {
+        $status = StatusValue::newGood();
 
-		$pathList = array_merge( ...array_values( $pathsByType ) );
+        $pathList = array_merge(...array_values($pathsByType));
 
-		$server = $this->lockServers[$lockSrv];
-		$conn = $this->redisPool->getConnection( $server, $this->logger );
-		if ( !$conn ) {
-			foreach ( $pathList as $path ) {
-				$status->fatal( 'lockmanager-fail-releaselock', $path );
-			}
+        $server = $this->lockServers[$lockSrv];
+        $conn = $this->redisPool->getConnection($server, $this->logger);
+        if (!$conn) {
+            foreach ($pathList as $path) {
+                $status->fatal('lockmanager-fail-releaselock', $path);
+            }
 
-			return $status;
-		}
+            return $status;
+        }
 
-		$pathsByKey = []; // (type:hash => path) map
-		foreach ( $pathsByType as $type => $paths ) {
-			$typeString = ( $type == LockManager::LOCK_SH ) ? 'SH' : 'EX';
-			foreach ( $paths as $path ) {
-				$pathsByKey[$this->recordKeyForPath( $path, $typeString )] = $path;
-			}
-		}
+        $pathsByKey = []; // (type:hash => path) map
+        foreach ($pathsByType as $type => $paths) {
+            $typeString = ($type == LockManager::LOCK_SH) ? 'SH' : 'EX';
+            foreach ($paths as $path) {
+                $pathsByKey[$this->recordKeyForPath($path, $typeString)] = $path;
+            }
+        }
 
-		try {
-			static $script =
-			/** @lang Lua */
-<<<LUA
+        try {
+            static $script =
+                /** @lang Lua */
+                <<<LUA
 			local failed = {}
 			-- Load input params (e.g. session)
 			local rSession = unpack(ARGV)
@@ -215,65 +219,69 @@ LUA;
 			end
 			return failed
 LUA;
-			$res = $conn->luaEval( $script,
-				array_merge(
-					array_keys( $pathsByKey ), // KEYS[0], KEYS[1],...,KEYS[N]
-					[
-						$this->session, // ARGV[1]
-					]
-				),
-				count( $pathsByKey ) # number of first argument(s) that are keys
-			);
-		} catch ( RedisException $e ) {
-			$res = false;
-			$this->redisPool->handleError( $conn, $e );
-		}
+            $res = $conn->luaEval($script,
+                array_merge(
+                    array_keys($pathsByKey), // KEYS[0], KEYS[1],...,KEYS[N]
+                    [
+                        $this->session, // ARGV[1]
+                    ]
+                ),
+                count($pathsByKey) # number of first argument(s) that are keys
+            );
+        } catch (RedisException $e) {
+            $res = false;
+            $this->redisPool->handleError($conn, $e);
+        }
 
-		if ( $res === false ) {
-			foreach ( $pathList as $path ) {
-				$status->fatal( 'lockmanager-fail-releaselock', $path );
-			}
-		} else {
-			foreach ( $res as $key ) {
-				$status->fatal( 'lockmanager-fail-releaselock', $pathsByKey[$key] );
-			}
-		}
+        if ($res === false) {
+            foreach ($pathList as $path) {
+                $status->fatal('lockmanager-fail-releaselock', $path);
+            }
+        } else {
+            foreach ($res as $key) {
+                $status->fatal('lockmanager-fail-releaselock', $pathsByKey[$key]);
+            }
+        }
 
-		return $status;
-	}
+        return $status;
+    }
 
-	protected function releaseAllLocks() {
-		return StatusValue::newGood(); // not supported
-	}
+    protected function releaseAllLocks()
+    {
+        return StatusValue::newGood(); // not supported
+    }
 
-	protected function isServerUp( $lockSrv ) {
-		$conn = $this->redisPool->getConnection( $this->lockServers[$lockSrv], $this->logger );
+    protected function isServerUp($lockSrv)
+    {
+        $conn = $this->redisPool->getConnection($this->lockServers[$lockSrv], $this->logger);
 
-		return (bool)$conn;
-	}
+        return (bool)$conn;
+    }
 
-	/**
-	 * @param string $path
-	 * @param string $type One of (EX,SH)
-	 * @return string
-	 */
-	protected function recordKeyForPath( $path, $type ) {
-		return implode( ':',
-			[ __CLASS__, 'locks', "$type:" . $this->sha1Base36Absolute( $path ) ] );
-	}
+    /**
+     * @param string $path
+     * @param string $type One of (EX,SH)
+     * @return string
+     */
+    protected function recordKeyForPath($path, $type)
+    {
+        return implode(':',
+            [__CLASS__, 'locks', "$type:" . $this->sha1Base36Absolute($path)]);
+    }
 
-	/**
-	 * Make sure remaining locks get cleared
-	 */
-	public function __destruct() {
-		while ( count( $this->locksHeld ) ) {
-			$pathsByType = [];
-			foreach ( $this->locksHeld as $path => $locks ) {
-				foreach ( $locks as $type => $count ) {
-					$pathsByType[$type][] = $path;
-				}
-			}
-			$this->unlockByType( $pathsByType );
-		}
-	}
+    /**
+     * Make sure remaining locks get cleared
+     */
+    public function __destruct()
+    {
+        while (count($this->locksHeld)) {
+            $pathsByType = [];
+            foreach ($this->locksHeld as $path => $locks) {
+                foreach ($locks as $type => $count) {
+                    $pathsByType[$type][] = $path;
+                }
+            }
+            $this->unlockByType($pathsByType);
+        }
+    }
 }

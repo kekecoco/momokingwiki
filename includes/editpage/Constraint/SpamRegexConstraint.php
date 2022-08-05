@@ -32,100 +32,107 @@ use Title;
  * @internal
  * @author DannyS712
  */
-class SpamRegexConstraint implements IEditConstraint {
+class SpamRegexConstraint implements IEditConstraint
+{
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	/** @var SpamChecker */
-	private $spamChecker;
+    /** @var SpamChecker */
+    private $spamChecker;
 
-	/** @var string */
-	private $summary;
+    /** @var string */
+    private $summary;
 
-	/** @var ?string */
-	private $sectionHeading;
+    /** @var ?string */
+    private $sectionHeading;
 
-	/** @var string */
-	private $text;
+    /** @var string */
+    private $text;
 
-	/** @var string */
-	private $reqIP;
+    /** @var string */
+    private $reqIP;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var string */
-	private $match = '';
+    /** @var string */
+    private $match = '';
 
-	/**
-	 * @param LoggerInterface $logger for logging hits
-	 * @param SpamChecker $spamChecker
-	 * @param string $summary
-	 * @param ?string $sectionHeading
-	 * @param string $text
-	 * @param string $reqIP for logging hits
-	 * @param Title $title for logging hits
-	 */
-	public function __construct(
-		LoggerInterface $logger,
-		SpamChecker $spamChecker,
-		string $summary,
-		?string $sectionHeading,
-		string $text,
-		string $reqIP,
-		Title $title
-	) {
-		$this->logger = $logger;
-		$this->spamChecker = $spamChecker;
-		$this->summary = $summary;
-		$this->sectionHeading = $sectionHeading;
-		$this->text = $text;
-		$this->reqIP = $reqIP;
-		$this->title = $title;
-	}
+    /**
+     * @param LoggerInterface $logger for logging hits
+     * @param SpamChecker $spamChecker
+     * @param string $summary
+     * @param ?string $sectionHeading
+     * @param string $text
+     * @param string $reqIP for logging hits
+     * @param Title $title for logging hits
+     */
+    public function __construct(
+        LoggerInterface $logger,
+        SpamChecker $spamChecker,
+        string $summary,
+        ?string $sectionHeading,
+        string $text,
+        string $reqIP,
+        Title $title
+    )
+    {
+        $this->logger = $logger;
+        $this->spamChecker = $spamChecker;
+        $this->summary = $summary;
+        $this->sectionHeading = $sectionHeading;
+        $this->text = $text;
+        $this->reqIP = $reqIP;
+        $this->title = $title;
+    }
 
-	public function checkConstraint(): string {
-		$match = $this->spamChecker->checkSummary( $this->summary );
-		if ( $match === false && $this->sectionHeading !== null ) {
-			// If the section isn't new, the $this->sectionHeading is null
-			$match = $this->spamChecker->checkContent( $this->sectionHeading );
-		}
-		if ( $match === false ) {
-			$match = $this->spamChecker->checkContent( $this->text );
-		}
+    public function checkConstraint(): string
+    {
+        $match = $this->spamChecker->checkSummary($this->summary);
+        if ($match === false && $this->sectionHeading !== null) {
+            // If the section isn't new, the $this->sectionHeading is null
+            $match = $this->spamChecker->checkContent($this->sectionHeading);
+        }
+        if ($match === false) {
+            $match = $this->spamChecker->checkContent($this->text);
+        }
 
-		if ( $match === false ) {
-			return self::CONSTRAINT_PASSED;
-		}
+        if ($match === false) {
+            return self::CONSTRAINT_PASSED;
+        }
 
-		$this->match = $match;
-		$this->logger->debug(
-			'{ip} spam regex hit [[{title}]]: "{match}"',
-			[
-				'ip' => $this->reqIP,
-				'title' => $this->title->getPrefixedDBkey(),
-				'match' => str_replace( "\n", '', $match )
-			]
-		);
-		return self::CONSTRAINT_FAILED;
-	}
+        $this->match = $match;
+        $this->logger->debug(
+            '{ip} spam regex hit [[{title}]]: "{match}"',
+            [
+                'ip'    => $this->reqIP,
+                'title' => $this->title->getPrefixedDBkey(),
+                'match' => str_replace("\n", '', $match)
+            ]
+        );
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->match !== '' ) {
-			$match = str_replace( "\n", '', $this->match );
-			$statusValue->fatal( 'spamprotectionmatch', $match );
-			$statusValue->value = self::AS_SPAM_ERROR;
-		}
-		return $statusValue;
-	}
+        return self::CONSTRAINT_FAILED;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getMatch(): string {
-		return $this->match;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->match !== '') {
+            $match = str_replace("\n", '', $this->match);
+            $statusValue->fatal('spamprotectionmatch', $match);
+            $statusValue->value = self::AS_SPAM_ERROR;
+        }
+
+        return $statusValue;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMatch(): string
+    {
+        return $this->match;
+    }
 
 }

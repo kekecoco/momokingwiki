@@ -31,12 +31,14 @@ use MediaWiki\MediaWikiServices;
  * @ingroup Maintenance
  * @since 1.28
  */
-class CleanupEmptyCategories extends LoggedUpdateMaintenance {
+class CleanupEmptyCategories extends LoggedUpdateMaintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			<<<TEXT
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            <<<TEXT
 This script will clean up the category table by removing entries for empty
 categories without a description page and adding entries for empty categories
 with a description page. It will print out progress indicators every batch. The
@@ -50,156 +52,159 @@ options with the last printed progress indicator to pick up where you left off.
 When the script has finished, it will make a note of this in the database, and
 will not run again without the --force option.
 TEXT
-		);
+        );
 
-		$this->addOption(
-			'mode',
-			'"add" empty categories with description pages, "remove" empty categories '
-			. 'without description pages, or "both"',
-			false,
-			true
-		);
-		$this->addOption(
-			'begin',
-			'Only do categories whose names are alphabetically after the provided name',
-			false,
-			true
-		);
-		$this->addOption(
-			'throttle',
-			'Wait this many milliseconds after each batch. Default: 0',
-			false,
-			true
-		);
-	}
+        $this->addOption(
+            'mode',
+            '"add" empty categories with description pages, "remove" empty categories '
+            . 'without description pages, or "both"',
+            false,
+            true
+        );
+        $this->addOption(
+            'begin',
+            'Only do categories whose names are alphabetically after the provided name',
+            false,
+            true
+        );
+        $this->addOption(
+            'throttle',
+            'Wait this many milliseconds after each batch. Default: 0',
+            false,
+            true
+        );
+    }
 
-	protected function getUpdateKey() {
-		return 'cleanup empty categories';
-	}
+    protected function getUpdateKey()
+    {
+        return 'cleanup empty categories';
+    }
 
-	protected function doDBUpdates() {
-		$mode = $this->getOption( 'mode', 'both' );
-		$begin = $this->getOption( 'begin', '' );
-		$throttle = $this->getOption( 'throttle', 0 );
+    protected function doDBUpdates()
+    {
+        $mode = $this->getOption('mode', 'both');
+        $begin = $this->getOption('begin', '');
+        $throttle = $this->getOption('throttle', 0);
 
-		if ( !in_array( $mode, [ 'add', 'remove', 'both' ] ) ) {
-			$this->output( "--mode must be 'add', 'remove', or 'both'.\n" );
-			return false;
-		}
+        if (!in_array($mode, ['add', 'remove', 'both'])) {
+            $this->output("--mode must be 'add', 'remove', or 'both'.\n");
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+            return false;
+        }
 
-		$throttle = intval( $throttle );
+        $dbw = $this->getDB(DB_PRIMARY);
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-		if ( $mode === 'add' || $mode === 'both' ) {
-			if ( $begin !== '' ) {
-				$where = [ 'page_title > ' . $dbw->addQuotes( $begin ) ];
-			} else {
-				$where = [];
-			}
+        $throttle = intval($throttle);
 
-			$this->output( "Adding empty categories with description pages...\n" );
-			while ( true ) {
-				# Find which category to update
-				$rows = $dbw->select(
-					[ 'page', 'category' ],
-					'page_title',
-					array_merge( $where, [
-						'page_namespace' => NS_CATEGORY,
-						'cat_title' => null,
-					] ),
-					__METHOD__,
-					[
-						'ORDER BY' => 'page_title',
-						'LIMIT' => $this->getBatchSize(),
-					],
-					[
-						'category' => [ 'LEFT JOIN', 'page_title = cat_title' ],
-					]
-				);
-				if ( !$rows || $rows->numRows() <= 0 ) {
-					break;
-				}
+        if ($mode === 'add' || $mode === 'both') {
+            if ($begin !== '') {
+                $where = ['page_title > ' . $dbw->addQuotes($begin)];
+            } else {
+                $where = [];
+            }
 
-				foreach ( $rows as $row ) {
-					$name = $row->page_title;
-					$where = [ 'page_title > ' . $dbw->addQuotes( $name ) ];
+            $this->output("Adding empty categories with description pages...\n");
+            while (true) {
+                # Find which category to update
+                $rows = $dbw->select(
+                    ['page', 'category'],
+                    'page_title',
+                    array_merge($where, [
+                        'page_namespace' => NS_CATEGORY,
+                        'cat_title'      => null,
+                    ]),
+                    __METHOD__,
+                    [
+                        'ORDER BY' => 'page_title',
+                        'LIMIT'    => $this->getBatchSize(),
+                    ],
+                    [
+                        'category' => ['LEFT JOIN', 'page_title = cat_title'],
+                    ]
+                );
+                if (!$rows || $rows->numRows() <= 0) {
+                    break;
+                }
 
-					# Use the row to update the category count
-					$cat = Category::newFromName( $name );
-					if ( !is_object( $cat ) ) {
-						$this->output( "The category named $name is not valid?!\n" );
-					} else {
-						$cat->refreshCounts();
-					}
-				}
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable $rows has at at least one item
-				$this->output( "--mode=$mode --begin=$name\n" );
+                foreach ($rows as $row) {
+                    $name = $row->page_title;
+                    $where = ['page_title > ' . $dbw->addQuotes($name)];
 
-				$lbFactory->waitForReplication();
-				usleep( $throttle * 1000 );
-			}
+                    # Use the row to update the category count
+                    $cat = Category::newFromName($name);
+                    if (!is_object($cat)) {
+                        $this->output("The category named $name is not valid?!\n");
+                    } else {
+                        $cat->refreshCounts();
+                    }
+                }
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable $rows has at at least one item
+                $this->output("--mode=$mode --begin=$name\n");
 
-			$begin = '';
-		}
+                $lbFactory->waitForReplication();
+                usleep($throttle * 1000);
+            }
 
-		if ( $mode === 'remove' || $mode === 'both' ) {
-			if ( $begin !== '' ) {
-				$where = [ 'cat_title > ' . $dbw->addQuotes( $begin ) ];
-			} else {
-				$where = [];
-			}
+            $begin = '';
+        }
 
-			$this->output( "Removing empty categories without description pages...\n" );
-			while ( true ) {
-				# Find which category to update
-				$rows = $dbw->select(
-					[ 'category', 'page' ],
-					'cat_title',
-					array_merge( $where, [
-						'page_title' => null,
-						'cat_pages' => 0,
-					] ),
-					__METHOD__,
-					[
-						'ORDER BY' => 'cat_title',
-						'LIMIT' => $this->getBatchSize(),
-					],
-					[
-						'page' => [ 'LEFT JOIN', [
-							'page_namespace' => NS_CATEGORY, 'page_title = cat_title'
-						] ],
-					]
-				);
-				if ( !$rows || $rows->numRows() <= 0 ) {
-					break;
-				}
-				foreach ( $rows as $row ) {
-					$name = $row->cat_title;
-					$where = [ 'cat_title > ' . $dbw->addQuotes( $name ) ];
+        if ($mode === 'remove' || $mode === 'both') {
+            if ($begin !== '') {
+                $where = ['cat_title > ' . $dbw->addQuotes($begin)];
+            } else {
+                $where = [];
+            }
 
-					# Use the row to update the category count
-					$cat = Category::newFromName( $name );
-					if ( !is_object( $cat ) ) {
-						$this->output( "The category named $name is not valid?!\n" );
-					} else {
-						$cat->refreshCounts();
-					}
-				}
+            $this->output("Removing empty categories without description pages...\n");
+            while (true) {
+                # Find which category to update
+                $rows = $dbw->select(
+                    ['category', 'page'],
+                    'cat_title',
+                    array_merge($where, [
+                        'page_title' => null,
+                        'cat_pages'  => 0,
+                    ]),
+                    __METHOD__,
+                    [
+                        'ORDER BY' => 'cat_title',
+                        'LIMIT'    => $this->getBatchSize(),
+                    ],
+                    [
+                        'page' => ['LEFT JOIN', [
+                            'page_namespace' => NS_CATEGORY, 'page_title = cat_title'
+                        ]],
+                    ]
+                );
+                if (!$rows || $rows->numRows() <= 0) {
+                    break;
+                }
+                foreach ($rows as $row) {
+                    $name = $row->cat_title;
+                    $where = ['cat_title > ' . $dbw->addQuotes($name)];
 
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
-				$this->output( "--mode=remove --begin=$name\n" );
+                    # Use the row to update the category count
+                    $cat = Category::newFromName($name);
+                    if (!is_object($cat)) {
+                        $this->output("The category named $name is not valid?!\n");
+                    } else {
+                        $cat->refreshCounts();
+                    }
+                }
 
-				$lbFactory->waitForReplication();
-				usleep( $throttle * 1000 );
-			}
-		}
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable rows contains at least one item
+                $this->output("--mode=remove --begin=$name\n");
 
-		$this->output( "Category cleanup complete.\n" );
+                $lbFactory->waitForReplication();
+                usleep($throttle * 1000);
+            }
+        }
 
-		return true;
-	}
+        $this->output("Category cleanup complete.\n");
+
+        return true;
+    }
 }
 
 $maintClass = CleanupEmptyCategories::class;

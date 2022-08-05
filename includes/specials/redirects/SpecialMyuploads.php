@@ -29,27 +29,31 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialMyuploads extends RedirectSpecialPage {
-	public function __construct() {
-		parent::__construct( 'Myuploads' );
-		$this->mAllowedRedirectParams = [ 'limit', 'ilshowall', 'ilsearch' ];
-	}
+class SpecialMyuploads extends RedirectSpecialPage
+{
+    public function __construct()
+    {
+        parent::__construct('Myuploads');
+        $this->mAllowedRedirectParams = ['limit', 'ilshowall', 'ilsearch'];
+    }
 
-	/**
-	 * @param string|null $subpage
-	 * @return Title
-	 */
-	public function getRedirect( $subpage ) {
-		return SpecialPage::getTitleFor( 'Listfiles', $this->getUser()->getName() );
-	}
+    /**
+     * @param string|null $subpage
+     * @return Title
+     */
+    public function getRedirect($subpage)
+    {
+        return SpecialPage::getTitleFor('Listfiles', $this->getUser()->getName());
+    }
 
-	/**
-	 * Target identifies a specific User. See T109724.
-	 *
-	 * @since 1.27
-	 * @return bool
-	 */
-	public function personallyIdentifiableTarget() {
-		return true;
-	}
+    /**
+     * Target identifies a specific User. See T109724.
+     *
+     * @return bool
+     * @since 1.27
+     */
+    public function personallyIdentifiableTarget()
+    {
+        return true;
+    }
 }

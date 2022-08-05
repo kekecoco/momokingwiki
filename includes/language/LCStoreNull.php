@@ -23,19 +23,24 @@
  *
  * @ingroup Language
  */
-class LCStoreNull implements LCStore {
+class LCStoreNull implements LCStore
+{
 
-	public function get( $code, $key ) {
-		return null;
-	}
+    public function get($code, $key)
+    {
+        return null;
+    }
 
-	public function startWrite( $code ) {
-	}
+    public function startWrite($code)
+    {
+    }
 
-	public function finishWrite() {
-	}
+    public function finishWrite()
+    {
+    }
 
-	public function set( $key, $value ) {
-	}
+    public function set($key, $value)
+    {
+    }
 
 }

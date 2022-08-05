@@ -34,69 +34,73 @@ use MediaWiki\MediaWikiServices;
  * @ingroup JobQueue
  * @since 1.31
  */
-class ClearWatchlistNotificationsJob extends Job implements GenericParameterJob {
-	public function __construct( array $params ) {
-		parent::__construct( 'clearWatchlistNotifications', $params );
+class ClearWatchlistNotificationsJob extends Job implements GenericParameterJob
+{
+    public function __construct(array $params)
+    {
+        parent::__construct('clearWatchlistNotifications', $params);
 
-		static $required = [ 'userId', 'casTime' ];
-		$missing = implode( ', ', array_diff( $required, array_keys( $this->params ) ) );
-		if ( $missing != '' ) {
-			throw new InvalidArgumentException( "Missing parameter(s) $missing" );
-		}
+        static $required = ['userId', 'casTime'];
+        $missing = implode(', ', array_diff($required, array_keys($this->params)));
+        if ($missing != '') {
+            throw new InvalidArgumentException("Missing parameter(s) $missing");
+        }
 
-		$this->removeDuplicates = true;
-	}
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		$services = MediaWikiServices::getInstance();
-		$lbFactory = $services->getDBLoadBalancerFactory();
-		$rowsPerQuery = $services->getMainConfig()->get( MainConfigNames::UpdateRowsPerQuery );
+    public function run()
+    {
+        $services = MediaWikiServices::getInstance();
+        $lbFactory = $services->getDBLoadBalancerFactory();
+        $rowsPerQuery = $services->getMainConfig()->get(MainConfigNames::UpdateRowsPerQuery);
 
-		$dbw = $lbFactory->getMainLB()->getConnectionRef( DB_PRIMARY );
-		$ticket = $lbFactory->getEmptyTransactionTicket( __METHOD__ );
-		$timestamp = $this->params['timestamp'] ?? null;
-		if ( $timestamp === null ) {
-			$timestampCond = 'wl_notificationtimestamp IS NOT NULL';
-		} else {
-			$timestamp = $dbw->timestamp( $timestamp );
-			$timestampCond = 'wl_notificationtimestamp != ' . $dbw->addQuotes( $timestamp ) .
-				' OR wl_notificationtimestamp IS NULL';
-		}
-		// New notifications since the reset should not be cleared
-		$casTimeCond = 'wl_notificationtimestamp < ' .
-			$dbw->addQuotes( $dbw->timestamp( $this->params['casTime'] ) ) .
-			' OR wl_notificationtimestamp IS NULL';
+        $dbw = $lbFactory->getMainLB()->getConnectionRef(DB_PRIMARY);
+        $ticket = $lbFactory->getEmptyTransactionTicket(__METHOD__);
+        $timestamp = $this->params['timestamp'] ?? null;
+        if ($timestamp === null) {
+            $timestampCond = 'wl_notificationtimestamp IS NOT NULL';
+        } else {
+            $timestamp = $dbw->timestamp($timestamp);
+            $timestampCond = 'wl_notificationtimestamp != ' . $dbw->addQuotes($timestamp) .
+                ' OR wl_notificationtimestamp IS NULL';
+        }
+        // New notifications since the reset should not be cleared
+        $casTimeCond = 'wl_notificationtimestamp < ' .
+            $dbw->addQuotes($dbw->timestamp($this->params['casTime'])) .
+            ' OR wl_notificationtimestamp IS NULL';
 
-		$firstBatch = true;
-		do {
-			$idsToUpdate = $dbw->selectFieldValues(
-				'watchlist',
-				'wl_id',
-				[
-					'wl_user' => $this->params['userId'],
-					$timestampCond,
-					$casTimeCond,
-				],
-				__METHOD__,
-				[ 'LIMIT' => $rowsPerQuery ]
-			);
-			if ( $idsToUpdate ) {
-				$dbw->update(
-					'watchlist',
-					[ 'wl_notificationtimestamp' => $timestamp ],
-					[
-						'wl_id' => $idsToUpdate,
-						// For paranoia, enforce the CAS time condition here too
-						$casTimeCond
-					],
-					__METHOD__
-				);
-				if ( !$firstBatch ) {
-					$lbFactory->commitAndWaitForReplication( __METHOD__, $ticket );
-				}
-				$firstBatch = false;
-			}
-		} while ( $idsToUpdate );
-		return true;
-	}
+        $firstBatch = true;
+        do {
+            $idsToUpdate = $dbw->selectFieldValues(
+                'watchlist',
+                'wl_id',
+                [
+                    'wl_user' => $this->params['userId'],
+                    $timestampCond,
+                    $casTimeCond,
+                ],
+                __METHOD__,
+                ['LIMIT' => $rowsPerQuery]
+            );
+            if ($idsToUpdate) {
+                $dbw->update(
+                    'watchlist',
+                    ['wl_notificationtimestamp' => $timestamp],
+                    [
+                        'wl_id' => $idsToUpdate,
+                        // For paranoia, enforce the CAS time condition here too
+                        $casTimeCond
+                    ],
+                    __METHOD__
+                );
+                if (!$firstBatch) {
+                    $lbFactory->commitAndWaitForReplication(__METHOD__, $ticket);
+                }
+                $firstBatch = false;
+            }
+        } while ($idsToUpdate);
+
+        return true;
+    }
 }

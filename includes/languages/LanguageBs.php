@@ -26,35 +26,37 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Languages
  */
-class LanguageBs extends Language {
-	/**
-	 * Convert from the nominative form of a noun to some other case
-	 * Invoked with {{GRAMMAR:case|word}}
-	 *
-	 * Cases: genitiv, dativ, akuzativ, vokativ, instrumental, lokativ
-	 *
-	 * @param string $word
-	 * @param string $case
-	 *
-	 * @return string
-	 */
-	public function convertGrammar( $word, $case ) {
-		$grammarForms =
-			MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::GrammarForms );
-		if ( isset( $grammarForms['bs'][$case][$word] ) ) {
-			return $grammarForms['bs'][$case][$word];
-		}
-		switch ( $case ) {
-			case 'instrumental': # instrumental
-				$word = 's ' . $word;
-				break;
-			case 'lokativ': # locative
-				$word = 'o ' . $word;
-				break;
-		}
+class LanguageBs extends Language
+{
+    /**
+     * Convert from the nominative form of a noun to some other case
+     * Invoked with {{GRAMMAR:case|word}}
+     *
+     * Cases: genitiv, dativ, akuzativ, vokativ, instrumental, lokativ
+     *
+     * @param string $word
+     * @param string $case
+     *
+     * @return string
+     */
+    public function convertGrammar($word, $case)
+    {
+        $grammarForms =
+            MediaWikiServices::getInstance()->getMainConfig()->get(MainConfigNames::GrammarForms);
+        if (isset($grammarForms['bs'][$case][$word])) {
+            return $grammarForms['bs'][$case][$word];
+        }
+        switch ($case) {
+            case 'instrumental': # instrumental
+                $word = 's ' . $word;
+                break;
+            case 'lokativ': # locative
+                $word = 'o ' . $word;
+                break;
+        }
 
-		# this will return the original value for 'nominativ' (nominative)
-		# and all undefined case values.
-		return $word;
-	}
+        # this will return the original value for 'nominativ' (nominative)
+        # and all undefined case values.
+        return $word;
+    }
 }

@@ -10,6 +10,7 @@ use Wikimedia\LightweightObjectStore\StorageAwareness;
  * @since 1.27
  * @deprecated since 1.35
  */
-interface IExpiringStore extends StorageAwareness, ExpirationAwareness {
+interface IExpiringStore extends StorageAwareness, ExpirationAwareness
+{
 
 }

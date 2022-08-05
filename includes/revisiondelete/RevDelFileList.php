@@ -26,140 +26,153 @@ use Wikimedia\Rdbms\LBFactory;
 /**
  * List for oldimage table items
  */
-class RevDelFileList extends RevDelList {
+class RevDelFileList extends RevDelList
+{
 
-	/** @var HtmlCacheUpdater */
-	private $htmlCacheUpdater;
+    /** @var HtmlCacheUpdater */
+    private $htmlCacheUpdater;
 
-	/** @var RepoGroup */
-	private $repoGroup;
+    /** @var RepoGroup */
+    private $repoGroup;
 
-	/** @var array */
-	public $storeBatch;
+    /** @var array */
+    public $storeBatch;
 
-	/** @var array */
-	public $deleteBatch;
+    /** @var array */
+    public $deleteBatch;
 
-	/** @var array */
-	public $cleanupBatch;
+    /** @var array */
+    public $cleanupBatch;
 
-	/**
-	 * @param IContextSource $context
-	 * @param PageIdentity $page
-	 * @param array $ids
-	 * @param LBFactory $lbFactory
-	 * @param HtmlCacheUpdater $htmlCacheUpdater
-	 * @param RepoGroup $repoGroup
-	 */
-	public function __construct(
-		IContextSource $context,
-		PageIdentity $page,
-		array $ids,
-		LBFactory $lbFactory,
-		HtmlCacheUpdater $htmlCacheUpdater,
-		RepoGroup $repoGroup
-	) {
-		parent::__construct( $context, $page, $ids, $lbFactory );
-		$this->htmlCacheUpdater = $htmlCacheUpdater;
-		$this->repoGroup = $repoGroup;
-	}
+    /**
+     * @param IContextSource $context
+     * @param PageIdentity $page
+     * @param array $ids
+     * @param LBFactory $lbFactory
+     * @param HtmlCacheUpdater $htmlCacheUpdater
+     * @param RepoGroup $repoGroup
+     */
+    public function __construct(
+        IContextSource $context,
+        PageIdentity $page,
+        array $ids,
+        LBFactory $lbFactory,
+        HtmlCacheUpdater $htmlCacheUpdater,
+        RepoGroup $repoGroup
+    )
+    {
+        parent::__construct($context, $page, $ids, $lbFactory);
+        $this->htmlCacheUpdater = $htmlCacheUpdater;
+        $this->repoGroup = $repoGroup;
+    }
 
-	public function getType() {
-		return 'oldimage';
-	}
+    public function getType()
+    {
+        return 'oldimage';
+    }
 
-	public static function getRelationType() {
-		return 'oi_archive_name';
-	}
+    public static function getRelationType()
+    {
+        return 'oi_archive_name';
+    }
 
-	public static function getRestriction() {
-		return 'deleterevision';
-	}
+    public static function getRestriction()
+    {
+        return 'deleterevision';
+    }
 
-	public static function getRevdelConstant() {
-		return File::DELETED_FILE;
-	}
+    public static function getRevdelConstant()
+    {
+        return File::DELETED_FILE;
+    }
 
-	/**
-	 * @param IDatabase $db
-	 * @return mixed
-	 */
-	public function doQuery( $db ) {
-		$archiveNames = [];
-		foreach ( $this->ids as $timestamp ) {
-			$archiveNames[] = $timestamp . '!' . $this->page->getDBkey();
-		}
+    /**
+     * @param IDatabase $db
+     * @return mixed
+     */
+    public function doQuery($db)
+    {
+        $archiveNames = [];
+        foreach ($this->ids as $timestamp) {
+            $archiveNames[] = $timestamp . '!' . $this->page->getDBkey();
+        }
 
-		$oiQuery = OldLocalFile::getQueryInfo();
-		return $db->select(
-			$oiQuery['tables'],
-			$oiQuery['fields'],
-			[
-				'oi_name' => $this->page->getDBkey(),
-				'oi_archive_name' => $archiveNames
-			],
-			__METHOD__,
-			[ 'ORDER BY' => 'oi_timestamp DESC' ],
-			$oiQuery['joins']
-		);
-	}
+        $oiQuery = OldLocalFile::getQueryInfo();
 
-	public function newItem( $row ) {
-		return new RevDelFileItem( $this, $row );
-	}
+        return $db->select(
+            $oiQuery['tables'],
+            $oiQuery['fields'],
+            [
+                'oi_name'         => $this->page->getDBkey(),
+                'oi_archive_name' => $archiveNames
+            ],
+            __METHOD__,
+            ['ORDER BY' => 'oi_timestamp DESC'],
+            $oiQuery['joins']
+        );
+    }
 
-	public function clearFileOps() {
-		$this->deleteBatch = [];
-		$this->storeBatch = [];
-		$this->cleanupBatch = [];
-	}
+    public function newItem($row)
+    {
+        return new RevDelFileItem($this, $row);
+    }
 
-	public function doPreCommitUpdates() {
-		$status = Status::newGood();
-		$repo = $this->repoGroup->getLocalRepo();
-		if ( $this->storeBatch ) {
-			$status->merge( $repo->storeBatch( $this->storeBatch, FileRepo::OVERWRITE_SAME ) );
-		}
-		if ( !$status->isOK() ) {
-			return $status;
-		}
-		if ( $this->deleteBatch ) {
-			$status->merge( $repo->deleteBatch( $this->deleteBatch ) );
-		}
-		if ( !$status->isOK() ) {
-			// Running cleanupDeletedBatch() after a failed storeBatch() with the DB already
-			// modified (but destined for rollback) causes data loss
-			return $status;
-		}
-		if ( $this->cleanupBatch ) {
-			$status->merge( $repo->cleanupDeletedBatch( $this->cleanupBatch ) );
-		}
+    public function clearFileOps()
+    {
+        $this->deleteBatch = [];
+        $this->storeBatch = [];
+        $this->cleanupBatch = [];
+    }
 
-		return $status;
-	}
+    public function doPreCommitUpdates()
+    {
+        $status = Status::newGood();
+        $repo = $this->repoGroup->getLocalRepo();
+        if ($this->storeBatch) {
+            $status->merge($repo->storeBatch($this->storeBatch, FileRepo::OVERWRITE_SAME));
+        }
+        if (!$status->isOK()) {
+            return $status;
+        }
+        if ($this->deleteBatch) {
+            $status->merge($repo->deleteBatch($this->deleteBatch));
+        }
+        if (!$status->isOK()) {
+            // Running cleanupDeletedBatch() after a failed storeBatch() with the DB already
+            // modified (but destined for rollback) causes data loss
+            return $status;
+        }
+        if ($this->cleanupBatch) {
+            $status->merge($repo->cleanupDeletedBatch($this->cleanupBatch));
+        }
 
-	public function doPostCommitUpdates( array $visibilityChangeMap ) {
-		$file = $this->repoGroup->getLocalRepo()->newFile( $this->page );
-		$file->purgeCache();
-		$file->purgeDescription();
+        return $status;
+    }
 
-		// Purge full images from cache
-		$purgeUrls = [];
-		foreach ( $this->ids as $timestamp ) {
-			$archiveName = $timestamp . '!' . $this->page->getDBkey();
-			$file->purgeOldThumbnails( $archiveName );
-			$purgeUrls[] = $file->getArchiveUrl( $archiveName );
-		}
+    public function doPostCommitUpdates(array $visibilityChangeMap)
+    {
+        $file = $this->repoGroup->getLocalRepo()->newFile($this->page);
+        $file->purgeCache();
+        $file->purgeDescription();
 
-		$this->htmlCacheUpdater->purgeUrls(
-			$purgeUrls,
-			HtmlCacheUpdater::PURGE_INTENT_TXROUND_REFLECTED
-		);
+        // Purge full images from cache
+        $purgeUrls = [];
+        foreach ($this->ids as $timestamp) {
+            $archiveName = $timestamp . '!' . $this->page->getDBkey();
+            $file->purgeOldThumbnails($archiveName);
+            $purgeUrls[] = $file->getArchiveUrl($archiveName);
+        }
 
-		return Status::newGood();
-	}
+        $this->htmlCacheUpdater->purgeUrls(
+            $purgeUrls,
+            HtmlCacheUpdater::PURGE_INTENT_TXROUND_REFLECTED
+        );
 
-	public function getSuppressBit() {
-		return File::DELETED_RESTRICTED;
-	}
+        return Status::newGood();
+    }
+
+    public function getSuppressBit()
+    {
+        return File::DELETED_RESTRICTED;
+    }
 }

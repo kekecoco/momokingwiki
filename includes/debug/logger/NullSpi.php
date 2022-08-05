@@ -36,25 +36,28 @@ use Psr\Log\NullLogger;
  * @since 1.25
  * @copyright © 2014 Wikimedia Foundation and contributors
  */
-class NullSpi implements Spi {
+class NullSpi implements Spi
+{
 
-	/**
-	 * @var \Psr\Log\NullLogger
-	 */
-	protected $singleton;
+    /**
+     * @var \Psr\Log\NullLogger
+     */
+    protected $singleton;
 
-	public function __construct() {
-		$this->singleton = new NullLogger();
-	}
+    public function __construct()
+    {
+        $this->singleton = new NullLogger();
+    }
 
-	/**
-	 * Get a logger instance.
-	 *
-	 * @param string $channel Logging channel
-	 * @return \Psr\Log\NullLogger Logger instance
-	 */
-	public function getLogger( $channel ) {
-		return $this->singleton;
-	}
+    /**
+     * Get a logger instance.
+     *
+     * @param string $channel Logging channel
+     * @return \Psr\Log\NullLogger Logger instance
+     */
+    public function getLogger($channel)
+    {
+        return $this->singleton;
+    }
 
 }

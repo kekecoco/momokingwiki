@@ -33,20 +33,21 @@ use Traversable;
  *
  * @since 1.38
  */
-interface IterableConfig extends Config, IteratorAggregate {
+interface IterableConfig extends Config, IteratorAggregate
+{
 
-	/**
-	 * Returns a traversable view of the configuration variables in this Config object.
-	 *
-	 * @return Traversable<string,mixed>
-	 */
-	public function getIterator(): Traversable;
+    /**
+     * Returns a traversable view of the configuration variables in this Config object.
+     *
+     * @return Traversable<string,mixed>
+     */
+    public function getIterator(): Traversable;
 
-	/**
-	 * Returns the names of configuration variables in this Config object.
-	 *
-	 * @return string[]
-	 */
-	public function getNames(): array;
+    /**
+     * Returns the names of configuration variables in this Config object.
+     *
+     * @return string[]
+     */
+    public function getNames(): array;
 
 }

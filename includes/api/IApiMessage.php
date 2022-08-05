@@ -36,34 +36,35 @@
  *  MessageSpecifier, which as written is fairly useless).
  * @ingroup API
  */
-interface IApiMessage extends MessageSpecifier {
-	/**
-	 * Returns a machine-readable code for use by the API
-	 *
-	 * If no code was specifically set, the message key is used as the code
-	 * after removing "apiwarn-" or "apierror-" prefixes and applying
-	 * backwards-compatibility mappings.
-	 *
-	 * @return string
-	 */
-	public function getApiCode();
+interface IApiMessage extends MessageSpecifier
+{
+    /**
+     * Returns a machine-readable code for use by the API
+     *
+     * If no code was specifically set, the message key is used as the code
+     * after removing "apiwarn-" or "apierror-" prefixes and applying
+     * backwards-compatibility mappings.
+     *
+     * @return string
+     */
+    public function getApiCode();
 
-	/**
-	 * Returns additional machine-readable data about the error condition
-	 * @return array
-	 */
-	public function getApiData();
+    /**
+     * Returns additional machine-readable data about the error condition
+     * @return array
+     */
+    public function getApiData();
 
-	/**
-	 * Sets the machine-readable code for use by the API
-	 * @param string|null $code If null, uses the default (see self::getApiCode())
-	 * @param array|null $data If non-null, passed to self::setApiData()
-	 */
-	public function setApiCode( $code, array $data = null );
+    /**
+     * Sets the machine-readable code for use by the API
+     * @param string|null $code If null, uses the default (see self::getApiCode())
+     * @param array|null $data If non-null, passed to self::setApiData()
+     */
+    public function setApiCode($code, array $data = null);
 
-	/**
-	 * Sets additional machine-readable data about the error condition
-	 * @param array $data
-	 */
-	public function setApiData( array $data );
+    /**
+     * Sets additional machine-readable data about the error condition
+     * @param array $data
+     */
+    public function setApiData(array $data);
 }

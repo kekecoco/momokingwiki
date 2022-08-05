@@ -34,122 +34,130 @@ use Wikimedia\Assert\Assert;
  * A service class to control default user options
  * @since 1.35
  */
-class DefaultOptionsLookup extends UserOptionsLookup {
+class DefaultOptionsLookup extends UserOptionsLookup
+{
 
-	/**
-	 * @internal For use by ServiceWiring
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::DefaultSkin,
-		MainConfigNames::DefaultUserOptions,
-		MainConfigNames::NamespacesToBeSearchedDefault
-	];
+    /**
+     * @internal For use by ServiceWiring
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::DefaultSkin,
+        MainConfigNames::DefaultUserOptions,
+        MainConfigNames::NamespacesToBeSearchedDefault
+    ];
 
-	/** @var ServiceOptions */
-	private $serviceOptions;
+    /** @var ServiceOptions */
+    private $serviceOptions;
 
-	/** @var Language */
-	private $contentLang;
+    /** @var Language */
+    private $contentLang;
 
-	/** @var NamespaceInfo */
-	protected $nsInfo;
+    /** @var NamespaceInfo */
+    protected $nsInfo;
 
-	/** @var array|null Cached default options */
-	private $defaultOptions = null;
+    /** @var array|null Cached default options */
+    private $defaultOptions = null;
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param Language $contentLang
-	 * @param HookContainer $hookContainer
-	 * @param NamespaceInfo $nsInfo
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		Language $contentLang,
-		HookContainer $hookContainer,
-		NamespaceInfo $nsInfo
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->serviceOptions = $options;
-		$this->contentLang = $contentLang;
-		$this->hookRunner = new HookRunner( $hookContainer );
-		$this->nsInfo = $nsInfo;
-	}
+    /**
+     * @param ServiceOptions $options
+     * @param Language $contentLang
+     * @param HookContainer $hookContainer
+     * @param NamespaceInfo $nsInfo
+     */
+    public function __construct(
+        ServiceOptions $options,
+        Language $contentLang,
+        HookContainer $hookContainer,
+        NamespaceInfo $nsInfo
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        $this->serviceOptions = $options;
+        $this->contentLang = $contentLang;
+        $this->hookRunner = new HookRunner($hookContainer);
+        $this->nsInfo = $nsInfo;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getDefaultOptions(): array {
-		if ( $this->defaultOptions !== null ) {
-			return $this->defaultOptions;
-		}
+    /**
+     * @inheritDoc
+     */
+    public function getDefaultOptions(): array
+    {
+        if ($this->defaultOptions !== null) {
+            return $this->defaultOptions;
+        }
 
-		$this->defaultOptions = $this->serviceOptions->get( MainConfigNames::DefaultUserOptions );
+        $this->defaultOptions = $this->serviceOptions->get(MainConfigNames::DefaultUserOptions);
 
-		// Default language setting
-		$contentLangCode = $this->contentLang->getCode();
-		$this->defaultOptions['language'] = $contentLangCode;
-		$this->defaultOptions['variant'] = $contentLangCode;
-		foreach ( LanguageConverter::$languagesWithVariants as $langCode ) {
-			$this->defaultOptions["variant-$langCode"] = $langCode;
-		}
+        // Default language setting
+        $contentLangCode = $this->contentLang->getCode();
+        $this->defaultOptions['language'] = $contentLangCode;
+        $this->defaultOptions['variant'] = $contentLangCode;
+        foreach (LanguageConverter::$languagesWithVariants as $langCode) {
+            $this->defaultOptions["variant-$langCode"] = $langCode;
+        }
 
-		// NOTE: don't use SearchEngineConfig::getSearchableNamespaces here,
-		// since extensions may change the set of searchable namespaces depending
-		// on user groups/permissions.
-		$nsSearchDefault = $this->serviceOptions->get( MainConfigNames::NamespacesToBeSearchedDefault );
-		foreach ( $this->nsInfo->getValidNamespaces() as $n ) {
-			$this->defaultOptions['searchNs' . $n] = ( $nsSearchDefault[$n] ?? false ) ? 1 : 0;
-		}
-		$this->defaultOptions['skin'] = Skin::normalizeKey(
-			$this->serviceOptions->get( MainConfigNames::DefaultSkin ) );
+        // NOTE: don't use SearchEngineConfig::getSearchableNamespaces here,
+        // since extensions may change the set of searchable namespaces depending
+        // on user groups/permissions.
+        $nsSearchDefault = $this->serviceOptions->get(MainConfigNames::NamespacesToBeSearchedDefault);
+        foreach ($this->nsInfo->getValidNamespaces() as $n) {
+            $this->defaultOptions['searchNs' . $n] = ($nsSearchDefault[$n] ?? false) ? 1 : 0;
+        }
+        $this->defaultOptions['skin'] = Skin::normalizeKey(
+            $this->serviceOptions->get(MainConfigNames::DefaultSkin));
 
-		$this->hookRunner->onUserGetDefaultOptions( $this->defaultOptions );
+        $this->hookRunner->onUserGetDefaultOptions($this->defaultOptions);
 
-		return $this->defaultOptions;
-	}
+        return $this->defaultOptions;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getOption(
-		UserIdentity $user,
-		string $oname,
-		$defaultOverride = null,
-		bool $ignoreHidden = false,
-		int $queryFlags = self::READ_NORMAL
-	) {
-		$this->verifyUsable( $user, __METHOD__ );
-		return $this->getDefaultOption( $oname ) ?? $defaultOverride;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getOption(
+        UserIdentity $user,
+        string $oname,
+        $defaultOverride = null,
+        bool $ignoreHidden = false,
+        int $queryFlags = self::READ_NORMAL
+    )
+    {
+        $this->verifyUsable($user, __METHOD__);
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getOptions(
-		UserIdentity $user,
-		int $flags = 0,
-		int $queryFlags = self::READ_NORMAL
-	): array {
-		$this->verifyUsable( $user, __METHOD__ );
-		if ( $flags & self::EXCLUDE_DEFAULTS ) {
-			return [];
-		}
-		return $this->getDefaultOptions();
-	}
+        return $this->getDefaultOption($oname) ?? $defaultOverride;
+    }
 
-	/**
-	 * Checks if the DefaultOptionsLookup is usable as an instance of UserOptionsLookup.
-	 * It only makes sense in an installer context when UserOptionsManager cannot be yet instantiated
-	 * as the database is not available. Thus, this can only be called for an anon user,
-	 * calling under different circumstances indicates a bug.
-	 * @param UserIdentity $user
-	 * @param string $fname
-	 */
-	private function verifyUsable( UserIdentity $user, string $fname ) {
-		Assert::precondition( !$user->isRegistered(), "$fname called on a registered user " );
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getOptions(
+        UserIdentity $user,
+        int $flags = 0,
+        int $queryFlags = self::READ_NORMAL
+    ): array
+    {
+        $this->verifyUsable($user, __METHOD__);
+        if ($flags & self::EXCLUDE_DEFAULTS) {
+            return [];
+        }
+
+        return $this->getDefaultOptions();
+    }
+
+    /**
+     * Checks if the DefaultOptionsLookup is usable as an instance of UserOptionsLookup.
+     * It only makes sense in an installer context when UserOptionsManager cannot be yet instantiated
+     * as the database is not available. Thus, this can only be called for an anon user,
+     * calling under different circumstances indicates a bug.
+     * @param UserIdentity $user
+     * @param string $fname
+     */
+    private function verifyUsable(UserIdentity $user, string $fname)
+    {
+        Assert::precondition(!$user->isRegistered(), "$fname called on a registered user ");
+    }
 }

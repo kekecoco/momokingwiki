@@ -30,17 +30,20 @@ use RuntimeException;
  * @newable
  * @since 1.31
  */
-class NameTableAccessException extends RuntimeException {
+class NameTableAccessException extends RuntimeException
+{
 
-	/**
-	 * @param string $tableName
-	 * @param string $accessType
-	 * @param string|int $accessValue
-	 * @return NameTableAccessException
-	 */
-	public static function newFromDetails( $tableName, $accessType, $accessValue ) {
-		$message = "Failed to access name from ${tableName} using ${accessType} = ${accessValue}";
-		return new self( $message );
-	}
+    /**
+     * @param string $tableName
+     * @param string $accessType
+     * @param string|int $accessValue
+     * @return NameTableAccessException
+     */
+    public static function newFromDetails($tableName, $accessType, $accessValue)
+    {
+        $message = "Failed to access name from ${tableName} using ${accessType} = ${accessValue}";
+
+        return new self($message);
+    }
 
 }

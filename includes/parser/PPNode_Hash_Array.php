@@ -23,62 +23,75 @@
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPNode_Hash_Array implements PPNode {
+class PPNode_Hash_Array implements PPNode
+{
 
-	/** @var array */
-	public $value;
+    /** @var array */
+    public $value;
 
-	/**
-	 * @param array $value
-	 */
-	public function __construct( $value ) {
-		$this->value = $value;
-	}
+    /**
+     * @param array $value
+     */
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
 
-	public function __toString() {
-		return var_export( $this, true );
-	}
+    public function __toString()
+    {
+        return var_export($this, true);
+    }
 
-	public function getLength() {
-		return count( $this->value );
-	}
+    public function getLength()
+    {
+        return count($this->value);
+    }
 
-	public function item( $i ) {
-		return $this->value[$i];
-	}
+    public function item($i)
+    {
+        return $this->value[$i];
+    }
 
-	public function getName() {
-		return '#nodelist';
-	}
+    public function getName()
+    {
+        return '#nodelist';
+    }
 
-	public function getNextSibling() {
-		return false;
-	}
+    public function getNextSibling()
+    {
+        return false;
+    }
 
-	public function getChildren() {
-		return false;
-	}
+    public function getChildren()
+    {
+        return false;
+    }
 
-	public function getFirstChild() {
-		return false;
-	}
+    public function getFirstChild()
+    {
+        return false;
+    }
 
-	public function getChildrenOfType( $name ) {
-		return false;
-	}
+    public function getChildrenOfType($name)
+    {
+        return false;
+    }
 
-	public function splitArg() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitArg()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitExt() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitExt()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitHeading() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitHeading()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 }

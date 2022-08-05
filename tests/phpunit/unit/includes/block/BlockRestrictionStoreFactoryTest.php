@@ -12,27 +12,30 @@ use Wikimedia\Rdbms\LoadBalancer;
 /**
  * @covers \MediaWiki\Block\BlockRestrictionStoreFactory
  */
-class BlockRestrictionStoreFactoryTest extends MediaWikiUnitTestCase {
+class BlockRestrictionStoreFactoryTest extends MediaWikiUnitTestCase
+{
 
-	/**
-	 * @dataProvider provideDomains
-	 */
-	public function testGetBlockRestrictionStore( $domain ) {
-		$lb = $this->createMock( LoadBalancer::class );
-		$lbFactory = $this->createMock( LBFactory::class );
-		$lbFactory
-			->method( 'getMainLB' )
-			->with( $domain )
-			->willReturn( $lb );
-		$factory = new BlockRestrictionStoreFactory( $lbFactory );
+    /**
+     * @dataProvider provideDomains
+     */
+    public function testGetBlockRestrictionStore($domain)
+    {
+        $lb = $this->createMock(LoadBalancer::class);
+        $lbFactory = $this->createMock(LBFactory::class);
+        $lbFactory
+            ->method('getMainLB')
+            ->with($domain)
+            ->willReturn($lb);
+        $factory = new BlockRestrictionStoreFactory($lbFactory);
 
-		$restrictionStore = $factory->getBlockRestrictionStore( $domain );
-		$this->assertInstanceOf( BlockRestrictionStore::class, $restrictionStore );
-	}
+        $restrictionStore = $factory->getBlockRestrictionStore($domain);
+        $this->assertInstanceOf(BlockRestrictionStore::class, $restrictionStore);
+    }
 
-	public function provideDomains() {
-		yield 'local wiki' => [ WikiAwareEntity::LOCAL ];
-		yield 'foreign wiki' => [ 'meta' ];
-	}
+    public function provideDomains()
+    {
+        yield 'local wiki' => [WikiAwareEntity::LOCAL];
+        yield 'foreign wiki' => ['meta'];
+    }
 
 }

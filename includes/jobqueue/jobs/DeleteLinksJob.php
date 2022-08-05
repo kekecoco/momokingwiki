@@ -33,43 +33,49 @@ use MediaWiki\MediaWikiServices;
  * @ingroup JobQueue
  * @since 1.27
  */
-class DeleteLinksJob extends Job {
-	public function __construct( Title $title, array $params ) {
-		parent::__construct( 'deleteLinks', $title, $params );
-		$this->removeDuplicates = true;
-	}
+class DeleteLinksJob extends Job
+{
+    public function __construct(Title $title, array $params)
+    {
+        parent::__construct('deleteLinks', $title, $params);
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		if ( $this->title === null ) {
-			$this->setLastError( "deleteLinks: Invalid title" );
-			return false;
-		}
+    public function run()
+    {
+        if ($this->title === null) {
+            $this->setLastError("deleteLinks: Invalid title");
 
-		$pageId = $this->params['pageId'];
+            return false;
+        }
 
-		// Serialize links updates by page ID so they see each others' changes
-		$scopedLock = LinksUpdate::acquirePageLock( wfGetDB( DB_PRIMARY ), $pageId, 'job' );
-		if ( $scopedLock === null ) {
-			$this->setLastError( 'LinksUpdate already running for this page, try again later.' );
-			return false;
-		}
+        $pageId = $this->params['pageId'];
 
-		$services = MediaWikiServices::getInstance();
-		$wikiPageFactory = $services->getWikiPageFactory();
-		if ( $wikiPageFactory->newFromID( $pageId, WikiPage::READ_LATEST ) ) {
-			// The page was restored somehow or something went wrong
-			$this->setLastError( "deleteLinks: Page #$pageId exists" );
-			return false;
-		}
+        // Serialize links updates by page ID so they see each others' changes
+        $scopedLock = LinksUpdate::acquirePageLock(wfGetDB(DB_PRIMARY), $pageId, 'job');
+        if ($scopedLock === null) {
+            $this->setLastError('LinksUpdate already running for this page, try again later.');
 
-		$factory = $services->getDBLoadBalancerFactory();
-		$timestamp = $this->params['timestamp'] ?? null;
-		$page = $wikiPageFactory->newFromTitle( $this->title ); // title when deleted
+            return false;
+        }
 
-		$update = new LinksDeletionUpdate( $page, $pageId, $timestamp );
-		$update->setTransactionTicket( $factory->getEmptyTransactionTicket( __METHOD__ ) );
-		$update->doUpdate();
+        $services = MediaWikiServices::getInstance();
+        $wikiPageFactory = $services->getWikiPageFactory();
+        if ($wikiPageFactory->newFromID($pageId, WikiPage::READ_LATEST)) {
+            // The page was restored somehow or something went wrong
+            $this->setLastError("deleteLinks: Page #$pageId exists");
 
-		return true;
-	}
+            return false;
+        }
+
+        $factory = $services->getDBLoadBalancerFactory();
+        $timestamp = $this->params['timestamp'] ?? null;
+        $page = $wikiPageFactory->newFromTitle($this->title); // title when deleted
+
+        $update = new LinksDeletionUpdate($page, $pageId, $timestamp);
+        $update->setTransactionTicket($factory->getEmptyTransactionTicket(__METHOD__));
+        $update->doUpdate();
+
+        return true;
+    }
 }

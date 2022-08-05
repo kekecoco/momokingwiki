@@ -28,41 +28,47 @@ use StatusValue;
  * @since 1.36
  * @internal
  */
-class UnicodeConstraint implements IEditConstraint {
+class UnicodeConstraint implements IEditConstraint
+{
 
-	/**
-	 * @var string
-	 * Correct unicode
-	 */
-	public const VALID_UNICODE = 'ℳ𝒲♥𝓊𝓃𝒾𝒸ℴ𝒹ℯ';
+    /**
+     * @var string
+     * Correct unicode
+     */
+    public const VALID_UNICODE = 'ℳ𝒲♥𝓊𝓃𝒾𝒸ℴ𝒹ℯ';
 
-	/**
-	 * @var string
-	 * Unicode string provided, to compare
-	 */
-	private $input;
+    /**
+     * @var string
+     * Unicode string provided, to compare
+     */
+    private $input;
 
-	/**
-	 * @param string $inputUnicode
-	 */
-	public function __construct( string $inputUnicode ) {
-		$this->input = $inputUnicode;
-	}
+    /**
+     * @param string $inputUnicode
+     */
+    public function __construct(string $inputUnicode)
+    {
+        $this->input = $inputUnicode;
+    }
 
-	public function checkConstraint(): string {
-		if ( $this->input === self::VALID_UNICODE ) {
-			return self::CONSTRAINT_PASSED;
-		}
-		return self::CONSTRAINT_FAILED;
-	}
+    public function checkConstraint(): string
+    {
+        if ($this->input === self::VALID_UNICODE) {
+            return self::CONSTRAINT_PASSED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->input !== self::VALID_UNICODE ) {
-			$statusValue->fatal( 'unicode-support-fail' );
-			$statusValue->value = self::AS_UNICODE_NOT_SUPPORTED;
-		}
-		return $statusValue;
-	}
+        return self::CONSTRAINT_FAILED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->input !== self::VALID_UNICODE) {
+            $statusValue->fatal('unicode-support-fail');
+            $statusValue->value = self::AS_UNICODE_NOT_SUPPORTED;
+        }
+
+        return $statusValue;
+    }
 
 }

@@ -19,22 +19,24 @@
  * @ingroup FileBackend
  */
 
-class FSFileOpHandle extends FileBackendStoreOpHandle {
-	/** @var string Shell command */
-	public $cmd;
-	/** var callback Post-operation success/error handling and cleanup function */
-	public $callback;
+class FSFileOpHandle extends FileBackendStoreOpHandle
+{
+    /** @var string Shell command */
+    public $cmd;
+    /** var callback Post-operation success/error handling and cleanup function */
+    public $callback;
 
-	/**
-	 * @param FSFileBackend $backend
-	 * @param array $params
-	 * @param callable $call
-	 * @param string $cmd
-	 */
-	public function __construct( FSFileBackend $backend, array $params, callable $call, $cmd ) {
-		$this->backend = $backend;
-		$this->params = $params;
-		$this->callback = $call;
-		$this->cmd = $cmd;
-	}
+    /**
+     * @param FSFileBackend $backend
+     * @param array $params
+     * @param callable $call
+     * @param string $cmd
+     */
+    public function __construct(FSFileBackend $backend, array $params, callable $call, $cmd)
+    {
+        $this->backend = $backend;
+        $this->params = $params;
+        $this->callback = $call;
+        $this->cmd = $cmd;
+    }
 }

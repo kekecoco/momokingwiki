@@ -20,75 +20,81 @@ namespace Wikimedia\Message;
  *
  * @newable
  */
-class DataMessageValue extends MessageValue {
-	/** @var string */
-	private $code;
+class DataMessageValue extends MessageValue
+{
+    /** @var string */
+    private $code;
 
-	/** @var array|null */
-	private $data;
+    /** @var array|null */
+    private $data;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $key
-	 * @param (MessageParam|MessageValue|string|int|float)[] $params
-	 * @param string|null $code String representing the concept behind
-	 *  this message.
-	 * @param array|null $data Structured data representing the concept
-	 *  behind this message.
-	 */
-	public function __construct( $key, $params = [], $code = null, array $data = null ) {
-		parent::__construct( $key, $params );
+    /**
+     * @stable to call
+     *
+     * @param string $key
+     * @param (MessageParam|MessageValue|string|int|float)[] $params
+     * @param string|null $code String representing the concept behind
+     *  this message.
+     * @param array|null $data Structured data representing the concept
+     *  behind this message.
+     */
+    public function __construct($key, $params = [], $code = null, array $data = null)
+    {
+        parent::__construct($key, $params);
 
-		$this->code = $code ?? $key;
-		$this->data = $data;
-	}
+        $this->code = $code ?? $key;
+        $this->data = $data;
+    }
 
-	/**
-	 * Static constructor for easier chaining of `->params()` methods
-	 * @param string $key
-	 * @param (MessageParam|MessageValue|string|int|float)[] $params
-	 * @param string|null $code
-	 * @param array|null $data
-	 * @return DataMessageValue
-	 */
-	public static function new( $key, $params = [], $code = null, array $data = null ) {
-		return new DataMessageValue( $key, $params, $code, $data );
-	}
+    /**
+     * Static constructor for easier chaining of `->params()` methods
+     * @param string $key
+     * @param (MessageParam|MessageValue|string|int|float)[] $params
+     * @param string|null $code
+     * @param array|null $data
+     * @return DataMessageValue
+     */
+    public static function new($key, $params = [], $code = null, array $data = null)
+    {
+        return new DataMessageValue($key, $params, $code, $data);
+    }
 
-	/**
-	 * Get the message code
-	 * @return string
-	 */
-	public function getCode() {
-		return $this->code;
-	}
+    /**
+     * Get the message code
+     * @return string
+     */
+    public function getCode()
+    {
+        return $this->code;
+    }
 
-	/**
-	 * Get the message's structured data
-	 * @return array|null
-	 */
-	public function getData() {
-		return $this->data;
-	}
+    /**
+     * Get the message's structured data
+     * @return array|null
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
 
-	public function dump() {
-		$contents = '';
-		if ( $this->getParams() ) {
-			$contents = '<params>';
-			foreach ( $this->getParams() as $param ) {
-				$contents .= $param->dump();
-			}
-			$contents .= '</params>';
-		}
+    public function dump()
+    {
+        $contents = '';
+        if ($this->getParams()) {
+            $contents = '<params>';
+            foreach ($this->getParams() as $param) {
+                $contents .= $param->dump();
+            }
+            $contents .= '</params>';
+        }
 
-		if ( $this->data !== null ) {
-			$contents .= '<data>' . htmlspecialchars( json_encode( $this->data ), ENT_NOQUOTES ) . '</data>';
-		}
+        if ($this->data !== null) {
+            $contents .= '<data>' . htmlspecialchars(json_encode($this->data), ENT_NOQUOTES) . '</data>';
+        }
 
-		return '<datamessage key="' . htmlspecialchars( $this->getKey() ) . '"'
-			. ' code="' . htmlspecialchars( $this->code ) . '">'
-			. $contents
-			. '</datamessage>';
-	}
+        return '<datamessage key="' . htmlspecialchars($this->getKey()) . '"'
+            . ' code="' . htmlspecialchars($this->code) . '">'
+            . $contents
+            . '</datamessage>';
+    }
 }

@@ -30,92 +30,100 @@ use RawMessage;
  * @ingroup Auth
  * @since 1.27
  */
-class ButtonAuthenticationRequest extends AuthenticationRequest {
-	/** @var string */
-	protected $name;
+class ButtonAuthenticationRequest extends AuthenticationRequest
+{
+    /** @var string */
+    protected $name;
 
-	/** @var Message */
-	protected $label;
+    /** @var Message */
+    protected $label;
 
-	/** @var Message */
-	protected $help;
+    /** @var Message */
+    protected $help;
 
-	/**
-	 * @stable to call
-	 * @param string $name Button name
-	 * @param Message $label Button label
-	 * @param Message $help Button help
-	 * @param bool $required The button is required for authentication to proceed.
-	 */
-	public function __construct( $name, Message $label, Message $help, $required = false ) {
-		$this->name = $name;
-		$this->label = $label;
-		$this->help = $help;
-		$this->required = $required ? self::REQUIRED : self::OPTIONAL;
-	}
+    /**
+     * @stable to call
+     * @param string $name Button name
+     * @param Message $label Button label
+     * @param Message $help Button help
+     * @param bool $required The button is required for authentication to proceed.
+     */
+    public function __construct($name, Message $label, Message $help, $required = false)
+    {
+        $this->name = $name;
+        $this->label = $label;
+        $this->help = $help;
+        $this->required = $required ? self::REQUIRED : self::OPTIONAL;
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getUniqueId() {
-		return parent::getUniqueId() . ':' . $this->name;
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getUniqueId()
+    {
+        return parent::getUniqueId() . ':' . $this->name;
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getFieldInfo() {
-		return [
-			$this->name => [
-				'type' => 'button',
-				'label' => $this->label,
-				'help' => $this->help,
-			]
-		];
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getFieldInfo()
+    {
+        return [
+            $this->name => [
+                'type'  => 'button',
+                'label' => $this->label,
+                'help'  => $this->help,
+            ]
+        ];
+    }
 
-	/**
-	 * Fetch a ButtonAuthenticationRequest or subclass by name
-	 * @param AuthenticationRequest[] $reqs Requests to search
-	 * @param string $name Name to look for
-	 * @return ButtonAuthenticationRequest|null Returns null if there is not
-	 *  exactly one matching request.
-	 */
-	public static function getRequestByName( array $reqs, $name ) {
-		$requests = array_filter( $reqs, static function ( $req ) use ( $name ) {
-			return $req instanceof ButtonAuthenticationRequest && $req->name === $name;
-		} );
-		// @phan-suppress-next-line PhanTypeMismatchReturnSuperType False positive
-		return count( $requests ) === 1 ? reset( $requests ) : null;
-	}
+    /**
+     * Fetch a ButtonAuthenticationRequest or subclass by name
+     * @param AuthenticationRequest[] $reqs Requests to search
+     * @param string $name Name to look for
+     * @return ButtonAuthenticationRequest|null Returns null if there is not
+     *  exactly one matching request.
+     */
+    public static function getRequestByName(array $reqs, $name)
+    {
+        $requests = array_filter($reqs, static function ($req) use ($name) {
+            return $req instanceof ButtonAuthenticationRequest && $req->name === $name;
+        });
 
-	/**
-	 * @codeCoverageIgnore
-	 * @stable to override
-	 * @param array $data
-	 * @return AuthenticationRequest|static
-	 */
-	public static function __set_state( $data ) {
-		if ( !isset( $data['label'] ) ) {
-			$data['label'] = new RawMessage( '$1', $data['name'] );
-		} elseif ( is_string( $data['label'] ) ) {
-			$data['label'] = new Message( $data['label'] );
-		} elseif ( is_array( $data['label'] ) ) {
-			$data['label'] = Message::newFromKey( ...$data['label'] );
-		}
-		if ( !isset( $data['help'] ) ) {
-			$data['help'] = new RawMessage( '$1', $data['name'] );
-		} elseif ( is_string( $data['help'] ) ) {
-			$data['help'] = new Message( $data['help'] );
-		} elseif ( is_array( $data['help'] ) ) {
-			$data['help'] = Message::newFromKey( ...$data['help'] );
-		}
-		$ret = new static( $data['name'], $data['label'], $data['help'] );
-		foreach ( $data as $k => $v ) {
-			$ret->$k = $v;
-		}
-		return $ret;
-	}
+        // @phan-suppress-next-line PhanTypeMismatchReturnSuperType False positive
+        return count($requests) === 1 ? reset($requests) : null;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * @stable to override
+     * @param array $data
+     * @return AuthenticationRequest|static
+     */
+    public static function __set_state($data)
+    {
+        if (!isset($data['label'])) {
+            $data['label'] = new RawMessage('$1', $data['name']);
+        } elseif (is_string($data['label'])) {
+            $data['label'] = new Message($data['label']);
+        } elseif (is_array($data['label'])) {
+            $data['label'] = Message::newFromKey(...$data['label']);
+        }
+        if (!isset($data['help'])) {
+            $data['help'] = new RawMessage('$1', $data['name']);
+        } elseif (is_string($data['help'])) {
+            $data['help'] = new Message($data['help']);
+        } elseif (is_array($data['help'])) {
+            $data['help'] = Message::newFromKey(...$data['help']);
+        }
+        $ret = new static($data['name'], $data['label'], $data['help']);
+        foreach ($data as $k => $v) {
+            $ret->$k = $v;
+        }
+
+        return $ret;
+    }
 }

@@ -25,50 +25,55 @@
  * Delete a file at the given storage path from the backend.
  * Parameters for this operation are outlined in FileBackend::doOperations().
  */
-class DeleteFileOp extends FileOp {
-	protected function allowedParams() {
-		return [ [ 'src' ], [ 'ignoreMissingSource' ], [ 'src' ] ];
-	}
+class DeleteFileOp extends FileOp
+{
+    protected function allowedParams()
+    {
+        return [['src'], ['ignoreMissingSource'], ['src']];
+    }
 
-	protected function doPrecheck( array &$predicates ) {
-		$status = StatusValue::newGood();
+    protected function doPrecheck(array &$predicates)
+    {
+        $status = StatusValue::newGood();
 
-		// Check source file existence
-		$srcExists = $this->fileExists( $this->params['src'], $predicates );
-		if ( $srcExists === false ) {
-			if ( $this->getParam( 'ignoreMissingSource' ) ) {
-				$this->cancelled = true; // no-op
-				// Update file existence predicates (cache 404s)
-				$predicates[self::ASSUMED_EXISTS][$this->params['src']] = false;
-				$predicates[self::ASSUMED_SIZE][$this->params['src']] = false;
-				$predicates[self::ASSUMED_SHA1][$this->params['src']] = false;
+        // Check source file existence
+        $srcExists = $this->fileExists($this->params['src'], $predicates);
+        if ($srcExists === false) {
+            if ($this->getParam('ignoreMissingSource')) {
+                $this->cancelled = true; // no-op
+                // Update file existence predicates (cache 404s)
+                $predicates[self::ASSUMED_EXISTS][$this->params['src']] = false;
+                $predicates[self::ASSUMED_SIZE][$this->params['src']] = false;
+                $predicates[self::ASSUMED_SHA1][$this->params['src']] = false;
 
-				return $status; // nothing to do
-			} else {
-				$status->fatal( 'backend-fail-notexists', $this->params['src'] );
+                return $status; // nothing to do
+            } else {
+                $status->fatal('backend-fail-notexists', $this->params['src']);
 
-				return $status;
-			}
-		} elseif ( $srcExists === FileBackend::EXISTENCE_ERROR ) {
-			$status->fatal( 'backend-fail-stat', $this->params['src'] );
+                return $status;
+            }
+        } elseif ($srcExists === FileBackend::EXISTENCE_ERROR) {
+            $status->fatal('backend-fail-stat', $this->params['src']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		// Update file existence predicates since the operation is expected to be allowed to run
-		$predicates[self::ASSUMED_EXISTS][$this->params['src']] = false;
-		$predicates[self::ASSUMED_SIZE][$this->params['src']] = false;
-		$predicates[self::ASSUMED_SHA1][$this->params['src']] = false;
+        // Update file existence predicates since the operation is expected to be allowed to run
+        $predicates[self::ASSUMED_EXISTS][$this->params['src']] = false;
+        $predicates[self::ASSUMED_SIZE][$this->params['src']] = false;
+        $predicates[self::ASSUMED_SHA1][$this->params['src']] = false;
 
-		return $status; // safe to call attempt()
-	}
+        return $status; // safe to call attempt()
+    }
 
-	protected function doAttempt() {
-		// Delete the source file
-		return $this->backend->deleteInternal( $this->setFlags( $this->params ) );
-	}
+    protected function doAttempt()
+    {
+        // Delete the source file
+        return $this->backend->deleteInternal($this->setFlags($this->params));
+    }
 
-	public function storagePathsChanged() {
-		return [ $this->params['src'] ];
-	}
+    public function storagePathsChanged()
+    {
+        return [$this->params['src']];
+    }
 }

@@ -28,464 +28,483 @@ use MediaWiki\Permissions\PermissionManager;
  * @ingroup SpecialPage
  * @since 1.25
  */
-class SpecialEditTags extends UnlistedSpecialPage {
-	/** @var bool Was the DB modified in this request */
-	protected $wasSaved = false;
+class SpecialEditTags extends UnlistedSpecialPage
+{
+    /** @var bool Was the DB modified in this request */
+    protected $wasSaved = false;
 
-	/** @var bool True if the submit button was clicked, and the form was posted */
-	private $submitClicked;
+    /** @var bool True if the submit button was clicked, and the form was posted */
+    private $submitClicked;
 
-	/** @var array Target ID list */
-	private $ids;
+    /** @var array Target ID list */
+    private $ids;
 
-	/** @var Title Title object for target parameter */
-	private $targetObj;
+    /** @var Title Title object for target parameter */
+    private $targetObj;
 
-	/** @var string Deletion type, may be revision or logentry */
-	private $typeName;
+    /** @var string Deletion type, may be revision or logentry */
+    private $typeName;
 
-	/** @var ChangeTagsList Storing the list of items to be tagged */
-	private $revList;
+    /** @var ChangeTagsList Storing the list of items to be tagged */
+    private $revList;
 
-	/** @var string */
-	private $reason;
+    /** @var string */
+    private $reason;
 
-	/** @var PermissionManager */
-	private $permissionManager;
+    /** @var PermissionManager */
+    private $permissionManager;
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param PermissionManager $permissionManager
-	 */
-	public function __construct( PermissionManager $permissionManager ) {
-		parent::__construct( 'EditTags', 'changetags' );
+    /**
+     * @inheritDoc
+     *
+     * @param PermissionManager $permissionManager
+     */
+    public function __construct(PermissionManager $permissionManager)
+    {
+        parent::__construct('EditTags', 'changetags');
 
-		$this->permissionManager = $permissionManager;
-	}
+        $this->permissionManager = $permissionManager;
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function execute( $par ) {
-		$this->checkPermissions();
-		$this->checkReadOnly();
+    public function execute($par)
+    {
+        $this->checkPermissions();
+        $this->checkReadOnly();
 
-		$output = $this->getOutput();
-		$user = $this->getUser();
-		$request = $this->getRequest();
+        $output = $this->getOutput();
+        $user = $this->getUser();
+        $request = $this->getRequest();
 
-		$this->setHeaders();
-		$this->outputHeader();
+        $this->setHeaders();
+        $this->outputHeader();
 
-		$output->addModules( [ 'mediawiki.special.edittags' ] );
-		$output->addModuleStyles( [
-			'mediawiki.interface.helpers.styles',
-			'mediawiki.special'
-		] );
+        $output->addModules(['mediawiki.special.edittags']);
+        $output->addModuleStyles([
+            'mediawiki.interface.helpers.styles',
+            'mediawiki.special'
+        ]);
 
-		$this->submitClicked = $request->wasPosted() && $request->getBool( 'wpSubmit' );
+        $this->submitClicked = $request->wasPosted() && $request->getBool('wpSubmit');
 
-		// Handle our many different possible input types
-		$ids = $request->getVal( 'ids' );
-		if ( $ids !== null ) {
-			// Allow CSV from the form hidden field, or a single ID for show/hide links
-			$this->ids = explode( ',', $ids );
-		} else {
-			// Array input
-			$this->ids = array_keys( $request->getArray( 'ids', [] ) );
-		}
-		$this->ids = array_unique( array_filter( $this->ids ) );
+        // Handle our many different possible input types
+        $ids = $request->getVal('ids');
+        if ($ids !== null) {
+            // Allow CSV from the form hidden field, or a single ID for show/hide links
+            $this->ids = explode(',', $ids);
+        } else {
+            // Array input
+            $this->ids = array_keys($request->getArray('ids', []));
+        }
+        $this->ids = array_unique(array_filter($this->ids));
 
-		// No targets?
-		if ( count( $this->ids ) == 0 ) {
-			throw new ErrorPageError( 'tags-edit-nooldid-title', 'tags-edit-nooldid-text' );
-		}
+        // No targets?
+        if (count($this->ids) == 0) {
+            throw new ErrorPageError('tags-edit-nooldid-title', 'tags-edit-nooldid-text');
+        }
 
-		$this->typeName = $request->getVal( 'type' );
-		$this->targetObj = Title::newFromText( $request->getText( 'target' ) );
+        $this->typeName = $request->getVal('type');
+        $this->targetObj = Title::newFromText($request->getText('target'));
 
-		switch ( $this->typeName ) {
-			case 'logentry':
-			case 'logging':
-				$this->typeName = 'logentry';
-				break;
-			default:
-				$this->typeName = 'revision';
-				break;
-		}
+        switch ($this->typeName) {
+            case 'logentry':
+            case 'logging':
+                $this->typeName = 'logentry';
+                break;
+            default:
+                $this->typeName = 'revision';
+                break;
+        }
 
-		// Allow the list type to adjust the passed target
-		// Yuck! Copied straight out of SpecialRevisiondelete, but it does exactly
-		// what we want
-		$this->targetObj = RevisionDeleter::suggestTarget(
-			$this->typeName === 'revision' ? 'revision' : 'logging',
-			$this->targetObj,
-			$this->ids
-		);
+        // Allow the list type to adjust the passed target
+        // Yuck! Copied straight out of SpecialRevisiondelete, but it does exactly
+        // what we want
+        $this->targetObj = RevisionDeleter::suggestTarget(
+            $this->typeName === 'revision' ? 'revision' : 'logging',
+            $this->targetObj,
+            $this->ids
+        );
 
-		$this->reason = $request->getVal( 'wpReason' );
-		// We need a target page!
-		if ( $this->targetObj === null ) {
-			$output->addWikiMsg( 'undelete-header' );
-			return;
-		}
+        $this->reason = $request->getVal('wpReason');
+        // We need a target page!
+        if ($this->targetObj === null) {
+            $output->addWikiMsg('undelete-header');
 
-		// Check blocks
-		$checkReplica = !$this->submitClicked;
-		if (
-			$this->permissionManager->isBlockedFrom(
-				$user,
-				$this->targetObj,
-				$checkReplica
-			)
-		) {
-			throw new UserBlockedError(
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
-				$user->getBlock(),
-				$user,
-				$this->getLanguage(),
-				$request->getIP()
-			);
-		}
+            return;
+        }
 
-		// Give a link to the logs/hist for this page
-		$this->showConvenienceLinks();
+        // Check blocks
+        $checkReplica = !$this->submitClicked;
+        if (
+        $this->permissionManager->isBlockedFrom(
+            $user,
+            $this->targetObj,
+            $checkReplica
+        )
+        ) {
+            throw new UserBlockedError(
+            // @phan-suppress-next-line PhanTypeMismatchArgumentNullable Block is checked and not null
+                $user->getBlock(),
+                $user,
+                $this->getLanguage(),
+                $request->getIP()
+            );
+        }
 
-		// Either submit or create our form
-		if ( $this->submitClicked ) {
-			$this->submit();
-		} else {
-			$this->showForm();
-		}
+        // Give a link to the logs/hist for this page
+        $this->showConvenienceLinks();
 
-		// Show relevant lines from the tag log
-		$tagLogPage = new LogPage( 'tag' );
-		$output->addHTML( "<h2>" . $tagLogPage->getName()->escaped() . "</h2>\n" );
-		LogEventsList::showLogExtract(
-			$output,
-			'tag',
-			$this->targetObj,
-			'', /* user */
-			[ 'lim' => 25, 'conds' => [], 'useMaster' => $this->wasSaved ]
-		);
-	}
+        // Either submit or create our form
+        if ($this->submitClicked) {
+            $this->submit();
+        } else {
+            $this->showForm();
+        }
 
-	/**
-	 * Show some useful links in the subtitle
-	 */
-	protected function showConvenienceLinks() {
-		// Give a link to the logs/hist for this page
-		if ( $this->targetObj ) {
-			// Also set header tabs to be for the target.
-			$this->getSkin()->setRelevantTitle( $this->targetObj );
+        // Show relevant lines from the tag log
+        $tagLogPage = new LogPage('tag');
+        $output->addHTML("<h2>" . $tagLogPage->getName()->escaped() . "</h2>\n");
+        LogEventsList::showLogExtract(
+            $output,
+            'tag',
+            $this->targetObj,
+            '', /* user */
+            ['lim' => 25, 'conds' => [], 'useMaster' => $this->wasSaved]
+        );
+    }
 
-			$linkRenderer = $this->getLinkRenderer();
-			$links = [];
-			$links[] = $linkRenderer->makeKnownLink(
-				SpecialPage::getTitleFor( 'Log' ),
-				$this->msg( 'viewpagelogs' )->text(),
-				[],
-				[
-					'page' => $this->targetObj->getPrefixedText(),
-					'wpfilters' => [ 'tag' ],
-				]
-			);
-			if ( !$this->targetObj->isSpecialPage() ) {
-				// Give a link to the page history
-				$links[] = $linkRenderer->makeKnownLink(
-					$this->targetObj,
-					$this->msg( 'pagehist' )->text(),
-					[],
-					[ 'action' => 'history' ]
-				);
-			}
-			// Link to Special:Tags
-			$links[] = $linkRenderer->makeKnownLink(
-				SpecialPage::getTitleFor( 'Tags' ),
-				$this->msg( 'tags-edit-manage-link' )->text()
-			);
-			// Logs themselves don't have histories or archived revisions
-			$this->getOutput()->addSubtitle( $this->getLanguage()->pipeList( $links ) );
-		}
-	}
+    /**
+     * Show some useful links in the subtitle
+     */
+    protected function showConvenienceLinks()
+    {
+        // Give a link to the logs/hist for this page
+        if ($this->targetObj) {
+            // Also set header tabs to be for the target.
+            $this->getSkin()->setRelevantTitle($this->targetObj);
 
-	/**
-	 * Get the list object for this request
-	 * @return ChangeTagsList
-	 */
-	protected function getList() {
-		if ( $this->revList === null ) {
-			$this->revList = ChangeTagsList::factory( $this->typeName, $this->getContext(),
-				$this->targetObj, $this->ids );
-		}
+            $linkRenderer = $this->getLinkRenderer();
+            $links = [];
+            $links[] = $linkRenderer->makeKnownLink(
+                SpecialPage::getTitleFor('Log'),
+                $this->msg('viewpagelogs')->text(),
+                [],
+                [
+                    'page'      => $this->targetObj->getPrefixedText(),
+                    'wpfilters' => ['tag'],
+                ]
+            );
+            if (!$this->targetObj->isSpecialPage()) {
+                // Give a link to the page history
+                $links[] = $linkRenderer->makeKnownLink(
+                    $this->targetObj,
+                    $this->msg('pagehist')->text(),
+                    [],
+                    ['action' => 'history']
+                );
+            }
+            // Link to Special:Tags
+            $links[] = $linkRenderer->makeKnownLink(
+                SpecialPage::getTitleFor('Tags'),
+                $this->msg('tags-edit-manage-link')->text()
+            );
+            // Logs themselves don't have histories or archived revisions
+            $this->getOutput()->addSubtitle($this->getLanguage()->pipeList($links));
+        }
+    }
 
-		return $this->revList;
-	}
+    /**
+     * Get the list object for this request
+     * @return ChangeTagsList
+     */
+    protected function getList()
+    {
+        if ($this->revList === null) {
+            $this->revList = ChangeTagsList::factory($this->typeName, $this->getContext(),
+                $this->targetObj, $this->ids);
+        }
 
-	/**
-	 * Show a list of items that we will operate on, and show a form which allows
-	 * the user to modify the tags applied to those items.
-	 */
-	protected function showForm() {
-		$out = $this->getOutput();
-		// Messages: tags-edit-revision-selected, tags-edit-logentry-selected
-		$out->wrapWikiMsg( "<strong>$1</strong>", [
-			"tags-edit-{$this->typeName}-selected",
-			$this->getLanguage()->formatNum( count( $this->ids ) ),
-			$this->targetObj->getPrefixedText()
-		] );
+        return $this->revList;
+    }
 
-		$this->addHelpLink( 'Help:Tags' );
-		$out->addHTML( "<ul>" );
+    /**
+     * Show a list of items that we will operate on, and show a form which allows
+     * the user to modify the tags applied to those items.
+     */
+    protected function showForm()
+    {
+        $out = $this->getOutput();
+        // Messages: tags-edit-revision-selected, tags-edit-logentry-selected
+        $out->wrapWikiMsg("<strong>$1</strong>", [
+            "tags-edit-{$this->typeName}-selected",
+            $this->getLanguage()->formatNum(count($this->ids)),
+            $this->targetObj->getPrefixedText()
+        ]);
 
-		$numRevisions = 0;
-		// Live revisions...
-		$list = $this->getList();
-		for ( $list->reset(); $list->current(); $list->next() ) {
-			$item = $list->current();
-			if ( !$item->canView() ) {
-				throw new ErrorPageError( 'permissionserrors', 'tags-update-no-permission' );
-			}
-			$numRevisions++;
-			$out->addHTML( $item->getHTML() );
-		}
+        $this->addHelpLink('Help:Tags');
+        $out->addHTML("<ul>");
 
-		if ( !$numRevisions ) {
-			throw new ErrorPageError( 'tags-edit-nooldid-title', 'tags-edit-nooldid-text' );
-		}
+        $numRevisions = 0;
+        // Live revisions...
+        $list = $this->getList();
+        for ($list->reset(); $list->current(); $list->next()) {
+            $item = $list->current();
+            if (!$item->canView()) {
+                throw new ErrorPageError('permissionserrors', 'tags-update-no-permission');
+            }
+            $numRevisions++;
+            $out->addHTML($item->getHTML());
+        }
 
-		$out->addHTML( "</ul>" );
-		// Explanation text
-		$out->wrapWikiMsg( '<p>$1</p>', "tags-edit-{$this->typeName}-explanation" );
+        if (!$numRevisions) {
+            throw new ErrorPageError('tags-edit-nooldid-title', 'tags-edit-nooldid-text');
+        }
 
-		// Show form
-		$form = Xml::openElement( 'form', [ 'method' => 'post',
-				'action' => $this->getPageTitle()->getLocalURL( [ 'action' => 'submit' ] ),
-				'id' => 'mw-revdel-form-revisions' ] ) .
-			Xml::fieldset( $this->msg( "tags-edit-{$this->typeName}-legend",
-				count( $this->ids ) )->text() ) .
-			$this->buildCheckBoxes() .
-			Xml::openElement( 'table' ) .
-			"<tr>\n" .
-				'<td class="mw-label">' .
-					Xml::label( $this->msg( 'tags-edit-reason' )->text(), 'wpReason' ) .
-				'</td>' .
-				'<td class="mw-input">' .
-					Xml::input( 'wpReason', 60, $this->reason, [
-						'id' => 'wpReason',
-						// HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
-						// (e.g. emojis) count for two each. This limit is overridden in JS to instead count
-						// Unicode codepoints.
-						'maxlength' => CommentStore::COMMENT_CHARACTER_LIMIT,
-					] ) .
-				'</td>' .
-			"</tr><tr>\n" .
-				'<td></td>' .
-				'<td class="mw-submit">' .
-					Xml::submitButton( $this->msg( "tags-edit-{$this->typeName}-submit",
-						$numRevisions )->text(), [ 'name' => 'wpSubmit' ] ) .
-				'</td>' .
-			"</tr>\n" .
-			Xml::closeElement( 'table' ) .
-			Html::hidden( 'wpEditToken', $this->getUser()->getEditToken() ) .
-			Html::hidden( 'target', $this->targetObj->getPrefixedText() ) .
-			Html::hidden( 'type', $this->typeName ) .
-			Html::hidden( 'ids', implode( ',', $this->ids ) ) .
-			Xml::closeElement( 'fieldset' ) . "\n" .
-			Xml::closeElement( 'form' ) . "\n";
+        $out->addHTML("</ul>");
+        // Explanation text
+        $out->wrapWikiMsg('<p>$1</p>', "tags-edit-{$this->typeName}-explanation");
 
-		$out->addHTML( $form );
-	}
+        // Show form
+        $form = Xml::openElement('form', ['method' => 'post',
+                                          'action' => $this->getPageTitle()->getLocalURL(['action' => 'submit']),
+                                          'id'     => 'mw-revdel-form-revisions']) .
+            Xml::fieldset($this->msg("tags-edit-{$this->typeName}-legend",
+                count($this->ids))->text()) .
+            $this->buildCheckBoxes() .
+            Xml::openElement('table') .
+            "<tr>\n" .
+            '<td class="mw-label">' .
+            Xml::label($this->msg('tags-edit-reason')->text(), 'wpReason') .
+            '</td>' .
+            '<td class="mw-input">' .
+            Xml::input('wpReason', 60, $this->reason, [
+                'id'        => 'wpReason',
+                // HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
+                // (e.g. emojis) count for two each. This limit is overridden in JS to instead count
+                // Unicode codepoints.
+                'maxlength' => CommentStore::COMMENT_CHARACTER_LIMIT,
+            ]) .
+            '</td>' .
+            "</tr><tr>\n" .
+            '<td></td>' .
+            '<td class="mw-submit">' .
+            Xml::submitButton($this->msg("tags-edit-{$this->typeName}-submit",
+                $numRevisions)->text(), ['name' => 'wpSubmit']) .
+            '</td>' .
+            "</tr>\n" .
+            Xml::closeElement('table') .
+            Html::hidden('wpEditToken', $this->getUser()->getEditToken()) .
+            Html::hidden('target', $this->targetObj->getPrefixedText()) .
+            Html::hidden('type', $this->typeName) .
+            Html::hidden('ids', implode(',', $this->ids)) .
+            Xml::closeElement('fieldset') . "\n" .
+            Xml::closeElement('form') . "\n";
 
-	/**
-	 * @return string HTML
-	 */
-	protected function buildCheckBoxes() {
-		// If there is just one item, provide the user with a multi-select field
-		$list = $this->getList();
-		$tags = [];
-		if ( $list->length() == 1 ) {
-			$list->reset();
-			$tags = $list->current()->getTags();
-			if ( $tags ) {
-				$tags = explode( ',', $tags );
-			} else {
-				$tags = [];
-			}
+        $out->addHTML($form);
+    }
 
-			$html = '<table id="mw-edittags-tags-selector">';
-			$html .= '<tr><td>' . $this->msg( 'tags-edit-existing-tags' )->escaped() .
-				'</td><td>';
-			if ( $tags ) {
-				$html .= $this->getLanguage()->commaList( array_map( 'htmlspecialchars', $tags ) );
-			} else {
-				$html .= $this->msg( 'tags-edit-existing-tags-none' )->parse();
-			}
-			$html .= '</td></tr>';
-			$tagSelect = $this->getTagSelect( $tags, $this->msg( 'tags-edit-new-tags' )->plain() );
-			$html .= '<tr><td>' . $tagSelect[0] . '</td><td>' . $tagSelect[1];
-		} else {
-			// Otherwise, use a multi-select field for adding tags, and a list of
-			// checkboxes for removing them
+    /**
+     * @return string HTML
+     */
+    protected function buildCheckBoxes()
+    {
+        // If there is just one item, provide the user with a multi-select field
+        $list = $this->getList();
+        $tags = [];
+        if ($list->length() == 1) {
+            $list->reset();
+            $tags = $list->current()->getTags();
+            if ($tags) {
+                $tags = explode(',', $tags);
+            } else {
+                $tags = [];
+            }
 
-			for ( $list->reset(); $list->current(); $list->next() ) {
-				$currentTags = $list->current()->getTags();
-				if ( $currentTags ) {
-					$tags = array_merge( $tags, explode( ',', $currentTags ) );
-				}
-			}
-			$tags = array_unique( $tags );
+            $html = '<table id="mw-edittags-tags-selector">';
+            $html .= '<tr><td>' . $this->msg('tags-edit-existing-tags')->escaped() .
+                '</td><td>';
+            if ($tags) {
+                $html .= $this->getLanguage()->commaList(array_map('htmlspecialchars', $tags));
+            } else {
+                $html .= $this->msg('tags-edit-existing-tags-none')->parse();
+            }
+            $html .= '</td></tr>';
+            $tagSelect = $this->getTagSelect($tags, $this->msg('tags-edit-new-tags')->plain());
+            $html .= '<tr><td>' . $tagSelect[0] . '</td><td>' . $tagSelect[1];
+        } else {
+            // Otherwise, use a multi-select field for adding tags, and a list of
+            // checkboxes for removing them
 
-			$html = '<table id="mw-edittags-tags-selector-multi"><tr><td>';
-			$tagSelect = $this->getTagSelect( [], $this->msg( 'tags-edit-add' )->plain() );
-			$html .= '<p>' . $tagSelect[0] . '</p>' . $tagSelect[1] . '</td><td>';
-			$html .= Xml::element( 'p', null, $this->msg( 'tags-edit-remove' )->plain() );
-			$html .= Xml::checkLabel( $this->msg( 'tags-edit-remove-all-tags' )->plain(),
-				'wpRemoveAllTags', 'mw-edittags-remove-all' );
-			$i = 0; // used for generating checkbox IDs only
-			foreach ( $tags as $tag ) {
-				$html .= Xml::element( 'br' ) . "\n" . Xml::checkLabel( $tag,
-					'wpTagsToRemove[]', 'mw-edittags-remove-' . $i++, false, [
-						'value' => $tag,
-						'class' => 'mw-edittags-remove-checkbox',
-					] );
-			}
-		}
+            for ($list->reset(); $list->current(); $list->next()) {
+                $currentTags = $list->current()->getTags();
+                if ($currentTags) {
+                    $tags = array_merge($tags, explode(',', $currentTags));
+                }
+            }
+            $tags = array_unique($tags);
 
-		// also output the tags currently applied as a hidden form field, so we
-		// know what to remove from the revision/log entry when the form is submitted
-		$html .= Html::hidden( 'wpExistingTags', implode( ',', $tags ) );
-		$html .= '</td></tr></table>';
+            $html = '<table id="mw-edittags-tags-selector-multi"><tr><td>';
+            $tagSelect = $this->getTagSelect([], $this->msg('tags-edit-add')->plain());
+            $html .= '<p>' . $tagSelect[0] . '</p>' . $tagSelect[1] . '</td><td>';
+            $html .= Xml::element('p', null, $this->msg('tags-edit-remove')->plain());
+            $html .= Xml::checkLabel($this->msg('tags-edit-remove-all-tags')->plain(),
+                'wpRemoveAllTags', 'mw-edittags-remove-all');
+            $i = 0; // used for generating checkbox IDs only
+            foreach ($tags as $tag) {
+                $html .= Xml::element('br') . "\n" . Xml::checkLabel($tag,
+                        'wpTagsToRemove[]', 'mw-edittags-remove-' . $i++, false, [
+                            'value' => $tag,
+                            'class' => 'mw-edittags-remove-checkbox',
+                        ]);
+            }
+        }
 
-		return $html;
-	}
+        // also output the tags currently applied as a hidden form field, so we
+        // know what to remove from the revision/log entry when the form is submitted
+        $html .= Html::hidden('wpExistingTags', implode(',', $tags));
+        $html .= '</td></tr></table>';
 
-	/**
-	 * Returns a <select multiple> element with a list of change tags that can be
-	 * applied by users.
-	 *
-	 * @param array $selectedTags The tags that should be preselected in the
-	 * list. Any tags in this list, but not in the list returned by
-	 * ChangeTags::listExplicitlyDefinedTags, will be appended to the <select>
-	 * element.
-	 * @param string $label The text of a <label> to precede the <select>
-	 * @return array HTML <label> element at index 0, HTML <select> element at
-	 * index 1
-	 */
-	protected function getTagSelect( $selectedTags, $label ) {
-		$result = [];
-		$result[0] = Xml::label( $label, 'mw-edittags-tag-list' );
+        return $html;
+    }
 
-		$select = new XmlSelect( 'wpTagList[]', 'mw-edittags-tag-list', $selectedTags );
-		$select->setAttribute( 'multiple', 'multiple' );
-		$select->setAttribute( 'size', '8' );
+    /**
+     * Returns a <select multiple> element with a list of change tags that can be
+     * applied by users.
+     *
+     * @param array $selectedTags The tags that should be preselected in the
+     * list. Any tags in this list, but not in the list returned by
+     * ChangeTags::listExplicitlyDefinedTags, will be appended to the <select>
+     * element.
+     * @param string $label The text of a <label> to precede the <select>
+     * @return array HTML <label> element at index 0, HTML <select> element at
+     * index 1
+     */
+    protected function getTagSelect($selectedTags, $label)
+    {
+        $result = [];
+        $result[0] = Xml::label($label, 'mw-edittags-tag-list');
 
-		$tags = ChangeTags::listExplicitlyDefinedTags();
-		$tags = array_unique( array_merge( $tags, $selectedTags ) );
+        $select = new XmlSelect('wpTagList[]', 'mw-edittags-tag-list', $selectedTags);
+        $select->setAttribute('multiple', 'multiple');
+        $select->setAttribute('size', '8');
 
-		// Values of $tags are also used as <option> labels
-		$select->addOptions( array_combine( $tags, $tags ) );
+        $tags = ChangeTags::listExplicitlyDefinedTags();
+        $tags = array_unique(array_merge($tags, $selectedTags));
 
-		$result[1] = $select->getHTML();
-		return $result;
-	}
+        // Values of $tags are also used as <option> labels
+        $select->addOptions(array_combine($tags, $tags));
 
-	/**
-	 * UI entry point for form submission.
-	 * @return bool
-	 */
-	protected function submit() {
-		// Check edit token on submission
-		$request = $this->getRequest();
-		$token = $request->getVal( 'wpEditToken' );
-		if ( $this->submitClicked && !$this->getUser()->matchEditToken( $token ) ) {
-			$this->getOutput()->addWikiMsg( 'sessionfailure' );
-			return false;
-		}
+        $result[1] = $select->getHTML();
 
-		// Evaluate incoming request data
-		$tagList = $request->getArray( 'wpTagList' );
-		if ( $tagList === null ) {
-			$tagList = [];
-		}
-		$existingTags = $request->getVal( 'wpExistingTags' );
-		if ( $existingTags === null || $existingTags === '' ) {
-			$existingTags = [];
-		} else {
-			$existingTags = explode( ',', $existingTags );
-		}
+        return $result;
+    }
 
-		if ( count( $this->ids ) > 1 ) {
-			// multiple revisions selected
-			$tagsToAdd = $tagList;
-			if ( $request->getBool( 'wpRemoveAllTags' ) ) {
-				$tagsToRemove = $existingTags;
-			} else {
-				$tagsToRemove = $request->getArray( 'wpTagsToRemove' );
-			}
-		} else {
-			// single revision selected
-			// The user tells us which tags they want associated to the revision.
-			// We have to figure out which ones to add, and which to remove.
-			$tagsToAdd = array_diff( $tagList, $existingTags );
-			$tagsToRemove = array_diff( $existingTags, $tagList );
-		}
+    /**
+     * UI entry point for form submission.
+     * @return bool
+     */
+    protected function submit()
+    {
+        // Check edit token on submission
+        $request = $this->getRequest();
+        $token = $request->getVal('wpEditToken');
+        if ($this->submitClicked && !$this->getUser()->matchEditToken($token)) {
+            $this->getOutput()->addWikiMsg('sessionfailure');
 
-		if ( !$tagsToAdd && !$tagsToRemove ) {
-			$status = Status::newFatal( 'tags-edit-none-selected' );
-		} else {
-			$status = $this->getList()->updateChangeTagsOnAll( $tagsToAdd,
-				$tagsToRemove, null, $this->reason, $this->getAuthority() );
-		}
+            return false;
+        }
 
-		if ( $status->isGood() ) {
-			$this->success();
-			return true;
-		} else {
-			$this->failure( $status );
-			return false;
-		}
-	}
+        // Evaluate incoming request data
+        $tagList = $request->getArray('wpTagList');
+        if ($tagList === null) {
+            $tagList = [];
+        }
+        $existingTags = $request->getVal('wpExistingTags');
+        if ($existingTags === null || $existingTags === '') {
+            $existingTags = [];
+        } else {
+            $existingTags = explode(',', $existingTags);
+        }
 
-	/**
-	 * Report that the submit operation succeeded
-	 */
-	protected function success() {
-		$out = $this->getOutput();
-		$out->setPageTitle( $this->msg( 'actioncomplete' ) );
-		$out->addHTML(
-			Html::successBox( $out->msg( 'tags-edit-success' )->parse() )
-		);
-		$this->wasSaved = true;
-		$this->revList->reloadFromPrimary();
-		$this->reason = ''; // no need to spew the reason back at the user
-		$this->showForm();
-	}
+        if (count($this->ids) > 1) {
+            // multiple revisions selected
+            $tagsToAdd = $tagList;
+            if ($request->getBool('wpRemoveAllTags')) {
+                $tagsToRemove = $existingTags;
+            } else {
+                $tagsToRemove = $request->getArray('wpTagsToRemove');
+            }
+        } else {
+            // single revision selected
+            // The user tells us which tags they want associated to the revision.
+            // We have to figure out which ones to add, and which to remove.
+            $tagsToAdd = array_diff($tagList, $existingTags);
+            $tagsToRemove = array_diff($existingTags, $tagList);
+        }
 
-	/**
-	 * Report that the submit operation failed
-	 * @param Status $status
-	 */
-	protected function failure( $status ) {
-		$out = $this->getOutput();
-		$out->setPageTitle( $this->msg( 'actionfailed' ) );
-		$out->addHTML(
-			Html::errorBox(
-				$out->parseAsContent(
-					$status->getWikiText( 'tags-edit-failure', false, $this->getLanguage() )
-				)
-			)
-		);
-		$this->showForm();
-	}
+        if (!$tagsToAdd && !$tagsToRemove) {
+            $status = Status::newFatal('tags-edit-none-selected');
+        } else {
+            $status = $this->getList()->updateChangeTagsOnAll($tagsToAdd,
+                $tagsToRemove, null, $this->reason, $this->getAuthority());
+        }
 
-	public function getDescription() {
-		return $this->msg( 'tags-edit-title' )->text();
-	}
+        if ($status->isGood()) {
+            $this->success();
 
-	protected function getGroupName() {
-		return 'pagetools';
-	}
+            return true;
+        } else {
+            $this->failure($status);
+
+            return false;
+        }
+    }
+
+    /**
+     * Report that the submit operation succeeded
+     */
+    protected function success()
+    {
+        $out = $this->getOutput();
+        $out->setPageTitle($this->msg('actioncomplete'));
+        $out->addHTML(
+            Html::successBox($out->msg('tags-edit-success')->parse())
+        );
+        $this->wasSaved = true;
+        $this->revList->reloadFromPrimary();
+        $this->reason = ''; // no need to spew the reason back at the user
+        $this->showForm();
+    }
+
+    /**
+     * Report that the submit operation failed
+     * @param Status $status
+     */
+    protected function failure($status)
+    {
+        $out = $this->getOutput();
+        $out->setPageTitle($this->msg('actionfailed'));
+        $out->addHTML(
+            Html::errorBox(
+                $out->parseAsContent(
+                    $status->getWikiText('tags-edit-failure', false, $this->getLanguage())
+                )
+            )
+        );
+        $this->showForm();
+    }
+
+    public function getDescription()
+    {
+        return $this->msg('tags-edit-title')->text();
+    }
+
+    protected function getGroupName()
+    {
+        return 'pagetools';
+    }
 }

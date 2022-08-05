@@ -33,76 +33,82 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class PageSizeConstraint implements IEditConstraint {
+class PageSizeConstraint implements IEditConstraint
+{
 
-	/**
-	 * Same constraint is used for two different errors, use these
-	 * to specify which one should be used
-	 */
-	public const BEFORE_MERGE = 'check-before-edit-merge';
-	public const AFTER_MERGE = 'check-after-edit-merge';
+    /**
+     * Same constraint is used for two different errors, use these
+     * to specify which one should be used
+     */
+    public const BEFORE_MERGE = 'check-before-edit-merge';
+    public const AFTER_MERGE = 'check-after-edit-merge';
 
-	/** @var int */
-	private $contentSize;
+    /** @var int */
+    private $contentSize;
 
-	/** @var int */
-	private $maxSize;
+    /** @var int */
+    private $maxSize;
 
-	/** @var int */
-	private $errorCode;
+    /** @var int */
+    private $errorCode;
 
-	/** @var string */
-	private $type;
+    /** @var string */
+    private $type;
 
-	/**
-	 * @param int $maxSize In kibibytes, from $wgMaxArticleSize
-	 * @param int $contentSize
-	 * @param string $type
-	 */
-	public function __construct(
-		int $maxSize,
-		int $contentSize,
-		string $type
-	) {
-		$this->maxSize = $maxSize * 1024; // Convert from kibibytes
-		$this->contentSize = $contentSize;
+    /**
+     * @param int $maxSize In kibibytes, from $wgMaxArticleSize
+     * @param int $contentSize
+     * @param string $type
+     */
+    public function __construct(
+        int $maxSize,
+        int $contentSize,
+        string $type
+    )
+    {
+        $this->maxSize = $maxSize * 1024; // Convert from kibibytes
+        $this->contentSize = $contentSize;
 
-		if ( $type === self::BEFORE_MERGE ) {
-			$this->errorCode = self::AS_CONTENT_TOO_BIG;
-		} elseif ( $type === self::AFTER_MERGE ) {
-			$this->errorCode = self::AS_MAX_ARTICLE_SIZE_EXCEEDED;
-		} else {
-			throw new InvalidArgumentException( "Invalid type: $type" );
-		}
+        if ($type === self::BEFORE_MERGE) {
+            $this->errorCode = self::AS_CONTENT_TOO_BIG;
+        } elseif ($type === self::AFTER_MERGE) {
+            $this->errorCode = self::AS_MAX_ARTICLE_SIZE_EXCEEDED;
+        } else {
+            throw new InvalidArgumentException("Invalid type: $type");
+        }
 
-		$this->type = $type;
-	}
+        $this->type = $type;
+    }
 
-	public function checkConstraint(): string {
-		return $this->contentSize > $this->maxSize ?
-			self::CONSTRAINT_FAILED :
-			self::CONSTRAINT_PASSED;
-	}
+    public function checkConstraint(): string
+    {
+        return $this->contentSize > $this->maxSize ?
+            self::CONSTRAINT_FAILED :
+            self::CONSTRAINT_PASSED;
+    }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->contentSize > $this->maxSize ) {
-			// Either self::AS_CONTENT_TOO_BIG, if it was too big before merging,
-			// or self::AS_MAX_ARTICLE_SIZE_EXCEEDED, if it was too big after merging
-			$statusValue->setResult( false, $this->errorCode );
-		}
-		return $statusValue;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->contentSize > $this->maxSize) {
+            // Either self::AS_CONTENT_TOO_BIG, if it was too big before merging,
+            // or self::AS_MAX_ARTICLE_SIZE_EXCEEDED, if it was too big after merging
+            $statusValue->setResult(false, $this->errorCode);
+        }
 
-	/**
-	 * Get the type, so that the two different uses of this constraint can be told
-	 * apart in debug logs.
-	 * @internal
-	 * @codeCoverageIgnore
-	 * @return string
-	 */
-	public function getType(): string {
-		return $this->type;
-	}
+        return $statusValue;
+    }
+
+    /**
+     * Get the type, so that the two different uses of this constraint can be told
+     * apart in debug logs.
+     * @return string
+     * @internal
+     * @codeCoverageIgnore
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
 
 }

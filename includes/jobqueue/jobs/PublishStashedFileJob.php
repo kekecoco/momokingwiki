@@ -21,6 +21,7 @@
  * @ingroup Upload
  * @ingroup JobQueue
  */
+
 use Wikimedia\ScopedCallback;
 
 /**
@@ -29,125 +30,130 @@ use Wikimedia\ScopedCallback;
  * @ingroup Upload
  * @ingroup JobQueue
  */
-class PublishStashedFileJob extends Job {
-	public function __construct( Title $title, array $params ) {
-		parent::__construct( 'PublishStashedFile', $title, $params );
-		$this->removeDuplicates = true;
-	}
+class PublishStashedFileJob extends Job
+{
+    public function __construct(Title $title, array $params)
+    {
+        parent::__construct('PublishStashedFile', $title, $params);
+        $this->removeDuplicates = true;
+    }
 
-	public function run() {
-		$scope = RequestContext::importScopedSession( $this->params['session'] );
-		$this->addTeardownCallback( static function () use ( &$scope ) {
-			ScopedCallback::consume( $scope ); // T126450
-		} );
+    public function run()
+    {
+        $scope = RequestContext::importScopedSession($this->params['session']);
+        $this->addTeardownCallback(static function () use (&$scope) {
+            ScopedCallback::consume($scope); // T126450
+        });
 
-		$context = RequestContext::getMain();
-		$user = $context->getUser();
-		try {
-			if ( !$user->isRegistered() ) {
-				$this->setLastError( "Could not load the author user from session." );
+        $context = RequestContext::getMain();
+        $user = $context->getUser();
+        try {
+            if (!$user->isRegistered()) {
+                $this->setLastError("Could not load the author user from session.");
 
-				return false;
-			}
+                return false;
+            }
 
-			UploadBase::setSessionStatus(
-				$user,
-				$this->params['filekey'],
-				[ 'result' => 'Poll', 'stage' => 'publish', 'status' => Status::newGood() ]
-			);
+            UploadBase::setSessionStatus(
+                $user,
+                $this->params['filekey'],
+                ['result' => 'Poll', 'stage' => 'publish', 'status' => Status::newGood()]
+            );
 
-			$upload = new UploadFromStash( $user );
-			// @todo initialize() causes a GET, ideally we could frontload the antivirus
-			// checks and anything else to the stash stage (which includes concatenation and
-			// the local file is thus already there). That way, instead of GET+PUT, there could
-			// just be a COPY operation from the stash to the public zone.
-			$upload->initialize( $this->params['filekey'], $this->params['filename'] );
+            $upload = new UploadFromStash($user);
+            // @todo initialize() causes a GET, ideally we could frontload the antivirus
+            // checks and anything else to the stash stage (which includes concatenation and
+            // the local file is thus already there). That way, instead of GET+PUT, there could
+            // just be a COPY operation from the stash to the public zone.
+            $upload->initialize($this->params['filekey'], $this->params['filename']);
 
-			// Check if the local file checks out (this is generally a no-op)
-			$verification = $upload->verifyUpload();
-			if ( $verification['status'] !== UploadBase::OK ) {
-				$status = Status::newFatal( 'verification-error' );
-				$status->value = [ 'verification' => $verification ];
-				UploadBase::setSessionStatus(
-					$user,
-					$this->params['filekey'],
-					[ 'result' => 'Failure', 'stage' => 'publish', 'status' => $status ]
-				);
-				$this->setLastError( "Could not verify upload." );
+            // Check if the local file checks out (this is generally a no-op)
+            $verification = $upload->verifyUpload();
+            if ($verification['status'] !== UploadBase::OK) {
+                $status = Status::newFatal('verification-error');
+                $status->value = ['verification' => $verification];
+                UploadBase::setSessionStatus(
+                    $user,
+                    $this->params['filekey'],
+                    ['result' => 'Failure', 'stage' => 'publish', 'status' => $status]
+                );
+                $this->setLastError("Could not verify upload.");
 
-				return false;
-			}
+                return false;
+            }
 
-			// Upload the stashed file to a permanent location
-			$status = $upload->performUpload(
-				$this->params['comment'],
-				$this->params['text'],
-				$this->params['watch'],
-				$user,
-				$this->params['tags'] ?? [],
-				$this->params['watchlistexpiry'] ?? null
-			);
-			if ( !$status->isGood() ) {
-				UploadBase::setSessionStatus(
-					$user,
-					$this->params['filekey'],
-					[ 'result' => 'Failure', 'stage' => 'publish', 'status' => $status ]
-				);
-				$this->setLastError( $status->getWikiText( false, false, 'en' ) );
+            // Upload the stashed file to a permanent location
+            $status = $upload->performUpload(
+                $this->params['comment'],
+                $this->params['text'],
+                $this->params['watch'],
+                $user,
+                $this->params['tags'] ?? [],
+                $this->params['watchlistexpiry'] ?? null
+            );
+            if (!$status->isGood()) {
+                UploadBase::setSessionStatus(
+                    $user,
+                    $this->params['filekey'],
+                    ['result' => 'Failure', 'stage' => 'publish', 'status' => $status]
+                );
+                $this->setLastError($status->getWikiText(false, false, 'en'));
 
-				return false;
-			}
+                return false;
+            }
 
-			// Build the image info array while we have the local reference handy
-			$apiMain = new ApiMain(); // dummy object (XXX)
-			$imageInfo = $upload->getImageInfo( $apiMain->getResult() );
+            // Build the image info array while we have the local reference handy
+            $apiMain = new ApiMain(); // dummy object (XXX)
+            $imageInfo = $upload->getImageInfo($apiMain->getResult());
 
-			// Cleanup any temporary local file
-			$upload->cleanupTempFile();
+            // Cleanup any temporary local file
+            $upload->cleanupTempFile();
 
-			// Cache the info so the user doesn't have to wait forever to get the final info
-			UploadBase::setSessionStatus(
-				$user,
-				$this->params['filekey'],
-				[
-					'result' => 'Success',
-					'stage' => 'publish',
-					'filename' => $upload->getLocalFile()->getName(),
-					'imageinfo' => $imageInfo,
-					'status' => Status::newGood()
-				]
-			);
-		} catch ( Exception $e ) {
-			UploadBase::setSessionStatus(
-				$user,
-				$this->params['filekey'],
-				[
-					'result' => 'Failure',
-					'stage' => 'publish',
-					'status' => Status::newFatal( 'api-error-publishfailed' )
-				]
-			);
-			$this->setLastError( get_class( $e ) . ": " . $e->getMessage() );
-			// To prevent potential database referential integrity issues.
-			// See T34551.
-			MWExceptionHandler::rollbackPrimaryChangesAndLog( $e );
+            // Cache the info so the user doesn't have to wait forever to get the final info
+            UploadBase::setSessionStatus(
+                $user,
+                $this->params['filekey'],
+                [
+                    'result'    => 'Success',
+                    'stage'     => 'publish',
+                    'filename'  => $upload->getLocalFile()->getName(),
+                    'imageinfo' => $imageInfo,
+                    'status'    => Status::newGood()
+                ]
+            );
+        } catch (Exception $e) {
+            UploadBase::setSessionStatus(
+                $user,
+                $this->params['filekey'],
+                [
+                    'result' => 'Failure',
+                    'stage'  => 'publish',
+                    'status' => Status::newFatal('api-error-publishfailed')
+                ]
+            );
+            $this->setLastError(get_class($e) . ": " . $e->getMessage());
+            // To prevent potential database referential integrity issues.
+            // See T34551.
+            MWExceptionHandler::rollbackPrimaryChangesAndLog($e);
 
-			return false;
-		}
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	public function getDeduplicationInfo() {
-		$info = parent::getDeduplicationInfo();
-		if ( is_array( $info['params'] ) ) {
-			$info['params'] = [ 'filekey' => $info['params']['filekey'] ];
-		}
+    public function getDeduplicationInfo()
+    {
+        $info = parent::getDeduplicationInfo();
+        if (is_array($info['params'])) {
+            $info['params'] = ['filekey' => $info['params']['filekey']];
+        }
 
-		return $info;
-	}
+        return $info;
+    }
 
-	public function allowRetries() {
-		return false;
-	}
+    public function allowRetries()
+    {
+        return false;
+    }
 }

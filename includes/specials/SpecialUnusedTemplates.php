@@ -32,102 +32,114 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialUnusedTemplates extends QueryPage {
+class SpecialUnusedTemplates extends QueryPage
+{
 
-	/** @var LinksMigration */
-	private $linksMigration;
+    /** @var LinksMigration */
+    private $linksMigration;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinksMigration $linksMigration
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinksMigration $linksMigration
-	) {
-		parent::__construct( 'Unusedtemplates' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->linksMigration = $linksMigration;
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinksMigration $linksMigration
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinksMigration $linksMigration
+    )
+    {
+        parent::__construct('Unusedtemplates');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->linksMigration = $linksMigration;
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	protected function getOrderFields() {
-		return [ 'title' ];
-	}
+    protected function getOrderFields()
+    {
+        return ['title'];
+    }
 
-	public function getQueryInfo() {
-		$queryInfo = $this->linksMigration->getQueryInfo(
-			'templatelinks',
-			'templatelinks',
-			'LEFT JOIN'
-		);
-		list( $ns, $title ) = $this->linksMigration->getTitleFields( 'templatelinks' );
-		$joinConds = [];
-		$templatelinksJoin = [
-			'LEFT JOIN', [ "$title = page_title",
-				"$ns = page_namespace" ] ];
-		if ( in_array( 'linktarget', $queryInfo['tables'] ) ) {
-			$joinConds['linktarget'] = $templatelinksJoin;
-		} else {
-			$joinConds['templatelinks'] = $templatelinksJoin;
-		}
-		return [
-			'tables' => array_merge( $queryInfo['tables'], [ 'page' ] ),
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-			],
-			'conds' => [
-				'page_namespace' => NS_TEMPLATE,
-				'tl_from IS NULL',
-				'page_is_redirect' => 0
-			],
-			'join_conds' => array_merge( $joinConds, $queryInfo['joins'] )
-		];
-	}
+    public function getQueryInfo()
+    {
+        $queryInfo = $this->linksMigration->getQueryInfo(
+            'templatelinks',
+            'templatelinks',
+            'LEFT JOIN'
+        );
+        [$ns, $title] = $this->linksMigration->getTitleFields('templatelinks');
+        $joinConds = [];
+        $templatelinksJoin = [
+            'LEFT JOIN', ["$title = page_title",
+                "$ns = page_namespace"]];
+        if (in_array('linktarget', $queryInfo['tables'])) {
+            $joinConds['linktarget'] = $templatelinksJoin;
+        } else {
+            $joinConds['templatelinks'] = $templatelinksJoin;
+        }
 
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+        return [
+            'tables'     => array_merge($queryInfo['tables'], ['page']),
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+            ],
+            'conds'      => [
+                'page_namespace'   => NS_TEMPLATE,
+                'tl_from IS NULL',
+                'page_is_redirect' => 0
+            ],
+            'join_conds' => array_merge($joinConds, $queryInfo['joins'])
+        ];
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$linkRenderer = $this->getLinkRenderer();
-		$title = Title::makeTitle( NS_TEMPLATE, $result->title );
-		$pageLink = $linkRenderer->makeKnownLink(
-			$title,
-			null,
-			[],
-			[ 'redirect' => 'no' ]
-		);
-		$wlhLink = $linkRenderer->makeKnownLink(
-			SpecialPage::getTitleFor( 'Whatlinkshere', $title->getPrefixedText() ),
-			$this->msg( 'unusedtemplateswlh' )->text()
-		);
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-		return $this->getLanguage()->specialList( $pageLink, $wlhLink );
-	}
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $linkRenderer = $this->getLinkRenderer();
+        $title = Title::makeTitle(NS_TEMPLATE, $result->title);
+        $pageLink = $linkRenderer->makeKnownLink(
+            $title,
+            null,
+            [],
+            ['redirect' => 'no']
+        );
+        $wlhLink = $linkRenderer->makeKnownLink(
+            SpecialPage::getTitleFor('Whatlinkshere', $title->getPrefixedText()),
+            $this->msg('unusedtemplateswlh')->text()
+        );
 
-	protected function getPageHeader() {
-		return $this->msg( 'unusedtemplatestext' )->parseAsBlock();
-	}
+        return $this->getLanguage()->specialList($pageLink, $wlhLink);
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getPageHeader()
+    {
+        return $this->msg('unusedtemplatestext')->parseAsBlock();
+    }
+
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

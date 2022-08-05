@@ -6,7 +6,7 @@
  * @constructor
  */
 function UtilMixin() {
-	// Nothing
+    // Nothing
 }
 
 /**
@@ -15,8 +15,8 @@ function UtilMixin() {
  * @param {Mixed} value
  * @return {boolean}
  */
-UtilMixin.prototype.apiBool = function ( value ) {
-	return value !== undefined && value !== false;
+UtilMixin.prototype.apiBool = function (value) {
+    return value !== undefined && value !== false;
 };
 
 module.exports = UtilMixin;

@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashZeroLengthFileException extends UploadStashException {
+class UploadStashZeroLengthFileException extends UploadStashException
+{
 }

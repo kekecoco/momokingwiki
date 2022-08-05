@@ -30,87 +30,92 @@ use MediaWiki\Revision\RevisionRenderer;
  *
  * @internal
  */
-class PoolWorkArticleView extends PoolCounterWork {
+class PoolWorkArticleView extends PoolCounterWork
+{
 
-	/** @var ParserOptions */
-	protected $parserOptions;
+    /** @var ParserOptions */
+    protected $parserOptions;
 
-	/** @var RevisionRecord */
-	protected $revision;
+    /** @var RevisionRecord */
+    protected $revision;
 
-	/** @var RevisionRenderer */
-	private $renderer;
+    /** @var RevisionRenderer */
+    private $renderer;
 
-	/** @var LoggerSpi */
-	protected $loggerSpi;
+    /** @var LoggerSpi */
+    protected $loggerSpi;
 
-	/**
-	 * @param string $workKey
-	 * @param RevisionRecord $revision Revision to render
-	 * @param ParserOptions $parserOptions ParserOptions to use for the parse
-	 * @param RevisionRenderer $revisionRenderer
-	 * @param LoggerSpi $loggerSpi
-	 */
-	public function __construct(
-		string $workKey,
-		RevisionRecord $revision,
-		ParserOptions $parserOptions,
-		RevisionRenderer $revisionRenderer,
-		LoggerSpi $loggerSpi
-	) {
-		parent::__construct( 'ArticleView', $workKey );
-		$this->revision = $revision;
-		$this->parserOptions = $parserOptions;
-		$this->renderer = $revisionRenderer;
-		$this->loggerSpi = $loggerSpi;
-	}
+    /**
+     * @param string $workKey
+     * @param RevisionRecord $revision Revision to render
+     * @param ParserOptions $parserOptions ParserOptions to use for the parse
+     * @param RevisionRenderer $revisionRenderer
+     * @param LoggerSpi $loggerSpi
+     */
+    public function __construct(
+        string $workKey,
+        RevisionRecord $revision,
+        ParserOptions $parserOptions,
+        RevisionRenderer $revisionRenderer,
+        LoggerSpi $loggerSpi
+    )
+    {
+        parent::__construct('ArticleView', $workKey);
+        $this->revision = $revision;
+        $this->parserOptions = $parserOptions;
+        $this->renderer = $revisionRenderer;
+        $this->loggerSpi = $loggerSpi;
+    }
 
-	/**
-	 * @return Status
-	 */
-	public function doWork() {
-		return $this->renderRevision();
-	}
+    /**
+     * @return Status
+     */
+    public function doWork()
+    {
+        return $this->renderRevision();
+    }
 
-	/**
-	 * @return Status with the value being a ParserOutput or null
-	 */
-	public function renderRevision(): Status {
-		$renderedRevision = $this->renderer->getRenderedRevision(
-			$this->revision,
-			$this->parserOptions,
-			null,
-			[ 'audience' => RevisionRecord::RAW ]
-		);
-		if ( !$renderedRevision ) {
-			// audience check failed
-			return Status::newFatal( 'pool-errorunknown' );
-		}
+    /**
+     * @return Status with the value being a ParserOutput or null
+     */
+    public function renderRevision(): Status
+    {
+        $renderedRevision = $this->renderer->getRenderedRevision(
+            $this->revision,
+            $this->parserOptions,
+            null,
+            ['audience' => RevisionRecord::RAW]
+        );
+        if (!$renderedRevision) {
+            // audience check failed
+            return Status::newFatal('pool-errorunknown');
+        }
 
-		$time = -microtime( true );
-		$parserOutput = $renderedRevision->getRevisionParserOutput();
-		$time += microtime( true );
+        $time = -microtime(true);
+        $parserOutput = $renderedRevision->getRevisionParserOutput();
+        $time += microtime(true);
 
-		// Timing hack
-		if ( $time > 3 ) {
-			// TODO: Use Parser's logger (once it has one)
-			$logger = $this->loggerSpi->getLogger( 'slow-parse' );
-			$logger->info( 'Parsing {title} was slow, took {time} seconds', [
-				'time' => number_format( $time, 2 ),
-				'title' => (string)$this->revision->getPageAsLinkTarget(),
-				'trigger' => 'view',
-			] );
-		}
+        // Timing hack
+        if ($time > 3) {
+            // TODO: Use Parser's logger (once it has one)
+            $logger = $this->loggerSpi->getLogger('slow-parse');
+            $logger->info('Parsing {title} was slow, took {time} seconds', [
+                'time'    => number_format($time, 2),
+                'title'   => (string)$this->revision->getPageAsLinkTarget(),
+                'trigger' => 'view',
+            ]);
+        }
 
-		return Status::newGood( $parserOutput );
-	}
+        return Status::newGood($parserOutput);
+    }
 
-	/**
-	 * @param Status $status
-	 * @return Status
-	 */
-	public function error( $status ) {
-		return $status;
-	}
+    /**
+     * @param Status $status
+     * @return Status
+     */
+    public function error($status)
+    {
+        return $status;
+    }
 
 }

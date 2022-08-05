@@ -26,5 +26,6 @@
  * @method string getTimestamp()
  * @method Title getTitle()
  */
-interface Page {
+interface Page
+{
 }

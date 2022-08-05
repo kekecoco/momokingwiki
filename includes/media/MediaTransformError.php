@@ -28,55 +28,63 @@
  * @stable to extend
  * @ingroup Media
  */
-class MediaTransformError extends MediaTransformOutput {
-	/** @var Message */
-	private $msg;
+class MediaTransformError extends MediaTransformOutput
+{
+    /** @var Message */
+    private $msg;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $msg
-	 * @param int $width
-	 * @param int $height
-	 * @param mixed ...$args
-	 */
-	public function __construct( $msg, $width, $height, ...$args ) {
-		$this->msg = wfMessage( $msg )->params( $args );
-		$this->width = intval( $width );
-		$this->height = intval( $height );
-		$this->url = false;
-		$this->path = false;
-	}
+    /**
+     * @stable to call
+     *
+     * @param string $msg
+     * @param int $width
+     * @param int $height
+     * @param mixed ...$args
+     */
+    public function __construct($msg, $width, $height, ...$args)
+    {
+        $this->msg = wfMessage($msg)->params($args);
+        $this->width = intval($width);
+        $this->height = intval($height);
+        $this->url = false;
+        $this->path = false;
+    }
 
-	public function toHtml( $options = [] ) {
-		return "<div class=\"MediaTransformError\" style=\"" .
-			"width: {$this->width}px; height: {$this->height}px; display:inline-block;\">" .
-			$this->getHtmlMsg() .
-			"</div>";
-	}
+    public function toHtml($options = [])
+    {
+        return "<div class=\"MediaTransformError\" style=\"" .
+            "width: {$this->width}px; height: {$this->height}px; display:inline-block;\">" .
+            $this->getHtmlMsg() .
+            "</div>";
+    }
 
-	public function toText() {
-		return $this->msg->text();
-	}
+    public function toText()
+    {
+        return $this->msg->text();
+    }
 
-	public function getHtmlMsg() {
-		return $this->msg->escaped();
-	}
+    public function getHtmlMsg()
+    {
+        return $this->msg->escaped();
+    }
 
-	public function getMsg() {
-		return $this->msg;
-	}
+    public function getMsg()
+    {
+        return $this->msg;
+    }
 
-	public function isError() {
-		return true;
-	}
+    public function isError()
+    {
+        return true;
+    }
 
-	/**
-	 * @stable to override
-	 *
-	 * @return int
-	 */
-	public function getHttpStatusCode() {
-		return 500;
-	}
+    /**
+     * @stable to override
+     *
+     * @return int
+     */
+    public function getHttpStatusCode()
+    {
+        return 500;
+    }
 }

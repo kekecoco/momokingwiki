@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 namespace Wikimedia\Rdbms;
 
 use Doctrine\DBAL\Schema\Schema;
@@ -26,36 +27,38 @@ use Doctrine\DBAL\Schema\Schema;
  * @since 1.36
  * @internal
  */
-trait DoctrineAbstractSchemaTrait {
+trait DoctrineAbstractSchemaTrait
+{
 
-	private $platform;
+    private $platform;
 
-	private function addTableToSchema( Schema $schema, array $schemaSpec ) {
-		$prefix = $this->platform->getName() === 'postgresql' ? '' : '/*_*/';
+    private function addTableToSchema(Schema $schema, array $schemaSpec)
+    {
+        $prefix = $this->platform->getName() === 'postgresql' ? '' : '/*_*/';
 
-		$table = $schema->createTable( $prefix . $schemaSpec['name'] );
-		foreach ( $schemaSpec['columns'] as $column ) {
-			$table->addColumn( $column['name'], $column['type'], $column['options'] );
-		}
+        $table = $schema->createTable($prefix . $schemaSpec['name']);
+        foreach ($schemaSpec['columns'] as $column) {
+            $table->addColumn($column['name'], $column['type'], $column['options']);
+        }
 
-		foreach ( $schemaSpec['indexes'] as $index ) {
-			if ( $index['unique'] === true ) {
-				$table->addUniqueIndex( $index['columns'], $index['name'], $index['options'] ?? [] );
-			} else {
-				$table->addIndex( $index['columns'], $index['name'], $index['flags'] ?? [], $index['options'] ?? [] );
-			}
-		}
+        foreach ($schemaSpec['indexes'] as $index) {
+            if ($index['unique'] === true) {
+                $table->addUniqueIndex($index['columns'], $index['name'], $index['options'] ?? []);
+            } else {
+                $table->addIndex($index['columns'], $index['name'], $index['flags'] ?? [], $index['options'] ?? []);
+            }
+        }
 
-		if ( isset( $schemaSpec['pk'] ) ) {
-			$table->setPrimaryKey( $schemaSpec['pk'] );
-		}
+        if (isset($schemaSpec['pk'])) {
+            $table->setPrimaryKey($schemaSpec['pk']);
+        }
 
-		if ( isset( $schemaSpec['table_options'] ) ) {
-			$table->addOption( 'table_options', implode( ' ', $schemaSpec['table_options'] ) );
-		} else {
-			$table->addOption( 'table_options', '/*$wgDBTableOptions*/' );
-		}
+        if (isset($schemaSpec['table_options'])) {
+            $table->addOption('table_options', implode(' ', $schemaSpec['table_options']));
+        } else {
+            $table->addOption('table_options', '/*$wgDBTableOptions*/');
+        }
 
-		return $schema;
-	}
+        return $schema;
+    }
 }

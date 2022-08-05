@@ -1,6 +1,8 @@
 {
-	"prefix": "oo-ui-icon",
-	"images": {
-		"stu": { "file": "images/icons/stu.svg" }
-	}
+  "prefix": "oo-ui-icon",
+  "images": {
+    "stu": {
+      "file": "images/icons/stu.svg"
+    }
+  }
 }

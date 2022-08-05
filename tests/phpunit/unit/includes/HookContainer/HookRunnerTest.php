@@ -11,10 +11,12 @@ use MediaWiki\HookContainer\HookRunner;
  * @covers \MediaWiki\Api\ApiHookRunner
  * @package MediaWiki\Tests\HookContainer
  */
-class HookRunnerTest extends HookRunnerTestBase {
+class HookRunnerTest extends HookRunnerTestBase
+{
 
-	public function provideHookRunners() {
-		yield ApiHookRunner::class => [ ApiHookRunner::class ];
-		yield HookRunner::class => [ HookRunner::class ];
-	}
+    public function provideHookRunners()
+    {
+        yield ApiHookRunner::class => [ApiHookRunner::class];
+        yield HookRunner::class => [HookRunner::class];
+    }
 }

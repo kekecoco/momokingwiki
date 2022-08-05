@@ -30,75 +30,81 @@ use InvalidArgumentException;
  * @internal For use by ResourceLoader\Module only
  * @since 1.35
  */
-class KeyValueDependencyStore extends DependencyStore {
-	/** @var BagOStuff */
-	private $stash;
+class KeyValueDependencyStore extends DependencyStore
+{
+    /** @var BagOStuff */
+    private $stash;
 
-	/**
-	 * @param BagOStuff $stash Storage backend
-	 */
-	public function __construct( BagOStuff $stash ) {
-		$this->stash = $stash;
-	}
+    /**
+     * @param BagOStuff $stash Storage backend
+     */
+    public function __construct(BagOStuff $stash)
+    {
+        $this->stash = $stash;
+    }
 
-	public function retrieveMulti( $type, array $entities ) {
-		$entitiesByKey = [];
-		foreach ( $entities as $entity ) {
-			$entitiesByKey[$this->getStoreKey( $type, $entity )] = $entity;
-		}
+    public function retrieveMulti($type, array $entities)
+    {
+        $entitiesByKey = [];
+        foreach ($entities as $entity) {
+            $entitiesByKey[$this->getStoreKey($type, $entity)] = $entity;
+        }
 
-		$blobsByKey = $this->stash->getMulti( array_keys( $entitiesByKey ) );
+        $blobsByKey = $this->stash->getMulti(array_keys($entitiesByKey));
 
-		$results = [];
-		foreach ( $entitiesByKey as $key => $entity ) {
-			$blob = $blobsByKey[$key] ?? null;
-			$data = is_string( $blob ) ? json_decode( $blob, true ) : null;
-			$results[$entity] = $this->newEntityDependencies(
-				$data[self::KEY_PATHS] ?? [],
-				$data[self::KEY_AS_OF] ?? null
-			);
-		}
+        $results = [];
+        foreach ($entitiesByKey as $key => $entity) {
+            $blob = $blobsByKey[$key] ?? null;
+            $data = is_string($blob) ? json_decode($blob, true) : null;
+            $results[$entity] = $this->newEntityDependencies(
+                $data[self::KEY_PATHS] ?? [],
+                $data[self::KEY_AS_OF] ?? null
+            );
+        }
 
-		return $results;
-	}
+        return $results;
+    }
 
-	public function storeMulti( $type, array $dataByEntity, $ttl ) {
-		$blobsByKey = [];
-		foreach ( $dataByEntity as $entity => $data ) {
-			if ( !is_array( $data[self::KEY_PATHS] ) || !is_int( $data[self::KEY_AS_OF] ) ) {
-				throw new InvalidArgumentException( "Invalid entry for '$entity'" );
-			}
+    public function storeMulti($type, array $dataByEntity, $ttl)
+    {
+        $blobsByKey = [];
+        foreach ($dataByEntity as $entity => $data) {
+            if (!is_array($data[self::KEY_PATHS]) || !is_int($data[self::KEY_AS_OF])) {
+                throw new InvalidArgumentException("Invalid entry for '$entity'");
+            }
 
-			// Normalize the list by removing duplicates and sorting
-			$data[self::KEY_PATHS] = array_values( array_unique( $data[self::KEY_PATHS] ) );
-			sort( $data[self::KEY_PATHS], SORT_STRING );
+            // Normalize the list by removing duplicates and sorting
+            $data[self::KEY_PATHS] = array_values(array_unique($data[self::KEY_PATHS]));
+            sort($data[self::KEY_PATHS], SORT_STRING);
 
-			$blob = json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-			$blobsByKey[$this->getStoreKey( $type, $entity )] = $blob;
-		}
+            $blob = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $blobsByKey[$this->getStoreKey($type, $entity)] = $blob;
+        }
 
-		if ( $blobsByKey ) {
-			$this->stash->setMulti( $blobsByKey, $ttl, BagOStuff::WRITE_BACKGROUND );
-		}
-	}
+        if ($blobsByKey) {
+            $this->stash->setMulti($blobsByKey, $ttl, BagOStuff::WRITE_BACKGROUND);
+        }
+    }
 
-	public function remove( $type, $entities ) {
-		$keys = [];
-		foreach ( (array)$entities as $entity ) {
-			$keys[] = $this->getStoreKey( $type, $entity );
-		}
+    public function remove($type, $entities)
+    {
+        $keys = [];
+        foreach ((array)$entities as $entity) {
+            $keys[] = $this->getStoreKey($type, $entity);
+        }
 
-		if ( $keys ) {
-			$this->stash->deleteMulti( $keys, BagOStuff::WRITE_BACKGROUND );
-		}
-	}
+        if ($keys) {
+            $this->stash->deleteMulti($keys, BagOStuff::WRITE_BACKGROUND);
+        }
+    }
 
-	/**
-	 * @param string $type
-	 * @param string $entity
-	 * @return string
-	 */
-	private function getStoreKey( $type, $entity ) {
-		return $this->stash->makeKey( "{$type}-dependencies", $entity );
-	}
+    /**
+     * @param string $type
+     * @param string $entity
+     * @return string
+     */
+    private function getStoreKey($type, $entity)
+    {
+        return $this->stash->makeKey("{$type}-dependencies", $entity);
+    }
 }

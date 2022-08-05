@@ -8,38 +8,38 @@
  *
  * Date: 2022-07-27T15:22:47Z
  */
-( function ( OO ) {
+(function (OO) {
 
-'use strict';
+    'use strict';
 
-/**
- * @class
- * @extends OO.ui.Theme
- *
- * @constructor
- */
-OO.ui.ApexTheme = function OoUiApexTheme() {
-	// Parent constructor
-	OO.ui.ApexTheme.super.call( this );
-};
+    /**
+     * @class
+     * @extends OO.ui.Theme
+     *
+     * @constructor
+     */
+    OO.ui.ApexTheme = function OoUiApexTheme() {
+        // Parent constructor
+        OO.ui.ApexTheme.super.call(this);
+    };
 
-/* Setup */
+    /* Setup */
 
-OO.inheritClass( OO.ui.ApexTheme, OO.ui.Theme );
+    OO.inheritClass(OO.ui.ApexTheme, OO.ui.Theme);
 
-/* Methods */
+    /* Methods */
 
-/**
- * @inheritdoc
- */
-OO.ui.ApexTheme.prototype.getDialogTransitionDuration = function () {
-	return 250;
-};
+    /**
+     * @inheritdoc
+     */
+    OO.ui.ApexTheme.prototype.getDialogTransitionDuration = function () {
+        return 250;
+    };
 
-/* Instantiation */
+    /* Instantiation */
 
-OO.ui.theme = new OO.ui.ApexTheme();
+    OO.ui.theme = new OO.ui.ApexTheme();
 
-}( OO ) );
+}(OO));
 
 //# sourceMappingURL=oojs-ui-apex.js.map.json

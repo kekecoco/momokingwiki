@@ -29,38 +29,42 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class RebuildAll extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Rebuild links, text index and recent changes' );
-	}
+class RebuildAll extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Rebuild links, text index and recent changes');
+    }
 
-	public function getDbType() {
-		return Maintenance::DB_ADMIN;
-	}
+    public function getDbType()
+    {
+        return Maintenance::DB_ADMIN;
+    }
 
-	public function execute() {
-		// Rebuild the text index
-		if ( $this->getDB( DB_REPLICA )->getType() != 'postgres' ) {
-			$this->output( "** Rebuilding fulltext search index (if you abort "
-				. "this will break searching; run this script again to fix):\n" );
-			$rebuildText = $this->runChild( RebuildTextIndex::class, 'rebuildtextindex.php' );
-			$rebuildText->execute();
-		}
+    public function execute()
+    {
+        // Rebuild the text index
+        if ($this->getDB(DB_REPLICA)->getType() != 'postgres') {
+            $this->output("** Rebuilding fulltext search index (if you abort "
+                . "this will break searching; run this script again to fix):\n");
+            $rebuildText = $this->runChild(RebuildTextIndex::class, 'rebuildtextindex.php');
+            $rebuildText->execute();
+        }
 
-		// Rebuild RC
-		$this->output( "\n\n** Rebuilding recentchanges table:\n" );
-		$rebuildRC = $this->runChild( RebuildRecentchanges::class, 'rebuildrecentchanges.php' );
-		$rebuildRC->execute();
+        // Rebuild RC
+        $this->output("\n\n** Rebuilding recentchanges table:\n");
+        $rebuildRC = $this->runChild(RebuildRecentchanges::class, 'rebuildrecentchanges.php');
+        $rebuildRC->execute();
 
-		// Rebuild link tables
-		$this->output( "\n\n** Rebuilding links tables -- this can take a long time. "
-			. "It should be safe to abort via ctrl+C if you get bored.\n" );
-		$rebuildLinks = $this->runChild( RefreshLinks::class, 'refreshLinks.php' );
-		$rebuildLinks->execute();
+        // Rebuild link tables
+        $this->output("\n\n** Rebuilding links tables -- this can take a long time. "
+            . "It should be safe to abort via ctrl+C if you get bored.\n");
+        $rebuildLinks = $this->runChild(RefreshLinks::class, 'refreshLinks.php');
+        $rebuildLinks->execute();
 
-		$this->output( "Done.\n" );
-	}
+        $this->output("Done.\n");
+    }
 }
 
 $maintClass = RebuildAll::class;

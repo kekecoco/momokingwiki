@@ -30,116 +30,123 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-class ApiQueryAuthManagerInfo extends ApiQueryBase {
+class ApiQueryAuthManagerInfo extends ApiQueryBase
+{
 
-	/** @var AuthManager */
-	private $authManager;
+    /** @var AuthManager */
+    private $authManager;
 
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param AuthManager $authManager
-	 */
-	public function __construct(
-		ApiQuery $query,
-		$moduleName,
-		AuthManager $authManager
-	) {
-		parent::__construct( $query, $moduleName, 'ami' );
-		$this->authManager = $authManager;
-	}
+    /**
+     * @param ApiQuery $query
+     * @param string $moduleName
+     * @param AuthManager $authManager
+     */
+    public function __construct(
+        ApiQuery $query,
+        $moduleName,
+        AuthManager $authManager
+    )
+    {
+        parent::__construct($query, $moduleName, 'ami');
+        $this->authManager = $authManager;
+    }
 
-	public function execute() {
-		$params = $this->extractRequestParams();
-		$helper = new ApiAuthManagerHelper( $this, $this->authManager );
-		$ret = [
-			'canauthenticatenow' => $this->authManager->canAuthenticateNow(),
-			'cancreateaccounts' => $this->authManager->canCreateAccounts(),
-			'canlinkaccounts' => $this->authManager->canLinkAccounts(),
-		];
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
+        $helper = new ApiAuthManagerHelper($this, $this->authManager);
+        $ret = [
+            'canauthenticatenow' => $this->authManager->canAuthenticateNow(),
+            'cancreateaccounts'  => $this->authManager->canCreateAccounts(),
+            'canlinkaccounts'    => $this->authManager->canLinkAccounts(),
+        ];
 
-		if ( $params['securitysensitiveoperation'] !== null ) {
-			$ret['securitysensitiveoperationstatus'] = $this->authManager->securitySensitiveOperationStatus(
-				$params['securitysensitiveoperation']
-			);
-		}
+        if ($params['securitysensitiveoperation'] !== null) {
+            $ret['securitysensitiveoperationstatus'] = $this->authManager->securitySensitiveOperationStatus(
+                $params['securitysensitiveoperation']
+            );
+        }
 
-		if ( $params['requestsfor'] ) {
-			$action = $params['requestsfor'];
+        if ($params['requestsfor']) {
+            $action = $params['requestsfor'];
 
-			$preservedReq = $helper->getPreservedRequest();
-			if ( $preservedReq ) {
-				$ret += [
-					'haspreservedstate' => $preservedReq->hasStateForAction( $action ),
-					'hasprimarypreservedstate' => $preservedReq->hasPrimaryStateForAction( $action ),
-					'preservedusername' => (string)$preservedReq->username,
-				];
-			} else {
-				$ret += [
-					'haspreservedstate' => false,
-					'hasprimarypreservedstate' => false,
-					'preservedusername' => '',
-				];
-			}
+            $preservedReq = $helper->getPreservedRequest();
+            if ($preservedReq) {
+                $ret += [
+                    'haspreservedstate'        => $preservedReq->hasStateForAction($action),
+                    'hasprimarypreservedstate' => $preservedReq->hasPrimaryStateForAction($action),
+                    'preservedusername'        => (string)$preservedReq->username,
+                ];
+            } else {
+                $ret += [
+                    'haspreservedstate'        => false,
+                    'hasprimarypreservedstate' => false,
+                    'preservedusername'        => '',
+                ];
+            }
 
-			$reqs = $this->authManager->getAuthenticationRequests( $action, $this->getUser() );
+            $reqs = $this->authManager->getAuthenticationRequests($action, $this->getUser());
 
-			// Filter out blacklisted requests, depending on the action
-			switch ( $action ) {
-				case AuthManager::ACTION_CHANGE:
-					$reqs = ApiAuthManagerHelper::blacklistAuthenticationRequests( $reqs,
-						$this->getConfig()->get( MainConfigNames::ChangeCredentialsBlacklist )
-					);
-					break;
-				case AuthManager::ACTION_REMOVE:
-					$reqs = ApiAuthManagerHelper::blacklistAuthenticationRequests( $reqs,
-						$this->getConfig()->get( MainConfigNames::RemoveCredentialsBlacklist )
-					);
-					break;
-			}
+            // Filter out blacklisted requests, depending on the action
+            switch ($action) {
+                case AuthManager::ACTION_CHANGE:
+                    $reqs = ApiAuthManagerHelper::blacklistAuthenticationRequests($reqs,
+                        $this->getConfig()->get(MainConfigNames::ChangeCredentialsBlacklist)
+                    );
+                    break;
+                case AuthManager::ACTION_REMOVE:
+                    $reqs = ApiAuthManagerHelper::blacklistAuthenticationRequests($reqs,
+                        $this->getConfig()->get(MainConfigNames::RemoveCredentialsBlacklist)
+                    );
+                    break;
+            }
 
-			$ret += $helper->formatRequests( $reqs );
-		}
+            $ret += $helper->formatRequests($reqs);
+        }
 
-		$this->getResult()->addValue( [ 'query' ], $this->getModuleName(), $ret );
-	}
+        $this->getResult()->addValue(['query'], $this->getModuleName(), $ret);
+    }
 
-	public function isReadMode() {
-		return false;
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'securitysensitiveoperation' => null,
-			'requestsfor' => [
-				ParamValidator::PARAM_TYPE => [
-					AuthManager::ACTION_LOGIN,
-					AuthManager::ACTION_LOGIN_CONTINUE,
-					AuthManager::ACTION_CREATE,
-					AuthManager::ACTION_CREATE_CONTINUE,
-					AuthManager::ACTION_LINK,
-					AuthManager::ACTION_LINK_CONTINUE,
-					AuthManager::ACTION_CHANGE,
-					AuthManager::ACTION_REMOVE,
-					AuthManager::ACTION_UNLINK,
-				],
-			],
-		] + ApiAuthManagerHelper::getStandardParams( '', 'mergerequestfields', 'messageformat' );
-	}
+    public function getAllowedParams()
+    {
+        return [
+                'securitysensitiveoperation' => null,
+                'requestsfor'                => [
+                    ParamValidator::PARAM_TYPE => [
+                        AuthManager::ACTION_LOGIN,
+                        AuthManager::ACTION_LOGIN_CONTINUE,
+                        AuthManager::ACTION_CREATE,
+                        AuthManager::ACTION_CREATE_CONTINUE,
+                        AuthManager::ACTION_LINK,
+                        AuthManager::ACTION_LINK_CONTINUE,
+                        AuthManager::ACTION_CHANGE,
+                        AuthManager::ACTION_REMOVE,
+                        AuthManager::ACTION_UNLINK,
+                    ],
+                ],
+            ] + ApiAuthManagerHelper::getStandardParams('', 'mergerequestfields', 'messageformat');
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&meta=authmanagerinfo&amirequestsfor=' . urlencode( AuthManager::ACTION_LOGIN )
-				=> 'apihelp-query+authmanagerinfo-example-login',
-			'action=query&meta=authmanagerinfo&amirequestsfor=' . urlencode( AuthManager::ACTION_LOGIN ) .
-				'&amimergerequestfields=1'
-				=> 'apihelp-query+authmanagerinfo-example-login-merged',
-			'action=query&meta=authmanagerinfo&amisecuritysensitiveoperation=foo'
-				=> 'apihelp-query+authmanagerinfo-example-securitysensitiveoperation',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&meta=authmanagerinfo&amirequestsfor=' . urlencode(AuthManager::ACTION_LOGIN)
+            => 'apihelp-query+authmanagerinfo-example-login',
+            'action=query&meta=authmanagerinfo&amirequestsfor=' . urlencode(AuthManager::ACTION_LOGIN) .
+            '&amimergerequestfields=1'
+            => 'apihelp-query+authmanagerinfo-example-login-merged',
+            'action=query&meta=authmanagerinfo&amisecuritysensitiveoperation=foo'
+            => 'apihelp-query+authmanagerinfo-example-securitysensitiveoperation',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Authmanagerinfo';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Authmanagerinfo';
+    }
 }

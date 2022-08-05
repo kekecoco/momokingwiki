@@ -26,16 +26,18 @@ namespace Wikimedia\Rdbms;
  * @newable
  * @ingroup Database
  */
-class DBAccessError extends DBUnexpectedError {
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		parent::__construct( null, "Database access has been disabled." );
-	}
+class DBAccessError extends DBUnexpectedError
+{
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        parent::__construct(null, "Database access has been disabled.");
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBAccessError::class, 'DBAccessError' );
+class_alias(DBAccessError::class, 'DBAccessError');

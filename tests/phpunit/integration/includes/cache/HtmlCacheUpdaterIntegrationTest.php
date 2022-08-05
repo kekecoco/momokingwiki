@@ -9,108 +9,115 @@ use Wikimedia\Rdbms\FakeResultWrapper;
 /**
  * @group Cache
  */
-class HtmlCacheUpdaterIntegrationTest extends MediaWikiIntegrationTestCase {
+class HtmlCacheUpdaterIntegrationTest extends MediaWikiIntegrationTestCase
+{
 
-	/**
-	 * @return HtmlCacheUpdater
-	 * @throws Exception
-	 */
-	private function newHtmlCacheUpdater(): HtmlCacheUpdater {
-		$updater = new HtmlCacheUpdater(
-			new HookContainer(
-				new StaticHookRegistry(),
-				$this->getServiceContainer()->getObjectFactory()
-			),
-			$this->getServiceContainer()->getTitleFactory(),
-			1,
-			false,
-			3
-		);
-		return $updater;
-	}
+    /**
+     * @return HtmlCacheUpdater
+     * @throws Exception
+     */
+    private function newHtmlCacheUpdater(): HtmlCacheUpdater
+    {
+        $updater = new HtmlCacheUpdater(
+            new HookContainer(
+                new StaticHookRegistry(),
+                $this->getServiceContainer()->getObjectFactory()
+            ),
+            $this->getServiceContainer()->getTitleFactory(),
+            1,
+            false,
+            3
+        );
 
-	private function getEventRelayGroup( array $expected ) {
-		if ( !$expected ) {
-			$relayer = $this->createNoOpMock( EventRelayer::class );
-		} else {
-			$relayer = $this->getMockBuilder( EventRelayer::class )
-				->disableOriginalConstructor()
-				->onlyMethods( [ 'doNotify' ] )
-				->getMock();
+        return $updater;
+    }
 
-			$relayer->method( 'doNotify' )->willReturnCallback(
-				function ( $channel, array $events ) use ( $expected ) {
-					$this->assertSame( 'cdn-url-purges', $channel );
+    private function getEventRelayGroup(array $expected)
+    {
+        if (!$expected) {
+            $relayer = $this->createNoOpMock(EventRelayer::class);
+        } else {
+            $relayer = $this->getMockBuilder(EventRelayer::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['doNotify'])
+                ->getMock();
 
-					$this->assertSameSize( $expected, $events );
-					foreach ( $expected as $i => $url ) {
-						$event = $events[$i];
-						$this->assertStringContainsString( $url, $event['url'] );
-					}
-				}
-			);
-		}
+            $relayer->method('doNotify')->willReturnCallback(
+                function ($channel, array $events) use ($expected) {
+                    $this->assertSame('cdn-url-purges', $channel);
 
-		$group = $this->createNoOpMock( EventRelayerGroup::class, [ 'getRelayer' ] );
-		$group->method( 'getRelayer' )->willReturn( $relayer );
+                    $this->assertSameSize($expected, $events);
+                    foreach ($expected as $i => $url) {
+                        $event = $events[$i];
+                        $this->assertStringContainsString($url, $event['url']);
+                    }
+                }
+            );
+        }
 
-		return $group;
-	}
+        $group = $this->createNoOpMock(EventRelayerGroup::class, ['getRelayer']);
+        $group->method('getRelayer')->willReturn($relayer);
 
-	public function providePurgeTitleUrls() {
-		yield [ [], [] ];
+        return $group;
+    }
 
-		yield [
-			new PageReferenceValue( NS_MAIN, 'Test', PageReference::LOCAL ),
-			[ 'Test', '?title=Test&action=history' ]
-		];
+    public function providePurgeTitleUrls()
+    {
+        yield [[], []];
 
-		yield [
-			[
-				new PageReferenceValue( NS_MAIN, 'Test1', PageReference::LOCAL ),
-				new PageReferenceValue( NS_MAIN, 'Test2', PageReference::LOCAL ),
-				new PageReferenceValue( NS_SPECIAL, 'Nope', PageReference::LOCAL ),
-				Title::makeTitle( NS_MAIN, '', 'Nope' ),
-				Title::makeTitle( NS_MAIN, 'Foo', '', 'nope' ),
-			],
-			[
-				'Test1', '?title=Test1&action=history',
-				'Test2', '?title=Test2&action=history'
-			]
-		];
+        yield [
+            new PageReferenceValue(NS_MAIN, 'Test', PageReference::LOCAL),
+            ['Test', '?title=Test&action=history']
+        ];
 
-		yield [
-			new TitleArrayFromResult( new FakeResultWrapper( [
-				(object)[
-					'page_id' => 1,
-					'page_namespace' => NS_MAIN,
-					'page_title' => 'Test',
-				]
-			] ) ),
-			[ 'Test', '?title=Test&action=history' ]
-		];
-	}
+        yield [
+            [
+                new PageReferenceValue(NS_MAIN, 'Test1', PageReference::LOCAL),
+                new PageReferenceValue(NS_MAIN, 'Test2', PageReference::LOCAL),
+                new PageReferenceValue(NS_SPECIAL, 'Nope', PageReference::LOCAL),
+                Title::makeTitle(NS_MAIN, '', 'Nope'),
+                Title::makeTitle(NS_MAIN, 'Foo', '', 'nope'),
+            ],
+            [
+                'Test1', '?title=Test1&action=history',
+                'Test2', '?title=Test2&action=history'
+            ]
+        ];
 
-	/**
-	 * @dataProvider providePurgeTitleUrls
-	 * @covers HtmlCacheUpdater::purgeTitleUrls
-	 */
-	public function testPurgeTitleUrls( $pages, $expected ) {
-		$this->setService( 'EventRelayerGroup', $this->getEventRelayGroup( $expected ) );
+        yield [
+            new TitleArrayFromResult(new FakeResultWrapper([
+                (object)[
+                    'page_id'        => 1,
+                    'page_namespace' => NS_MAIN,
+                    'page_title'     => 'Test',
+                ]
+            ])),
+            ['Test', '?title=Test&action=history']
+        ];
+    }
 
-		$updater = $this->newHtmlCacheUpdater();
-		$updater->purgeTitleUrls( $pages );
-	}
+    /**
+     * @dataProvider providePurgeTitleUrls
+     * @covers       HtmlCacheUpdater::purgeTitleUrls
+     */
+    public function testPurgeTitleUrls($pages, $expected)
+    {
+        $this->setService('EventRelayerGroup', $this->getEventRelayGroup($expected));
 
-	/**
-	 * @covers HtmlCacheUpdater::purgeUrls
-	 */
-	public function testPurgeUrls() {
-		$urls = [ 'https://acme.test/wiki/Foo', 'https://acme.test/wiki/Bar', ];
-		$this->setService( 'EventRelayerGroup', $this->getEventRelayGroup( $urls ) );
+        $updater = $this->newHtmlCacheUpdater();
+        $updater->purgeTitleUrls($pages);
+    }
 
-		$updater = $this->newHtmlCacheUpdater();
-		$updater->purgeUrls( $urls );
-	}
+    /**
+     * @covers HtmlCacheUpdater::purgeUrls
+     */
+    public function testPurgeUrls()
+    {
+        $urls = ['https://acme.test/wiki/Foo', 'https://acme.test/wiki/Bar',];
+        $this->setService('EventRelayerGroup', $this->getEventRelayGroup($urls));
+
+        $updater = $this->newHtmlCacheUpdater();
+        $updater->purgeUrls($urls);
+    }
 
 }

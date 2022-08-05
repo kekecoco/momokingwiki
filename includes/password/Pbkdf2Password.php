@@ -20,7 +20,7 @@
  * @file
  */
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 /**
  * A PBKDF2-hashed password
@@ -30,43 +30,47 @@ declare( strict_types = 1 );
  *
  * @since 1.24
  */
-class Pbkdf2Password extends ParameterizedPassword {
-	protected function getDefaultParams(): array {
-		return [
-			'algo' => $this->config['algo'],
-			'rounds' => $this->config['cost'],
-			'length' => $this->config['length']
-		];
-	}
+class Pbkdf2Password extends ParameterizedPassword
+{
+    protected function getDefaultParams(): array
+    {
+        return [
+            'algo'   => $this->config['algo'],
+            'rounds' => $this->config['cost'],
+            'length' => $this->config['length']
+        ];
+    }
 
-	protected function getDelimiter(): string {
-		return ':';
-	}
+    protected function getDelimiter(): string
+    {
+        return ':';
+    }
 
-	public function crypt( string $password ): void {
-		if ( count( $this->args ) == 0 ) {
-			$this->args[] = base64_encode( random_bytes( 16 ) );
-		}
+    public function crypt(string $password): void
+    {
+        if (count($this->args) == 0) {
+            $this->args[] = base64_encode(random_bytes(16));
+        }
 
-		try {
-			$hash = hash_pbkdf2(
-				$this->params['algo'],
-				$password,
-				base64_decode( $this->args[0] ),
-				(int)$this->params['rounds'],
-				(int)$this->params['length'],
-				true
-			);
+        try {
+            $hash = hash_pbkdf2(
+                $this->params['algo'],
+                $password,
+                base64_decode($this->args[0]),
+                (int)$this->params['rounds'],
+                (int)$this->params['length'],
+                true
+            );
 
-			// PHP < 8 raises a warning in case of an error, such as unknown algorithm...
-			if ( !is_string( $hash ) ) {
-				throw new PasswordError( 'Error when hashing password.' );
-			}
-		} catch ( ValueError $e ) {
-			// ...while PHP 8 throws ValueError
-			throw new PasswordError( 'Error when hashing password.', 0, $e );
-		}
+            // PHP < 8 raises a warning in case of an error, such as unknown algorithm...
+            if (!is_string($hash)) {
+                throw new PasswordError('Error when hashing password.');
+            }
+        } catch (ValueError $e) {
+            // ...while PHP 8 throws ValueError
+            throw new PasswordError('Error when hashing password.', 0, $e);
+        }
 
-		$this->hash = base64_encode( $hash );
-	}
+        $this->hash = base64_encode($hash);
+    }
 }

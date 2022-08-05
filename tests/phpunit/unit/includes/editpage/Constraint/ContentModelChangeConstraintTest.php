@@ -30,103 +30,111 @@ use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
  *
  * @covers \MediaWiki\EditPage\Constraint\ContentModelChangeConstraint
  */
-class ContentModelChangeConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
-	use MockAuthorityTrait;
-	use MockTitleTrait;
+class ContentModelChangeConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
+    use MockAuthorityTrait;
+    use MockTitleTrait;
 
-	public function testPass() {
-		$newContentModel = 'FooBarBaz';
+    public function testPass()
+    {
+        $newContentModel = 'FooBarBaz';
 
-		$title = $this->getMockBuilder( Title::class )
-			->disableOriginalConstructor()
-			->onlyMethods( [ 'getContentModel', 'setContentModel' ] )
-			->getMock();
-		$title->expects( $this->once() )
-			->method( 'getContentModel' )
-			->willReturn( 'differentStartingContentModel' );
-		$title->expects( $this->once() )
-			->method( 'setContentModel' )
-			->with( $newContentModel );
+        $title = $this->getMockBuilder(Title::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getContentModel', 'setContentModel'])
+            ->getMock();
+        $title->expects($this->once())
+            ->method('getContentModel')
+            ->willReturn('differentStartingContentModel');
+        $title->expects($this->once())
+            ->method('setContentModel')
+            ->with($newContentModel);
 
-		$performer = $this->mockRegisteredAuthorityWithPermissions( [ 'edit', 'editcontentmodel' ] );
-		$constraint = new ContentModelChangeConstraint(
-			$performer,
-			$title,
-			$newContentModel
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        $performer = $this->mockRegisteredAuthorityWithPermissions(['edit', 'editcontentmodel']);
+        $constraint = new ContentModelChangeConstraint(
+            $performer,
+            $title,
+            $newContentModel
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testNoChange() {
-		$unchangingContentModel = 'FooBarBaz';
-		$title = $this->makeMockTitle( __METHOD__, [
-			'contentModel' => $unchangingContentModel,
-		] );
-		$constraint = new ContentModelChangeConstraint(
-			$this->mockRegisteredUltimateAuthority(),
-			$title,
-			$unchangingContentModel
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testNoChange()
+    {
+        $unchangingContentModel = 'FooBarBaz';
+        $title = $this->makeMockTitle(__METHOD__, [
+            'contentModel' => $unchangingContentModel,
+        ]);
+        $constraint = new ContentModelChangeConstraint(
+            $this->mockRegisteredUltimateAuthority(),
+            $title,
+            $unchangingContentModel
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$newContentModel = 'FooBarBaz';
+    public function testFailure()
+    {
+        $newContentModel = 'FooBarBaz';
 
-		$title = $this->getMockBuilder( Title::class )
-			->disableOriginalConstructor()
-			->onlyMethods( [ 'getContentModel', 'setContentModel' ] )
-			->getMock();
-		$title->expects( $this->once() )
-			->method( 'getContentModel' )
-			->willReturn( 'differentStartingContentModel' );
-		$title->expects( $this->once() )
-			->method( 'setContentModel' )
-			->with( $newContentModel );
+        $title = $this->getMockBuilder(Title::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getContentModel', 'setContentModel'])
+            ->getMock();
+        $title->expects($this->once())
+            ->method('getContentModel')
+            ->willReturn('differentStartingContentModel');
+        $title->expects($this->once())
+            ->method('setContentModel')
+            ->with($newContentModel);
 
-		$performer = $this->mockRegisteredAuthority( function (
-			string $permission,
-			PageIdentity $page = null
-		) use ( $title ) {
-			if ( $permission === 'editcontentmodel' ) {
-				if ( $page ) {
-					$this->assertEquals( $title, $page );
-				}
-				return true;
-			}
-			if ( $permission === 'edit' ) {
-				$this->assertEquals( $title, $page );
-				return false;
-			}
-			$this->fail( "Unexpected permission check $permission" );
-			return false;
-		} );
+        $performer = $this->mockRegisteredAuthority(function (
+            string $permission,
+            PageIdentity $page = null
+        ) use ($title) {
+            if ($permission === 'editcontentmodel') {
+                if ($page) {
+                    $this->assertEquals($title, $page);
+                }
 
-		$constraint = new ContentModelChangeConstraint(
-			$performer,
-			$title,
-			$newContentModel
-		);
-		$this->assertConstraintFailed(
-			$constraint,
-			IEditConstraint::AS_NO_CHANGE_CONTENT_MODEL
-		);
-	}
+                return true;
+            }
+            if ($permission === 'edit') {
+                $this->assertEquals($title, $page);
 
-	public function testFailure_quick() {
-		$title = $this->makeMockTitle( __METHOD__, [
-			'contentModel' => 'differentStartingContentModel',
-		] );
+                return false;
+            }
+            $this->fail("Unexpected permission check $permission");
 
-		$constraint = new ContentModelChangeConstraint(
-			$this->mockRegisteredAuthorityWithoutPermissions( [ 'editcontentmodel' ] ),
-			$title,
-			'FooBarBaz'
-		);
-		$this->assertConstraintFailed(
-			$constraint,
-			IEditConstraint::AS_NO_CHANGE_CONTENT_MODEL
-		);
-	}
+            return false;
+        });
+
+        $constraint = new ContentModelChangeConstraint(
+            $performer,
+            $title,
+            $newContentModel
+        );
+        $this->assertConstraintFailed(
+            $constraint,
+            IEditConstraint::AS_NO_CHANGE_CONTENT_MODEL
+        );
+    }
+
+    public function testFailure_quick()
+    {
+        $title = $this->makeMockTitle(__METHOD__, [
+            'contentModel' => 'differentStartingContentModel',
+        ]);
+
+        $constraint = new ContentModelChangeConstraint(
+            $this->mockRegisteredAuthorityWithoutPermissions(['editcontentmodel']),
+            $title,
+            'FooBarBaz'
+        );
+        $this->assertConstraintFailed(
+            $constraint,
+            IEditConstraint::AS_NO_CHANGE_CONTENT_MODEL
+        );
+    }
 }

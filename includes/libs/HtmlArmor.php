@@ -27,35 +27,38 @@
  *
  * @since 1.28
  */
-class HtmlArmor {
+class HtmlArmor
+{
 
-	/**
-	 * @var string|null
-	 */
-	private $value;
+    /**
+     * @var string|null
+     */
+    private $value;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string|null $value
-	 */
-	public function __construct( $value ) {
-		$this->value = $value;
-	}
+    /**
+     * @stable to call
+     *
+     * @param string|null $value
+     */
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
 
-	/**
-	 * Provide a string or HtmlArmor object
-	 * and get safe HTML back
-	 *
-	 * @param string|HtmlArmor $input
-	 * @return string|null safe for usage in HTML, or null
-	 *         if the HtmlArmor instance was wrapping null.
-	 */
-	public static function getHtml( $input ) {
-		if ( $input instanceof HtmlArmor ) {
-			return $input->value;
-		} else {
-			return htmlspecialchars( $input, ENT_QUOTES );
-		}
-	}
+    /**
+     * Provide a string or HtmlArmor object
+     * and get safe HTML back
+     *
+     * @param string|HtmlArmor $input
+     * @return string|null safe for usage in HTML, or null
+     *         if the HtmlArmor instance was wrapping null.
+     */
+    public static function getHtml($input)
+    {
+        if ($input instanceof HtmlArmor) {
+            return $input->value;
+        } else {
+            return htmlspecialchars($input, ENT_QUOTES);
+        }
+    }
 }

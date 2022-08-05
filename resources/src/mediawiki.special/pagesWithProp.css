@@ -5,5 +5,5 @@
 /* Distinguish actual data from information about it being hidden visually. */
 /* stylelint-disable-next-line selector-class-pattern */
 .prop-value-hidden {
-	font-style: italic;
+    font-style: italic;
 }

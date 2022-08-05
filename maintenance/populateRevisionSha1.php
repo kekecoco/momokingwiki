@@ -32,189 +32,200 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Populates the rev_sha1 and ar_sha1 fields' );
-		$this->setBatchSize( 200 );
-	}
+class PopulateRevisionSha1 extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Populates the rev_sha1 and ar_sha1 fields');
+        $this->setBatchSize(200);
+    }
 
-	protected function getUpdateKey() {
-		return 'populate rev_sha1';
-	}
+    protected function getUpdateKey()
+    {
+        return 'populate rev_sha1';
+    }
 
-	protected function doDBUpdates() {
-		$db = $this->getDB( DB_PRIMARY );
+    protected function doDBUpdates()
+    {
+        $db = $this->getDB(DB_PRIMARY);
 
-		if ( !$db->tableExists( 'revision', __METHOD__ ) ) {
-			$this->fatalError( "revision table does not exist" );
-		} elseif ( !$db->tableExists( 'archive', __METHOD__ ) ) {
-			$this->fatalError( "archive table does not exist" );
-		} elseif ( !$db->fieldExists( 'revision', 'rev_sha1', __METHOD__ ) ) {
-			$this->output( "rev_sha1 column does not exist\n\n", true );
-			return false;
-		}
+        if (!$db->tableExists('revision', __METHOD__)) {
+            $this->fatalError("revision table does not exist");
+        } elseif (!$db->tableExists('archive', __METHOD__)) {
+            $this->fatalError("archive table does not exist");
+        } elseif (!$db->fieldExists('revision', 'rev_sha1', __METHOD__)) {
+            $this->output("rev_sha1 column does not exist\n\n", true);
 
-		$revStore = MediaWikiServices::getInstance()->getRevisionStore();
+            return false;
+        }
 
-		$this->output( "Populating rev_sha1 column\n" );
-		$rc = $this->doSha1Updates( $revStore, 'revision', 'rev_id',
-			$revStore->getQueryInfo(), 'rev'
-		);
+        $revStore = MediaWikiServices::getInstance()->getRevisionStore();
 
-		$this->output( "Populating ar_sha1 column\n" );
-		$ac = $this->doSha1Updates( $revStore, 'archive', 'ar_rev_id',
-			$revStore->getArchiveQueryInfo(), 'ar'
-		);
-		$this->output( "Populating ar_sha1 column legacy rows\n" );
-		$ac += $this->doSha1LegacyUpdates( $revStore );
+        $this->output("Populating rev_sha1 column\n");
+        $rc = $this->doSha1Updates($revStore, 'revision', 'rev_id',
+            $revStore->getQueryInfo(), 'rev'
+        );
 
-		$this->output( "rev_sha1 and ar_sha1 population complete "
-			. "[$rc revision rows, $ac archive rows].\n" );
+        $this->output("Populating ar_sha1 column\n");
+        $ac = $this->doSha1Updates($revStore, 'archive', 'ar_rev_id',
+            $revStore->getArchiveQueryInfo(), 'ar'
+        );
+        $this->output("Populating ar_sha1 column legacy rows\n");
+        $ac += $this->doSha1LegacyUpdates($revStore);
 
-		return true;
-	}
+        $this->output("rev_sha1 and ar_sha1 population complete "
+            . "[$rc revision rows, $ac archive rows].\n");
 
-	/**
-	 * @param MediaWiki\Revision\RevisionStore $revStore
-	 * @param string $table
-	 * @param string $idCol
-	 * @param array $queryInfo
-	 * @param string $prefix
-	 * @return int Rows changed
-	 */
-	protected function doSha1Updates( $revStore, $table, $idCol, $queryInfo, $prefix ) {
-		$db = $this->getDB( DB_PRIMARY );
-		$batchSize = $this->getBatchSize();
-		$start = $db->selectField( $table, "MIN($idCol)", '', __METHOD__ );
-		$end = $db->selectField( $table, "MAX($idCol)", '', __METHOD__ );
-		if ( !$start || !$end ) {
-			$this->output( "...$table table seems to be empty.\n" );
+        return true;
+    }
 
-			return 0;
-		}
+    /**
+     * @param MediaWiki\Revision\RevisionStore $revStore
+     * @param string $table
+     * @param string $idCol
+     * @param array $queryInfo
+     * @param string $prefix
+     * @return int Rows changed
+     */
+    protected function doSha1Updates($revStore, $table, $idCol, $queryInfo, $prefix)
+    {
+        $db = $this->getDB(DB_PRIMARY);
+        $batchSize = $this->getBatchSize();
+        $start = $db->selectField($table, "MIN($idCol)", '', __METHOD__);
+        $end = $db->selectField($table, "MAX($idCol)", '', __METHOD__);
+        if (!$start || !$end) {
+            $this->output("...$table table seems to be empty.\n");
 
-		$count = 0;
-		# Do remaining chunk
-		$end += $batchSize - 1;
-		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
-		while ( $blockEnd <= $end ) {
-			$this->output( "...doing $idCol from $blockStart to $blockEnd\n" );
+            return 0;
+        }
 
-			$cond = "$idCol BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd .
-				" AND $idCol IS NOT NULL AND {$prefix}_sha1 = ''";
-			$res = $db->select(
-				$queryInfo['tables'], $queryInfo['fields'], $cond, __METHOD__, [], $queryInfo['joins']
-			);
+        $count = 0;
+        # Do remaining chunk
+        $end += $batchSize - 1;
+        $blockStart = $start;
+        $blockEnd = $start + $batchSize - 1;
+        while ($blockEnd <= $end) {
+            $this->output("...doing $idCol from $blockStart to $blockEnd\n");
 
-			$this->beginTransaction( $db, __METHOD__ );
-			foreach ( $res as $row ) {
-				if ( $this->upgradeRow( $revStore, $row, $table, $idCol, $prefix ) ) {
-					$count++;
-				}
-			}
-			$this->commitTransaction( $db, __METHOD__ );
+            $cond = "$idCol BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd .
+                " AND $idCol IS NOT NULL AND {$prefix}_sha1 = ''";
+            $res = $db->select(
+                $queryInfo['tables'], $queryInfo['fields'], $cond, __METHOD__, [], $queryInfo['joins']
+            );
 
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
-		}
+            $this->beginTransaction($db, __METHOD__);
+            foreach ($res as $row) {
+                if ($this->upgradeRow($revStore, $row, $table, $idCol, $prefix)) {
+                    $count++;
+                }
+            }
+            $this->commitTransaction($db, __METHOD__);
 
-		return $count;
-	}
+            $blockStart += $batchSize;
+            $blockEnd += $batchSize;
+        }
 
-	/**
-	 * @param MediaWiki\Revision\RevisionStore $revStore
-	 * @return int
-	 */
-	protected function doSha1LegacyUpdates( $revStore ) {
-		$count = 0;
-		$db = $this->getDB( DB_PRIMARY );
-		$arQuery = $revStore->getArchiveQueryInfo();
-		$res = $db->select( $arQuery['tables'], $arQuery['fields'],
-			[ 'ar_rev_id IS NULL', 'ar_sha1' => '' ], __METHOD__, [], $arQuery['joins'] );
+        return $count;
+    }
 
-		$updateSize = 0;
-		$this->beginTransaction( $db, __METHOD__ );
-		foreach ( $res as $row ) {
-			if ( $this->upgradeLegacyArchiveRow( $revStore, $row ) ) {
-				++$count;
-			}
-			if ( ++$updateSize >= 100 ) {
-				$updateSize = 0;
-				$this->commitTransaction( $db, __METHOD__ );
-				$this->output( "Commited row with ar_timestamp={$row->ar_timestamp}\n" );
-				$this->beginTransaction( $db, __METHOD__ );
-			}
-		}
-		$this->commitTransaction( $db, __METHOD__ );
+    /**
+     * @param MediaWiki\Revision\RevisionStore $revStore
+     * @return int
+     */
+    protected function doSha1LegacyUpdates($revStore)
+    {
+        $count = 0;
+        $db = $this->getDB(DB_PRIMARY);
+        $arQuery = $revStore->getArchiveQueryInfo();
+        $res = $db->select($arQuery['tables'], $arQuery['fields'],
+            ['ar_rev_id IS NULL', 'ar_sha1' => ''], __METHOD__, [], $arQuery['joins']);
 
-		return $count;
-	}
+        $updateSize = 0;
+        $this->beginTransaction($db, __METHOD__);
+        foreach ($res as $row) {
+            if ($this->upgradeLegacyArchiveRow($revStore, $row)) {
+                ++$count;
+            }
+            if (++$updateSize >= 100) {
+                $updateSize = 0;
+                $this->commitTransaction($db, __METHOD__);
+                $this->output("Commited row with ar_timestamp={$row->ar_timestamp}\n");
+                $this->beginTransaction($db, __METHOD__);
+            }
+        }
+        $this->commitTransaction($db, __METHOD__);
 
-	/**
-	 * @param MediaWiki\Revision\RevisionStore $revStore
-	 * @param stdClass $row
-	 * @param string $table
-	 * @param string $idCol
-	 * @param string $prefix
-	 * @return bool
-	 */
-	protected function upgradeRow( $revStore, $row, $table, $idCol, $prefix ) {
-		$db = $this->getDB( DB_PRIMARY );
+        return $count;
+    }
 
-		// Create a revision and use it to get the sha1 from the content table, if possible.
-		try {
-			$rev = ( $table === 'archive' )
-				? $revStore->newRevisionFromArchiveRow( $row )
-				: $revStore->newRevisionFromRow( $row );
-			$sha1 = $rev->getSha1();
-		} catch ( Exception $e ) {
-			$this->output( "Data of revision with {$idCol}={$row->$idCol} unavailable!\n" );
-			return false; // T24624? T22757?
-		}
+    /**
+     * @param MediaWiki\Revision\RevisionStore $revStore
+     * @param stdClass $row
+     * @param string $table
+     * @param string $idCol
+     * @param string $prefix
+     * @return bool
+     */
+    protected function upgradeRow($revStore, $row, $table, $idCol, $prefix)
+    {
+        $db = $this->getDB(DB_PRIMARY);
 
-		$db->update( $table,
-			[ "{$prefix}_sha1" => $sha1 ],
-			[ $idCol => $row->$idCol ],
-			__METHOD__
-		);
+        // Create a revision and use it to get the sha1 from the content table, if possible.
+        try {
+            $rev = ($table === 'archive')
+                ? $revStore->newRevisionFromArchiveRow($row)
+                : $revStore->newRevisionFromRow($row);
+            $sha1 = $rev->getSha1();
+        } catch (Exception $e) {
+            $this->output("Data of revision with {$idCol}={$row->$idCol} unavailable!\n");
 
-		return true;
-	}
+            return false; // T24624? T22757?
+        }
 
-	/**
-	 * @param MediaWiki\Revision\RevisionStore $revStore
-	 * @param stdClass $row
-	 * @return bool
-	 */
-	protected function upgradeLegacyArchiveRow( $revStore, $row ) {
-		$db = $this->getDB( DB_PRIMARY );
+        $db->update($table,
+            ["{$prefix}_sha1" => $sha1],
+            [$idCol => $row->$idCol],
+            __METHOD__
+        );
 
-		// Create a revision and use it to get the sha1 from the content table, if possible.
-		try {
-			$rev = $revStore->newRevisionFromArchiveRow( $row );
-			$sha1 = $rev->getSha1();
-		} catch ( Exception $e ) {
-			$this->output( "Text of revision with timestamp {$row->ar_timestamp} unavailable!\n" );
-			return false; // T24624? T22757?
-		}
+        return true;
+    }
 
-		# Archive table has no PK, but (NS,title,time) should be near unique.
-		# Any duplicates on those should also have duplicated text anyway.
-		$db->update( 'archive',
-			[ 'ar_sha1' => $sha1 ],
-			[
-				'ar_namespace' => $row->ar_namespace,
-				'ar_title' => $row->ar_title,
-				'ar_timestamp' => $row->ar_timestamp,
-				'ar_len' => $row->ar_len,
-			],
-			__METHOD__
-		);
+    /**
+     * @param MediaWiki\Revision\RevisionStore $revStore
+     * @param stdClass $row
+     * @return bool
+     */
+    protected function upgradeLegacyArchiveRow($revStore, $row)
+    {
+        $db = $this->getDB(DB_PRIMARY);
 
-		return true;
-	}
+        // Create a revision and use it to get the sha1 from the content table, if possible.
+        try {
+            $rev = $revStore->newRevisionFromArchiveRow($row);
+            $sha1 = $rev->getSha1();
+        } catch (Exception $e) {
+            $this->output("Text of revision with timestamp {$row->ar_timestamp} unavailable!\n");
+
+            return false; // T24624? T22757?
+        }
+
+        # Archive table has no PK, but (NS,title,time) should be near unique.
+        # Any duplicates on those should also have duplicated text anyway.
+        $db->update('archive',
+            ['ar_sha1' => $sha1],
+            [
+                'ar_namespace' => $row->ar_namespace,
+                'ar_title'     => $row->ar_title,
+                'ar_timestamp' => $row->ar_timestamp,
+                'ar_len'       => $row->ar_len,
+            ],
+            __METHOD__
+        );
+
+        return true;
+    }
 }
 
 $maintClass = PopulateRevisionSha1::class;

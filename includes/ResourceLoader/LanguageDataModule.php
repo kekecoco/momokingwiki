@@ -30,58 +30,64 @@ use MediaWiki\MediaWikiServices;
  * @ingroup ResourceLoader
  * @internal
  */
-class LanguageDataModule extends FileModule {
-	protected $targets = [ 'desktop', 'mobile' ];
+class LanguageDataModule extends FileModule
+{
+    protected $targets = ['desktop', 'mobile'];
 
-	/**
-	 * Get all the dynamic data for the content language to an array.
-	 *
-	 * @internal Only public for use by GenerateJqueryMsgData (tests)
-	 * @param string $langCode
-	 * @return array
-	 */
-	public static function getData( $langCode ): array {
-		$language = MediaWikiServices::getInstance()->getLanguageFactory()
-			->getLanguage( $langCode );
-		return [
-			'digitTransformTable' => $language->digitTransformTable(),
-			'separatorTransformTable' => $language->separatorTransformTable(),
-			'minimumGroupingDigits' => $language->minimumGroupingDigits(),
-			'grammarForms' => $language->getGrammarForms(),
-			'grammarTransformations' => $language->getGrammarTransformations(),
-			'pluralRules' => $language->getPluralRules(),
-			'digitGroupingPattern' => $language->digitGroupingPattern(),
-			'fallbackLanguages' => $language->getFallbackLanguages(),
-			'bcp47Map' => LanguageCode::getNonstandardLanguageCodeMapping(),
-		];
-	}
+    /**
+     * Get all the dynamic data for the content language to an array.
+     *
+     * @param string $langCode
+     * @return array
+     * @internal Only public for use by GenerateJqueryMsgData (tests)
+     */
+    public static function getData($langCode): array
+    {
+        $language = MediaWikiServices::getInstance()->getLanguageFactory()
+            ->getLanguage($langCode);
 
-	/**
-	 * @param Context $context
-	 * @return string JavaScript code
-	 */
-	public function getScript( Context $context ) {
-		return parent::getScript( $context )
-			. 'mw.language.setData('
-			. $context->encodeJson( $context->getLanguage() ) . ','
-			. $context->encodeJson( self::getData( $context->getLanguage() ) )
-			. ');';
-	}
+        return [
+            'digitTransformTable'     => $language->digitTransformTable(),
+            'separatorTransformTable' => $language->separatorTransformTable(),
+            'minimumGroupingDigits'   => $language->minimumGroupingDigits(),
+            'grammarForms'            => $language->getGrammarForms(),
+            'grammarTransformations'  => $language->getGrammarTransformations(),
+            'pluralRules'             => $language->getPluralRules(),
+            'digitGroupingPattern'    => $language->digitGroupingPattern(),
+            'fallbackLanguages'       => $language->getFallbackLanguages(),
+            'bcp47Map'                => LanguageCode::getNonstandardLanguageCodeMapping(),
+        ];
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function enableModuleContentVersion() {
-		return true;
-	}
+    /**
+     * @param Context $context
+     * @return string JavaScript code
+     */
+    public function getScript(Context $context)
+    {
+        return parent::getScript($context)
+            . 'mw.language.setData('
+            . $context->encodeJson($context->getLanguage()) . ','
+            . $context->encodeJson(self::getData($context->getLanguage()))
+            . ');';
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function supportsURLLoading() {
-		return false;
-	}
+    /**
+     * @return bool
+     */
+    public function enableModuleContentVersion()
+    {
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function supportsURLLoading()
+    {
+        return false;
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( LanguageDataModule::class, 'ResourceLoaderLanguageDataModule' );
+class_alias(LanguageDataModule::class, 'ResourceLoaderLanguageDataModule');

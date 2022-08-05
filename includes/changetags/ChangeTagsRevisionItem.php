@@ -23,41 +23,45 @@
  * Item class for a live revision table row with its associated change tags.
  * @since 1.25
  */
-class ChangeTagsRevisionItem extends RevisionItem {
-	/**
-	 * @return string Comma-separated list of tags
-	 */
-	public function getTags() {
-		return $this->row->ts_tags;
-	}
+class ChangeTagsRevisionItem extends RevisionItem
+{
+    /**
+     * @return string Comma-separated list of tags
+     */
+    public function getTags()
+    {
+        return $this->row->ts_tags;
+    }
 
-	/**
-	 * @return string A HTML <li> element representing this revision, showing
-	 * change tags and everything
-	 */
-	public function getHTML() {
-		$difflink = $this->list->msg( 'parentheses' )
-			->rawParams( $this->getDiffLink() )->escaped();
-		$revlink = $this->getRevisionLink();
-		$userlink = Linker::revUserLink( $this->getRevisionRecord() );
-		$comment = Linker::revComment( $this->getRevisionRecord() );
-		if ( $this->isDeleted() ) {
-			$class = Linker::getRevisionDeletedClass( $this->getRevisionRecord() );
-			$revlink = "<span class=\"$class\">$revlink</span>";
-		}
+    /**
+     * @return string A HTML <li> element representing this revision, showing
+     * change tags and everything
+     */
+    public function getHTML()
+    {
+        $difflink = $this->list->msg('parentheses')
+            ->rawParams($this->getDiffLink())->escaped();
+        $revlink = $this->getRevisionLink();
+        $userlink = Linker::revUserLink($this->getRevisionRecord());
+        $comment = Linker::revComment($this->getRevisionRecord());
+        if ($this->isDeleted()) {
+            $class = Linker::getRevisionDeletedClass($this->getRevisionRecord());
+            $revlink = "<span class=\"$class\">$revlink</span>";
+        }
 
-		$content = "$difflink $revlink $userlink $comment";
-		$attribs = [];
-		$tags = $this->getTags();
-		if ( $tags ) {
-			list( $tagSummary, $classes ) = ChangeTags::formatSummaryRow(
-				$tags,
-				'edittags',
-				$this->list->getContext()
-			);
-			$content .= " $tagSummary";
-			$attribs['class'] = implode( ' ', $classes );
-		}
-		return Xml::tags( 'li', $attribs, $content );
-	}
+        $content = "$difflink $revlink $userlink $comment";
+        $attribs = [];
+        $tags = $this->getTags();
+        if ($tags) {
+            [$tagSummary, $classes] = ChangeTags::formatSummaryRow(
+                $tags,
+                'edittags',
+                $this->list->getContext()
+            );
+            $content .= " $tagSummary";
+            $attribs['class'] = implode(' ', $classes);
+        }
+
+        return Xml::tags('li', $attribs, $content);
+    }
 }

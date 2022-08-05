@@ -25,17 +25,21 @@
  *
  * @ingroup Actions
  */
-class UnprotectAction extends ProtectAction {
+class UnprotectAction extends ProtectAction
+{
 
-	public function getName() {
-		return 'unprotect';
-	}
+    public function getName()
+    {
+        return 'unprotect';
+    }
 
-	public function show() {
-		$this->getArticle()->unprotect();
-	}
+    public function show()
+    {
+        $this->getArticle()->unprotect();
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 }

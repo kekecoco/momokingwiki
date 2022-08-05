@@ -31,35 +31,38 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class ViewCLI extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Show article contents on the command line' );
-		$this->addArg( 'title', 'Title of article to view' );
-	}
+class ViewCLI extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Show article contents on the command line');
+        $this->addArg('title', 'Title of article to view');
+    }
 
-	public function execute() {
-		$title = Title::newFromText( $this->getArg( 0 ) );
-		if ( !$title ) {
-			$this->fatalError( "Invalid title" );
-		} elseif ( $title->isSpecialPage() ) {
-			$this->fatalError( "Special Pages not supported" );
-		} elseif ( !$title->exists() ) {
-			$this->fatalError( "Page does not exist" );
-		}
+    public function execute()
+    {
+        $title = Title::newFromText($this->getArg(0));
+        if (!$title) {
+            $this->fatalError("Invalid title");
+        } elseif ($title->isSpecialPage()) {
+            $this->fatalError("Special Pages not supported");
+        } elseif (!$title->exists()) {
+            $this->fatalError("Page does not exist");
+        }
 
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+        $page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle($title);
 
-		$content = $page->getContent( RevisionRecord::RAW );
-		if ( !$content ) {
-			$this->fatalError( "Page has no content" );
-		}
-		if ( !$content instanceof TextContent ) {
-			$this->fatalError( "Non-text content models not supported" );
-		}
+        $content = $page->getContent(RevisionRecord::RAW);
+        if (!$content) {
+            $this->fatalError("Page has no content");
+        }
+        if (!$content instanceof TextContent) {
+            $this->fatalError("Non-text content models not supported");
+        }
 
-		$this->output( $content->getText() );
-	}
+        $this->output($content->getText());
+    }
 }
 
 $maintClass = ViewCLI::class;

@@ -24,114 +24,120 @@ namespace MediaWiki\HookContainer;
 
 use InvalidArgumentException;
 
-class DeprecatedHooks {
+class DeprecatedHooks
+{
 
-	/**
-	 * @var array[] List of deprecated hooks. Value arrays for each hook contain:
-	 *  - deprecatedVersion: (string) Version in which the hook was deprecated,
-	 *    to pass to wfDeprecated().
-	 *  - component: (string, optional) $component to pass to wfDeprecated().
-	 *  - silent (bool, optional) If true, no deprecation warning will be raised
-	 */
-	private $deprecatedHooks = [
-		'AddNewAccount' => [ 'deprecatedVersion' => '1.27', 'silent' => true ],
-		'BaseTemplateAfterPortlet' => [ 'deprecatedVersion' => '1.35' ],
-		'BeforeParserFetchTemplateAndtitle' => [ 'deprecatedVersion' => '1.36' ],
-		'BeforeParserrenderImageGallery' => [ 'deprecatedVersion' => '1.35' ],
-		'EditPageBeforeEditToolbar' => [ 'deprecatedVersion' => '1.36' ],
-		'InternalParseBeforeSanitize' => [ 'deprecatedVersion' => '1.35' ],
-		'LinksUpdateConstructed' => [ 'deprecatedVersion' => '1.38' ],
-		'LinksUpdateAfterInsert' => [ 'deprecatedVersion' => '1.38' ],
-		'LocalFile::getHistory' => [ 'deprecatedVersion' => '1.37' ],
-		'MagicWordwgVariableIDs' => [ 'deprecatedVersion' => '1.35', 'silent' => true ],
-		'PageContentSave' => [ 'deprecatedVersion' => '1.35', 'silent' => true ],
-		'ParserGetVariableValueVarCache' => [ 'deprecatedVersion' => '1.35' ],
-		'ParserSectionCreate' => [ 'deprecatedVersion' => '1.35' ],
-		'ParserTestTables' => [ 'deprecatedVersion' => '1.36', 'silent' => true ],
-		'PrefixSearchBackend' => [ 'deprecatedVersion' => '1.27', 'silent' => true ],
-		'ProtectionForm::buildForm' => [ 'deprecatedVersion' => '1.36', 'silent' => true ],
-		'ResourceLoaderTestModules' => [ 'deprecatedVersion' => '1.33' ],
-		'RollbackComplete' => [ 'deprecatedVersion' => '1.36', 'silent' => true ],
-		'SpecialMuteSubmit' => [ 'deprecatedVersion' => '1.35', 'silent' => true ],
-		'UserLoadFromDatabase' => [ 'deprecatedVersion' => '1.37' ],
-		'UserSetCookies' => [ 'deprecatedVersion' => '1.27' ],
-		'WikiPageDeletionUpdates' => [ 'deprecatedVersion' => '1.32', 'silent' => true ],
-		'userCan' => [ 'deprecatedVersion' => '1.37' ],
-		'ArticleDelete' => [ 'deprecatedVersion' => '1.37', 'silent' => true ],
-		'ArticleDeleteComplete' => [ 'deprecatedVersion' => '1.37', 'silent' => true ],
-		'SkinTemplateNavigation' => [ 'deprecatedVersion' => '1.39' ],
-		'SkinTemplateNavigation::SpecialPage' => [ 'deprecatedVersion' => '1.39' ],
-	];
+    /**
+     * @var array[] List of deprecated hooks. Value arrays for each hook contain:
+     *  - deprecatedVersion: (string) Version in which the hook was deprecated,
+     *    to pass to wfDeprecated().
+     *  - component: (string, optional) $component to pass to wfDeprecated().
+     *  - silent (bool, optional) If true, no deprecation warning will be raised
+     */
+    private $deprecatedHooks = [
+        'AddNewAccount'                       => ['deprecatedVersion' => '1.27', 'silent' => true],
+        'BaseTemplateAfterPortlet'            => ['deprecatedVersion' => '1.35'],
+        'BeforeParserFetchTemplateAndtitle'   => ['deprecatedVersion' => '1.36'],
+        'BeforeParserrenderImageGallery'      => ['deprecatedVersion' => '1.35'],
+        'EditPageBeforeEditToolbar'           => ['deprecatedVersion' => '1.36'],
+        'InternalParseBeforeSanitize'         => ['deprecatedVersion' => '1.35'],
+        'LinksUpdateConstructed'              => ['deprecatedVersion' => '1.38'],
+        'LinksUpdateAfterInsert'              => ['deprecatedVersion' => '1.38'],
+        'LocalFile::getHistory'               => ['deprecatedVersion' => '1.37'],
+        'MagicWordwgVariableIDs'              => ['deprecatedVersion' => '1.35', 'silent' => true],
+        'PageContentSave'                     => ['deprecatedVersion' => '1.35', 'silent' => true],
+        'ParserGetVariableValueVarCache'      => ['deprecatedVersion' => '1.35'],
+        'ParserSectionCreate'                 => ['deprecatedVersion' => '1.35'],
+        'ParserTestTables'                    => ['deprecatedVersion' => '1.36', 'silent' => true],
+        'PrefixSearchBackend'                 => ['deprecatedVersion' => '1.27', 'silent' => true],
+        'ProtectionForm::buildForm'           => ['deprecatedVersion' => '1.36', 'silent' => true],
+        'ResourceLoaderTestModules'           => ['deprecatedVersion' => '1.33'],
+        'RollbackComplete'                    => ['deprecatedVersion' => '1.36', 'silent' => true],
+        'SpecialMuteSubmit'                   => ['deprecatedVersion' => '1.35', 'silent' => true],
+        'UserLoadFromDatabase'                => ['deprecatedVersion' => '1.37'],
+        'UserSetCookies'                      => ['deprecatedVersion' => '1.27'],
+        'WikiPageDeletionUpdates'             => ['deprecatedVersion' => '1.32', 'silent' => true],
+        'userCan'                             => ['deprecatedVersion' => '1.37'],
+        'ArticleDelete'                       => ['deprecatedVersion' => '1.37', 'silent' => true],
+        'ArticleDeleteComplete'               => ['deprecatedVersion' => '1.37', 'silent' => true],
+        'SkinTemplateNavigation'              => ['deprecatedVersion' => '1.39'],
+        'SkinTemplateNavigation::SpecialPage' => ['deprecatedVersion' => '1.39'],
+    ];
 
-	/**
-	 * @param array[] $deprecatedHooks List of hooks to mark as deprecated.
-	 * Value arrays for each hook contain:
-	 *  - deprecatedVersion: (string) Version in which the hook was deprecated,
-	 *    to pass to wfDeprecated().
-	 *  - component: (string, optional) $component to pass to wfDeprecated().
-	 *  - silent: (bool, optional) True to not raise any deprecation warning
-	 */
-	public function __construct( array $deprecatedHooks = [] ) {
-		foreach ( $deprecatedHooks as $hook => $info ) {
-			$this->markDeprecated(
-				$hook,
-				$info['deprecatedVersion'],
-				$info['component'] ?? false,
-				$info['silent'] ?? false
-			);
-		}
-	}
+    /**
+     * @param array[] $deprecatedHooks List of hooks to mark as deprecated.
+     * Value arrays for each hook contain:
+     *  - deprecatedVersion: (string) Version in which the hook was deprecated,
+     *    to pass to wfDeprecated().
+     *  - component: (string, optional) $component to pass to wfDeprecated().
+     *  - silent: (bool, optional) True to not raise any deprecation warning
+     */
+    public function __construct(array $deprecatedHooks = [])
+    {
+        foreach ($deprecatedHooks as $hook => $info) {
+            $this->markDeprecated(
+                $hook,
+                $info['deprecatedVersion'],
+                $info['component'] ?? false,
+                $info['silent'] ?? false
+            );
+        }
+    }
 
-	/**
-	 * For use by extensions, to add to list of deprecated hooks.
-	 * Core-defined hooks should instead be added to $this->$deprecatedHooks directly.
-	 * However, the preferred method of marking a hook deprecated is by adding it to
-	 * the DeprecatedHooks attribute in extension.json
-	 *
-	 * @param string $hook
-	 * @param string $version Version in which the hook was deprecated, to pass to wfDeprecated()
-	 * @param string|null $component (optional) component to pass to wfDeprecated().
-	 * @param bool $silent True to not raise any deprecation warning
-	 * @throws InvalidArgumentException Hook has already been marked deprecated
-	 */
-	public function markDeprecated(
-		string $hook, string $version, ?string $component = null, bool $silent = false
-	): void {
-		if ( isset( $this->deprecatedHooks[$hook] ) ) {
-			throw new InvalidArgumentException(
-				"Cannot mark hook '$hook' deprecated with version $version. " .
-				"It is already marked deprecated with version " .
-				$this->deprecatedHooks[$hook]['deprecatedVersion']
-			);
-		}
-		$hookInfo = [
-			'deprecatedVersion' => $version,
-			'silent' => $silent
-		];
-		if ( $component ) {
-			$hookInfo['component'] = $component;
-		}
-		$this->deprecatedHooks[$hook] = $hookInfo;
-	}
+    /**
+     * For use by extensions, to add to list of deprecated hooks.
+     * Core-defined hooks should instead be added to $this->$deprecatedHooks directly.
+     * However, the preferred method of marking a hook deprecated is by adding it to
+     * the DeprecatedHooks attribute in extension.json
+     *
+     * @param string $hook
+     * @param string $version Version in which the hook was deprecated, to pass to wfDeprecated()
+     * @param string|null $component (optional) component to pass to wfDeprecated().
+     * @param bool $silent True to not raise any deprecation warning
+     * @throws InvalidArgumentException Hook has already been marked deprecated
+     */
+    public function markDeprecated(
+        string $hook, string $version, ?string $component = null, bool $silent = false
+    ): void
+    {
+        if (isset($this->deprecatedHooks[$hook])) {
+            throw new InvalidArgumentException(
+                "Cannot mark hook '$hook' deprecated with version $version. " .
+                "It is already marked deprecated with version " .
+                $this->deprecatedHooks[$hook]['deprecatedVersion']
+            );
+        }
+        $hookInfo = [
+            'deprecatedVersion' => $version,
+            'silent'            => $silent
+        ];
+        if ($component) {
+            $hookInfo['component'] = $component;
+        }
+        $this->deprecatedHooks[$hook] = $hookInfo;
+    }
 
-	/**
-	 * Checks whether hook is marked deprecated
-	 * @param string $hook Hook name
-	 * @return bool
-	 */
-	public function isHookDeprecated( string $hook ): bool {
-		return isset( $this->deprecatedHooks[$hook] );
-	}
+    /**
+     * Checks whether hook is marked deprecated
+     * @param string $hook Hook name
+     * @return bool
+     */
+    public function isHookDeprecated(string $hook): bool
+    {
+        return isset($this->deprecatedHooks[$hook]);
+    }
 
-	/**
-	 * Gets deprecation info for a specific hook or all hooks if hook not specified
-	 * @param string|null $hook (optional) Hook name
-	 * @return array|null Value array from $this->deprecatedHooks for a specific hook or all hooks
-	 */
-	public function getDeprecationInfo( ?string $hook = null ): ?array {
-		if ( !$hook ) {
-			return $this->deprecatedHooks;
-		}
-		return $this->deprecatedHooks[$hook] ?? null;
-	}
+    /**
+     * Gets deprecation info for a specific hook or all hooks if hook not specified
+     * @param string|null $hook (optional) Hook name
+     * @return array|null Value array from $this->deprecatedHooks for a specific hook or all hooks
+     */
+    public function getDeprecationInfo(?string $hook = null): ?array
+    {
+        if (!$hook) {
+            return $this->deprecatedHooks;
+        }
+
+        return $this->deprecatedHooks[$hook] ?? null;
+    }
 }

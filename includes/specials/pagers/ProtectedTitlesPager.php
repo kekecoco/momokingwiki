@@ -25,109 +25,116 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * @ingroup Pager
  */
-class ProtectedTitlesPager extends AlphabeticPager {
+class ProtectedTitlesPager extends AlphabeticPager
+{
 
-	/**
-	 * @var SpecialProtectedtitles
-	 */
-	public $mForm;
+    /**
+     * @var SpecialProtectedtitles
+     */
+    public $mForm;
 
-	/**
-	 * @var array
-	 */
-	public $mConds;
+    /**
+     * @var array
+     */
+    public $mConds;
 
-	/** @var string|null */
-	private $level;
+    /** @var string|null */
+    private $level;
 
-	/** @var int|null */
-	private $namespace;
+    /** @var int|null */
+    private $namespace;
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/**
-	 * @param SpecialProtectedtitles $form
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
-	 * @param array $conds
-	 * @param string|null $type
-	 * @param string|null $level
-	 * @param int|null $namespace
-	 * @param string|null $sizetype
-	 * @param int|null $size
-	 */
-	public function __construct(
-		SpecialProtectedtitles $form,
-		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer,
-		$conds,
-		$type,
-		$level,
-		$namespace,
-		$sizetype,
-		$size
-	) {
-		// Set database before parent constructor to avoid setting it there with wfGetDB
-		$this->mDb = $loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-		$this->mForm = $form;
-		$this->mConds = $conds;
-		$this->level = $level;
-		$this->namespace = $namespace;
-		parent::__construct( $form->getContext() );
-		$this->linkBatchFactory = $linkBatchFactory;
-	}
+    /**
+     * @param SpecialProtectedtitles $form
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param ILoadBalancer $loadBalancer
+     * @param array $conds
+     * @param string|null $type
+     * @param string|null $level
+     * @param int|null $namespace
+     * @param string|null $sizetype
+     * @param int|null $size
+     */
+    public function __construct(
+        SpecialProtectedtitles $form,
+        LinkBatchFactory $linkBatchFactory,
+        ILoadBalancer $loadBalancer,
+        $conds,
+        $type,
+        $level,
+        $namespace,
+        $sizetype,
+        $size
+    )
+    {
+        // Set database before parent constructor to avoid setting it there with wfGetDB
+        $this->mDb = $loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+        $this->mForm = $form;
+        $this->mConds = $conds;
+        $this->level = $level;
+        $this->namespace = $namespace;
+        parent::__construct($form->getContext());
+        $this->linkBatchFactory = $linkBatchFactory;
+    }
 
-	protected function getStartBody() {
-		# Do a link batch query
-		$this->mResult->seek( 0 );
-		$lb = $this->linkBatchFactory->newLinkBatch();
+    protected function getStartBody()
+    {
+        # Do a link batch query
+        $this->mResult->seek(0);
+        $lb = $this->linkBatchFactory->newLinkBatch();
 
-		foreach ( $this->mResult as $row ) {
-			$lb->add( $row->pt_namespace, $row->pt_title );
-		}
+        foreach ($this->mResult as $row) {
+            $lb->add($row->pt_namespace, $row->pt_title);
+        }
 
-		$lb->execute();
+        $lb->execute();
 
-		return '';
-	}
+        return '';
+    }
 
-	/**
-	 * @return Title
-	 */
-	public function getTitle() {
-		return $this->mForm->getPageTitle();
-	}
+    /**
+     * @return Title
+     */
+    public function getTitle()
+    {
+        return $this->mForm->getPageTitle();
+    }
 
-	public function formatRow( $row ) {
-		return $this->mForm->formatRow( $row );
-	}
+    public function formatRow($row)
+    {
+        return $this->mForm->formatRow($row);
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getQueryInfo() {
-		$dbr = $this->getDatabase();
-		$conds = $this->mConds;
-		$conds[] = 'pt_expiry > ' . $dbr->addQuotes( $this->mDb->timestamp() ) .
-			' OR pt_expiry IS NULL';
-		if ( $this->level ) {
-			$conds['pt_create_perm'] = $this->level;
-		}
+    /**
+     * @return array
+     */
+    public function getQueryInfo()
+    {
+        $dbr = $this->getDatabase();
+        $conds = $this->mConds;
+        $conds[] = 'pt_expiry > ' . $dbr->addQuotes($this->mDb->timestamp()) .
+            ' OR pt_expiry IS NULL';
+        if ($this->level) {
+            $conds['pt_create_perm'] = $this->level;
+        }
 
-		if ( $this->namespace !== null ) {
-			$conds[] = 'pt_namespace=' . $dbr->addQuotes( $this->namespace );
-		}
+        if ($this->namespace !== null) {
+            $conds[] = 'pt_namespace=' . $dbr->addQuotes($this->namespace);
+        }
 
-		return [
-			'tables' => 'protected_titles',
-			'fields' => [ 'pt_namespace', 'pt_title', 'pt_create_perm',
-				'pt_expiry', 'pt_timestamp' ],
-			'conds' => $conds
-		];
-	}
+        return [
+            'tables' => 'protected_titles',
+            'fields' => ['pt_namespace', 'pt_title', 'pt_create_perm',
+                'pt_expiry', 'pt_timestamp'],
+            'conds'  => $conds
+        ];
+    }
 
-	public function getIndexField() {
-		return 'pt_timestamp';
-	}
+    public function getIndexField()
+    {
+        return 'pt_timestamp';
+    }
 }

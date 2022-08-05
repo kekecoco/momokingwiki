@@ -1,44 +1,45 @@
 /* stylelint-disable selector-class-pattern */
 
 #catlinks {
-	/**
-	 * Overrides text justification (user preference)
-	 * See T33990
-	 */
-	text-align: left;
+  /**
+   * Overrides text justification (user preference)
+   * See T33990
+   */
+  text-align: left;
 }
 
 .catlinks {
-	border: 1px solid #a2a9b1;
-	background-color: #f8f9fa;
-	padding: 5px;
-	margin-top: 1em;
-	clear: both;
+  border: 1px solid #a2a9b1;
+  background-color: #f8f9fa;
+  padding: 5px;
+  margin-top: 1em;
+  clear: both;
 
-	ul {
-		display: inline;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
+  ul {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 
-	li {
-		display: inline-block;
-		line-height: 1.25em;
-		border-left: 1px solid #a2a9b1;
-		margin: 0.125em 0;
-		padding: 0 0.5em;
+  li {
+    display: inline-block;
+    line-height: 1.25em;
+    border-left: 1px solid #a2a9b1;
+    margin: 0.125em 0;
+    padding: 0 0.5em;
 
-		&:first-child {
-			padding-left: 0.25em;
-			border-left: 0;
-		}
+    &:first-child {
+      padding-left: 0.25em;
+      border-left: 0;
+    }
 
-		/* (T7346) make category redirects italic */
-		a.mw-redirect {
-			font-style: italic;
-		}
-	}
+    /* (T7346) make category redirects italic */
+
+    a.mw-redirect {
+      font-style: italic;
+    }
+  }
 }
 
 /**
@@ -46,5 +47,5 @@
  */
 .mw-hidden-cats-hidden,
 .catlinks-allhidden {
-	display: none;
+  display: none;
 }

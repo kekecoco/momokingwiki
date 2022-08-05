@@ -29,30 +29,34 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialMypage extends RedirectSpecialArticle {
-	public function __construct() {
-		parent::__construct( 'Mypage' );
-	}
+class SpecialMypage extends RedirectSpecialArticle
+{
+    public function __construct()
+    {
+        parent::__construct('Mypage');
+    }
 
-	/**
-	 * @param string|null $subpage
-	 * @return Title
-	 */
-	public function getRedirect( $subpage ) {
-		if ( $subpage === null || $subpage === '' ) {
-			return Title::makeTitle( NS_USER, $this->getUser()->getName() );
-		}
+    /**
+     * @param string|null $subpage
+     * @return Title
+     */
+    public function getRedirect($subpage)
+    {
+        if ($subpage === null || $subpage === '') {
+            return Title::makeTitle(NS_USER, $this->getUser()->getName());
+        }
 
-		return Title::makeTitle( NS_USER, $this->getUser()->getName() . '/' . $subpage );
-	}
+        return Title::makeTitle(NS_USER, $this->getUser()->getName() . '/' . $subpage);
+    }
 
-	/**
-	 * Target identifies a specific User. See T109724.
-	 *
-	 * @since 1.27
-	 * @return bool
-	 */
-	public function personallyIdentifiableTarget() {
-		return true;
-	}
+    /**
+     * Target identifies a specific User. See T109724.
+     *
+     * @return bool
+     * @since 1.27
+     */
+    public function personallyIdentifiableTarget()
+    {
+        return true;
+    }
 }

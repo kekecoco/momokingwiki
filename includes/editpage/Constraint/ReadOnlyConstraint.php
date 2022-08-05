@@ -30,39 +30,44 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class ReadOnlyConstraint implements IEditConstraint {
+class ReadOnlyConstraint implements IEditConstraint
+{
 
-	/** @var ReadOnlyMode */
-	private $readOnlyMode;
+    /** @var ReadOnlyMode */
+    private $readOnlyMode;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param ReadOnlyMode $readOnlyMode
-	 */
-	public function __construct( ReadOnlyMode $readOnlyMode ) {
-		$this->readOnlyMode = $readOnlyMode;
-	}
+    /**
+     * @param ReadOnlyMode $readOnlyMode
+     */
+    public function __construct(ReadOnlyMode $readOnlyMode)
+    {
+        $this->readOnlyMode = $readOnlyMode;
+    }
 
-	public function checkConstraint(): string {
-		$this->result = $this->readOnlyMode->isReadOnly() ?
-			self::CONSTRAINT_FAILED :
-			self::CONSTRAINT_PASSED;
-		return $this->result;
-	}
+    public function checkConstraint(): string
+    {
+        $this->result = $this->readOnlyMode->isReadOnly() ?
+            self::CONSTRAINT_FAILED :
+            self::CONSTRAINT_PASSED;
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        return $this->result;
+    }
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			// Saved that this is read only in case getLegacyStatus is called
-			// after the read only ends, because it still caused the failure
-			$statusValue->fatal( 'readonlytext' );
-			$statusValue->value = self::AS_READ_ONLY_PAGE;
-		}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
 
-		return $statusValue;
-	}
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            // Saved that this is read only in case getLegacyStatus is called
+            // after the read only ends, because it still caused the failure
+            $statusValue->fatal('readonlytext');
+            $statusValue->value = self::AS_READ_ONLY_PAGE;
+        }
+
+        return $statusValue;
+    }
 
 }

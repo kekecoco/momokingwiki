@@ -9,193 +9,201 @@ use Wikimedia\TestingAccessWrapper;
  *
  * @covers SpecialWatchlist
  */
-class SpecialWatchlistTest extends SpecialPageTestBase {
-	protected function setUp(): void {
-		parent::setUp();
-		$this->tablesUsed = [ 'watchlist' ];
-		$this->setTemporaryHook(
-			'ChangesListSpecialPageQuery',
-			null
-		);
+class SpecialWatchlistTest extends SpecialPageTestBase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tablesUsed = ['watchlist'];
+        $this->setTemporaryHook(
+            'ChangesListSpecialPageQuery',
+            null
+        );
 
-		$this->setMwGlobals( [
-			'wgDefaultUserOptions' =>
-				[
-					'extendwatchlist' => 1,
-					'watchlistdays' => 3.0,
-					'watchlisthideanons' => 0,
-					'watchlisthidebots' => 0,
-					'watchlisthideliu' => 0,
-					'watchlisthideminor' => 0,
-					'watchlisthideown' => 0,
-					'watchlisthidepatrolled' => 1,
-					'watchlisthidecategorization' => 0,
-					'watchlistreloadautomatically' => 0,
-					'watchlistunwatchlinks' => 0,
-				],
-			'wgWatchlistExpiry' => true
-		] );
-	}
+        $this->setMwGlobals([
+            'wgDefaultUserOptions' =>
+                [
+                    'extendwatchlist'              => 1,
+                    'watchlistdays'                => 3.0,
+                    'watchlisthideanons'           => 0,
+                    'watchlisthidebots'            => 0,
+                    'watchlisthideliu'             => 0,
+                    'watchlisthideminor'           => 0,
+                    'watchlisthideown'             => 0,
+                    'watchlisthidepatrolled'       => 1,
+                    'watchlisthidecategorization'  => 0,
+                    'watchlistreloadautomatically' => 0,
+                    'watchlistunwatchlinks'        => 0,
+                ],
+            'wgWatchlistExpiry'    => true
+        ]);
+    }
 
-	/**
-	 * Returns a new instance of the special page under test.
-	 *
-	 * @return SpecialWatchlist
-	 */
-	protected function newSpecialPage() {
-		$services = $this->getServiceContainer();
-		return new SpecialWatchlist(
-			$services->getWatchedItemStore(),
-			$services->getWatchlistManager(),
-			$services->getDBLoadBalancer(),
-			$services->getUserOptionsLookup()
-		);
-	}
+    /**
+     * Returns a new instance of the special page under test.
+     *
+     * @return SpecialWatchlist
+     */
+    protected function newSpecialPage()
+    {
+        $services = $this->getServiceContainer();
 
-	public function testNotLoggedIn_throwsException() {
-		$this->expectException( UserNotLoggedIn::class );
-		$this->executeSpecialPage();
-	}
+        return new SpecialWatchlist(
+            $services->getWatchedItemStore(),
+            $services->getWatchlistManager(),
+            $services->getDBLoadBalancer(),
+            $services->getUserOptionsLookup()
+        );
+    }
 
-	public function testUserWithNoWatchedItems_displaysNoWatchlistMessage() {
-		$user = new TestUser( __METHOD__ );
-		list( $html, ) = $this->executeSpecialPage( '', null, 'qqx', $user->getUser() );
-		$this->assertStringContainsString( '(nowatchlist)', $html );
-	}
+    public function testNotLoggedIn_throwsException()
+    {
+        $this->expectException(UserNotLoggedIn::class);
+        $this->executeSpecialPage();
+    }
 
-	/**
-	 * @dataProvider provideFetchOptionsFromRequest
-	 */
-	public function testFetchOptionsFromRequest(
-		$expectedValuesDefaults, $expectedValues, $preferences, $inputParams
-	) {
-		// $defaults and $allFalse are just to make the expected values below
-		// shorter by hiding the background.
+    public function testUserWithNoWatchedItems_displaysNoWatchlistMessage()
+    {
+        $user = new TestUser(__METHOD__);
+        [$html,] = $this->executeSpecialPage('', null, 'qqx', $user->getUser());
+        $this->assertStringContainsString('(nowatchlist)', $html);
+    }
 
-		/** @var SpecialWatchlist $page */
-		$page = TestingAccessWrapper::newFromObject(
-			$this->newSpecialPage()
-		);
+    /**
+     * @dataProvider provideFetchOptionsFromRequest
+     */
+    public function testFetchOptionsFromRequest(
+        $expectedValuesDefaults, $expectedValues, $preferences, $inputParams
+    )
+    {
+        // $defaults and $allFalse are just to make the expected values below
+        // shorter by hiding the background.
 
-		$page->registerFilters();
+        /** @var SpecialWatchlist $page */
+        $page = TestingAccessWrapper::newFromObject(
+            $this->newSpecialPage()
+        );
 
-		// Does not consider $preferences, just wiki's defaults
-		$wikiDefaults = $page->getDefaultOptions()->getAllValues();
+        $page->registerFilters();
 
-		switch ( $expectedValuesDefaults ) {
-			case 'allFalse':
-				$allFalse = $wikiDefaults;
+        // Does not consider $preferences, just wiki's defaults
+        $wikiDefaults = $page->getDefaultOptions()->getAllValues();
 
-				foreach ( $allFalse as $key => $value ) {
-					if ( $value === true ) {
-						$allFalse[$key] = false;
-					}
-				}
+        switch ($expectedValuesDefaults) {
+            case 'allFalse':
+                $allFalse = $wikiDefaults;
 
-				// This is not exposed on the form (only in preferences) so it
-				// respects the preference.
-				$allFalse['extended'] = true;
+                foreach ($allFalse as $key => $value) {
+                    if ($value === true) {
+                        $allFalse[$key] = false;
+                    }
+                }
 
-				$expectedValues += $allFalse;
-				break;
-			case 'wikiDefaults':
-				$expectedValues += $wikiDefaults;
-				break;
-			default:
-				$this->fail( "Unknown \$expectedValuesDefaults: $expectedValuesDefaults" );
-		}
+                // This is not exposed on the form (only in preferences) so it
+                // respects the preference.
+                $allFalse['extended'] = true;
 
-		$page = TestingAccessWrapper::newFromObject(
-			$this->newSpecialPage()
-		);
+                $expectedValues += $allFalse;
+                break;
+            case 'wikiDefaults':
+                $expectedValues += $wikiDefaults;
+                break;
+            default:
+                $this->fail("Unknown \$expectedValuesDefaults: $expectedValuesDefaults");
+        }
 
-		$context = new DerivativeContext( $page->getContext() );
+        $page = TestingAccessWrapper::newFromObject(
+            $this->newSpecialPage()
+        );
 
-		$fauxRequest = new FauxRequest( $inputParams, /* $wasPosted= */ false );
-		$user = $this->getTestUser()->getUser();
+        $context = new DerivativeContext($page->getContext());
 
-		$userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
-		foreach ( $preferences as $key => $value ) {
-			$userOptionsManager->setOption( $user, $key, $value );
-		}
+        $fauxRequest = new FauxRequest($inputParams, /* $wasPosted= */ false);
+        $user = $this->getTestUser()->getUser();
 
-		$context->setRequest( $fauxRequest );
-		$context->setUser( $user );
-		$page->setContext( $context );
+        $userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
+        foreach ($preferences as $key => $value) {
+            $userOptionsManager->setOption($user, $key, $value);
+        }
 
-		$page->registerFilters();
-		$formOptions = $page->getDefaultOptions();
-		$page->fetchOptionsFromRequest( $formOptions );
+        $context->setRequest($fauxRequest);
+        $context->setUser($user);
+        $page->setContext($context);
 
-		$this->assertArrayEquals(
-			$expectedValues,
-			$formOptions->getAllValues(),
-			/* $ordered= */ false,
-			/* $named= */ true
-		);
-	}
+        $page->registerFilters();
+        $formOptions = $page->getDefaultOptions();
+        $page->fetchOptionsFromRequest($formOptions);
 
-	public function provideFetchOptionsFromRequest() {
-		return [
-			'ignores casing' => [
-				'expectedValuesDefaults' => 'wikiDefaults',
-				'expectedValues' => [
-					'hideminor' => true,
-				],
-				'preferences' => [],
-				'inputParams' => [
-					'hideMinor' => 1,
-				],
-			],
+        $this->assertArrayEquals(
+            $expectedValues,
+            $formOptions->getAllValues(),
+            /* $ordered= */ false,
+            /* $named= */ true
+        );
+    }
 
-			'first two same as prefs, second two overridden' => [
-				'expectedValuesDefaults' => 'wikiDefaults',
-				'expectedValues' => [
-					// First two same as prefs
-					'hideminor' => true,
-					'hidebots' => false,
+    public function provideFetchOptionsFromRequest()
+    {
+        return [
+            'ignores casing' => [
+                'expectedValuesDefaults' => 'wikiDefaults',
+                'expectedValues'         => [
+                    'hideminor' => true,
+                ],
+                'preferences'            => [],
+                'inputParams'            => [
+                    'hideMinor' => 1,
+                ],
+            ],
 
-					// Second two overridden
-					'hideanons' => false,
-					'hideliu' => true,
-					'userExpLevel' => 'registered'
-				],
-				'preferences' => [
-					'watchlisthideminor' => 1,
-					'watchlisthidebots' => 0,
+            'first two same as prefs, second two overridden' => [
+                'expectedValuesDefaults' => 'wikiDefaults',
+                'expectedValues'         => [
+                    // First two same as prefs
+                    'hideminor'    => true,
+                    'hidebots'     => false,
 
-					'watchlisthideanons' => 1,
-					'watchlisthideliu' => 0,
-				],
-				'inputParams' => [
-					'hideanons' => 0,
-					'hideliu' => 1,
-				],
-			],
+                    // Second two overridden
+                    'hideanons'    => false,
+                    'hideliu'      => true,
+                    'userExpLevel' => 'registered'
+                ],
+                'preferences'            => [
+                    'watchlisthideminor' => 1,
+                    'watchlisthidebots'  => 0,
 
-			'Defaults/preferences for form elements are entirely ignored for '
-			. 'action=submit and omitted elements become false' => [
-				'expectedValuesDefaults' => 'allFalse',
-				'expectedValues' => [
-					'hideminor' => false,
-					'hidebots' => true,
-					'hideanons' => false,
-					'hideliu' => true,
-					'userExpLevel' => 'unregistered'
-				],
-				'preferences' => [
-					'watchlisthideminor' => 0,
-					'watchlisthidebots' => 1,
+                    'watchlisthideanons' => 1,
+                    'watchlisthideliu'   => 0,
+                ],
+                'inputParams'            => [
+                    'hideanons' => 0,
+                    'hideliu'   => 1,
+                ],
+            ],
 
-					'watchlisthideanons' => 0,
-					'watchlisthideliu' => 1,
-				],
-				'inputParams' => [
-					'hidebots' => 1,
-					'hideliu' => 1,
-					'action' => 'submit',
-				],
-			],
-		];
-	}
+            'Defaults/preferences for form elements are entirely ignored for '
+            . 'action=submit and omitted elements become false' => [
+                'expectedValuesDefaults' => 'allFalse',
+                'expectedValues'         => [
+                    'hideminor'    => false,
+                    'hidebots'     => true,
+                    'hideanons'    => false,
+                    'hideliu'      => true,
+                    'userExpLevel' => 'unregistered'
+                ],
+                'preferences'            => [
+                    'watchlisthideminor' => 0,
+                    'watchlisthidebots'  => 1,
+
+                    'watchlisthideanons' => 0,
+                    'watchlisthideliu'   => 1,
+                ],
+                'inputParams'            => [
+                    'hidebots' => 1,
+                    'hideliu'  => 1,
+                    'action'   => 'submit',
+                ],
+            ],
+        ];
+    }
 }

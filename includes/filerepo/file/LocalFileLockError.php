@@ -23,23 +23,26 @@
  * @stable to extend
  * @ingroup FileAbstraction
  */
-class LocalFileLockError extends ErrorPageError {
+class LocalFileLockError extends ErrorPageError
+{
 
-	/**
-	 * @stable to call
-	 *
-	 * @param Status $status
-	 */
-	public function __construct( Status $status ) {
-		parent::__construct(
-			'actionfailed',
-			$status->getMessage()
-		);
-	}
+    /**
+     * @stable to call
+     *
+     * @param Status $status
+     */
+    public function __construct(Status $status)
+    {
+        parent::__construct(
+            'actionfailed',
+            $status->getMessage()
+        );
+    }
 
-	public function report( $action = self::SEND_OUTPUT ) {
-		global $wgOut;
-		$wgOut->setStatusCode( 429 );
-		parent::report( $action );
-	}
+    public function report($action = self::SEND_OUTPUT)
+    {
+        global $wgOut;
+        $wgOut->setStatusCode(429);
+        parent::report($action);
+    }
 }

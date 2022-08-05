@@ -31,47 +31,53 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class EditRightConstraint implements IEditConstraint {
+class EditRightConstraint implements IEditConstraint
+{
 
-	/** @var Authority */
-	private $performer;
+    /** @var Authority */
+    private $performer;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param Authority $performer
-	 */
-	public function __construct(
-		Authority $performer
-	) {
-		$this->performer = $performer;
-	}
+    /**
+     * @param Authority $performer
+     */
+    public function __construct(
+        Authority $performer
+    )
+    {
+        $this->performer = $performer;
+    }
 
-	public function checkConstraint(): string {
-		// Check isn't simple enough to just repeat when getting the status
-		if ( !$this->performer->isAllowed( 'edit' ) ) {
-			$this->result = self::CONSTRAINT_FAILED;
-			return self::CONSTRAINT_FAILED;
-		}
+    public function checkConstraint(): string
+    {
+        // Check isn't simple enough to just repeat when getting the status
+        if (!$this->performer->isAllowed('edit')) {
+            $this->result = self::CONSTRAINT_FAILED;
 
-		$this->result = self::CONSTRAINT_PASSED;
-		return self::CONSTRAINT_PASSED;
-	}
+            return self::CONSTRAINT_FAILED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
+        $this->result = self::CONSTRAINT_PASSED;
 
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			if ( !$this->performer->getUser()->isRegistered() ) {
-				$statusValue->setResult( false, self::AS_READ_ONLY_PAGE_ANON );
-			} else {
-				$statusValue->fatal( 'readonlytext' );
-				$statusValue->value = self::AS_READ_ONLY_PAGE_LOGGED;
-			}
-		}
+        return self::CONSTRAINT_PASSED;
+    }
 
-		return $statusValue;
-	}
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            if (!$this->performer->getUser()->isRegistered()) {
+                $statusValue->setResult(false, self::AS_READ_ONLY_PAGE_ANON);
+            } else {
+                $statusValue->fatal('readonlytext');
+                $statusValue->value = self::AS_READ_ONLY_PAGE_LOGGED;
+            }
+        }
+
+        return $statusValue;
+    }
 
 }

@@ -20,92 +20,103 @@
  * @file
  */
 
-class PackedImageGallery extends TraditionalImageGallery {
-	public function __construct( $mode = 'traditional', IContextSource $context = null ) {
-		parent::__construct( $mode, $context );
-		// Does not support per row option.
-		$this->mPerRow = 0;
-	}
+class PackedImageGallery extends TraditionalImageGallery
+{
+    public function __construct($mode = 'traditional', IContextSource $context = null)
+    {
+        parent::__construct($mode, $context);
+        // Does not support per row option.
+        $this->mPerRow = 0;
+    }
 
-	/**
-	 * We artificially have 1.5 the resolution necessary so that
-	 * we can scale it up by that much on the client side, without
-	 * worrying about requesting a new image.
-	 */
-	private const SCALE_FACTOR = 1.5;
+    /**
+     * We artificially have 1.5 the resolution necessary so that
+     * we can scale it up by that much on the client side, without
+     * worrying about requesting a new image.
+     */
+    private const SCALE_FACTOR = 1.5;
 
-	protected function getVPad( $boxHeight, $thumbHeight ) {
-		return ( $this->getThumbPadding() + $boxHeight - $thumbHeight / self::SCALE_FACTOR ) / 2;
-	}
+    protected function getVPad($boxHeight, $thumbHeight)
+    {
+        return ($this->getThumbPadding() + $boxHeight - $thumbHeight / self::SCALE_FACTOR) / 2;
+    }
 
-	protected function getThumbPadding() {
-		return 0;
-	}
+    protected function getThumbPadding()
+    {
+        return 0;
+    }
 
-	protected function getGBPadding() {
-		return 2;
-	}
+    protected function getGBPadding()
+    {
+        return 2;
+    }
 
-	/**
-	 * @param File|false $img The file being transformed. May be false
-	 * @return array
-	 */
-	protected function getThumbParams( $img ) {
-		if ( $img && $img->getMediaType() === MEDIATYPE_AUDIO ) {
-			$width = $this->mWidths;
-		} else {
-			// We want the width not to be the constraining
-			// factor, so use random big number.
-			$width = $this->mHeights * 10 + 100;
-		}
+    /**
+     * @param File|false $img The file being transformed. May be false
+     * @return array
+     */
+    protected function getThumbParams($img)
+    {
+        if ($img && $img->getMediaType() === MEDIATYPE_AUDIO) {
+            $width = $this->mWidths;
+        } else {
+            // We want the width not to be the constraining
+            // factor, so use random big number.
+            $width = $this->mHeights * 10 + 100;
+        }
 
-		// self::SCALE_FACTOR so the js has some room to manipulate sizes.
-		return [
-			'width' => $width * self::SCALE_FACTOR,
-			'height' => $this->mHeights * self::SCALE_FACTOR,
-		];
-	}
+        // self::SCALE_FACTOR so the js has some room to manipulate sizes.
+        return [
+            'width'  => $width * self::SCALE_FACTOR,
+            'height' => $this->mHeights * self::SCALE_FACTOR,
+        ];
+    }
 
-	protected function getThumbDivWidth( $thumbWidth ) {
-		// Require at least 60px wide, so caption is wide enough to work.
-		if ( $thumbWidth < 60 * self::SCALE_FACTOR ) {
-			$thumbWidth = 60 * self::SCALE_FACTOR;
-		}
+    protected function getThumbDivWidth($thumbWidth)
+    {
+        // Require at least 60px wide, so caption is wide enough to work.
+        if ($thumbWidth < 60 * self::SCALE_FACTOR) {
+            $thumbWidth = 60 * self::SCALE_FACTOR;
+        }
 
-		return $thumbWidth / self::SCALE_FACTOR + $this->getThumbPadding();
-	}
+        return $thumbWidth / self::SCALE_FACTOR + $this->getThumbPadding();
+    }
 
-	/**
-	 * @param MediaTransformOutput|false $thumb The thumbnail, or false if no
-	 *   thumb (which can happen)
-	 * @return float
-	 */
-	protected function getGBWidth( $thumb ) {
-		$thumbWidth = $thumb ? $thumb->getWidth() : $this->mWidths * self::SCALE_FACTOR;
+    /**
+     * @param MediaTransformOutput|false $thumb The thumbnail, or false if no
+     *   thumb (which can happen)
+     * @return float
+     */
+    protected function getGBWidth($thumb)
+    {
+        $thumbWidth = $thumb ? $thumb->getWidth() : $this->mWidths * self::SCALE_FACTOR;
 
-		return $this->getThumbDivWidth( $thumbWidth ) + $this->getGBPadding();
-	}
+        return $this->getThumbDivWidth($thumbWidth) + $this->getGBPadding();
+    }
 
-	protected function adjustImageParameters( $thumb, &$imageParameters ) {
-		// Re-adjust back to normal size.
-		$imageParameters['override-width'] = ceil( $thumb->getWidth() / self::SCALE_FACTOR );
-		$imageParameters['override-height'] = ceil( $thumb->getHeight() / self::SCALE_FACTOR );
-	}
+    protected function adjustImageParameters($thumb, &$imageParameters)
+    {
+        // Re-adjust back to normal size.
+        $imageParameters['override-width'] = ceil($thumb->getWidth() / self::SCALE_FACTOR);
+        $imageParameters['override-height'] = ceil($thumb->getHeight() / self::SCALE_FACTOR);
+    }
 
-	/**
-	 * Add javascript which auto-justifies the rows by manipulating the image sizes.
-	 * Also ensures that the hover version of this degrades gracefully.
-	 * @return array
-	 */
-	protected function getModules() {
-		return [ 'mediawiki.page.gallery' ];
-	}
+    /**
+     * Add javascript which auto-justifies the rows by manipulating the image sizes.
+     * Also ensures that the hover version of this degrades gracefully.
+     * @return array
+     */
+    protected function getModules()
+    {
+        return ['mediawiki.page.gallery'];
+    }
 
-	/**
-	 * Do not support per-row on packed. It really doesn't work
-	 * since the images have varying widths.
-	 * @param int $num
-	 */
-	public function setPerRow( $num ) {
-	}
+    /**
+     * Do not support per-row on packed. It really doesn't work
+     * since the images have varying widths.
+     * @param int $num
+     */
+    public function setPerRow($num)
+    {
+    }
 }

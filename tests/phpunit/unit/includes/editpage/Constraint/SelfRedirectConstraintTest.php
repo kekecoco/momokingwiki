@@ -28,50 +28,55 @@ use MediaWiki\EditPage\Constraint\SelfRedirectConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\SelfRedirectConstraint
  */
-class SelfRedirectConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class SelfRedirectConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	private function getContent( $title, $isSelfRedirect ) {
-		$content = $this->createMock( Content::class );
-		$contentRedirectTarget = $this->createMock( Title::class );
-		// No $this->once() since only called for the new content
-		$content->method( 'isRedirect' )
-			->willReturn( true );
-		$content->expects( $this->once() )
-			->method( 'getRedirectTarget' )
-			->willReturn( $contentRedirectTarget );
-		$contentRedirectTarget->expects( $this->once() )
-			->method( 'equals' )
-			->with( $title )
-			->willReturn( $isSelfRedirect );
-		return $content;
-	}
+    private function getContent($title, $isSelfRedirect)
+    {
+        $content = $this->createMock(Content::class);
+        $contentRedirectTarget = $this->createMock(Title::class);
+        // No $this->once() since only called for the new content
+        $content->method('isRedirect')
+            ->willReturn(true);
+        $content->expects($this->once())
+            ->method('getRedirectTarget')
+            ->willReturn($contentRedirectTarget);
+        $contentRedirectTarget->expects($this->once())
+            ->method('equals')
+            ->with($title)
+            ->willReturn($isSelfRedirect);
 
-	public function testPass() {
-		// New content is a self redirect, but so is existing content, so no warning
-		$title = $this->createMock( Title::class );
-		$constraint = new SelfRedirectConstraint(
-			false, // $allowSelfRedirect
-			$this->getContent( $title, true ),
-			$this->getContent( $title, true ),
-			$title
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        return $content;
+    }
 
-	public function testFailure() {
-		// New content is a self redirect, but existing content is not
-		$title = $this->createMock( Title::class );
-		$constraint = new SelfRedirectConstraint(
-			false, // $allowSelfRedirect
-			$this->getContent( $title, true ),
-			$this->getContent( $title, false ),
-			$title
-		);
-		$this->assertConstraintFailed(
-			$constraint,
-			IEditConstraint::AS_SELF_REDIRECT
-		);
-	}
+    public function testPass()
+    {
+        // New content is a self redirect, but so is existing content, so no warning
+        $title = $this->createMock(Title::class);
+        $constraint = new SelfRedirectConstraint(
+            false, // $allowSelfRedirect
+            $this->getContent($title, true),
+            $this->getContent($title, true),
+            $title
+        );
+        $this->assertConstraintPassed($constraint);
+    }
+
+    public function testFailure()
+    {
+        // New content is a self redirect, but existing content is not
+        $title = $this->createMock(Title::class);
+        $constraint = new SelfRedirectConstraint(
+            false, // $allowSelfRedirect
+            $this->getContent($title, true),
+            $this->getContent($title, false),
+            $title
+        );
+        $this->assertConstraintFailed(
+            $constraint,
+            IEditConstraint::AS_SELF_REDIRECT
+        );
+    }
 
 }

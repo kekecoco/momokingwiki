@@ -23,59 +23,66 @@
  *
  * @ingroup Languages
  */
-class BanConverter extends LanguageConverterIcu {
+class BanConverter extends LanguageConverterIcu
+{
 
-	/**
-	 * Get Main language code.
-	 *
-	 * @since 1.36
-	 * @return string
-	 */
-	public function getMainCode(): string {
-		return 'ban';
-	}
+    /**
+     * Get Main language code.
+     *
+     * @return string
+     * @since 1.36
+     */
+    public function getMainCode(): string
+    {
+        return 'ban';
+    }
 
-	/**
-	 * Get supported variants of the language.
-	 *
-	 * @since 1.36
-	 * @return array
-	 */
-	public function getLanguageVariants(): array {
-		return [ 'ban', 'ban-bali', 'ban-x-dharma', 'ban-x-palmleaf', 'ban-x-pku' ];
-	}
+    /**
+     * Get supported variants of the language.
+     *
+     * @return array
+     * @since 1.36
+     */
+    public function getLanguageVariants(): array
+    {
+        return ['ban', 'ban-bali', 'ban-x-dharma', 'ban-x-palmleaf', 'ban-x-pku'];
+    }
 
-	/**
-	 * Get language variants fallbacks.
-	 *
-	 * @since 1.36
-	 * @return array
-	 */
-	public function getVariantsFallbacks(): array {
-		return [
-			'ban-bali' => 'ban',
-			'ban-x-dharma' => 'ban',
-			'ban-x-palmleaf' => 'ban',
-			'ban-x-pku' => 'ban',
-		];
-	}
+    /**
+     * Get language variants fallbacks.
+     *
+     * @return array
+     * @since 1.36
+     */
+    public function getVariantsFallbacks(): array
+    {
+        return [
+            'ban-bali'       => 'ban',
+            'ban-x-dharma'   => 'ban',
+            'ban-x-palmleaf' => 'ban',
+            'ban-x-pku'      => 'ban',
+        ];
+    }
 
-	public function getVariantNames(): array {
-		$names = [
-			'ban' => 'Basa Bali',
-			'ban-bali' => 'ᬩᬲᬩᬮᬶ',
-			'ban-x-dharma' => 'Basa Bali (alih aksara DHARMA)',
-			'ban-x-palmleaf' => 'Basa Bali (alih aksara Palmleaf.org)',
-			'ban-x-pku' => 'Basa Bali (alih aksara Puri Kauhan Ubud)',
-		];
-		return array_merge( parent::getVariantNames(), $names );
-	}
+    public function getVariantNames(): array
+    {
+        $names = [
+            'ban'            => 'Basa Bali',
+            'ban-bali'       => 'ᬩᬲᬩᬮᬶ',
+            'ban-x-dharma'   => 'Basa Bali (alih aksara DHARMA)',
+            'ban-x-palmleaf' => 'Basa Bali (alih aksara Palmleaf.org)',
+            'ban-x-pku'      => 'Basa Bali (alih aksara Puri Kauhan Ubud)',
+        ];
 
-	protected function getIcuRules() {
-		$rules = [];
+        return array_merge(parent::getVariantNames(), $names);
+    }
 
-		# transliteration rules developed for Palmleaf.org
-		$rules['ban-x-palmleaf'] = <<<'EOF'
+    protected function getIcuRules()
+    {
+        $rules = [];
+
+        # transliteration rules developed for Palmleaf.org
+        $rules['ban-x-palmleaf'] = <<<'EOF'
 ::NFC;
 
 ᬒᬁ → \uE050; # OM
@@ -674,10 +681,10 @@ $doubleDanda→'. ';
 ::NFC;
 EOF;
 
-		# transliteration rules following DHARMA project "strict transliteration"
-		# mostly follows ISO-15919, with modifications for precision and broader coverage
-		# https://hal.inria.fr/halshs-02272407/
-		$rules['ban-x-dharma'] = <<<'EOF'
+        # transliteration rules following DHARMA project "strict transliteration"
+        # mostly follows ISO-15919, with modifications for precision and broader coverage
+        # https://hal.inria.fr/halshs-02272407/
+        $rules['ban-x-dharma'] = <<<'EOF'
 ::NFC;
 
 $dv_no_rerekan = [\u1B35-\u1B44];
@@ -849,9 +856,9 @@ $c = [\u1B13-\u1B33 \u1B45-\u1B4C];
 \u1B7E → '<g type="pamadaLantang"/>';
 EOF;
 
-		# transliteration rules developed at Puri Kauhan Ubud and widely used in Bali
-		# default Balinese to Latin transliteration variant
-		$rules['ban-x-pku'] = <<<'EOF'
+        # transliteration rules developed at Puri Kauhan Ubud and widely used in Bali
+        # default Balinese to Latin transliteration variant
+        $rules['ban-x-pku'] = <<<'EOF'
 ::NFC;
 
 $dv_no_rerekan = [\u1B35-\u1B44];
@@ -1028,27 +1035,30 @@ $base ᬶᬸ → ∅;
 \u1B7E → '///';
 EOF;
 
-		return $rules;
-	}
+        return $rules;
+    }
 
-	protected function getTransliteratorAliases() {
-		return [
-			'ban' => 'ban-x-pku',
-			'ban-bali' => 'ban-x-pku',
-		];
-	}
+    protected function getTransliteratorAliases()
+    {
+        return [
+            'ban'      => 'ban-x-pku',
+            'ban-bali' => 'ban-x-pku',
+        ];
+    }
 
-	/**
-	 * Guess if a text is written in Balinese or Latin.
-	 * Overrides LanguageConverter::guessVariant()
-	 *
-	 * @param string $text The text to be checked
-	 * @param string $variant Language code of the variant to be checked for
-	 * @return bool True if $text appears to be written in $variant
-	 */
-	public function guessVariant( $text, $variant ) {
-		$hasBalinese = preg_match( "/[\x{1B00}-\x{1B7F}]/u", $text, $dummy );
-		return ( $variant == 'ban-bali' ) == $hasBalinese;
-	}
+    /**
+     * Guess if a text is written in Balinese or Latin.
+     * Overrides LanguageConverter::guessVariant()
+     *
+     * @param string $text The text to be checked
+     * @param string $variant Language code of the variant to be checked for
+     * @return bool True if $text appears to be written in $variant
+     */
+    public function guessVariant($text, $variant)
+    {
+        $hasBalinese = preg_match("/[\x{1B00}-\x{1B7F}]/u", $text, $dummy);
+
+        return ($variant == 'ban-bali') == $hasBalinese;
+    }
 
 }

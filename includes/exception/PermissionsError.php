@@ -29,60 +29,63 @@ use MediaWiki\Permissions\PermissionStatus;
  * @since 1.18
  * @ingroup Exception
  */
-class PermissionsError extends ErrorPageError {
-	public $permission, $errors;
+class PermissionsError extends ErrorPageError
+{
+    public $permission, $errors;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string|null $permission A permission name or null if unknown
-	 * @param array|PermissionStatus $errors Error message keys or [key, param...] arrays or
-	 * PermissionStatus containing an array of errors; must not be empty if $permission is null
-	 * @throws \InvalidArgumentException
-	 */
-	public function __construct( $permission, $errors = [] ) {
-		global $wgLang;
+    /**
+     * @stable to call
+     *
+     * @param string|null $permission A permission name or null if unknown
+     * @param array|PermissionStatus $errors Error message keys or [key, param...] arrays or
+     * PermissionStatus containing an array of errors; must not be empty if $permission is null
+     * @throws \InvalidArgumentException
+     */
+    public function __construct($permission, $errors = [])
+    {
+        global $wgLang;
 
-		if ( $errors instanceof PermissionStatus ) {
-			$errors = $errors->toLegacyErrorArray();
-		}
+        if ($errors instanceof PermissionStatus) {
+            $errors = $errors->toLegacyErrorArray();
+        }
 
-		if ( $permission === null && !$errors ) {
-			throw new \InvalidArgumentException( __METHOD__ .
-				': $permission and $errors cannot both be empty' );
-		}
+        if ($permission === null && !$errors) {
+            throw new \InvalidArgumentException(__METHOD__ .
+                ': $permission and $errors cannot both be empty');
+        }
 
-		$this->permission = $permission;
+        $this->permission = $permission;
 
-		if ( !count( $errors ) ) {
-			$groups = [];
-			foreach ( MediaWikiServices::getInstance()
-				->getGroupPermissionsLookup()
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Null on permission is check when used here
-				->getGroupsWithPermission( $this->permission ) as $group
-			) {
-				$groups[] = UserGroupMembership::getLink( $group, RequestContext::getMain(), 'wiki' );
-			}
+        if (!count($errors)) {
+            $groups = [];
+            foreach (MediaWikiServices::getInstance()
+                         ->getGroupPermissionsLookup()
+                         // @phan-suppress-next-line PhanTypeMismatchArgumentNullable Null on permission is check when used here
+                         ->getGroupsWithPermission($this->permission) as $group
+            ) {
+                $groups[] = UserGroupMembership::getLink($group, RequestContext::getMain(), 'wiki');
+            }
 
-			if ( $groups ) {
-				$errors[] = [ 'badaccess-groups', $wgLang->commaList( $groups ), count( $groups ) ];
-			} else {
-				$errors[] = [ 'badaccess-group0' ];
-			}
-		}
+            if ($groups) {
+                $errors[] = ['badaccess-groups', $wgLang->commaList($groups), count($groups)];
+            } else {
+                $errors[] = ['badaccess-group0'];
+            }
+        }
 
-		$this->errors = $errors;
+        $this->errors = $errors;
 
-		// Give the parent class something to work with
-		parent::__construct( 'permissionserrors', Message::newFromSpecifier( $errors[0] ) );
-	}
+        // Give the parent class something to work with
+        parent::__construct('permissionserrors', Message::newFromSpecifier($errors[0]));
+    }
 
-	public function report( $action = self::SEND_OUTPUT ) {
-		global $wgOut;
+    public function report($action = self::SEND_OUTPUT)
+    {
+        global $wgOut;
 
-		$wgOut->showPermissionsErrorPage( $this->errors, $this->permission );
-		if ( $action === self::SEND_OUTPUT ) {
-			$wgOut->output();
-		}
-	}
+        $wgOut->showPermissionsErrorPage($this->errors, $this->permission);
+        if ($action === self::SEND_OUTPUT) {
+            $wgOut->output();
+        }
+    }
 }

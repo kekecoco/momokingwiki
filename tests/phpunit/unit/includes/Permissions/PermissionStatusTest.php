@@ -27,25 +27,28 @@ use MediaWikiUnitTestCase;
 /**
  * @covers \MediaWiki\Permissions\PermissionStatus
  */
-class PermissionStatusTest extends MediaWikiUnitTestCase {
+class PermissionStatusTest extends MediaWikiUnitTestCase
+{
 
-	public function testNewEmpty() {
-		$status = PermissionStatus::newEmpty();
+    public function testNewEmpty()
+    {
+        $status = PermissionStatus::newEmpty();
 
-		$this->assertStatusOK( $status );
-		$this->assertStatusGood( $status );
-		$this->assertEmpty( $status->getErrors() );
-	}
+        $this->assertStatusOK($status);
+        $this->assertStatusGood($status);
+        $this->assertEmpty($status->getErrors());
+    }
 
-	public function testBlock() {
-		$status = PermissionStatus::newEmpty();
+    public function testBlock()
+    {
+        $status = PermissionStatus::newEmpty();
 
-		$this->assertNull( $status->getBlock() );
+        $this->assertNull($status->getBlock());
 
-		$block = $this->createMock( Block::class );
-		$status->setBlock( $block );
+        $block = $this->createMock(Block::class);
+        $status->setBlock($block);
 
-		$this->assertSame( $block, $status->getBlock() );
-	}
+        $this->assertSame($block, $status->getBlock());
+    }
 
 }

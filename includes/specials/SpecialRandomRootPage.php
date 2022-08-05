@@ -25,25 +25,27 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @file
  * @ingroup SpecialPage
  */
+class SpecialRandomRootPage extends SpecialRandomPage
+{
 
-class SpecialRandomRootPage extends SpecialRandomPage {
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param NamespaceInfo $nsInfo
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        NamespaceInfo $nsInfo
+    )
+    {
+        parent::__construct($loadBalancer, $nsInfo);
+        $this->mName = 'Randomrootpage';
+        $dbr = $loadBalancer->getConnectionRef(ILoadBalancer::DB_REPLICA);
+        $this->extra[] = 'page_title NOT ' . $dbr->buildLike($dbr->anyString(), '/', $dbr->anyString());
+    }
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param NamespaceInfo $nsInfo
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		NamespaceInfo $nsInfo
-	) {
-		parent::__construct( $loadBalancer, $nsInfo );
-		$this->mName = 'Randomrootpage';
-		$dbr = $loadBalancer->getConnectionRef( ILoadBalancer::DB_REPLICA );
-		$this->extra[] = 'page_title NOT ' . $dbr->buildLike( $dbr->anyString(), '/', $dbr->anyString() );
-	}
-
-	// Don't select redirects
-	public function isRedirect() {
-		return false;
-	}
+    // Don't select redirects
+    public function isRedirect()
+    {
+        return false;
+    }
 }

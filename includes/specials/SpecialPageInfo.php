@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Redirect from Special:Info/$1 to index.php?title=$1&action=info.
  *
@@ -21,18 +22,20 @@
  * @ingroup SpecialPage
  * @author DannyS712
  */
-class SpecialPageInfo extends SpecialRedirectWithAction {
+class SpecialPageInfo extends SpecialRedirectWithAction
+{
 
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
-	public function __construct(
-		SearchEngineFactory $searchEngineFactory
-	) {
-		parent::__construct( 'PageInfo', 'info', 'pageinfo', $searchEngineFactory );
-	}
+    /**
+     * @param SearchEngineFactory $searchEngineFactory
+     */
+    public function __construct(
+        SearchEngineFactory $searchEngineFactory
+    )
+    {
+        parent::__construct('PageInfo', 'info', 'pageinfo', $searchEngineFactory);
+    }
 
-	// Messages, for grep:
-	// specialpageinfo-page
-	// specialpageinfo-submit
+    // Messages, for grep:
+    // specialpageinfo-page
+    // specialpageinfo-submit
 }

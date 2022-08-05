@@ -27,62 +27,70 @@ use MediaWiki\Watchlist\WatchlistManager;
  *
  * @ingroup Actions
  */
-class UnwatchAction extends WatchAction {
+class UnwatchAction extends WatchAction
+{
 
-	/** @var WatchlistManager */
-	private $watchlistManager;
+    /** @var WatchlistManager */
+    private $watchlistManager;
 
-	/**
-	 * @param Page $page
-	 * @param IContextSource $context
-	 * @param WatchlistManager $watchlistManager
-	 * @param WatchedItemStore $watchedItemStore
-	 */
-	public function __construct(
-		Page $page,
-		IContextSource $context,
-		WatchlistManager $watchlistManager,
-		WatchedItemStore $watchedItemStore
-	) {
-		parent::__construct( $page, $context, $watchlistManager, $watchedItemStore );
-		$this->watchlistManager = $watchlistManager;
-	}
+    /**
+     * @param Page $page
+     * @param IContextSource $context
+     * @param WatchlistManager $watchlistManager
+     * @param WatchedItemStore $watchedItemStore
+     */
+    public function __construct(
+        Page $page,
+        IContextSource $context,
+        WatchlistManager $watchlistManager,
+        WatchedItemStore $watchedItemStore
+    )
+    {
+        parent::__construct($page, $context, $watchlistManager, $watchedItemStore);
+        $this->watchlistManager = $watchlistManager;
+    }
 
-	public function getName() {
-		return 'unwatch';
-	}
+    public function getName()
+    {
+        return 'unwatch';
+    }
 
-	public function onSubmit( $data ) {
-		$this->watchlistManager->removeWatch(
-			$this->getAuthority(),
-			$this->getTitle()
-		);
+    public function onSubmit($data)
+    {
+        $this->watchlistManager->removeWatch(
+            $this->getAuthority(),
+            $this->getTitle()
+        );
 
-		return true;
-	}
+        return true;
+    }
 
-	protected function getFormFields() {
-		return [
-			'intro' => [
-				'type' => 'info',
-				'raw' => true,
-				'default' => $this->msg( 'confirm-unwatch-top' )->parse()
-			]
-		];
-	}
+    protected function getFormFields()
+    {
+        return [
+            'intro' => [
+                'type'    => 'info',
+                'raw'     => true,
+                'default' => $this->msg('confirm-unwatch-top')->parse()
+            ]
+        ];
+    }
 
-	protected function alterForm( HTMLForm $form ) {
-		parent::alterForm( $form );
-		$form->setWrapperLegendMsg( 'removewatch' );
-		$form->setSubmitTextMsg( 'confirm-unwatch-button' );
-	}
+    protected function alterForm(HTMLForm $form)
+    {
+        parent::alterForm($form);
+        $form->setWrapperLegendMsg('removewatch');
+        $form->setSubmitTextMsg('confirm-unwatch-button');
+    }
 
-	public function onSuccess() {
-		$msgKey = $this->getTitle()->isTalkPage() ? 'removedwatchtext-talk' : 'removedwatchtext';
-		$this->getOutput()->addWikiMsg( $msgKey, $this->getTitle()->getPrefixedText() );
-	}
+    public function onSuccess()
+    {
+        $msgKey = $this->getTitle()->isTalkPage() ? 'removedwatchtext-talk' : 'removedwatchtext';
+        $this->getOutput()->addWikiMsg($msgKey, $this->getTitle()->getPrefixedText());
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 }

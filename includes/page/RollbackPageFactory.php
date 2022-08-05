@@ -30,19 +30,20 @@ use MediaWiki\User\UserIdentity;
  *
  * @since 1.37
  */
-interface RollbackPageFactory {
+interface RollbackPageFactory
+{
 
-	/**
-	 * Create a new command instance for page rollback.
-	 *
-	 * @param PageIdentity $page
-	 * @param Authority $performer
-	 * @param UserIdentity $byUser
-	 * @return RollbackPage
-	 */
-	public function newRollbackPage(
-		PageIdentity $page,
-		Authority $performer,
-		UserIdentity $byUser
-	): RollbackPage;
+    /**
+     * Create a new command instance for page rollback.
+     *
+     * @param PageIdentity $page
+     * @param Authority $performer
+     * @param UserIdentity $byUser
+     * @return RollbackPage
+     */
+    public function newRollbackPage(
+        PageIdentity $page,
+        Authority $performer,
+        UserIdentity $byUser
+    ): RollbackPage;
 }

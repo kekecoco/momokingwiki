@@ -32,15 +32,18 @@ use Monolog\Handler\BufferHandler as BaseBufferHandler;
  * until after the request has shutdown and we are no longer delaying
  * the web request.
  */
-class BufferHandler extends BaseBufferHandler {
-	/**
-	 * @inheritDoc
-	 */
-	public function handle( array $record ): bool {
-		if ( !$this->initialized ) {
-			DeferredUpdates::addCallableUpdate( [ $this, 'close' ] );
-			$this->initialized = true;
-		}
-		return parent::handle( $record );
-	}
+class BufferHandler extends BaseBufferHandler
+{
+    /**
+     * @inheritDoc
+     */
+    public function handle(array $record): bool
+    {
+        if (!$this->initialized) {
+            DeferredUpdates::addCallableUpdate([$this, 'close']);
+            $this->initialized = true;
+        }
+
+        return parent::handle($record);
+    }
 }

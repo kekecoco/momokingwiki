@@ -5,87 +5,92 @@
  *
  * @stable to extend
  */
-class HTMLSelectField extends HTMLFormField {
+class HTMLSelectField extends HTMLFormField
+{
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function validate( $value, $alldata ) {
-		$p = parent::validate( $value, $alldata );
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function validate($value, $alldata)
+    {
+        $p = parent::validate($value, $alldata);
 
-		if ( $p !== true ) {
-			return $p;
-		}
+        if ($p !== true) {
+            return $p;
+        }
 
-		$validOptions = HTMLFormField::flattenOptions( $this->getOptions() );
+        $validOptions = HTMLFormField::flattenOptions($this->getOptions());
 
-		if ( in_array( strval( $value ), $validOptions, true ) ) {
-			return true;
-		} else {
-			return $this->msg( 'htmlform-select-badoption' );
-		}
-	}
+        if (in_array(strval($value), $validOptions, true)) {
+            return true;
+        } else {
+            return $this->msg('htmlform-select-badoption');
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getInputHTML( $value ) {
-		$select = new XmlSelect( $this->mName, $this->mID, strval( $value ) );
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getInputHTML($value)
+    {
+        $select = new XmlSelect($this->mName, $this->mID, strval($value));
 
-		if ( !empty( $this->mParams['disabled'] ) ) {
-			$select->setAttribute( 'disabled', 'disabled' );
-		}
+        if (!empty($this->mParams['disabled'])) {
+            $select->setAttribute('disabled', 'disabled');
+        }
 
-		$allowedParams = [ 'tabindex', 'size' ];
-		$customParams = $this->getAttributes( $allowedParams );
-		foreach ( $customParams as $name => $value ) {
-			$select->setAttribute( $name, $value );
-		}
+        $allowedParams = ['tabindex', 'size'];
+        $customParams = $this->getAttributes($allowedParams);
+        foreach ($customParams as $name => $value) {
+            $select->setAttribute($name, $value);
+        }
 
-		if ( $this->mClass !== '' ) {
-			$select->setAttribute( 'class', $this->mClass );
-		}
+        if ($this->mClass !== '') {
+            $select->setAttribute('class', $this->mClass);
+        }
 
-		$select->addOptions( $this->getOptions() );
+        $select->addOptions($this->getOptions());
 
-		return $select->getHTML();
-	}
+        return $select->getHTML();
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getInputOOUI( $value ) {
-		$disabled = false;
-		$allowedParams = [ 'tabindex' ];
-		$attribs = OOUI\Element::configFromHtmlAttributes(
-			$this->getAttributes( $allowedParams )
-		);
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getInputOOUI($value)
+    {
+        $disabled = false;
+        $allowedParams = ['tabindex'];
+        $attribs = OOUI\Element::configFromHtmlAttributes(
+            $this->getAttributes($allowedParams)
+        );
 
-		if ( $this->mClass !== '' ) {
-			$attribs['classes'] = [ $this->mClass ];
-		}
+        if ($this->mClass !== '') {
+            $attribs['classes'] = [$this->mClass];
+        }
 
-		if ( !empty( $this->mParams['disabled'] ) ) {
-			$disabled = true;
-		}
+        if (!empty($this->mParams['disabled'])) {
+            $disabled = true;
+        }
 
-		return new OOUI\DropdownInputWidget( [
-			'name' => $this->mName,
-			'id' => $this->mID,
-			'options' => $this->getOptionsOOUI(),
-			'value' => strval( $value ),
-			'disabled' => $disabled,
-		] + $attribs );
-	}
+        return new OOUI\DropdownInputWidget([
+                'name'     => $this->mName,
+                'id'       => $this->mID,
+                'options'  => $this->getOptionsOOUI(),
+                'value'    => strval($value),
+                'disabled' => $disabled,
+            ] + $attribs);
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	protected function shouldInfuseOOUI() {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    protected function shouldInfuseOOUI()
+    {
+        return true;
+    }
 }

@@ -26,110 +26,125 @@
  *
  * @ingroup SpecialPage
  */
-class SpecialUserLogout extends FormSpecialPage {
-	/**
-	 * @var string
-	 */
-	private $oldUserName;
+class SpecialUserLogout extends FormSpecialPage
+{
+    /**
+     * @var string
+     */
+    private $oldUserName;
 
-	public function __construct() {
-		parent::__construct( 'Userlogout' );
-	}
+    public function __construct()
+    {
+        parent::__construct('Userlogout');
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	public function isListed() {
-		return false;
-	}
+    public function isListed()
+    {
+        return false;
+    }
 
-	protected function getGroupName() {
-		return 'login';
-	}
+    protected function getGroupName()
+    {
+        return 'login';
+    }
 
-	protected function getFormFields() {
-		return [];
-	}
+    protected function getFormFields()
+    {
+        return [];
+    }
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
+    protected function getDisplayFormat()
+    {
+        return 'ooui';
+    }
 
-	public function execute( $par ) {
-		$user = $this->getUser();
-		if ( $user->isAnon() ) {
-			$this->setHeaders();
-			$this->showSuccess();
-			return;
-		}
-		$this->oldUserName = $user->getName();
+    public function execute($par)
+    {
+        $user = $this->getUser();
+        if ($user->isAnon()) {
+            $this->setHeaders();
+            $this->showSuccess();
 
-		parent::execute( $par );
-	}
+            return;
+        }
+        $this->oldUserName = $user->getName();
 
-	public function alterForm( HTMLForm $form ) {
-		$form->setTokenSalt( 'logoutToken' );
-		$form->addHeaderHtml( $this->msg(
-			$this->getUser()->isTemp() ? 'userlogout-temp' : 'userlogout-continue'
-		) );
+        parent::execute($par);
+    }
 
-		$form->addHiddenFields( $this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
-	}
+    public function alterForm(HTMLForm $form)
+    {
+        $form->setTokenSalt('logoutToken');
+        $form->addHeaderHtml($this->msg(
+            $this->getUser()->isTemp() ? 'userlogout-temp' : 'userlogout-continue'
+        ));
 
-	/**
-	 * Process the form.  At this point we know that the user passes all the criteria in
-	 * userCanExecute(), and if the data array contains 'Username', etc, then Username
-	 * resets are allowed.
-	 * @param array $data
-	 * @throws MWException
-	 * @throws ThrottledError|PermissionsError
-	 * @return Status
-	 */
-	public function onSubmit( array $data ) {
-		// Make sure it's possible to log out
-		$session = MediaWiki\Session\SessionManager::getGlobalSession();
-		if ( !$session->canSetUser() ) {
-			throw new ErrorPageError(
-				'cannotlogoutnow-title',
-				'cannotlogoutnow-text',
-				[
-					$session->getProvider()->describe( $this->getLanguage() )
-				]
-			);
-		}
+        $form->addHiddenFields($this->getRequest()->getValues('returnto', 'returntoquery'));
+    }
 
-		$user = $this->getUser();
+    /**
+     * Process the form.  At this point we know that the user passes all the criteria in
+     * userCanExecute(), and if the data array contains 'Username', etc, then Username
+     * resets are allowed.
+     * @param array $data
+     * @return Status
+     * @throws ThrottledError|PermissionsError
+     * @throws MWException
+     */
+    public function onSubmit(array $data)
+    {
+        // Make sure it's possible to log out
+        $session = MediaWiki\Session\SessionManager::getGlobalSession();
+        if (!$session->canSetUser()) {
+            throw new ErrorPageError(
+                'cannotlogoutnow-title',
+                'cannotlogoutnow-text',
+                [
+                    $session->getProvider()->describe($this->getLanguage())
+                ]
+            );
+        }
 
-		$user->logout();
-		return new Status();
-	}
+        $user = $this->getUser();
 
-	public function onSuccess() {
-		$this->showSuccess();
+        $user->logout();
 
-		$out = $this->getOutput();
-		// Hook.
-		$injected_html = '';
-		$this->getHookRunner()->onUserLogoutComplete( $this->getUser(), $injected_html, $this->oldUserName );
-		$out->addHTML( $injected_html );
-	}
+        return new Status();
+    }
 
-	private function showSuccess() {
-		$loginURL = SpecialPage::getTitleFor( 'Userlogin' )->getFullURL(
-			$this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
+    public function onSuccess()
+    {
+        $this->showSuccess();
 
-		$out = $this->getOutput();
-		$out->addWikiMsg( 'logouttext', $loginURL );
+        $out = $this->getOutput();
+        // Hook.
+        $injected_html = '';
+        $this->getHookRunner()->onUserLogoutComplete($this->getUser(), $injected_html, $this->oldUserName);
+        $out->addHTML($injected_html);
+    }
 
-		$out->returnToMain();
-	}
+    private function showSuccess()
+    {
+        $loginURL = SpecialPage::getTitleFor('Userlogin')->getFullURL(
+            $this->getRequest()->getValues('returnto', 'returntoquery'));
 
-	/**
-	 * Let blocked users to log out and come back with their sockpuppets
-	 * @return bool
-	 */
-	public function requiresUnblock() {
-		return false;
-	}
+        $out = $this->getOutput();
+        $out->addWikiMsg('logouttext', $loginURL);
+
+        $out->returnToMain();
+    }
+
+    /**
+     * Let blocked users to log out and come back with their sockpuppets
+     * @return bool
+     */
+    public function requiresUnblock()
+    {
+        return false;
+    }
 }

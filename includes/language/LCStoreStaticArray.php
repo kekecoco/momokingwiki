@@ -26,142 +26,154 @@ use Wikimedia\StaticArrayWriter;
  * @since 1.26
  * @ingroup Language
  */
-class LCStoreStaticArray implements LCStore {
-	/** @var string|null Current language code. */
-	private $currentLang = null;
+class LCStoreStaticArray implements LCStore
+{
+    /** @var string|null Current language code. */
+    private $currentLang = null;
 
-	/** @var array Localisation data. */
-	private $data = [];
+    /** @var array Localisation data. */
+    private $data = [];
 
-	/** @var string|null File name. */
-	private $fname = null;
+    /** @var string|null File name. */
+    private $fname = null;
 
-	/** @var string Directory for cache files. */
-	private $directory;
+    /** @var string Directory for cache files. */
+    private $directory;
 
-	public function __construct( $conf = [] ) {
-		$this->directory = $conf['directory'];
-	}
+    public function __construct($conf = [])
+    {
+        $this->directory = $conf['directory'];
+    }
 
-	public function startWrite( $code ) {
-		if ( !is_dir( $this->directory ) && !wfMkdirParents( $this->directory, null, __METHOD__ ) ) {
-			throw new MWException( "Unable to create the localisation store " .
-				"directory \"{$this->directory}\"" );
-		}
+    public function startWrite($code)
+    {
+        if (!is_dir($this->directory) && !wfMkdirParents($this->directory, null, __METHOD__)) {
+            throw new MWException("Unable to create the localisation store " .
+                "directory \"{$this->directory}\"");
+        }
 
-		$this->currentLang = $code;
-		$this->fname = $this->directory . '/' . $code . '.l10n.php';
-		$this->data[$code] = [];
-		if ( is_file( $this->fname ) ) {
-			$this->data[$code] = require $this->fname;
-		}
-	}
+        $this->currentLang = $code;
+        $this->fname = $this->directory . '/' . $code . '.l10n.php';
+        $this->data[$code] = [];
+        if (is_file($this->fname)) {
+            $this->data[$code] = require $this->fname;
+        }
+    }
 
-	public function set( $key, $value ) {
-		$this->data[$this->currentLang][$key] = self::encode( $value );
-	}
+    public function set($key, $value)
+    {
+        $this->data[$this->currentLang][$key] = self::encode($value);
+    }
 
-	/**
-	 * Determine whether this array contains only scalar values.
-	 *
-	 * @param array $arr
-	 * @return bool
-	 */
-	private static function isValueArray( array $arr ) {
-		foreach ( $arr as $key => $value ) {
-			if ( is_scalar( $value )
-				|| $value === null
-				|| ( is_array( $value ) && self::isValueArray( $value ) )
-			) {
-				continue;
-			}
-			return false;
-		}
-		return true;
-	}
+    /**
+     * Determine whether this array contains only scalar values.
+     *
+     * @param array $arr
+     * @return bool
+     */
+    private static function isValueArray(array $arr)
+    {
+        foreach ($arr as $key => $value) {
+            if (is_scalar($value)
+                || $value === null
+                || (is_array($value) && self::isValueArray($value))
+            ) {
+                continue;
+            }
 
-	/**
-	 * Encodes a value into an array format
-	 *
-	 * @param mixed $value
-	 * @return array|mixed
-	 * @throws RuntimeException
-	 */
-	public static function encode( $value ) {
-		if ( is_array( $value ) && self::isValueArray( $value ) ) {
-			// Type: scalar [v]alue.
-			// Optimization: Write large arrays as one value to avoid recursive decoding cost.
-			return [ 'v', $value ];
-		}
-		if ( is_array( $value ) || is_object( $value ) ) {
-			// Type: [s]serialized.
-			// Optimization: Avoid recursive decoding cost. Write arrays with an objects
-			// as one serialised value.
-			return [ 's', serialize( $value ) ];
-		}
-		if ( is_scalar( $value ) || $value === null ) {
-			// Optimization: Reduce file size by not wrapping scalar values.
-			return $value;
-		}
+            return false;
+        }
 
-		throw new RuntimeException( 'Cannot encode ' . var_export( $value, true ) );
-	}
+        return true;
+    }
 
-	/**
-	 * Decode something that was encoded with encode
-	 *
-	 * @param mixed $encoded
-	 * @return array|mixed
-	 * @throws RuntimeException
-	 */
-	public static function decode( $encoded ) {
-		if ( !is_array( $encoded ) ) {
-			// Unwrapped scalar value
-			return $encoded;
-		}
+    /**
+     * Encodes a value into an array format
+     *
+     * @param mixed $value
+     * @return array|mixed
+     * @throws RuntimeException
+     */
+    public static function encode($value)
+    {
+        if (is_array($value) && self::isValueArray($value)) {
+            // Type: scalar [v]alue.
+            // Optimization: Write large arrays as one value to avoid recursive decoding cost.
+            return ['v', $value];
+        }
+        if (is_array($value) || is_object($value)) {
+            // Type: [s]serialized.
+            // Optimization: Avoid recursive decoding cost. Write arrays with an objects
+            // as one serialised value.
+            return ['s', serialize($value)];
+        }
+        if (is_scalar($value) || $value === null) {
+            // Optimization: Reduce file size by not wrapping scalar values.
+            return $value;
+        }
 
-		list( $type, $data ) = $encoded;
+        throw new RuntimeException('Cannot encode ' . var_export($value, true));
+    }
 
-		switch ( $type ) {
-			case 'v':
-				// Value array (1.35+) or unwrapped scalar value (1.32 and earlier)
-				return $data;
-			case 's':
-				return unserialize( $data );
-			case 'a':
-				// Support: MediaWiki 1.34 and earlier (older file format)
-				return array_map( [ __CLASS__, 'decode' ], $data );
-			default:
-				throw new RuntimeException(
-					'Unable to decode ' . var_export( $encoded, true ) );
-		}
-	}
+    /**
+     * Decode something that was encoded with encode
+     *
+     * @param mixed $encoded
+     * @return array|mixed
+     * @throws RuntimeException
+     */
+    public static function decode($encoded)
+    {
+        if (!is_array($encoded)) {
+            // Unwrapped scalar value
+            return $encoded;
+        }
 
-	public function finishWrite() {
-		$writer = new StaticArrayWriter();
-		$out = $writer->create(
-			$this->data[$this->currentLang],
-			'Generated by LCStoreStaticArray.php -- do not edit!'
-		);
-		file_put_contents( $this->fname, $out );
-		// Release the data to manage the memory in rebuildLocalisationCache
-		unset( $this->data[$this->currentLang] );
-		$this->currentLang = null;
-		$this->fname = null;
-	}
+        [$type, $data] = $encoded;
 
-	public function get( $code, $key ) {
-		if ( !array_key_exists( $code, $this->data ) ) {
-			$fname = $this->directory . '/' . $code . '.l10n.php';
-			if ( !is_file( $fname ) ) {
-				return null;
-			}
-			$this->data[$code] = require $fname;
-		}
-		$data = $this->data[$code];
-		if ( array_key_exists( $key, $data ) ) {
-			return self::decode( $data[$key] );
-		}
-		return null;
-	}
+        switch ($type) {
+            case 'v':
+                // Value array (1.35+) or unwrapped scalar value (1.32 and earlier)
+                return $data;
+            case 's':
+                return unserialize($data);
+            case 'a':
+                // Support: MediaWiki 1.34 and earlier (older file format)
+                return array_map([__CLASS__, 'decode'], $data);
+            default:
+                throw new RuntimeException(
+                    'Unable to decode ' . var_export($encoded, true));
+        }
+    }
+
+    public function finishWrite()
+    {
+        $writer = new StaticArrayWriter();
+        $out = $writer->create(
+            $this->data[$this->currentLang],
+            'Generated by LCStoreStaticArray.php -- do not edit!'
+        );
+        file_put_contents($this->fname, $out);
+        // Release the data to manage the memory in rebuildLocalisationCache
+        unset($this->data[$this->currentLang]);
+        $this->currentLang = null;
+        $this->fname = null;
+    }
+
+    public function get($code, $key)
+    {
+        if (!array_key_exists($code, $this->data)) {
+            $fname = $this->directory . '/' . $code . '.l10n.php';
+            if (!is_file($fname)) {
+                return null;
+            }
+            $this->data[$code] = require $fname;
+        }
+        $data = $this->data[$code];
+        if (array_key_exists($key, $data)) {
+            return self::decode($data[$key]);
+        }
+
+        return null;
+    }
 }

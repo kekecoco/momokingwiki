@@ -28,13 +28,15 @@ use MediaWiki\MediaWikiServices;
 /**
  * @ingroup Dump
  */
-class DumpNotalkFilter extends DumpFilter {
-	/**
-	 * @param stdClass $page
-	 * @return bool
-	 */
-	protected function pass( $page ) {
-		return !MediaWikiServices::getInstance()->getNamespaceInfo()->
-			isTalk( $page->page_namespace );
-	}
+class DumpNotalkFilter extends DumpFilter
+{
+    /**
+     * @param stdClass $page
+     * @return bool
+     */
+    protected function pass($page)
+    {
+        return !MediaWikiServices::getInstance()->getNamespaceInfo()->
+        isTalk($page->page_namespace);
+    }
 }

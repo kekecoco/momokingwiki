@@ -28,9 +28,11 @@ use MediaWiki\Auth\PasswordAuthenticationRequest;
  *
  * @ingroup SpecialPage
  */
-class SpecialChangePassword extends SpecialRedirectToSpecial {
-	public function __construct() {
-		parent::__construct( 'ChangePassword', 'ChangeCredentials',
-			PasswordAuthenticationRequest::class, [ 'returnto', 'returntoquery' ] );
-	}
+class SpecialChangePassword extends SpecialRedirectToSpecial
+{
+    public function __construct()
+    {
+        parent::__construct('ChangePassword', 'ChangeCredentials',
+            PasswordAuthenticationRequest::class, ['returnto', 'returntoquery']);
+    }
 }

@@ -18,111 +18,122 @@ use Wikimedia\Assert\Assert;
  * - /page/{title}
  * - /page/{title}/bare
  */
-class PageSourceHandler extends SimpleHandler {
+class PageSourceHandler extends SimpleHandler
+{
 
-	/** @var TitleFormatter */
-	private $titleFormatter;
+    /** @var TitleFormatter */
+    private $titleFormatter;
 
-	/** @var PageContentHelper */
-	private $contentHelper;
+    /** @var PageContentHelper */
+    private $contentHelper;
 
-	public function __construct(
-		Config $config,
-		RevisionLookup $revisionLookup,
-		TitleFormatter $titleFormatter,
-		PageLookup $pageLookup
-	) {
-		$this->titleFormatter = $titleFormatter;
-		$this->contentHelper = new PageContentHelper(
-			$config,
-			$revisionLookup,
-			$titleFormatter,
-			$pageLookup
-		);
-	}
+    public function __construct(
+        Config $config,
+        RevisionLookup $revisionLookup,
+        TitleFormatter $titleFormatter,
+        PageLookup $pageLookup
+    )
+    {
+        $this->titleFormatter = $titleFormatter;
+        $this->contentHelper = new PageContentHelper(
+            $config,
+            $revisionLookup,
+            $titleFormatter,
+            $pageLookup
+        );
+    }
 
-	protected function postValidationSetup() {
-		$this->contentHelper->init( $this->getAuthority(), $this->getValidatedParams() );
-	}
+    protected function postValidationSetup()
+    {
+        $this->contentHelper->init($this->getAuthority(), $this->getValidatedParams());
+    }
 
-	/**
-	 * @param PageReference $page
-	 * @return string
-	 */
-	private function constructHtmlUrl( PageReference $page ): string {
-		return $this->getRouter()->getRouteUrl(
-			'/v1/page/{title}/html',
-			[ 'title' => $this->titleFormatter->getPrefixedText( $page ) ]
-		);
-	}
+    /**
+     * @param PageReference $page
+     * @return string
+     */
+    private function constructHtmlUrl(PageReference $page): string
+    {
+        return $this->getRouter()->getRouteUrl(
+            '/v1/page/{title}/html',
+            ['title' => $this->titleFormatter->getPrefixedText($page)]
+        );
+    }
 
-	/**
-	 * @return Response
-	 * @throws LocalizedHttpException
-	 */
-	public function run(): Response {
-		$this->contentHelper->checkAccess();
+    /**
+     * @return Response
+     * @throws LocalizedHttpException
+     */
+    public function run(): Response
+    {
+        $this->contentHelper->checkAccess();
 
-		$page = $this->contentHelper->getPage();
+        $page = $this->contentHelper->getPage();
 
-		// The call to $this->contentHelper->getPage() should not return null if
-		// $this->contentHelper->checkAccess() did not throw.
-		Assert::invariant( $page !== null, 'Page should be known' );
+        // The call to $this->contentHelper->getPage() should not return null if
+        // $this->contentHelper->checkAccess() did not throw.
+        Assert::invariant($page !== null, 'Page should be known');
 
-		$outputMode = $this->getOutputMode();
-		switch ( $outputMode ) {
-			case 'bare':
-				$body = $this->contentHelper->constructMetadata();
-				$body['html_url'] = $this->constructHtmlUrl( $page );
-				break;
-			case 'source':
-				$content = $this->contentHelper->getContent();
-				$body = $this->contentHelper->constructMetadata();
-				$body['source'] = $content->getText();
-				break;
-			default:
-				throw new LogicException( "Unknown HTML type $outputMode" );
-		}
+        $outputMode = $this->getOutputMode();
+        switch ($outputMode) {
+            case 'bare':
+                $body = $this->contentHelper->constructMetadata();
+                $body['html_url'] = $this->constructHtmlUrl($page);
+                break;
+            case 'source':
+                $content = $this->contentHelper->getContent();
+                $body = $this->contentHelper->constructMetadata();
+                $body['source'] = $content->getText();
+                break;
+            default:
+                throw new LogicException("Unknown HTML type $outputMode");
+        }
 
-		$response = $this->getResponseFactory()->createJson( $body );
-		$this->contentHelper->setCacheControl( $response );
+        $response = $this->getResponseFactory()->createJson($body);
+        $this->contentHelper->setCacheControl($response);
 
-		return $response;
-	}
+        return $response;
+    }
 
-	/**
-	 * Returns an ETag representing a page's source. The ETag assumes a page's source has changed
-	 * if the latest revision of a page has been made private, un-readable for another reason,
-	 * or a newer revision exists.
-	 * @return string|null
-	 */
-	protected function getETag(): ?string {
-		return $this->contentHelper->getETag();
-	}
+    /**
+     * Returns an ETag representing a page's source. The ETag assumes a page's source has changed
+     * if the latest revision of a page has been made private, un-readable for another reason,
+     * or a newer revision exists.
+     * @return string|null
+     */
+    protected function getETag(): ?string
+    {
+        return $this->contentHelper->getETag();
+    }
 
-	/**
-	 * @return string|null
-	 */
-	protected function getLastModified(): ?string {
-		return $this->contentHelper->getLastModified();
-	}
+    /**
+     * @return string|null
+     */
+    protected function getLastModified(): ?string
+    {
+        return $this->contentHelper->getLastModified();
+    }
 
-	private function getOutputMode(): string {
-		return $this->getConfig()['format'];
-	}
+    private function getOutputMode(): string
+    {
+        return $this->getConfig()['format'];
+    }
 
-	public function needsWriteAccess(): bool {
-		return false;
-	}
+    public function needsWriteAccess(): bool
+    {
+        return false;
+    }
 
-	public function getParamSettings(): array {
-		return $this->contentHelper->getParamSettings();
-	}
+    public function getParamSettings(): array
+    {
+        return $this->contentHelper->getParamSettings();
+    }
 
-	/**
-	 * @return bool
-	 */
-	protected function hasRepresentation() {
-		return $this->contentHelper->hasContent();
-	}
+    /**
+     * @return bool
+     */
+    protected function hasRepresentation()
+    {
+        return $this->contentHelper->hasContent();
+    }
 }

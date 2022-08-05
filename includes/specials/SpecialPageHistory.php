@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Redirect from Special:History/$1 to index.php?title=$1&action=history.
  *
@@ -21,18 +22,20 @@
  * @ingroup SpecialPage
  * @author DannyS712
  */
-class SpecialPageHistory extends SpecialRedirectWithAction {
+class SpecialPageHistory extends SpecialRedirectWithAction
+{
 
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
-	public function __construct(
-		SearchEngineFactory $searchEngineFactory
-	) {
-		parent::__construct( 'PageHistory', 'history', 'pagehistory', $searchEngineFactory );
-	}
+    /**
+     * @param SearchEngineFactory $searchEngineFactory
+     */
+    public function __construct(
+        SearchEngineFactory $searchEngineFactory
+    )
+    {
+        parent::__construct('PageHistory', 'history', 'pagehistory', $searchEngineFactory);
+    }
 
-	// Messages, for grep:
-	// specialpagehistory-page
-	// specialpagehistory-submit
+    // Messages, for grep:
+    // specialpagehistory-page
+    // specialpagehistory-submit
 }

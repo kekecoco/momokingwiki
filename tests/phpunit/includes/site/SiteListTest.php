@@ -26,212 +26,224 @@
  *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-class SiteListTest extends MediaWikiIntegrationTestCase {
+class SiteListTest extends MediaWikiIntegrationTestCase
+{
 
-	/**
-	 * Returns instances of SiteList implementing objects.
-	 * @return array
-	 */
-	public function siteListProvider() {
-		$sitesArrays = $this->siteArrayProvider();
+    /**
+     * Returns instances of SiteList implementing objects.
+     * @return array
+     */
+    public function siteListProvider()
+    {
+        $sitesArrays = $this->siteArrayProvider();
 
-		$listInstances = [];
+        $listInstances = [];
 
-		foreach ( $sitesArrays as $sitesArray ) {
-			$listInstances[] = new SiteList( $sitesArray[0] );
-		}
+        foreach ($sitesArrays as $sitesArray) {
+            $listInstances[] = new SiteList($sitesArray[0]);
+        }
 
-		return $this->arrayWrap( $listInstances );
-	}
+        return $this->arrayWrap($listInstances);
+    }
 
-	/**
-	 * Returns arrays with instances of Site implementing objects.
-	 * @return array
-	 */
-	public function siteArrayProvider() {
-		$sites = TestSites::getSites();
+    /**
+     * Returns arrays with instances of Site implementing objects.
+     * @return array
+     */
+    public function siteArrayProvider()
+    {
+        $sites = TestSites::getSites();
 
-		$siteArrays = [];
+        $siteArrays = [];
 
-		$siteArrays[] = $sites;
+        $siteArrays[] = $sites;
 
-		$siteArrays[] = [ array_shift( $sites ) ];
+        $siteArrays[] = [array_shift($sites)];
 
-		$siteArrays[] = [ array_shift( $sites ), array_shift( $sites ) ];
+        $siteArrays[] = [array_shift($sites), array_shift($sites)];
 
-		return $this->arrayWrap( $siteArrays );
-	}
+        return $this->arrayWrap($siteArrays);
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::isEmpty
-	 */
-	public function testIsEmpty( SiteList $sites ) {
-		$this->assertEquals( count( $sites ) === 0, $sites->isEmpty() );
-	}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::isEmpty
+     */
+    public function testIsEmpty(SiteList $sites)
+    {
+        $this->assertEquals(count($sites) === 0, $sites->isEmpty());
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::getSite
-	 */
-	public function testGetSiteByGlobalId( SiteList $sites ) {
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			$this->assertEquals( $site, $sites->getSite( $site->getGlobalId() ) );
-		}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::getSite
+     */
+    public function testGetSiteByGlobalId(SiteList $sites)
+    {
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            $this->assertEquals($site, $sites->getSite($site->getGlobalId()));
+        }
 
-		$this->assertTrue( true );
-	}
+        $this->assertTrue(true);
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::getSiteByInternalId
-	 */
-	public function testGetSiteByInternalId( $sites ) {
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			if ( is_int( $site->getInternalId() ) ) {
-				$this->assertEquals( $site, $sites->getSiteByInternalId( $site->getInternalId() ) );
-			}
-		}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::getSiteByInternalId
+     */
+    public function testGetSiteByInternalId($sites)
+    {
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            if (is_int($site->getInternalId())) {
+                $this->assertEquals($site, $sites->getSiteByInternalId($site->getInternalId()));
+            }
+        }
 
-		$this->assertTrue( true );
-	}
+        $this->assertTrue(true);
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::getSiteByNavigationId
-	 */
-	public function testGetSiteByNavigationId( $sites ) {
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			$ids = $site->getNavigationIds();
-			foreach ( $ids as $navId ) {
-				$this->assertEquals( $site, $sites->getSiteByNavigationId( $navId ) );
-			}
-		}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::getSiteByNavigationId
+     */
+    public function testGetSiteByNavigationId($sites)
+    {
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            $ids = $site->getNavigationIds();
+            foreach ($ids as $navId) {
+                $this->assertEquals($site, $sites->getSiteByNavigationId($navId));
+            }
+        }
 
-		$this->assertTrue( true );
-	}
+        $this->assertTrue(true);
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::hasSite
-	 */
-	public function testHasGlobalId( $sites ) {
-		$this->assertFalse( $sites->hasSite( 'non-existing-global-id' ) );
-		$this->assertFalse( $sites->hasInternalId( 720101010 ) );
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::hasSite
+     */
+    public function testHasGlobalId($sites)
+    {
+        $this->assertFalse($sites->hasSite('non-existing-global-id'));
+        $this->assertFalse($sites->hasInternalId(720101010));
 
-		if ( !$sites->isEmpty() ) {
-			/**
-			 * @var Site $site
-			 */
-			foreach ( $sites as $site ) {
-				$this->assertTrue( $sites->hasSite( $site->getGlobalId() ) );
-			}
-		}
-	}
+        if (!$sites->isEmpty()) {
+            /**
+             * @var Site $site
+             */
+            foreach ($sites as $site) {
+                $this->assertTrue($sites->hasSite($site->getGlobalId()));
+            }
+        }
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::hasInternalId
-	 */
-	public function testHasInternallId( $sites ) {
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			if ( is_int( $site->getInternalId() ) ) {
-				$this->assertTrue( $site, $sites->hasInternalId( $site->getInternalId() ) );
-			}
-		}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::hasInternalId
+     */
+    public function testHasInternallId($sites)
+    {
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            if (is_int($site->getInternalId())) {
+                $this->assertTrue($site, $sites->hasInternalId($site->getInternalId()));
+            }
+        }
 
-		$this->assertFalse( $sites->hasInternalId( -1 ) );
-	}
+        $this->assertFalse($sites->hasInternalId(-1));
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::hasNavigationId
-	 */
-	public function testHasNavigationId( $sites ) {
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			$ids = $site->getNavigationIds();
-			foreach ( $ids as $navId ) {
-				$this->assertTrue( $sites->hasNavigationId( $navId ) );
-			}
-		}
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::hasNavigationId
+     */
+    public function testHasNavigationId($sites)
+    {
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            $ids = $site->getNavigationIds();
+            foreach ($ids as $navId) {
+                $this->assertTrue($sites->hasNavigationId($navId));
+            }
+        }
 
-		$this->assertFalse( $sites->hasNavigationId( 'non-existing-navigation-id' ) );
-	}
+        $this->assertFalse($sites->hasNavigationId('non-existing-navigation-id'));
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 * @param SiteList $sites
-	 * @covers SiteList::getGlobalIdentifiers
-	 */
-	public function testGetGlobalIdentifiers( SiteList $sites ) {
-		$identifiers = $sites->getGlobalIdentifiers();
+    /**
+     * @dataProvider siteListProvider
+     * @param SiteList $sites
+     * @covers       SiteList::getGlobalIdentifiers
+     */
+    public function testGetGlobalIdentifiers(SiteList $sites)
+    {
+        $identifiers = $sites->getGlobalIdentifiers();
 
-		$this->assertIsArray( $identifiers );
+        $this->assertIsArray($identifiers);
 
-		$expected = [];
+        $expected = [];
 
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $sites as $site ) {
-			$expected[] = $site->getGlobalId();
-		}
+        /**
+         * @var Site $site
+         */
+        foreach ($sites as $site) {
+            $expected[] = $site->getGlobalId();
+        }
 
-		$this->assertArrayEquals( $expected, $identifiers );
-	}
+        $this->assertArrayEquals($expected, $identifiers);
+    }
 
-	/**
-	 * @dataProvider siteListProvider
-	 *
-	 * @since 1.21
-	 *
-	 * @param SiteList $list
-	 * @covers SiteList::getSerializationData
-	 * @covers SiteList::unserialize
-	 */
-	public function testSerialization( SiteList $list ) {
-		$serialization = serialize( $list );
-		/**
-		 * @var SiteList $copy
-		 */
-		$copy = unserialize( $serialization );
+    /**
+     * @dataProvider siteListProvider
+     *
+     * @param SiteList $list
+     * @covers       SiteList::getSerializationData
+     * @covers       SiteList::unserialize
+     * @since 1.21
+     *
+     */
+    public function testSerialization(SiteList $list)
+    {
+        $serialization = serialize($list);
+        /**
+         * @var SiteList $copy
+         */
+        $copy = unserialize($serialization);
 
-		$this->assertArrayEquals( $list->getGlobalIdentifiers(), $copy->getGlobalIdentifiers() );
+        $this->assertArrayEquals($list->getGlobalIdentifiers(), $copy->getGlobalIdentifiers());
 
-		/**
-		 * @var Site $site
-		 */
-		foreach ( $list as $site ) {
-			$this->assertTrue( $copy->hasInternalId( $site->getInternalId() ) );
+        /**
+         * @var Site $site
+         */
+        foreach ($list as $site) {
+            $this->assertTrue($copy->hasInternalId($site->getInternalId()));
 
-			foreach ( $site->getNavigationIds() as $navId ) {
-				$this->assertTrue(
-					$copy->hasNavigationId( $navId ),
-					'unserialized data expects nav id ' . $navId . ' for site ' . $site->getGlobalId()
-				);
-			}
-		}
-	}
+            foreach ($site->getNavigationIds() as $navId) {
+                $this->assertTrue(
+                    $copy->hasNavigationId($navId),
+                    'unserialized data expects nav id ' . $navId . ' for site ' . $site->getGlobalId()
+                );
+            }
+        }
+    }
 }

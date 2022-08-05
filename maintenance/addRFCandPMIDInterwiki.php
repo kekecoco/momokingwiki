@@ -30,68 +30,73 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @since 1.28
  */
-class AddRFCandPMIDInterwiki extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Add RFC and PMID to the interwiki database table' );
-	}
+class AddRFCandPMIDInterwiki extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Add RFC and PMID to the interwiki database table');
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function updateSkippedMessage() {
-		return 'RFC and PMID already added to interwiki database table.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'RFC and PMID already added to interwiki database table.';
+    }
 
-	protected function doDBUpdates() {
-		$interwikiCache = $this->getConfig()->get( MainConfigNames::InterwikiCache );
-		// Using something other than the database,
-		if ( $interwikiCache !== false ) {
-			return true;
-		}
-		$dbw = $this->getDB( DB_PRIMARY );
+    protected function doDBUpdates()
+    {
+        $interwikiCache = $this->getConfig()->get(MainConfigNames::InterwikiCache);
+        // Using something other than the database,
+        if ($interwikiCache !== false) {
+            return true;
+        }
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		$rfc = $dbw->newSelectQueryBuilder()
-			->select( 'iw_url' )
-			->from( 'interwiki' )
-			->where( [ 'iw_prefix' => 'rfc' ] )
-			->caller( __METHOD__ )
-			->fetchField();
+        $rfc = $dbw->newSelectQueryBuilder()
+            ->select('iw_url')
+            ->from('interwiki')
+            ->where(['iw_prefix' => 'rfc'])
+            ->caller(__METHOD__)
+            ->fetchField();
 
-		// Old pre-1.28 default value, or not set at all
-		if ( $rfc === false || $rfc === 'http://www.rfc-editor.org/rfc/rfc$1.txt' ) {
-			$dbw->replace(
-				'interwiki',
-				[ [ 'iw_prefix' ] ],
-				[
-					'iw_prefix' => 'rfc',
-					'iw_url' => 'https://tools.ietf.org/html/rfc$1',
-					'iw_api' => '',
-					'iw_wikiid' => '',
-					'iw_local' => 0,
-				],
-				__METHOD__
-			);
-		}
+        // Old pre-1.28 default value, or not set at all
+        if ($rfc === false || $rfc === 'http://www.rfc-editor.org/rfc/rfc$1.txt') {
+            $dbw->replace(
+                'interwiki',
+                [['iw_prefix']],
+                [
+                    'iw_prefix' => 'rfc',
+                    'iw_url'    => 'https://tools.ietf.org/html/rfc$1',
+                    'iw_api'    => '',
+                    'iw_wikiid' => '',
+                    'iw_local'  => 0,
+                ],
+                __METHOD__
+            );
+        }
 
-		$dbw->insert(
-			'interwiki',
-			[
-				'iw_prefix' => 'pmid',
-				'iw_url' => 'https://www.ncbi.nlm.nih.gov/pubmed/$1?dopt=Abstract',
-				'iw_api' => '',
-				'iw_wikiid' => '',
-				'iw_local' => 0,
-			],
-			__METHOD__,
-			// If there's already a pmid interwiki link, don't
-			// overwrite it
-			[ 'IGNORE' ]
-		);
+        $dbw->insert(
+            'interwiki',
+            [
+                'iw_prefix' => 'pmid',
+                'iw_url'    => 'https://www.ncbi.nlm.nih.gov/pubmed/$1?dopt=Abstract',
+                'iw_api'    => '',
+                'iw_wikiid' => '',
+                'iw_local'  => 0,
+            ],
+            __METHOD__,
+            // If there's already a pmid interwiki link, don't
+            // overwrite it
+            ['IGNORE']
+        );
 
-		return true;
-	}
+        return true;
+    }
 }
 
 $maintClass = AddRFCandPMIDInterwiki::class;

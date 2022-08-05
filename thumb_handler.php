@@ -28,8 +28,8 @@
  * @ingroup Media
  */
 
-define( 'THUMB_HANDLER', true );
-define( 'MW_ENTRY_POINT', 'thumb_handler' );
+define('THUMB_HANDLER', true);
+define('MW_ENTRY_POINT', 'thumb_handler');
 
 // Execute thumb.php, having set THUMB_HANDLER so that
 // it knows to extract params from a thumbnail file URL.

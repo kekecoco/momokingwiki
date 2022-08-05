@@ -32,53 +32,56 @@ use Wikimedia\Rdbms\IDatabase;
  * @author Zabe
  * @since 1.38
  */
-class WikiExporterFactory {
-	/** @var HookContainer */
-	private $hookContainer;
+class WikiExporterFactory
+{
+    /** @var HookContainer */
+    private $hookContainer;
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/** @var TitleParser */
-	private $titleParser;
+    /** @var TitleParser */
+    private $titleParser;
 
-	/**
-	 * @param HookContainer $hookContainer
-	 * @param RevisionStore $revisionStore
-	 * @param TitleParser $titleParser
-	 */
-	public function __construct(
-		HookContainer $hookContainer,
-		RevisionStore $revisionStore,
-		TitleParser $titleParser
-	) {
-		$this->hookContainer = $hookContainer;
-		$this->revisionStore = $revisionStore;
-		$this->titleParser = $titleParser;
-	}
+    /**
+     * @param HookContainer $hookContainer
+     * @param RevisionStore $revisionStore
+     * @param TitleParser $titleParser
+     */
+    public function __construct(
+        HookContainer $hookContainer,
+        RevisionStore $revisionStore,
+        TitleParser $titleParser
+    )
+    {
+        $this->hookContainer = $hookContainer;
+        $this->revisionStore = $revisionStore;
+        $this->titleParser = $titleParser;
+    }
 
-	/**
-	 * @param IDatabase $db
-	 * @param int|array $history
-	 * @param int $text
-	 * @param null|array $limitNamespaces
-	 *
-	 * @return WikiExporter
-	 */
-	public function getWikiExporter(
-		IDatabase $db,
-		$history = WikiExporter::CURRENT,
-		$text = WikiExporter::TEXT,
-		$limitNamespaces = null
-	): WikiExporter {
-		return new WikiExporter(
-			$db,
-			$this->hookContainer,
-			$this->revisionStore,
-			$this->titleParser,
-			$history,
-			$text,
-			$limitNamespaces
-		);
-	}
+    /**
+     * @param IDatabase $db
+     * @param int|array $history
+     * @param int $text
+     * @param null|array $limitNamespaces
+     *
+     * @return WikiExporter
+     */
+    public function getWikiExporter(
+        IDatabase $db,
+        $history = WikiExporter::CURRENT,
+        $text = WikiExporter::TEXT,
+        $limitNamespaces = null
+    ): WikiExporter
+    {
+        return new WikiExporter(
+            $db,
+            $this->hookContainer,
+            $this->revisionStore,
+            $this->titleParser,
+            $history,
+            $text,
+            $limitNamespaces
+        );
+    }
 }

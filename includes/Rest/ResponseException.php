@@ -14,28 +14,31 @@ namespace MediaWiki\Rest;
  * @newable
  * @since 1.36
  */
-class ResponseException extends HttpException {
+class ResponseException extends HttpException
+{
 
-	/**
-	 * The wrapped Response.
-	 * @var Response
-	 */
-	private $response;
+    /**
+     * The wrapped Response.
+     * @var Response
+     */
+    private $response;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param Response $response The wrapped Response
-	 */
-	public function __construct( Response $response ) {
-		parent::__construct( 'Response', $response->getStatusCode() );
-		$this->response = $response;
-	}
+    /**
+     * @stable to call
+     *
+     * @param Response $response The wrapped Response
+     */
+    public function __construct(Response $response)
+    {
+        parent::__construct('Response', $response->getStatusCode());
+        $this->response = $response;
+    }
 
-	/**
-	 * @return Response
-	 */
-	public function getResponse(): Response {
-		return $this->response;
-	}
+    /**
+     * @return Response
+     */
+    public function getResponse(): Response
+    {
+        return $this->response;
+    }
 }

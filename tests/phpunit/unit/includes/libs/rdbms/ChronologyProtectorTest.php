@@ -27,54 +27,57 @@ use Wikimedia\Rdbms\ChronologyProtector;
  * @covers \Wikimedia\Rdbms\ChronologyProtector::__construct
  * @covers \Wikimedia\Rdbms\ChronologyProtector::getClientId
  */
-class ChronologyProtectorTest extends PHPUnit\Framework\TestCase {
-	/**
-	 * @dataProvider clientIdProvider
-	 * @param array $client
-	 * @param string $secret
-	 * @param string $expectedId
-	 */
-	public function testClientId( array $client, $secret, $expectedId ) {
-		$bag = new HashBagOStuff();
-		$cp = new ChronologyProtector( $bag, $client, null, $secret );
+class ChronologyProtectorTest extends PHPUnit\Framework\TestCase
+{
+    /**
+     * @dataProvider clientIdProvider
+     * @param array $client
+     * @param string $secret
+     * @param string $expectedId
+     */
+    public function testClientId(array $client, $secret, $expectedId)
+    {
+        $bag = new HashBagOStuff();
+        $cp = new ChronologyProtector($bag, $client, null, $secret);
 
-		$this->assertEquals( $expectedId, $cp->getClientId() );
-	}
+        $this->assertEquals($expectedId, $cp->getClientId());
+    }
 
-	public function clientIdProvider() {
-		return [
-			[
-				[
-					'ip' => '127.0.0.1',
-					'agent' => "Totally-Not-FireFox"
-				],
-				'',
-				'45e93a9c215c031d38b7c42d8e4700ca',
-			],
-			[
-				[
-					'ip' => '127.0.0.7',
-					'agent' => "Totally-Not-FireFox"
-				],
-				'',
-				'b1d604117b51746c35c3df9f293c84dc'
-			],
-			[
-				[
-					'ip' => '127.0.0.1',
-					'agent' => "Totally-FireFox"
-				],
-				'',
-				'731b4e06a65e2346b497fc811571c4d7'
-			],
-			[
-				[
-					'ip' => '127.0.0.1',
-					'agent' => "Totally-Not-FireFox"
-				],
-				'secret',
-				'defff51ded73cd901253d874c9b2077d'
-			]
-		];
-	}
+    public function clientIdProvider()
+    {
+        return [
+            [
+                [
+                    'ip'    => '127.0.0.1',
+                    'agent' => "Totally-Not-FireFox"
+                ],
+                '',
+                '45e93a9c215c031d38b7c42d8e4700ca',
+            ],
+            [
+                [
+                    'ip'    => '127.0.0.7',
+                    'agent' => "Totally-Not-FireFox"
+                ],
+                '',
+                'b1d604117b51746c35c3df9f293c84dc'
+            ],
+            [
+                [
+                    'ip'    => '127.0.0.1',
+                    'agent' => "Totally-FireFox"
+                ],
+                '',
+                '731b4e06a65e2346b497fc811571c4d7'
+            ],
+            [
+                [
+                    'ip'    => '127.0.0.1',
+                    'agent' => "Totally-Not-FireFox"
+                ],
+                'secret',
+                'defff51ded73cd901253d874c9b2077d'
+            ]
+        ];
+    }
 }

@@ -61,73 +61,74 @@ use Wikimedia\Assert\PreconditionException;
  *
  * @since 1.36
  */
-interface PageIdentity extends PageReference {
+interface PageIdentity extends PageReference
+{
 
-	/**
-	 * Returns the page ID.
-	 *
-	 * If this ID is 0, this means the page does not exist.
-	 *
-	 * Implementations must call assertWiki().
-	 *
-	 * @note As a concession to allowing Title to implement this interface,
-	 *       PageIdentity instances may represent things that are not pages,
-	 *       such as relative section links or interwiki links. If getId()
-	 *       is called on a PageIdentity that does not actually represent a
-	 *       page, it must throw a RuntimeException. The idea is that code that
-	 *       expects a PageIdentity is expecting an actual page.
-	 *       The canExist() method can be used to ensure that it is.
-	 *
-	 * @param string|false $wikiId Must be provided when accessing the ID of a non-local
-	 *        PageIdentity, to prevent data corruption when using a PageIdentity belonging
-	 *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
-	 *
-	 * @return int
-	 * @throws RuntimeException if this PageIdentity is not a "proper"
-	 *         page identity, but e.g. a relative section link, an interwiki
-	 *         link, etc.
-	 * @throws PreconditionException if this PageIdentity does not belong to the wiki
-	 *         identified by $wikiId.
-	 * @see Title::getArticleID()
-	 * @see Title::toPageIdentity()
-	 * @see canExist()
-	 *
-	 */
-	public function getId( $wikiId = self::LOCAL ): int;
+    /**
+     * Returns the page ID.
+     *
+     * If this ID is 0, this means the page does not exist.
+     *
+     * Implementations must call assertWiki().
+     *
+     * @note As a concession to allowing Title to implement this interface,
+     *       PageIdentity instances may represent things that are not pages,
+     *       such as relative section links or interwiki links. If getId()
+     *       is called on a PageIdentity that does not actually represent a
+     *       page, it must throw a RuntimeException. The idea is that code that
+     *       expects a PageIdentity is expecting an actual page.
+     *       The canExist() method can be used to ensure that it is.
+     *
+     * @param string|false $wikiId Must be provided when accessing the ID of a non-local
+     *        PageIdentity, to prevent data corruption when using a PageIdentity belonging
+     *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
+     *
+     * @return int
+     * @throws RuntimeException if this PageIdentity is not a "proper"
+     *         page identity, but e.g. a relative section link, an interwiki
+     *         link, etc.
+     * @throws PreconditionException if this PageIdentity does not belong to the wiki
+     *         identified by $wikiId.
+     * @see Title::getArticleID()
+     * @see Title::toPageIdentity()
+     * @see canExist()
+     *
+     */
+    public function getId($wikiId = self::LOCAL): int;
 
-	/**
-	 * Checks whether this PageIdentity represents a "proper" page,
-	 * meaning that it could exist as an editable page on the wiki.
-	 *
-	 * @note This method only exists to allow Title to implement this interface.
-	 *       Title instances may represent things that are not pages,
-	 *       such as relative section links or interwiki links.
-	 *       The idea is that code that expects a PageIdentity is expecting an
-	 *       actual page. The canExist() method can be used to ensure that it is.
-	 *
-	 * @note Eventually, this method should be guaranteed to return true,
-	 *       then be deprecated, and then removed.
-	 *
-	 * @return bool
-	 * @see Title::getArticleID()
-	 * @see Title::toPageIdentity()
-	 *
-	 * @see getId()
-	 */
-	public function canExist(): bool;
+    /**
+     * Checks whether this PageIdentity represents a "proper" page,
+     * meaning that it could exist as an editable page on the wiki.
+     *
+     * @note This method only exists to allow Title to implement this interface.
+     *       Title instances may represent things that are not pages,
+     *       such as relative section links or interwiki links.
+     *       The idea is that code that expects a PageIdentity is expecting an
+     *       actual page. The canExist() method can be used to ensure that it is.
+     *
+     * @note Eventually, this method should be guaranteed to return true,
+     *       then be deprecated, and then removed.
+     *
+     * @return bool
+     * @see Title::getArticleID()
+     * @see Title::toPageIdentity()
+     *
+     * @see getId()
+     */
+    public function canExist(): bool;
 
-	/**
-	 * Checks if the page currently exists.
-	 *
-	 * Implementations must ensure that this method returns false
-	 * when getId() would throw or return 0.
-	 * This also implies that this method must return false
-	 * if canExist() would return false.
-	 *
-	 * @see Title::exists()
-	 *
-	 * @return bool
-	 */
-	public function exists(): bool;
+    /**
+     * Checks if the page currently exists.
+     *
+     * Implementations must ensure that this method returns false
+     * when getId() would throw or return 0.
+     * This also implies that this method must return false
+     * if canExist() would return false.
+     *
+     * @return bool
+     * @see Title::exists()
+     *
+     */
+    public function exists(): bool;
 
 }

@@ -16,54 +16,59 @@
  *
  * @stable to extend
  */
-class HTMLComboboxField extends HTMLTextField {
-	// FIXME Ewww, this shouldn't be adding any attributes not requested in $list :(
-	public function getAttributes( array $list ) {
-		$attribs = [
-			'type' => 'text',
-			'list' => $this->mName . '-datalist',
-		] + parent::getAttributes( $list );
+class HTMLComboboxField extends HTMLTextField
+{
+    // FIXME Ewww, this shouldn't be adding any attributes not requested in $list :(
+    public function getAttributes(array $list)
+    {
+        $attribs = [
+                'type' => 'text',
+                'list' => $this->mName . '-datalist',
+            ] + parent::getAttributes($list);
 
-		return $attribs;
-	}
+        return $attribs;
+    }
 
-	public function getInputHTML( $value ) {
-		$datalist = new XmlSelect( false, $this->mName . '-datalist' );
-		$datalist->setTagName( 'datalist' );
-		$datalist->addOptions( $this->getOptions() );
+    public function getInputHTML($value)
+    {
+        $datalist = new XmlSelect(false, $this->mName . '-datalist');
+        $datalist->setTagName('datalist');
+        $datalist->addOptions($this->getOptions());
 
-		return parent::getInputHTML( $value ) . $datalist->getHTML();
-	}
+        return parent::getInputHTML($value) . $datalist->getHTML();
+    }
 
-	public function getInputOOUI( $value ) {
-		$disabled = false;
-		$allowedParams = [ 'tabindex' ];
-		$attribs = OOUI\Element::configFromHtmlAttributes(
-			$this->getAttributes( $allowedParams )
-		);
+    public function getInputOOUI($value)
+    {
+        $disabled = false;
+        $allowedParams = ['tabindex'];
+        $attribs = OOUI\Element::configFromHtmlAttributes(
+            $this->getAttributes($allowedParams)
+        );
 
-		if ( $this->mClass !== '' ) {
-			$attribs['classes'] = [ $this->mClass ];
-		}
+        if ($this->mClass !== '') {
+            $attribs['classes'] = [$this->mClass];
+        }
 
-		if ( !empty( $this->mParams['disabled'] ) ) {
-			$disabled = true;
-		}
+        if (!empty($this->mParams['disabled'])) {
+            $disabled = true;
+        }
 
-		if ( $this->mPlaceholder !== '' ) {
-			$attribs['placeholder'] = $this->mPlaceholder;
-		}
+        if ($this->mPlaceholder !== '') {
+            $attribs['placeholder'] = $this->mPlaceholder;
+        }
 
-		return new OOUI\ComboBoxInputWidget( [
-			'name' => $this->mName,
-			'id' => $this->mID,
-			'options' => $this->getOptionsOOUI(),
-			'value' => strval( $value ),
-			'disabled' => $disabled,
-		] + $attribs );
-	}
+        return new OOUI\ComboBoxInputWidget([
+                'name'     => $this->mName,
+                'id'       => $this->mID,
+                'options'  => $this->getOptionsOOUI(),
+                'value'    => strval($value),
+                'disabled' => $disabled,
+            ] + $attribs);
+    }
 
-	protected function shouldInfuseOOUI() {
-		return true;
-	}
+    protected function shouldInfuseOOUI()
+    {
+        return true;
+    }
 }

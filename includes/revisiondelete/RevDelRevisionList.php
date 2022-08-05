@@ -38,220 +38,237 @@ use Wikimedia\Rdbms\LBFactory;
  *
  * See RevDelRevisionItem and RevDelArchivedRevisionItem for items.
  */
-class RevDelRevisionList extends RevDelList {
+class RevDelRevisionList extends RevDelList
+{
 
-	/** @var LBFactory */
-	private $lbFactory;
+    /** @var LBFactory */
+    private $lbFactory;
 
-	/** @var HookRunner */
-	private $hookRunner;
+    /** @var HookRunner */
+    private $hookRunner;
 
-	/** @var HtmlCacheUpdater */
-	private $htmlCacheUpdater;
+    /** @var HtmlCacheUpdater */
+    private $htmlCacheUpdater;
 
-	/** @var RevisionStore */
-	private $revisionStore;
+    /** @var RevisionStore */
+    private $revisionStore;
 
-	/** @var WANObjectCache */
-	private $wanObjectCache;
+    /** @var WANObjectCache */
+    private $wanObjectCache;
 
-	/** @var int */
-	public $currentRevId;
+    /** @var int */
+    public $currentRevId;
 
-	/**
-	 * @param IContextSource $context
-	 * @param PageIdentity $page
-	 * @param array $ids
-	 * @param LBFactory $lbFactory
-	 * @param HookContainer $hookContainer
-	 * @param HtmlCacheUpdater $htmlCacheUpdater
-	 * @param RevisionStore $revisionStore
-	 * @param WANObjectCache $wanObjectCache
-	 */
-	public function __construct(
-		IContextSource $context,
-		PageIdentity $page,
-		array $ids,
-		LBFactory $lbFactory,
-		HookContainer $hookContainer,
-		HtmlCacheUpdater $htmlCacheUpdater,
-		RevisionStore $revisionStore,
-		WANObjectCache $wanObjectCache
-	) {
-		parent::__construct( $context, $page, $ids, $lbFactory );
-		$this->lbFactory = $lbFactory;
-		$this->hookRunner = new HookRunner( $hookContainer );
-		$this->htmlCacheUpdater = $htmlCacheUpdater;
-		$this->revisionStore = $revisionStore;
-		$this->wanObjectCache = $wanObjectCache;
-	}
+    /**
+     * @param IContextSource $context
+     * @param PageIdentity $page
+     * @param array $ids
+     * @param LBFactory $lbFactory
+     * @param HookContainer $hookContainer
+     * @param HtmlCacheUpdater $htmlCacheUpdater
+     * @param RevisionStore $revisionStore
+     * @param WANObjectCache $wanObjectCache
+     */
+    public function __construct(
+        IContextSource $context,
+        PageIdentity $page,
+        array $ids,
+        LBFactory $lbFactory,
+        HookContainer $hookContainer,
+        HtmlCacheUpdater $htmlCacheUpdater,
+        RevisionStore $revisionStore,
+        WANObjectCache $wanObjectCache
+    )
+    {
+        parent::__construct($context, $page, $ids, $lbFactory);
+        $this->lbFactory = $lbFactory;
+        $this->hookRunner = new HookRunner($hookContainer);
+        $this->htmlCacheUpdater = $htmlCacheUpdater;
+        $this->revisionStore = $revisionStore;
+        $this->wanObjectCache = $wanObjectCache;
+    }
 
-	public function getType() {
-		return 'revision';
-	}
+    public function getType()
+    {
+        return 'revision';
+    }
 
-	public static function getRelationType() {
-		return 'rev_id';
-	}
+    public static function getRelationType()
+    {
+        return 'rev_id';
+    }
 
-	public static function getRestriction() {
-		return 'deleterevision';
-	}
+    public static function getRestriction()
+    {
+        return 'deleterevision';
+    }
 
-	public static function getRevdelConstant() {
-		return RevisionRecord::DELETED_TEXT;
-	}
+    public static function getRevdelConstant()
+    {
+        return RevisionRecord::DELETED_TEXT;
+    }
 
-	public static function suggestTarget( $target, array $ids ) {
-		$revisionRecord = MediaWikiServices::getInstance()
-			->getRevisionLookup()
-			->getRevisionById( $ids[0] );
+    public static function suggestTarget($target, array $ids)
+    {
+        $revisionRecord = MediaWikiServices::getInstance()
+            ->getRevisionLookup()
+            ->getRevisionById($ids[0]);
 
-		if ( $revisionRecord ) {
-			return Title::newFromLinkTarget( $revisionRecord->getPageAsLinkTarget() );
-		}
-		return $target;
-	}
+        if ($revisionRecord) {
+            return Title::newFromLinkTarget($revisionRecord->getPageAsLinkTarget());
+        }
 
-	/**
-	 * @param IDatabase $db
-	 * @return mixed
-	 */
-	public function doQuery( $db ) {
-		$ids = array_map( 'intval', $this->ids );
-		$revQuery = $this->revisionStore->getQueryInfo( [ 'page', 'user' ] );
-		$queryInfo = [
-			'tables' => $revQuery['tables'],
-			'fields' => $revQuery['fields'],
-			'conds' => [
-				'rev_page' => $this->page->getId(),
-				'rev_id' => $ids,
-			],
-			'options' => [
-				'ORDER BY' => 'rev_id DESC',
-				'USE INDEX' => [ 'revision' => 'PRIMARY' ] // workaround for MySQL bug (T104313)
-			],
-			'join_conds' => $revQuery['joins'],
-		];
-		ChangeTags::modifyDisplayQuery(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
-			$queryInfo['conds'],
-			$queryInfo['join_conds'],
-			$queryInfo['options'],
-			''
-		);
+        return $target;
+    }
 
-		$live = $db->select(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
-			$queryInfo['conds'],
-			__METHOD__,
-			$queryInfo['options'],
-			$queryInfo['join_conds']
-		);
-		if ( $live->numRows() >= count( $ids ) ) {
-			// All requested revisions are live, keeps things simple!
-			return $live;
-		}
+    /**
+     * @param IDatabase $db
+     * @return mixed
+     */
+    public function doQuery($db)
+    {
+        $ids = array_map('intval', $this->ids);
+        $revQuery = $this->revisionStore->getQueryInfo(['page', 'user']);
+        $queryInfo = [
+            'tables'     => $revQuery['tables'],
+            'fields'     => $revQuery['fields'],
+            'conds'      => [
+                'rev_page' => $this->page->getId(),
+                'rev_id'   => $ids,
+            ],
+            'options'    => [
+                'ORDER BY'  => 'rev_id DESC',
+                'USE INDEX' => ['revision' => 'PRIMARY'] // workaround for MySQL bug (T104313)
+            ],
+            'join_conds' => $revQuery['joins'],
+        ];
+        ChangeTags::modifyDisplayQuery(
+            $queryInfo['tables'],
+            $queryInfo['fields'],
+            $queryInfo['conds'],
+            $queryInfo['join_conds'],
+            $queryInfo['options'],
+            ''
+        );
 
-		$arQuery = $this->revisionStore->getArchiveQueryInfo();
-		$archiveQueryInfo = [
-			'tables' => $arQuery['tables'],
-			'fields' => $arQuery['fields'],
-			'conds' => [
-				'ar_rev_id' => $ids,
-			],
-			'options' => [ 'ORDER BY' => 'ar_rev_id DESC' ],
-			'join_conds' => $arQuery['joins'],
-		];
+        $live = $db->select(
+            $queryInfo['tables'],
+            $queryInfo['fields'],
+            $queryInfo['conds'],
+            __METHOD__,
+            $queryInfo['options'],
+            $queryInfo['join_conds']
+        );
+        if ($live->numRows() >= count($ids)) {
+            // All requested revisions are live, keeps things simple!
+            return $live;
+        }
 
-		ChangeTags::modifyDisplayQuery(
-			$archiveQueryInfo['tables'],
-			$archiveQueryInfo['fields'],
-			$archiveQueryInfo['conds'],
-			$archiveQueryInfo['join_conds'],
-			$archiveQueryInfo['options'],
-			''
-		);
+        $arQuery = $this->revisionStore->getArchiveQueryInfo();
+        $archiveQueryInfo = [
+            'tables'     => $arQuery['tables'],
+            'fields'     => $arQuery['fields'],
+            'conds'      => [
+                'ar_rev_id' => $ids,
+            ],
+            'options'    => ['ORDER BY' => 'ar_rev_id DESC'],
+            'join_conds' => $arQuery['joins'],
+        ];
 
-		// Check if any requested revisions are available fully deleted.
-		$archived = $db->select(
-			$archiveQueryInfo['tables'],
-			$archiveQueryInfo['fields'],
-			$archiveQueryInfo['conds'],
-			__METHOD__,
-			$archiveQueryInfo['options'],
-			$archiveQueryInfo['join_conds']
-		);
+        ChangeTags::modifyDisplayQuery(
+            $archiveQueryInfo['tables'],
+            $archiveQueryInfo['fields'],
+            $archiveQueryInfo['conds'],
+            $archiveQueryInfo['join_conds'],
+            $archiveQueryInfo['options'],
+            ''
+        );
 
-		if ( $archived->numRows() == 0 ) {
-			return $live;
-		} elseif ( $live->numRows() == 0 ) {
-			return $archived;
-		} else {
-			// Combine the two! Whee
-			$rows = [];
-			foreach ( $live as $row ) {
-				$rows[$row->rev_id] = $row;
-			}
-			foreach ( $archived as $row ) {
-				$rows[$row->ar_rev_id] = $row;
-			}
-			krsort( $rows );
-			return new FakeResultWrapper( array_values( $rows ) );
-		}
-	}
+        // Check if any requested revisions are available fully deleted.
+        $archived = $db->select(
+            $archiveQueryInfo['tables'],
+            $archiveQueryInfo['fields'],
+            $archiveQueryInfo['conds'],
+            __METHOD__,
+            $archiveQueryInfo['options'],
+            $archiveQueryInfo['join_conds']
+        );
 
-	public function newItem( $row ) {
-		if ( isset( $row->rev_id ) ) {
-			return new RevDelRevisionItem( $this, $row );
-		} elseif ( isset( $row->ar_rev_id ) ) {
-			return new RevDelArchivedRevisionItem( $this, $row );
-		} else {
-			// This shouldn't happen. :)
-			throw new MWException( 'Invalid row type in RevDelRevisionList' );
-		}
-	}
+        if ($archived->numRows() == 0) {
+            return $live;
+        } elseif ($live->numRows() == 0) {
+            return $archived;
+        } else {
+            // Combine the two! Whee
+            $rows = [];
+            foreach ($live as $row) {
+                $rows[$row->rev_id] = $row;
+            }
+            foreach ($archived as $row) {
+                $rows[$row->ar_rev_id] = $row;
+            }
+            krsort($rows);
 
-	public function getCurrent() {
-		if ( $this->currentRevId === null ) {
-			$dbw = $this->lbFactory->getMainLB()->getConnectionRef( DB_PRIMARY );
-			$this->currentRevId = $dbw->selectField(
-				'page',
-				'page_latest',
-				[ 'page_namespace' => $this->page->getNamespace(), 'page_title' => $this->page->getDBkey() ],
-				__METHOD__
-			);
-		}
-		return $this->currentRevId;
-	}
+            return new FakeResultWrapper(array_values($rows));
+        }
+    }
 
-	public function getSuppressBit() {
-		return RevisionRecord::DELETED_RESTRICTED;
-	}
+    public function newItem($row)
+    {
+        if (isset($row->rev_id)) {
+            return new RevDelRevisionItem($this, $row);
+        } elseif (isset($row->ar_rev_id)) {
+            return new RevDelArchivedRevisionItem($this, $row);
+        } else {
+            // This shouldn't happen. :)
+            throw new MWException('Invalid row type in RevDelRevisionList');
+        }
+    }
 
-	public function doPreCommitUpdates() {
-		Title::castFromPageIdentity( $this->page )->invalidateCache();
-		return Status::newGood();
-	}
+    public function getCurrent()
+    {
+        if ($this->currentRevId === null) {
+            $dbw = $this->lbFactory->getMainLB()->getConnectionRef(DB_PRIMARY);
+            $this->currentRevId = $dbw->selectField(
+                'page',
+                'page_latest',
+                ['page_namespace' => $this->page->getNamespace(), 'page_title' => $this->page->getDBkey()],
+                __METHOD__
+            );
+        }
 
-	public function doPostCommitUpdates( array $visibilityChangeMap ) {
-		$this->htmlCacheUpdater->purgeTitleUrls(
-			$this->page,
-			HtmlCacheUpdater::PURGE_INTENT_TXROUND_REFLECTED
-		);
-		// Extensions that require referencing previous revisions may need this
-		$this->hookRunner->onArticleRevisionVisibilitySet(
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
-			Title::castFromPageIdentity( $this->page ),
-			$this->ids,
-			$visibilityChangeMap
-		);
-		$this->wanObjectCache->touchCheckKey(
-			"RevDelRevisionList:page:{$this->page->getID()}}"
-		);
+        return $this->currentRevId;
+    }
 
-		return Status::newGood();
-	}
+    public function getSuppressBit()
+    {
+        return RevisionRecord::DELETED_RESTRICTED;
+    }
+
+    public function doPreCommitUpdates()
+    {
+        Title::castFromPageIdentity($this->page)->invalidateCache();
+
+        return Status::newGood();
+    }
+
+    public function doPostCommitUpdates(array $visibilityChangeMap)
+    {
+        $this->htmlCacheUpdater->purgeTitleUrls(
+            $this->page,
+            HtmlCacheUpdater::PURGE_INTENT_TXROUND_REFLECTED
+        );
+        // Extensions that require referencing previous revisions may need this
+        $this->hookRunner->onArticleRevisionVisibilitySet(
+        // @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
+            Title::castFromPageIdentity($this->page),
+            $this->ids,
+            $visibilityChangeMap
+        );
+        $this->wanObjectCache->touchCheckKey(
+            "RevDelRevisionList:page:{$this->page->getID()}}"
+        );
+
+        return Status::newGood();
+    }
 }

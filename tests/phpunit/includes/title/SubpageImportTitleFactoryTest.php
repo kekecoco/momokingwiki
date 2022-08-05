@@ -26,70 +26,77 @@
  *
  * TODO convert to Unit tests
  */
-class SubpageImportTitleFactoryTest extends MediaWikiIntegrationTestCase {
+class SubpageImportTitleFactoryTest extends MediaWikiIntegrationTestCase
+{
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->setContentLang( 'en' );
-		$this->setMwGlobals( [
-			'wgNamespacesWithSubpages' => [ 0 => false, 2 => true ],
-		] );
-	}
+        $this->setContentLang('en');
+        $this->setMwGlobals([
+            'wgNamespacesWithSubpages' => [0 => false, 2 => true],
+        ]);
+    }
 
-	private function newSubpageImportTitleFactory( Title $rootPage ) {
-		return new SubpageImportTitleFactory(
-			$this->getServiceContainer()->getNamespaceInfo(),
-			$this->getServiceContainer()->getTitleFactory(),
-			$rootPage
-		);
-	}
+    private function newSubpageImportTitleFactory(Title $rootPage)
+    {
+        return new SubpageImportTitleFactory(
+            $this->getServiceContainer()->getNamespaceInfo(),
+            $this->getServiceContainer()->getTitleFactory(),
+            $rootPage
+        );
+    }
 
-	public function basicProvider() {
-		return [
-			[
-				new ForeignTitle( 0, '', 'MainNamespaceArticle' ),
-				Title::newFromText( 'User:Graham' ),
-				Title::newFromText( 'User:Graham/MainNamespaceArticle' )
-			],
-			[
-				new ForeignTitle( 1, 'Discussion', 'Nice_talk' ),
-				Title::newFromText( 'User:Graham' ),
-				Title::newFromText( 'User:Graham/Discussion:Nice_talk' )
-			],
-			[
-				new ForeignTitle( 0, '', 'Bogus:Nice_talk' ),
-				Title::newFromText( 'User:Graham' ),
-				Title::newFromText( 'User:Graham/Bogus:Nice_talk' )
-			],
-		];
-	}
+    public function basicProvider()
+    {
+        return [
+            [
+                new ForeignTitle(0, '', 'MainNamespaceArticle'),
+                Title::newFromText('User:Graham'),
+                Title::newFromText('User:Graham/MainNamespaceArticle')
+            ],
+            [
+                new ForeignTitle(1, 'Discussion', 'Nice_talk'),
+                Title::newFromText('User:Graham'),
+                Title::newFromText('User:Graham/Discussion:Nice_talk')
+            ],
+            [
+                new ForeignTitle(0, '', 'Bogus:Nice_talk'),
+                Title::newFromText('User:Graham'),
+                Title::newFromText('User:Graham/Bogus:Nice_talk')
+            ],
+        ];
+    }
 
-	/**
-	 * @dataProvider basicProvider
-	 */
-	public function testBasic( ForeignTitle $foreignTitle, Title $rootPage,
-		Title $title
-	) {
-		$factory = $this->newSubpageImportTitleFactory( $rootPage );
-		$testTitle = $factory->createTitleFromForeignTitle( $foreignTitle );
+    /**
+     * @dataProvider basicProvider
+     */
+    public function testBasic(ForeignTitle $foreignTitle, Title $rootPage,
+                              Title $title
+    )
+    {
+        $factory = $this->newSubpageImportTitleFactory($rootPage);
+        $testTitle = $factory->createTitleFromForeignTitle($foreignTitle);
 
-		$this->assertTrue( $testTitle->equals( $title ) );
-	}
+        $this->assertTrue($testTitle->equals($title));
+    }
 
-	public function failureProvider() {
-		return [
-			[
-				Title::newFromText( 'Graham' ),
-			],
-		];
-	}
+    public function failureProvider()
+    {
+        return [
+            [
+                Title::newFromText('Graham'),
+            ],
+        ];
+    }
 
-	/**
-	 * @dataProvider failureProvider
-	 */
-	public function testFailures( Title $rootPage ) {
-		$this->expectException( MWException::class );
-		$this->newSubpageImportTitleFactory( $rootPage );
-	}
+    /**
+     * @dataProvider failureProvider
+     */
+    public function testFailures(Title $rootPage)
+    {
+        $this->expectException(MWException::class);
+        $this->newSubpageImportTitleFactory($rootPage);
+    }
 }

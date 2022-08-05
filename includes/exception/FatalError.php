@@ -34,22 +34,25 @@
  * @since 1.7
  * @ingroup Exception
  */
-class FatalError extends MWException {
+class FatalError extends MWException
+{
 
-	/**
-	 * Replace our usual detailed HTML response for uncaught exceptions,
-	 * with just the bare message as HTML.
-	 *
-	 * @return string
-	 */
-	public function getHTML() {
-		return $this->getMessage();
-	}
+    /**
+     * Replace our usual detailed HTML response for uncaught exceptions,
+     * with just the bare message as HTML.
+     *
+     * @return string
+     */
+    public function getHTML()
+    {
+        return $this->getMessage();
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getText() {
-		return $this->getMessage();
-	}
+    /**
+     * @return string
+     */
+    public function getText()
+    {
+        return $this->getMessage();
+    }
 }

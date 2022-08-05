@@ -25,11 +25,13 @@
  * Log formatter specifically for log entries containing wikitext.
  * @since 1.31
  */
-class WikitextLogFormatter extends LogFormatter {
-	/**
-	 * @return string
-	 */
-	public function getActionMessage() {
-		return parent::getActionMessage()->parse();
-	}
+class WikitextLogFormatter extends LogFormatter
+{
+    /**
+     * @return string
+     */
+    public function getActionMessage()
+    {
+        return parent::getActionMessage()->parse();
+    }
 }

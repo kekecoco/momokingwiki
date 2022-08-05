@@ -26,107 +26,116 @@
  * @newable
  * @ingroup API
  */
-class ApiUsageException extends MWException implements ILocalizedException {
+class ApiUsageException extends MWException implements ILocalizedException
+{
 
-	protected $modulePath;
-	protected $status;
+    protected $modulePath;
+    protected $status;
 
-	/**
-	 *
-	 * @stable to call
-	 * @param ApiBase|null $module API module responsible for the error, if known
-	 * @param StatusValue $status Status holding errors
-	 * @param int $httpCode HTTP error code to use
-	 * @param Throwable|null $previous Previous exception
-	 */
-	public function __construct(
-		?ApiBase $module, StatusValue $status, $httpCode = 0, Throwable $previous = null
-	) {
-		if ( $status->isOK() ) {
-			throw new InvalidArgumentException( __METHOD__ . ' requires a fatal Status' );
-		}
+    /**
+     *
+     * @stable to call
+     * @param ApiBase|null $module API module responsible for the error, if known
+     * @param StatusValue $status Status holding errors
+     * @param int $httpCode HTTP error code to use
+     * @param Throwable|null $previous Previous exception
+     */
+    public function __construct(
+        ?ApiBase $module, StatusValue $status, $httpCode = 0, Throwable $previous = null
+    )
+    {
+        if ($status->isOK()) {
+            throw new InvalidArgumentException(__METHOD__ . ' requires a fatal Status');
+        }
 
-		$this->modulePath = $module ? $module->getModulePath() : null;
-		$this->status = $status;
+        $this->modulePath = $module ? $module->getModulePath() : null;
+        $this->status = $status;
 
-		// Bug T46111: Messages in the log files should be in English and not
-		// customized by the local wiki.
-		$enMsg = clone $this->getApiMessage();
-		$enMsg->inLanguage( 'en' )->useDatabase( false );
-		parent::__construct( ApiErrorFormatter::stripMarkup( $enMsg->text() ), $httpCode, $previous );
-	}
+        // Bug T46111: Messages in the log files should be in English and not
+        // customized by the local wiki.
+        $enMsg = clone $this->getApiMessage();
+        $enMsg->inLanguage('en')->useDatabase(false);
+        parent::__construct(ApiErrorFormatter::stripMarkup($enMsg->text()), $httpCode, $previous);
+    }
 
-	/**
-	 * @param ApiBase|null $module API module responsible for the error, if known
-	 * @param string|array|Message $msg See ApiMessage::create()
-	 * @param string|null $code See ApiMessage::create()
-	 * @param array|null $data See ApiMessage::create()
-	 * @param int $httpCode HTTP error code to use
-	 * @param Throwable|null $previous Previous exception
-	 * @return static
-	 */
-	public static function newWithMessage(
-		?ApiBase $module, $msg, $code = null, $data = null, $httpCode = 0, Throwable $previous = null
-	) {
-		return new static(
-			$module,
-			StatusValue::newFatal( ApiMessage::create( $msg, $code, $data ) ),
-			$httpCode,
-			$previous
-		);
-	}
+    /**
+     * @param ApiBase|null $module API module responsible for the error, if known
+     * @param string|array|Message $msg See ApiMessage::create()
+     * @param string|null $code See ApiMessage::create()
+     * @param array|null $data See ApiMessage::create()
+     * @param int $httpCode HTTP error code to use
+     * @param Throwable|null $previous Previous exception
+     * @return static
+     */
+    public static function newWithMessage(
+        ?ApiBase $module, $msg, $code = null, $data = null, $httpCode = 0, Throwable $previous = null
+    )
+    {
+        return new static(
+            $module,
+            StatusValue::newFatal(ApiMessage::create($msg, $code, $data)),
+            $httpCode,
+            $previous
+        );
+    }
 
-	/**
-	 * @return ApiMessage
-	 */
-	private function getApiMessage() {
-		$errors = $this->status->getErrorsByType( 'error' );
-		if ( !$errors ) {
-			$errors = $this->status->getErrors();
-		}
-		if ( !$errors ) {
-			$msg = new ApiMessage( 'apierror-unknownerror-nocode', 'unknownerror' );
-		} else {
-			$msg = ApiMessage::create( $errors[0] );
-		}
-		return $msg;
-	}
+    /**
+     * @return ApiMessage
+     */
+    private function getApiMessage()
+    {
+        $errors = $this->status->getErrorsByType('error');
+        if (!$errors) {
+            $errors = $this->status->getErrors();
+        }
+        if (!$errors) {
+            $msg = new ApiMessage('apierror-unknownerror-nocode', 'unknownerror');
+        } else {
+            $msg = ApiMessage::create($errors[0]);
+        }
 
-	/**
-	 * Fetch the responsible module name
-	 * @return string|null
-	 */
-	public function getModulePath() {
-		return $this->modulePath;
-	}
+        return $msg;
+    }
 
-	/**
-	 * Fetch the error status
-	 * @return StatusValue
-	 */
-	public function getStatusValue() {
-		return $this->status;
-	}
+    /**
+     * Fetch the responsible module name
+     * @return string|null
+     */
+    public function getModulePath()
+    {
+        return $this->modulePath;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getMessageObject() {
-		return Status::wrap( $this->status )->getMessage();
-	}
+    /**
+     * Fetch the error status
+     * @return StatusValue
+     */
+    public function getStatusValue()
+    {
+        return $this->status;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function __toString() {
-		$enMsg = clone $this->getApiMessage();
-		$enMsg->inLanguage( 'en' )->useDatabase( false );
-		$text = ApiErrorFormatter::stripMarkup( $enMsg->text() );
+    /**
+     * @inheritDoc
+     */
+    public function getMessageObject()
+    {
+        return Status::wrap($this->status)->getMessage();
+    }
 
-		return get_class( $this ) . ": {$enMsg->getApiCode()}: {$text} "
-			. "in {$this->getFile()}:{$this->getLine()}\n"
-			. "Stack trace:\n{$this->getTraceAsString()}"
-			. ( $this->getPrevious() ? "\n\nNext {$this->getPrevious()}" : "" );
-	}
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        $enMsg = clone $this->getApiMessage();
+        $enMsg->inLanguage('en')->useDatabase(false);
+        $text = ApiErrorFormatter::stripMarkup($enMsg->text());
+
+        return get_class($this) . ": {$enMsg->getApiCode()}: {$text} "
+            . "in {$this->getFile()}:{$this->getLine()}\n"
+            . "Stack trace:\n{$this->getTraceAsString()}"
+            . ($this->getPrevious() ? "\n\nNext {$this->getPrevious()}" : "");
+    }
 
 }

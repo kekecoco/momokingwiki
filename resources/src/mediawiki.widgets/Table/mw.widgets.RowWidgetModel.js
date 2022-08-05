@@ -19,25 +19,25 @@
  * @cfg {boolean} [showLabel=true] Show row label. Defaults to true.
  * @cfg {boolean} [deletable=true] Allow row to be deleted. Defaults to true.
  */
-mw.widgets.RowWidgetModel = function MwWidgetsRowWidgetModel( config ) {
-	config = config || {};
+mw.widgets.RowWidgetModel = function MwWidgetsRowWidgetModel(config) {
+    config = config || {};
 
-	// Mixin constructors
-	OO.EventEmitter.call( this, config );
+    // Mixin constructors
+    OO.EventEmitter.call(this, config);
 
-	this.data = config.data || [];
-	this.validate = config.validate;
-	this.index = ( config.index !== undefined ) ? config.index : -1;
-	this.label = ( config.label !== undefined ) ? config.label : '';
-	this.showLabel = ( config.showLabel !== undefined ) ? !!config.showLabel : true;
-	this.isDeletable = ( config.deletable !== undefined ) ? !!config.deletable : true;
+    this.data = config.data || [];
+    this.validate = config.validate;
+    this.index = (config.index !== undefined) ? config.index : -1;
+    this.label = (config.label !== undefined) ? config.label : '';
+    this.showLabel = (config.showLabel !== undefined) ? !!config.showLabel : true;
+    this.isDeletable = (config.deletable !== undefined) ? !!config.deletable : true;
 
-	this.initializeProps( config.keys );
+    this.initializeProps(config.keys);
 };
 
 /* Inheritance */
 
-OO.mixinClass( mw.widgets.RowWidgetModel, OO.EventEmitter );
+OO.mixinClass(mw.widgets.RowWidgetModel, OO.EventEmitter);
 
 /* Events */
 
@@ -90,19 +90,19 @@ OO.mixinClass( mw.widgets.RowWidgetModel, OO.EventEmitter );
  * @private
  * @param {Array} props The initial cell props
  */
-mw.widgets.RowWidgetModel.prototype.initializeProps = function ( props ) {
-	var i, len;
+mw.widgets.RowWidgetModel.prototype.initializeProps = function (props) {
+    var i, len;
 
-	this.cells = [];
+    this.cells = [];
 
-	if ( Array.isArray( props ) ) {
-		for ( i = 0, len = props.length; i < len; i++ ) {
-			this.cells.push( {
-				index: i,
-				key: props[ i ]
-			} );
-		}
-	}
+    if (Array.isArray(props)) {
+        for (i = 0, len = props.length; i < len; i++) {
+            this.cells.push({
+                index: i,
+                key: props[i]
+            });
+        }
+    }
 };
 
 /**
@@ -111,8 +111,8 @@ mw.widgets.RowWidgetModel.prototype.initializeProps = function ( props ) {
  * @fires insertCell
  */
 mw.widgets.RowWidgetModel.prototype.setupRow = function () {
-	this.verifyData();
-	this.buildRow();
+    this.verifyData();
+    this.buildRow();
 };
 
 /**
@@ -123,13 +123,13 @@ mw.widgets.RowWidgetModel.prototype.setupRow = function () {
  * @private
  */
 mw.widgets.RowWidgetModel.prototype.verifyData = function () {
-	var i, len;
+    var i, len;
 
-	for ( i = 0, len = this.cells.length; i < len; i++ ) {
-		if ( this.data[ i ] === undefined ) {
-			this.data.push( '' );
-		}
-	}
+    for (i = 0, len = this.cells.length; i < len; i++) {
+        if (this.data[i] === undefined) {
+            this.data.push('');
+        }
+    }
 };
 
 /**
@@ -139,11 +139,11 @@ mw.widgets.RowWidgetModel.prototype.verifyData = function () {
  * @fires insertCell
  */
 mw.widgets.RowWidgetModel.prototype.buildRow = function () {
-	var i, len;
+    var i, len;
 
-	for ( i = 0, len = this.cells.length; i < len; i++ ) {
-		this.emit( 'insertCell', this.data[ i ], i );
-	}
+    for (i = 0, len = this.cells.length; i < len; i++) {
+        this.emit('insertCell', this.data[i], i);
+    }
 };
 
 /**
@@ -153,9 +153,9 @@ mw.widgets.RowWidgetModel.prototype.buildRow = function () {
  * @fires insertCell
  */
 mw.widgets.RowWidgetModel.prototype.refreshRow = function () {
-	// TODO: Clear existing table
+    // TODO: Clear existing table
 
-	this.buildRow();
+    this.buildRow();
 };
 
 /**
@@ -165,21 +165,21 @@ mw.widgets.RowWidgetModel.prototype.refreshRow = function () {
  * @param {Mixed} value The new value
  * @fires valueChange
  */
-mw.widgets.RowWidgetModel.prototype.setValue = function ( handle, value ) {
-	var index;
+mw.widgets.RowWidgetModel.prototype.setValue = function (handle, value) {
+    var index;
 
-	if ( typeof handle === 'number' ) {
-		index = handle;
-	} else if ( typeof handle === 'string' ) {
-		index = this.getCellProperties( handle ).index;
-	}
+    if (typeof handle === 'number') {
+        index = handle;
+    } else if (typeof handle === 'string') {
+        index = this.getCellProperties(handle).index;
+    }
 
-	if ( typeof index === 'number' && this.data[ index ] !== undefined &&
-		this.data[ index ] !== value ) {
+    if (typeof index === 'number' && this.data[index] !== undefined &&
+        this.data[index] !== value) {
 
-		this.data[ index ] = value;
-		this.emit( 'valueChange', index, value );
-	}
+        this.data[index] = value;
+        this.emit('valueChange', index, value);
+    }
 };
 
 /**
@@ -187,13 +187,13 @@ mw.widgets.RowWidgetModel.prototype.setValue = function ( handle, value ) {
  *
  * @param {Array} data The new row data
  */
-mw.widgets.RowWidgetModel.prototype.setData = function ( data ) {
-	if ( Array.isArray( data ) ) {
-		this.data = data;
+mw.widgets.RowWidgetModel.prototype.setData = function (data) {
+    if (Array.isArray(data)) {
+        this.data = data;
 
-		this.verifyData();
-		this.refreshRow();
-	}
+        this.verifyData();
+        this.refreshRow();
+    }
 };
 
 /**
@@ -202,9 +202,9 @@ mw.widgets.RowWidgetModel.prototype.setData = function ( data ) {
  * @param {number} index The new row index
  * @fires labelUpdate
  */
-mw.widgets.RowWidgetModel.prototype.setIndex = function ( index ) {
-	this.index = index;
-	this.emit( 'labelUpdate' );
+mw.widgets.RowWidgetModel.prototype.setIndex = function (index) {
+    this.index = index;
+    this.emit('labelUpdate');
 };
 
 /**
@@ -213,9 +213,9 @@ mw.widgets.RowWidgetModel.prototype.setIndex = function ( index ) {
  * @param {number} label The new row label
  * @fires labelUpdate
  */
-mw.widgets.RowWidgetModel.prototype.setLabel = function ( label ) {
-	this.label = label;
-	this.emit( 'labelUpdate' );
+mw.widgets.RowWidgetModel.prototype.setLabel = function (label) {
+    this.label = label;
+    this.emit('labelUpdate');
 };
 
 /**
@@ -229,26 +229,26 @@ mw.widgets.RowWidgetModel.prototype.setLabel = function ( label ) {
  * If unset or set to null, no key will be set.
  * @fires insertCell
  */
-mw.widgets.RowWidgetModel.prototype.insertCell = function ( data, index, key ) {
-	var insertIndex = ( typeof index === 'number' ) ? index : this.cells.length,
-		insertData, i, len;
+mw.widgets.RowWidgetModel.prototype.insertCell = function (data, index, key) {
+    var insertIndex = (typeof index === 'number') ? index : this.cells.length,
+        insertData, i, len;
 
-	// Add the new cell metadata
-	this.cells.splice( insertIndex, 0, {
-		index: insertIndex,
-		key: key || undefined
-	} );
+    // Add the new cell metadata
+    this.cells.splice(insertIndex, 0, {
+        index: insertIndex,
+        key: key || undefined
+    });
 
-	// Add the new row data
-	insertData = ( typeof data === 'string' || typeof data === 'number' ) ? data : '';
-	this.data.splice( insertIndex, 0, insertData );
+    // Add the new row data
+    insertData = (typeof data === 'string' || typeof data === 'number') ? data : '';
+    this.data.splice(insertIndex, 0, insertData);
 
-	// Update all indexes in following cells
-	for ( i = insertIndex + 1, len = this.cells.length; i < len; i++ ) {
-		this.cells[ i ].index++;
-	}
+    // Update all indexes in following cells
+    for (i = insertIndex + 1, len = this.cells.length; i < len; i++) {
+        this.cells[i].index++;
+    }
 
-	this.emit( 'insertCell', data, insertIndex );
+    this.emit('insertCell', data, insertIndex);
 };
 
 /**
@@ -258,24 +258,24 @@ mw.widgets.RowWidgetModel.prototype.insertCell = function ( data, index, key ) {
  * @param {number|string} handle The key or numerical index of the cell to remove
  * @fires removeCell
  */
-mw.widgets.RowWidgetModel.prototype.removeCell = function ( handle ) {
-	var cellProps = this.getCellProperties( handle ),
-		i, len;
+mw.widgets.RowWidgetModel.prototype.removeCell = function (handle) {
+    var cellProps = this.getCellProperties(handle),
+        i, len;
 
-	// Exit early if the row couldn't be found
-	if ( cellProps === null ) {
-		return;
-	}
+    // Exit early if the row couldn't be found
+    if (cellProps === null) {
+        return;
+    }
 
-	this.cells.splice( cellProps.index, 1 );
-	this.data.splice( cellProps.index, 1 );
+    this.cells.splice(cellProps.index, 1);
+    this.data.splice(cellProps.index, 1);
 
-	// Update all indexes in following cells
-	for ( i = cellProps.index, len = this.cells.length; i < len; i++ ) {
-		this.cells[ i ].index--;
-	}
+    // Update all indexes in following cells
+    for (i = cellProps.index, len = this.cells.length; i < len; i++) {
+        this.cells[i].index--;
+    }
 
-	this.emit( 'removeCell', cellProps.index );
+    this.emit('removeCell', cellProps.index);
 };
 
 /**
@@ -284,10 +284,10 @@ mw.widgets.RowWidgetModel.prototype.removeCell = function ( handle ) {
  * @fires clear
  */
 mw.widgets.RowWidgetModel.prototype.clear = function () {
-	this.data = [];
-	this.verifyData();
+    this.data = [];
+    this.verifyData();
 
-	this.emit( 'clear', false );
+    this.emit('clear', false);
 };
 
 /**
@@ -296,10 +296,10 @@ mw.widgets.RowWidgetModel.prototype.clear = function () {
  * @fires clear
  */
 mw.widgets.RowWidgetModel.prototype.clearWithProperties = function () {
-	this.data = [];
-	this.cells = [];
+    this.data = [];
+    this.cells = [];
 
-	this.emit( 'clear', true );
+    this.emit('clear', true);
 };
 
 /**
@@ -308,7 +308,7 @@ mw.widgets.RowWidgetModel.prototype.clearWithProperties = function () {
  * @return {RegExp|Function|string}
  */
 mw.widgets.RowWidgetModel.prototype.getValidationPattern = function () {
-	return this.validate;
+    return this.validate;
 };
 
 /**
@@ -317,12 +317,12 @@ mw.widgets.RowWidgetModel.prototype.getValidationPattern = function () {
  * @return {Object}
  */
 mw.widgets.RowWidgetModel.prototype.getRowProperties = function () {
-	return {
-		index: this.index,
-		label: this.label,
-		showLabel: this.showLabel,
-		isDeletable: this.isDeletable
-	};
+    return {
+        index: this.index,
+        label: this.label,
+        showLabel: this.showLabel,
+        isDeletable: this.isDeletable
+    };
 };
 
 /**
@@ -332,24 +332,24 @@ mw.widgets.RowWidgetModel.prototype.getRowProperties = function () {
  * @return {Object|null} An object containing the `key` and `index` properties of the cell.
  * Returns `null` if the cell can't be found.
  */
-mw.widgets.RowWidgetModel.prototype.getCellProperties = function ( handle ) {
-	var cell = null,
-		i, len;
+mw.widgets.RowWidgetModel.prototype.getCellProperties = function (handle) {
+    var cell = null,
+        i, len;
 
-	if ( typeof handle === 'string' ) {
-		for ( i = 0, len = this.cells.length; i < len; i++ ) {
-			if ( this.cells[ i ].key === handle ) {
-				cell = this.cells[ i ];
-				break;
-			}
-		}
-	} else if ( typeof handle === 'number' ) {
-		if ( handle < this.cells.length ) {
-			cell = this.cells[ handle ];
-		}
-	}
+    if (typeof handle === 'string') {
+        for (i = 0, len = this.cells.length; i < len; i++) {
+            if (this.cells[i].key === handle) {
+                cell = this.cells[i];
+                break;
+            }
+        }
+    } else if (typeof handle === 'number') {
+        if (handle < this.cells.length) {
+            cell = this.cells[handle];
+        }
+    }
 
-	return cell;
+    return cell;
 };
 
 /**
@@ -358,5 +358,5 @@ mw.widgets.RowWidgetModel.prototype.getCellProperties = function ( handle ) {
  * @return {Array} An array of objects containing `key` and `index` properties for each cell
  */
 mw.widgets.RowWidgetModel.prototype.getAllCellProperties = function () {
-	return this.cells.slice();
+    return this.cells.slice();
 };

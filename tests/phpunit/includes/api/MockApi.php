@@ -1,27 +1,33 @@
 <?php
 
-class MockApi extends ApiBase {
-	public $warnings = [];
+class MockApi extends ApiBase
+{
+    public $warnings = [];
 
-	public function execute() {
-	}
+    public function execute()
+    {
+    }
 
-	public function __construct() {
-	}
+    public function __construct()
+    {
+    }
 
-	public function getModulePath() {
-		return $this->getModuleName();
-	}
+    public function getModulePath()
+    {
+        return $this->getModuleName();
+    }
 
-	public function addWarning( $warning, $code = null, $data = null ) {
-		$this->warnings[] = $warning;
-	}
+    public function addWarning($warning, $code = null, $data = null)
+    {
+        $this->warnings[] = $warning;
+    }
 
-	public function getAllowedParams() {
-		return [
-			'filename' => null,
-			'enablechunks' => false,
-			'sessionkey' => null,
-		];
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'filename'     => null,
+            'enablechunks' => false,
+            'sessionkey'   => null,
+        ];
+    }
 }

@@ -26,68 +26,77 @@
  * @newable
  * @since 1.23
  */
-class GlobalVarConfig implements Config {
+class GlobalVarConfig implements Config
+{
 
-	/**
-	 * Prefix to use for configuration variables
-	 * @var string
-	 */
-	private $prefix;
+    /**
+     * Prefix to use for configuration variables
+     * @var string
+     */
+    private $prefix;
 
-	/**
-	 * Default builder function
-	 * @return GlobalVarConfig
-	 */
-	public static function newInstance() {
-		return new GlobalVarConfig();
-	}
+    /**
+     * Default builder function
+     * @return GlobalVarConfig
+     */
+    public static function newInstance()
+    {
+        return new GlobalVarConfig();
+    }
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $prefix
-	 */
-	public function __construct( $prefix = 'wg' ) {
-		$this->prefix = $prefix;
-	}
+    /**
+     * @stable to call
+     *
+     * @param string $prefix
+     */
+    public function __construct($prefix = 'wg')
+    {
+        $this->prefix = $prefix;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function get( $name ) {
-		if ( !$this->has( $name ) ) {
-			throw new ConfigException( __METHOD__ . ": undefined option: '$name'" );
-		}
-		return $this->getWithPrefix( $this->prefix, $name );
-	}
+    /**
+     * @inheritDoc
+     */
+    public function get($name)
+    {
+        if (!$this->has($name)) {
+            throw new ConfigException(__METHOD__ . ": undefined option: '$name'");
+        }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function has( $name ) {
-		return $this->hasWithPrefix( $this->prefix, $name );
-	}
+        return $this->getWithPrefix($this->prefix, $name);
+    }
 
-	/**
-	 * Get a variable with a given prefix, if not the defaults.
-	 *
-	 * @param string $prefix Prefix to use on the variable, if one.
-	 * @param string $name Variable name without prefix
-	 * @return mixed
-	 */
-	protected function getWithPrefix( $prefix, $name ) {
-		return $GLOBALS[$prefix . $name];
-	}
+    /**
+     * @inheritDoc
+     */
+    public function has($name)
+    {
+        return $this->hasWithPrefix($this->prefix, $name);
+    }
 
-	/**
-	 * Check if a variable with a given prefix is set
-	 *
-	 * @param string $prefix Prefix to use on the variable
-	 * @param string $name Variable name without prefix
-	 * @return bool
-	 */
-	protected function hasWithPrefix( $prefix, $name ) {
-		$var = $prefix . $name;
-		return array_key_exists( $var, $GLOBALS );
-	}
+    /**
+     * Get a variable with a given prefix, if not the defaults.
+     *
+     * @param string $prefix Prefix to use on the variable, if one.
+     * @param string $name Variable name without prefix
+     * @return mixed
+     */
+    protected function getWithPrefix($prefix, $name)
+    {
+        return $GLOBALS[$prefix . $name];
+    }
+
+    /**
+     * Check if a variable with a given prefix is set
+     *
+     * @param string $prefix Prefix to use on the variable
+     * @param string $name Variable name without prefix
+     * @return bool
+     */
+    protected function hasWithPrefix($prefix, $name)
+    {
+        $var = $prefix . $name;
+
+        return array_key_exists($var, $GLOBALS);
+    }
 }

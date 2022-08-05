@@ -18,207 +18,218 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  *
  * @author DannyS712
  */
-class UserEditTracker {
+class UserEditTracker
+{
 
-	private const FIRST_EDIT = 1;
-	private const LATEST_EDIT = 2;
+    private const FIRST_EDIT = 1;
+    private const LATEST_EDIT = 2;
 
-	/** @var ActorMigration */
-	private $actorMigration;
+    /** @var ActorMigration */
+    private $actorMigration;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
+    /** @var JobQueueGroup */
+    private $jobQueueGroup;
 
-	/**
-	 * @var array
-	 *
-	 * Mapping of user id to edit count for caching
-	 * To avoid using non-sequential numerical keys, keys are in the form: `u⧼user id⧽`
-	 */
-	private $userEditCountCache = [];
+    /**
+     * @var array
+     *
+     * Mapping of user id to edit count for caching
+     * To avoid using non-sequential numerical keys, keys are in the form: `u⧼user id⧽`
+     */
+    private $userEditCountCache = [];
 
-	/**
-	 * @param ActorMigration $actorMigration
-	 * @param ILoadBalancer $loadBalancer
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
-	public function __construct(
-		ActorMigration $actorMigration,
-		ILoadBalancer $loadBalancer,
-		JobQueueGroup $jobQueueGroup
-	) {
-		$this->actorMigration = $actorMigration;
-		$this->loadBalancer = $loadBalancer;
-		$this->jobQueueGroup = $jobQueueGroup;
-	}
+    /**
+     * @param ActorMigration $actorMigration
+     * @param ILoadBalancer $loadBalancer
+     * @param JobQueueGroup $jobQueueGroup
+     */
+    public function __construct(
+        ActorMigration $actorMigration,
+        ILoadBalancer $loadBalancer,
+        JobQueueGroup $jobQueueGroup
+    )
+    {
+        $this->actorMigration = $actorMigration;
+        $this->loadBalancer = $loadBalancer;
+        $this->jobQueueGroup = $jobQueueGroup;
+    }
 
-	/**
-	 * Get a user's edit count from the user_editcount field, falling back to initialize
-	 *
-	 * @param UserIdentity $user
-	 * @return int|null Null for anonymous users
-	 */
-	public function getUserEditCount( UserIdentity $user ): ?int {
-		if ( !$user->isRegistered() ) {
-			return null;
-		}
+    /**
+     * Get a user's edit count from the user_editcount field, falling back to initialize
+     *
+     * @param UserIdentity $user
+     * @return int|null Null for anonymous users
+     */
+    public function getUserEditCount(UserIdentity $user): ?int
+    {
+        if (!$user->isRegistered()) {
+            return null;
+        }
 
-		$userId = $user->getId();
-		$cacheKey = 'u' . (string)$userId;
+        $userId = $user->getId();
+        $cacheKey = 'u' . (string)$userId;
 
-		if ( isset( $this->userEditCountCache[ $cacheKey ] ) ) {
-			return $this->userEditCountCache[ $cacheKey ];
-		}
+        if (isset($this->userEditCountCache[$cacheKey])) {
+            return $this->userEditCountCache[$cacheKey];
+        }
 
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$count = $dbr->selectField(
-			'user',
-			'user_editcount',
-			[ 'user_id' => $userId ],
-			__METHOD__
-		);
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $count = $dbr->selectField(
+            'user',
+            'user_editcount',
+            ['user_id' => $userId],
+            __METHOD__
+        );
 
-		if ( $count === null ) {
-			// it has not been initialized. do so.
-			$count = $this->initializeUserEditCount( $user );
-		}
+        if ($count === null) {
+            // it has not been initialized. do so.
+            $count = $this->initializeUserEditCount($user);
+        }
 
-		$this->userEditCountCache[ $cacheKey ] = $count;
-		return $count;
-	}
+        $this->userEditCountCache[$cacheKey] = $count;
 
-	/**
-	 * @internal For use in UserEditCountUpdate class
-	 * @param UserIdentity $user
-	 * @return int
-	 */
-	public function initializeUserEditCount( UserIdentity $user ): int {
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$actorWhere = $this->actorMigration->getWhere( $dbr, 'rev_user', $user );
+        return $count;
+    }
 
-		$count = (int)$dbr->selectField(
-			[ 'revision' ] + $actorWhere['tables'],
-			'COUNT(*)',
-			[ $actorWhere['conds'] ],
-			__METHOD__,
-			[],
-			$actorWhere['joins']
-		);
+    /**
+     * @param UserIdentity $user
+     * @return int
+     * @internal For use in UserEditCountUpdate class
+     */
+    public function initializeUserEditCount(UserIdentity $user): int
+    {
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $actorWhere = $this->actorMigration->getWhere($dbr, 'rev_user', $user);
 
-		// Defer updating the edit count via a job (T259719)
-		$this->jobQueueGroup->push( new UserEditCountInitJob( [
-			'userId' => $user->getId(),
-			'editCount' => $count,
-		] ) );
+        $count = (int)$dbr->selectField(
+            ['revision'] + $actorWhere['tables'],
+            'COUNT(*)',
+            [$actorWhere['conds']],
+            __METHOD__,
+            [],
+            $actorWhere['joins']
+        );
 
-		return $count;
-	}
+        // Defer updating the edit count via a job (T259719)
+        $this->jobQueueGroup->push(new UserEditCountInitJob([
+            'userId'    => $user->getId(),
+            'editCount' => $count,
+        ]));
 
-	/**
-	 * Schedule a job to increase a user's edit count
-	 *
-	 * @since 1.37
-	 * @param UserIdentity $user
-	 */
-	public function incrementUserEditCount( UserIdentity $user ) {
-		if ( !$user->isRegistered() ) {
-			// Anonymous users don't have edit counts
-			return;
-		}
+        return $count;
+    }
 
-		DeferredUpdates::addUpdate(
-			new UserEditCountUpdate( $user, 1 ),
-			DeferredUpdates::POSTSEND
-		);
-	}
+    /**
+     * Schedule a job to increase a user's edit count
+     *
+     * @param UserIdentity $user
+     * @since 1.37
+     */
+    public function incrementUserEditCount(UserIdentity $user)
+    {
+        if (!$user->isRegistered()) {
+            // Anonymous users don't have edit counts
+            return;
+        }
 
-	/**
-	 * Get the user's first edit timestamp
-	 *
-	 * @param UserIdentity $user
-	 * @return string|false Timestamp of first edit, or false for non-existent/anonymous user
-	 *  accounts.
-	 */
-	public function getFirstEditTimestamp( UserIdentity $user ) {
-		return $this->getUserEditTimestamp( $user, self::FIRST_EDIT );
-	}
+        DeferredUpdates::addUpdate(
+            new UserEditCountUpdate($user, 1),
+            DeferredUpdates::POSTSEND
+        );
+    }
 
-	/**
-	 * Get the user's latest edit timestamp
-	 *
-	 * @param UserIdentity $user
-	 * @return string|false Timestamp of latest edit, or false for non-existent/anonymous user
-	 *  accounts.
-	 */
-	public function getLatestEditTimestamp( UserIdentity $user ) {
-		return $this->getUserEditTimestamp( $user, self::LATEST_EDIT );
-	}
+    /**
+     * Get the user's first edit timestamp
+     *
+     * @param UserIdentity $user
+     * @return string|false Timestamp of first edit, or false for non-existent/anonymous user
+     *  accounts.
+     */
+    public function getFirstEditTimestamp(UserIdentity $user)
+    {
+        return $this->getUserEditTimestamp($user, self::FIRST_EDIT);
+    }
 
-	/**
-	 * Get the timestamp of a user's edit, either their first or latest
-	 *
-	 * @param UserIdentity $user
-	 * @param int $type either self::FIRST_EDIT or ::LATEST_EDIT
-	 * @return string|false Timestamp of edit, or false for non-existent/anonymous user accounts.
-	 */
-	private function getUserEditTimestamp( UserIdentity $user, int $type ) {
-		if ( !$user->isRegistered() ) {
-			return false;
-		}
+    /**
+     * Get the user's latest edit timestamp
+     *
+     * @param UserIdentity $user
+     * @return string|false Timestamp of latest edit, or false for non-existent/anonymous user
+     *  accounts.
+     */
+    public function getLatestEditTimestamp(UserIdentity $user)
+    {
+        return $this->getUserEditTimestamp($user, self::LATEST_EDIT);
+    }
 
-		$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
-		$actorWhere = $this->actorMigration->getWhere( $dbr, 'rev_user', $user );
+    /**
+     * Get the timestamp of a user's edit, either their first or latest
+     *
+     * @param UserIdentity $user
+     * @param int $type either self::FIRST_EDIT or ::LATEST_EDIT
+     * @return string|false Timestamp of edit, or false for non-existent/anonymous user accounts.
+     */
+    private function getUserEditTimestamp(UserIdentity $user, int $type)
+    {
+        if (!$user->isRegistered()) {
+            return false;
+        }
 
-		$sortOrder = ( $type === self::FIRST_EDIT ) ? 'ASC' : 'DESC';
-		$time = $dbr->selectField(
-			[ 'revision' ] + $actorWhere['tables'],
-			'rev_timestamp',
-			[ $actorWhere['conds'] ],
-			__METHOD__,
-			[ 'ORDER BY' => "rev_timestamp $sortOrder" ],
-			$actorWhere['joins']
-		);
+        $dbr = $this->loadBalancer->getConnectionRef(DB_REPLICA);
+        $actorWhere = $this->actorMigration->getWhere($dbr, 'rev_user', $user);
 
-		if ( !$time ) {
-			return false; // no edits
-		}
+        $sortOrder = ($type === self::FIRST_EDIT) ? 'ASC' : 'DESC';
+        $time = $dbr->selectField(
+            ['revision'] + $actorWhere['tables'],
+            'rev_timestamp',
+            [$actorWhere['conds']],
+            __METHOD__,
+            ['ORDER BY' => "rev_timestamp $sortOrder"],
+            $actorWhere['joins']
+        );
 
-		return ConvertibleTimestamp::convert( TS_MW, $time );
-	}
+        if (!$time) {
+            return false; // no edits
+        }
 
-	/**
-	 * @internal For use by User::clearInstanceCache()
-	 * @param UserIdentity $user
-	 */
-	public function clearUserEditCache( UserIdentity $user ) {
-		if ( !$user->isRegistered() ) {
-			return;
-		}
+        return ConvertibleTimestamp::convert(TS_MW, $time);
+    }
 
-		$userId = $user->getId();
-		$cacheKey = 'u' . (string)$userId;
+    /**
+     * @param UserIdentity $user
+     * @internal For use by User::clearInstanceCache()
+     */
+    public function clearUserEditCache(UserIdentity $user)
+    {
+        if (!$user->isRegistered()) {
+            return;
+        }
 
-		unset( $this->userEditCountCache[ $cacheKey ] );
-	}
+        $userId = $user->getId();
+        $cacheKey = 'u' . (string)$userId;
 
-	/**
-	 * @internal For use by User::loadFromRow() and tests
-	 * @param UserIdentity $user
-	 * @param int $editCount
-	 * @throws InvalidArgumentException If the user is not registered
-	 */
-	public function setCachedUserEditCount( UserIdentity $user, int $editCount ) {
-		if ( !$user->isRegistered() ) {
-			throw new InvalidArgumentException( __METHOD__ . ' with an anonymous user' );
-		}
+        unset($this->userEditCountCache[$cacheKey]);
+    }
 
-		$userId = $user->getId();
-		$cacheKey = 'u' . (string)$userId;
+    /**
+     * @param UserIdentity $user
+     * @param int $editCount
+     * @throws InvalidArgumentException If the user is not registered
+     * @internal For use by User::loadFromRow() and tests
+     */
+    public function setCachedUserEditCount(UserIdentity $user, int $editCount)
+    {
+        if (!$user->isRegistered()) {
+            throw new InvalidArgumentException(__METHOD__ . ' with an anonymous user');
+        }
 
-		$this->userEditCountCache[ $cacheKey ] = $editCount;
-	}
+        $userId = $user->getId();
+        $cacheKey = 'u' . (string)$userId;
+
+        $this->userEditCountCache[$cacheKey] = $editCount;
+    }
 
 }

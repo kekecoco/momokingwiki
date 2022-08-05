@@ -12,15 +12,16 @@ use Wikimedia\Rdbms\IResultWrapper;
  * @stable to implement
  * @ingroup Hooks
  */
-interface ChangesListInitRowsHook {
-	/**
-	 * Use this hook to batch process change list rows prior to rendering.
-	 *
-	 * @since 1.35
-	 *
-	 * @param ChangesList $changesList
-	 * @param IResultWrapper|\stdClass[] $rows Data that will be rendered
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onChangesListInitRows( $changesList, $rows );
+interface ChangesListInitRowsHook
+{
+    /**
+     * Use this hook to batch process change list rows prior to rendering.
+     *
+     * @param ChangesList $changesList
+     * @param IResultWrapper|\stdClass[] $rows Data that will be rendered
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onChangesListInitRows($changesList, $rows);
 }

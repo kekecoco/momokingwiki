@@ -12,68 +12,74 @@ use Wikimedia\Message\MessageValue;
 /**
  * @since 1.35
  */
-abstract class AbstractContributionHandler extends Handler {
+abstract class AbstractContributionHandler extends Handler
+{
 
-	/**
-	 * @var ContributionsLookup
-	 */
-	protected $contributionsLookup;
+    /**
+     * @var ContributionsLookup
+     */
+    protected $contributionsLookup;
 
-	/** Hard limit results to 20 contributions */
-	protected const MAX_LIMIT = 20;
+    /** Hard limit results to 20 contributions */
+    protected const MAX_LIMIT = 20;
 
-	/**
-	 * @var bool User is requesting their own contributions
-	 */
-	protected $me;
+    /**
+     * @var bool User is requesting their own contributions
+     */
+    protected $me;
 
-	/**
-	 * @var UserNameUtils
-	 */
-	protected $userNameUtils;
+    /**
+     * @var UserNameUtils
+     */
+    protected $userNameUtils;
 
-	/**
-	 * @param ContributionsLookup $contributionsLookup
-	 * @param UserNameUtils $userNameUtils
-	 */
-	public function __construct(
-		ContributionsLookup $contributionsLookup,
-		UserNameUtils $userNameUtils
-	) {
-		$this->contributionsLookup = $contributionsLookup;
-		$this->userNameUtils = $userNameUtils;
-	}
+    /**
+     * @param ContributionsLookup $contributionsLookup
+     * @param UserNameUtils $userNameUtils
+     */
+    public function __construct(
+        ContributionsLookup $contributionsLookup,
+        UserNameUtils $userNameUtils
+    )
+    {
+        $this->contributionsLookup = $contributionsLookup;
+        $this->userNameUtils = $userNameUtils;
+    }
 
-	protected function postInitSetup() {
-		$this->me = $this->getConfig()['mode'] === 'me';
-	}
+    protected function postInitSetup()
+    {
+        $this->me = $this->getConfig()['mode'] === 'me';
+    }
 
-	/**
-	 * Returns the user who's contributions we are requesting.
-	 * Either me (requesting user) or another user.
-	 *
-	 * @return UserIdentity
-	 * @throws LocalizedHttpException
-	 */
-	protected function getTargetUser() {
-		if ( $this->me ) {
-			$user = $this->getAuthority()->getUser();
-			if ( !$user->isRegistered() ) {
-				throw new LocalizedHttpException(
-					new MessageValue( 'rest-permission-denied-anon' ), 401
-				);
-			}
-			return $user;
-		}
+    /**
+     * Returns the user who's contributions we are requesting.
+     * Either me (requesting user) or another user.
+     *
+     * @return UserIdentity
+     * @throws LocalizedHttpException
+     */
+    protected function getTargetUser()
+    {
+        if ($this->me) {
+            $user = $this->getAuthority()->getUser();
+            if (!$user->isRegistered()) {
+                throw new LocalizedHttpException(
+                    new MessageValue('rest-permission-denied-anon'), 401
+                );
+            }
 
-		/** @var UserIdentity $user */
-		$user = $this->getValidatedParams()['user'];
-		$name = $user->getName();
-		if ( !$this->userNameUtils->isIp( $name ) && !$user->isRegistered() ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'rest-nonexistent-user', [ $name ] ), 404
-			);
-		}
-		return $user;
-	}
+            return $user;
+        }
+
+        /** @var UserIdentity $user */
+        $user = $this->getValidatedParams()['user'];
+        $name = $user->getName();
+        if (!$this->userNameUtils->isIp($name) && !$user->isRegistered()) {
+            throw new LocalizedHttpException(
+                new MessageValue('rest-nonexistent-user', [$name]), 404
+            );
+        }
+
+        return $user;
+    }
 }

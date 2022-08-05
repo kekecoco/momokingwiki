@@ -31,34 +31,38 @@ use MessageSpecifier;
  * @ingroup Database
  * @since 1.23
  */
-class DBExpectedError extends DBError implements MessageSpecifier {
-	/** @var string[] Message parameters */
-	protected $params;
+class DBExpectedError extends DBError implements MessageSpecifier
+{
+    /** @var string[] Message parameters */
+    protected $params;
 
-	/**
-	 * @stable to call
-	 * @param IDatabase|null $db
-	 * @param string $error
-	 * @param array $params
-	 * @param \Throwable|null $prev
-	 */
-	public function __construct(
-		?IDatabase $db, $error, array $params = [], \Throwable $prev = null
-	) {
-		parent::__construct( $db, $error, $prev );
-		$this->params = $params;
-	}
+    /**
+     * @stable to call
+     * @param IDatabase|null $db
+     * @param string $error
+     * @param array $params
+     * @param \Throwable|null $prev
+     */
+    public function __construct(
+        ?IDatabase $db, $error, array $params = [], \Throwable $prev = null
+    )
+    {
+        parent::__construct($db, $error, $prev);
+        $this->params = $params;
+    }
 
-	public function getKey() {
-		return 'databaseerror-text';
-	}
+    public function getKey()
+    {
+        return 'databaseerror-text';
+    }
 
-	public function getParams() {
-		return $this->params;
-	}
+    public function getParams()
+    {
+        return $this->params;
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBExpectedError::class, 'DBExpectedError' );
+class_alias(DBExpectedError::class, 'DBExpectedError');

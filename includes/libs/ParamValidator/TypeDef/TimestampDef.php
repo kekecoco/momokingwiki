@@ -29,118 +29,125 @@ use Wikimedia\Timestamp\TimestampException;
  * @since 1.34
  * @unstable
  */
-class TimestampDef extends TypeDef {
+class TimestampDef extends TypeDef
+{
 
-	/**
-	 * (string|int) Timestamp format to return from validate()
-	 *
-	 * Values include:
-	 *  - 'ConvertibleTimestamp': A ConvertibleTimestamp object.
-	 *  - 'DateTime': A PHP DateTime object
-	 *  - One of ConvertibleTimestamp's TS_* constants.
-	 *
-	 * This does not affect the format returned by stringifyValue().
-	 */
-	public const PARAM_TIMESTAMP_FORMAT = 'param-timestamp-format';
+    /**
+     * (string|int) Timestamp format to return from validate()
+     *
+     * Values include:
+     *  - 'ConvertibleTimestamp': A ConvertibleTimestamp object.
+     *  - 'DateTime': A PHP DateTime object
+     *  - One of ConvertibleTimestamp's TS_* constants.
+     *
+     * This does not affect the format returned by stringifyValue().
+     */
+    public const PARAM_TIMESTAMP_FORMAT = 'param-timestamp-format';
 
-	/** @var string|int */
-	protected $defaultFormat;
+    /** @var string|int */
+    protected $defaultFormat;
 
-	/** @var int */
-	protected $stringifyFormat;
+    /** @var int */
+    protected $stringifyFormat;
 
-	/**
-	 * @param Callbacks $callbacks
-	 * @param array $options Options:
-	 *  - defaultFormat: (string|int) Default for PARAM_TIMESTAMP_FORMAT.
-	 *    Default if not specified is 'ConvertibleTimestamp'.
-	 *  - stringifyFormat: (int) Format to use for stringifyValue().
-	 *    Default is TS_ISO_8601.
-	 */
-	public function __construct( Callbacks $callbacks, array $options = [] ) {
-		parent::__construct( $callbacks );
+    /**
+     * @param Callbacks $callbacks
+     * @param array $options Options:
+     *  - defaultFormat: (string|int) Default for PARAM_TIMESTAMP_FORMAT.
+     *    Default if not specified is 'ConvertibleTimestamp'.
+     *  - stringifyFormat: (int) Format to use for stringifyValue().
+     *    Default is TS_ISO_8601.
+     */
+    public function __construct(Callbacks $callbacks, array $options = [])
+    {
+        parent::__construct($callbacks);
 
-		$this->defaultFormat = $options['defaultFormat'] ?? 'ConvertibleTimestamp';
-		$this->stringifyFormat = $options['stringifyFormat'] ?? TS_ISO_8601;
+        $this->defaultFormat = $options['defaultFormat'] ?? 'ConvertibleTimestamp';
+        $this->stringifyFormat = $options['stringifyFormat'] ?? TS_ISO_8601;
 
-		// Check values by trying to convert 0
-		if ( $this->defaultFormat !== 'ConvertibleTimestamp' && $this->defaultFormat !== 'DateTime' &&
-			ConvertibleTimestamp::convert( $this->defaultFormat, 0 ) === false
-		) {
-			throw new InvalidArgumentException( 'Invalid value for $options[\'defaultFormat\']' );
-		}
-		if ( ConvertibleTimestamp::convert( $this->stringifyFormat, 0 ) === false ) {
-			throw new InvalidArgumentException( 'Invalid value for $options[\'stringifyFormat\']' );
-		}
-	}
+        // Check values by trying to convert 0
+        if ($this->defaultFormat !== 'ConvertibleTimestamp' && $this->defaultFormat !== 'DateTime' &&
+            ConvertibleTimestamp::convert($this->defaultFormat, 0) === false
+        ) {
+            throw new InvalidArgumentException('Invalid value for $options[\'defaultFormat\']');
+        }
+        if (ConvertibleTimestamp::convert($this->stringifyFormat, 0) === false) {
+            throw new InvalidArgumentException('Invalid value for $options[\'stringifyFormat\']');
+        }
+    }
 
-	public function validate( $name, $value, array $settings, array $options ) {
-		// Confusing synonyms for the current time accepted by ConvertibleTimestamp
-		if ( !$value ) {
-			$this->failure( 'unclearnowtimestamp', $name, $value, $settings, $options, false );
-			$value = 'now';
-		}
+    public function validate($name, $value, array $settings, array $options)
+    {
+        // Confusing synonyms for the current time accepted by ConvertibleTimestamp
+        if (!$value) {
+            $this->failure('unclearnowtimestamp', $name, $value, $settings, $options, false);
+            $value = 'now';
+        }
 
-		$format = $settings[self::PARAM_TIMESTAMP_FORMAT] ?? $this->defaultFormat;
+        $format = $settings[self::PARAM_TIMESTAMP_FORMAT] ?? $this->defaultFormat;
 
-		try {
-			$timestampObj = new ConvertibleTimestamp( $value === 'now' ? false : $value );
+        try {
+            $timestampObj = new ConvertibleTimestamp($value === 'now' ? false : $value);
 
-			$timestamp = ( $format !== 'ConvertibleTimestamp' && $format !== 'DateTime' )
-				? $timestampObj->getTimestamp( $format )
-				: null;
-		} catch ( TimestampException $ex ) {
-			// $this->failure() doesn't handle passing a previous exception
-			throw new ValidationException(
-				$this->failureMessage( 'badtimestamp' )->plaintextParams( $name, $value ),
-				$name, $value, $settings, $ex
-			);
-		}
+            $timestamp = ($format !== 'ConvertibleTimestamp' && $format !== 'DateTime')
+                ? $timestampObj->getTimestamp($format)
+                : null;
+        } catch (TimestampException $ex) {
+            // $this->failure() doesn't handle passing a previous exception
+            throw new ValidationException(
+                $this->failureMessage('badtimestamp')->plaintextParams($name, $value),
+                $name, $value, $settings, $ex
+            );
+        }
 
-		switch ( $format ) {
-			case 'ConvertibleTimestamp':
-				return $timestampObj;
+        switch ($format) {
+            case 'ConvertibleTimestamp':
+                return $timestampObj;
 
-			case 'DateTime':
-				// Eew, no getter.
-				return $timestampObj->timestamp;
+            case 'DateTime':
+                // Eew, no getter.
+                return $timestampObj->timestamp;
 
-			default:
-				return $timestamp;
-		}
-	}
+            default:
+                return $timestamp;
+        }
+    }
 
-	public function checkSettings( string $name, $settings, array $options, array $ret ): array {
-		$ret = parent::checkSettings( $name, $settings, $options, $ret );
+    public function checkSettings(string $name, $settings, array $options, array $ret): array
+    {
+        $ret = parent::checkSettings($name, $settings, $options, $ret);
 
-		$ret['allowedKeys'] = array_merge( $ret['allowedKeys'], [
-			self::PARAM_TIMESTAMP_FORMAT,
-		] );
+        $ret['allowedKeys'] = array_merge($ret['allowedKeys'], [
+            self::PARAM_TIMESTAMP_FORMAT,
+        ]);
 
-		$f = $settings[self::PARAM_TIMESTAMP_FORMAT] ?? $this->defaultFormat;
-		if ( $f !== 'ConvertibleTimestamp' && $f !== 'DateTime' &&
-			ConvertibleTimestamp::convert( $f, 0 ) === false
-		) {
-			$ret['issues'][self::PARAM_TIMESTAMP_FORMAT] = 'Value for PARAM_TIMESTAMP_FORMAT is not valid';
-		}
+        $f = $settings[self::PARAM_TIMESTAMP_FORMAT] ?? $this->defaultFormat;
+        if ($f !== 'ConvertibleTimestamp' && $f !== 'DateTime' &&
+            ConvertibleTimestamp::convert($f, 0) === false
+        ) {
+            $ret['issues'][self::PARAM_TIMESTAMP_FORMAT] = 'Value for PARAM_TIMESTAMP_FORMAT is not valid';
+        }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	public function stringifyValue( $name, $value, array $settings, array $options ) {
-		if ( !$value instanceof ConvertibleTimestamp ) {
-			$value = new ConvertibleTimestamp( $value );
-		}
-		return $value->getTimestamp( $this->stringifyFormat );
-	}
+    public function stringifyValue($name, $value, array $settings, array $options)
+    {
+        if (!$value instanceof ConvertibleTimestamp) {
+            $value = new ConvertibleTimestamp($value);
+        }
 
-	public function getHelpInfo( $name, array $settings, array $options ) {
-		$info = parent::getHelpInfo( $name, $settings, $options );
+        return $value->getTimestamp($this->stringifyFormat);
+    }
 
-		$info[ParamValidator::PARAM_TYPE] = MessageValue::new( 'paramvalidator-help-type-timestamp' )
-			->params( empty( $settings[ParamValidator::PARAM_ISMULTI] ) ? 1 : 2 );
+    public function getHelpInfo($name, array $settings, array $options)
+    {
+        $info = parent::getHelpInfo($name, $settings, $options);
 
-		return $info;
-	}
+        $info[ParamValidator::PARAM_TYPE] = MessageValue::new('paramvalidator-help-type-timestamp')
+            ->params(empty($settings[ParamValidator::PARAM_ISMULTI]) ? 1 : 2);
+
+        return $info;
+    }
 
 }

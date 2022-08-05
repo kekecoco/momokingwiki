@@ -25,95 +25,104 @@
  *
  * @since 1.21
  */
-class MappedIterator extends FilterIterator {
-	/** @var callable */
-	protected $vCallback;
-	/** @var callable|null */
-	protected $aCallback;
-	/** @var array */
-	protected $cache = [];
+class MappedIterator extends FilterIterator
+{
+    /** @var callable */
+    protected $vCallback;
+    /** @var callable|null */
+    protected $aCallback;
+    /** @var array */
+    protected $cache = [];
 
-	protected $rewound = false; // boolean; whether rewind() has been called
+    protected $rewound = false; // boolean; whether rewind() has been called
 
-	/**
-	 * Build an new iterator from a base iterator by having the former wrap the
-	 * later, returning the result of "value" callback for each current() invocation.
-	 * The callback takes the result of current() on the base iterator as an argument.
-	 * The keys of the base iterator are reused verbatim.
-	 *
-	 * An "accept" callback can also be provided which will be called for each value in
-	 * the base iterator (post-callback) and will return true if that value should be
-	 * included in iteration of the MappedIterator (otherwise it will be filtered out).
-	 *
-	 * @param Iterator|array $iter
-	 * @param callable $vCallback Value transformation callback
-	 * @param array $options Options map (includes "accept") (since 1.22)
-	 * @phan-param array{accept?:callable} $options
-	 * @throws UnexpectedValueException
-	 */
-	public function __construct( $iter, $vCallback, array $options = [] ) {
-		if ( is_array( $iter ) ) {
-			$baseIterator = new ArrayIterator( $iter );
-		} elseif ( $iter instanceof Iterator ) {
-			$baseIterator = $iter;
-		} else {
-			throw new UnexpectedValueException( "Invalid base iterator provided." );
-		}
-		parent::__construct( $baseIterator );
-		$this->vCallback = $vCallback;
-		$this->aCallback = $options['accept'] ?? null;
-	}
+    /**
+     * Build an new iterator from a base iterator by having the former wrap the
+     * later, returning the result of "value" callback for each current() invocation.
+     * The callback takes the result of current() on the base iterator as an argument.
+     * The keys of the base iterator are reused verbatim.
+     *
+     * An "accept" callback can also be provided which will be called for each value in
+     * the base iterator (post-callback) and will return true if that value should be
+     * included in iteration of the MappedIterator (otherwise it will be filtered out).
+     *
+     * @param Iterator|array $iter
+     * @param callable $vCallback Value transformation callback
+     * @param array $options Options map (includes "accept") (since 1.22)
+     * @phan-param array{accept?:callable} $options
+     * @throws UnexpectedValueException
+     */
+    public function __construct($iter, $vCallback, array $options = [])
+    {
+        if (is_array($iter)) {
+            $baseIterator = new ArrayIterator($iter);
+        } elseif ($iter instanceof Iterator) {
+            $baseIterator = $iter;
+        } else {
+            throw new UnexpectedValueException("Invalid base iterator provided.");
+        }
+        parent::__construct($baseIterator);
+        $this->vCallback = $vCallback;
+        $this->aCallback = $options['accept'] ?? null;
+    }
 
-	public function next(): void {
-		$this->cache = [];
-		parent::next();
-	}
+    public function next(): void
+    {
+        $this->cache = [];
+        parent::next();
+    }
 
-	public function rewind(): void {
-		$this->rewound = true;
-		$this->cache = [];
-		parent::rewind();
-	}
+    public function rewind(): void
+    {
+        $this->rewound = true;
+        $this->cache = [];
+        parent::rewind();
+    }
 
-	public function accept(): bool {
-		$value = call_user_func( $this->vCallback, $this->getInnerIterator()->current() );
-		$ok = ( $this->aCallback ) ? call_user_func( $this->aCallback, $value ) : true;
-		if ( $ok ) {
-			$this->cache['current'] = $value;
-		}
+    public function accept(): bool
+    {
+        $value = call_user_func($this->vCallback, $this->getInnerIterator()->current());
+        $ok = ($this->aCallback) ? call_user_func($this->aCallback, $value) : true;
+        if ($ok) {
+            $this->cache['current'] = $value;
+        }
 
-		return $ok;
-	}
+        return $ok;
+    }
 
-	#[\ReturnTypeWillChange]
-	public function key() {
-		$this->init();
+    #[\ReturnTypeWillChange]
+    public function key()
+    {
+        $this->init();
 
-		return parent::key();
-	}
+        return parent::key();
+    }
 
-	public function valid(): bool {
-		$this->init();
+    public function valid(): bool
+    {
+        $this->init();
 
-		return parent::valid();
-	}
+        return parent::valid();
+    }
 
-	#[\ReturnTypeWillChange]
-	public function current() {
-		$this->init();
-		if ( parent::valid() ) {
-			return $this->cache['current'];
-		} else {
-			return null; // out of range
-		}
-	}
+    #[\ReturnTypeWillChange]
+    public function current()
+    {
+        $this->init();
+        if (parent::valid()) {
+            return $this->cache['current'];
+        } else {
+            return null; // out of range
+        }
+    }
 
-	/**
-	 * Obviate the usual need for rewind() before using a FilterIterator in a manual loop
-	 */
-	protected function init() {
-		if ( !$this->rewound ) {
-			$this->rewind();
-		}
-	}
+    /**
+     * Obviate the usual need for rewind() before using a FilterIterator in a manual loop
+     */
+    protected function init()
+    {
+        if (!$this->rewound) {
+            $this->rewind();
+        }
+    }
 }

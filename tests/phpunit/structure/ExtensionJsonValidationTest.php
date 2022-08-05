@@ -20,47 +20,51 @@
  * Validates all loaded extensions and skins using the ExtensionRegistry
  * against the extension.json schema in the docs/ folder.
  */
-class ExtensionJsonValidationTest extends PHPUnit\Framework\TestCase {
+class ExtensionJsonValidationTest extends PHPUnit\Framework\TestCase
+{
 
-	use MediaWikiCoversValidator;
+    use MediaWikiCoversValidator;
 
-	/**
-	 * @var ExtensionJsonValidator
-	 */
-	protected $validator;
+    /**
+     * @var ExtensionJsonValidator
+     */
+    protected $validator;
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->validator = new ExtensionJsonValidator( [ $this, 'markTestSkipped' ] );
-		$this->validator->checkDependencies();
+        $this->validator = new ExtensionJsonValidator([$this, 'markTestSkipped']);
+        $this->validator->checkDependencies();
 
-		if ( !ExtensionRegistry::getInstance()->getAllThings() ) {
-			$this->markTestSkipped(
-				'There are no extensions or skins loaded via the ExtensionRegistry'
-			);
-		}
-	}
+        if (!ExtensionRegistry::getInstance()->getAllThings()) {
+            $this->markTestSkipped(
+                'There are no extensions or skins loaded via the ExtensionRegistry'
+            );
+        }
+    }
 
-	public static function providePassesValidation() {
-		$allThings = ExtensionRegistry::getInstance()->getAllThings();
+    public static function providePassesValidation()
+    {
+        $allThings = ExtensionRegistry::getInstance()->getAllThings();
 
-		foreach ( $allThings as $thing ) {
-			yield [ $thing['path'] ];
-		}
-	}
+        foreach ($allThings as $thing) {
+            yield [$thing['path']];
+        }
+    }
 
-	/**
-	 * @dataProvider providePassesValidation
-	 * @param string $path Path to thing's json file
-	 */
-	public function testPassesValidation( $path ) {
-		try {
-			$this->validator->validate( $path );
-			// All good
-			$this->assertTrue( true );
-		} catch ( ExtensionJsonValidationError $e ) {
-			$this->fail( $e->getMessage() );
-		}
-	}
+    /**
+     * @dataProvider providePassesValidation
+     * @param string $path Path to thing's json file
+     */
+    public function testPassesValidation($path)
+    {
+        try {
+            $this->validator->validate($path);
+            // All good
+            $this->assertTrue(true);
+        } catch (ExtensionJsonValidationError $e) {
+            $this->fail($e->getMessage());
+        }
+    }
 }

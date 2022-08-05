@@ -6,14 +6,14 @@
  */
 
 .mw-widget-copyTextLayout > .oo-ui-fieldLayout-body > .oo-ui-fieldLayout-field {
-	/* TODO: This should be upstreamed to OOUI */
-	max-width: 50em;
+    /* TODO: This should be upstreamed to OOUI */
+    max-width: 50em;
 }
 
 .mw-widget-copyTextLayout-multiline-button {
-	display: block;
-	max-width: 50em;
-	margin-top: 0.5em;
-	/* Float to right of inline help */
-	float: right;
+    display: block;
+    max-width: 50em;
+    margin-top: 0.5em;
+    /* Float to right of inline help */
+    float: right;
 }

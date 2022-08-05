@@ -7,12 +7,13 @@ namespace Wikimedia\Message;
  *
  * @see ITextFormatter
  */
-interface IMessageFormatterFactory {
-	/**
-	 * Get a text message formatter for a given language.
-	 *
-	 * @param string $langCode The language code
-	 * @return ITextFormatter
-	 */
-	public function getTextFormatter( $langCode ): ITextFormatter;
+interface IMessageFormatterFactory
+{
+    /**
+     * Get a text message formatter for a given language.
+     *
+     * @param string $langCode The language code
+     * @return ITextFormatter
+     */
+    public function getTextFormatter($langCode): ITextFormatter;
 }

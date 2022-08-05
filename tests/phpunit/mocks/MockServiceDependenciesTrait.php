@@ -11,53 +11,57 @@ use ReflectionParameter;
  *
  * @package MediaWiki\Tests\Unit
  */
-trait MockServiceDependenciesTrait {
+trait MockServiceDependenciesTrait
+{
 
-	/**
-	 * Construct an new instance of $serviceClass with all constructor arguments
-	 * mocked. $parameterOverrides allows to provide some constructor argument.
-	 *
-	 * @param string $serviceClass
-	 * @param array $parameterOverrides [ argument name => argument value ]
-	 * @return mixed
-	 */
-	protected function newServiceInstance(
-		string $serviceClass,
-		array $parameterOverrides
-	) {
-		$params = [];
-		$reflectionClass = new ReflectionClass( $serviceClass );
-		$constructor = $reflectionClass->getConstructor();
-		foreach ( $constructor->getParameters() as $parameter ) {
-			$params[] = $parameterOverrides[$parameter->getName()]
-				?? $this->getMockValueForParam( $parameter );
-		}
-		return new $serviceClass( ...$params );
-	}
+    /**
+     * Construct an new instance of $serviceClass with all constructor arguments
+     * mocked. $parameterOverrides allows to provide some constructor argument.
+     *
+     * @param string $serviceClass
+     * @param array $parameterOverrides [ argument name => argument value ]
+     * @return mixed
+     */
+    protected function newServiceInstance(
+        string $serviceClass,
+        array $parameterOverrides
+    )
+    {
+        $params = [];
+        $reflectionClass = new ReflectionClass($serviceClass);
+        $constructor = $reflectionClass->getConstructor();
+        foreach ($constructor->getParameters() as $parameter) {
+            $params[] = $parameterOverrides[$parameter->getName()]
+                ?? $this->getMockValueForParam($parameter);
+        }
 
-	/**
-	 * Override if this doesn't produce suitable values for one or more of the parameters to your
-	 * factory constructor or create method.
-	 *
-	 * @param ReflectionParameter $param One of the factory constructor's arguments
-	 * @return mixed A value to pass that will allow the object to be constructed successfully
-	 */
-	private function getMockValueForParam( ReflectionParameter $param ) {
-		$pos = $param->getPosition();
-		$type = $param->getType();
-		if ( !$type || $type->getName() === 'string' ) {
-			// Optimistically assume a string is okay
-			return "some unlikely string $pos";
-		}
-		$type = $type->getName();
-		if ( $type === 'array' || $type === 'iterable' ) {
-			return [ "some unlikely string $pos" ];
-		}
+        return new $serviceClass(...$params);
+    }
 
-		if ( class_exists( $type ) || interface_exists( $type ) ) {
-			return $this->createMock( $type );
-		}
+    /**
+     * Override if this doesn't produce suitable values for one or more of the parameters to your
+     * factory constructor or create method.
+     *
+     * @param ReflectionParameter $param One of the factory constructor's arguments
+     * @return mixed A value to pass that will allow the object to be constructed successfully
+     */
+    private function getMockValueForParam(ReflectionParameter $param)
+    {
+        $pos = $param->getPosition();
+        $type = $param->getType();
+        if (!$type || $type->getName() === 'string') {
+            // Optimistically assume a string is okay
+            return "some unlikely string $pos";
+        }
+        $type = $type->getName();
+        if ($type === 'array' || $type === 'iterable') {
+            return ["some unlikely string $pos"];
+        }
 
-		$this->fail( "Unrecognized parameter type $type" );
-	}
+        if (class_exists($type) || interface_exists($type)) {
+            return $this->createMock($type);
+        }
+
+        $this->fail("Unrecognized parameter type $type");
+    }
 }

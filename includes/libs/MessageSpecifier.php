@@ -21,22 +21,23 @@
 /**
  * @stable for implementing
  */
-interface MessageSpecifier {
-	/**
-	 * Returns the message key
-	 *
-	 * If a list of multiple possible keys was supplied to the constructor, this method may
-	 * return any of these keys. After the message has been fetched, this method will return
-	 * the key that was actually used to fetch the message.
-	 *
-	 * @return string
-	 */
-	public function getKey();
+interface MessageSpecifier
+{
+    /**
+     * Returns the message key
+     *
+     * If a list of multiple possible keys was supplied to the constructor, this method may
+     * return any of these keys. After the message has been fetched, this method will return
+     * the key that was actually used to fetch the message.
+     *
+     * @return string
+     */
+    public function getKey();
 
-	/**
-	 * Returns the message parameters
-	 *
-	 * @return array
-	 */
-	public function getParams();
+    /**
+     * Returns the message parameters
+     *
+     * @return array
+     */
+    public function getParams();
 }

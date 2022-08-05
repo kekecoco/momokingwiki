@@ -24,6 +24,7 @@
  * @see https://phabricator.wikimedia.org/T290099
  * @ingroup Maintenance
  */
+
 use MediaWiki\MediaWikiServices;
 
 require_once __DIR__ . '/Maintenance.php';
@@ -33,32 +34,35 @@ require_once __DIR__ . '/Maintenance.php';
  * @since 1.38
  * @author Samuel Guebo
  */
-class DeleteUserEmail extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( "Delete a user's email" );
-		$this->addArg( 'user', 'Username or user ID, if starts with #', true );
-	}
+class DeleteUserEmail extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription("Delete a user's email");
+        $this->addArg('user', 'Username or user ID, if starts with #', true);
+    }
 
-	public function execute() {
-		$userFactory = MediaWikiServices::getInstance()->getUserFactory();
-		$userName = $this->getArg( 0 );
-		if ( preg_match( '/^#\d+$/', $userName ) ) {
-			$user = $userFactory->newFromId( (int)substr( $userName, 1 ) );
-		} else {
-			$user = $userFactory->newFromName( $userName );
-		}
+    public function execute()
+    {
+        $userFactory = MediaWikiServices::getInstance()->getUserFactory();
+        $userName = $this->getArg(0);
+        if (preg_match('/^#\d+$/', $userName)) {
+            $user = $userFactory->newFromId((int)substr($userName, 1));
+        } else {
+            $user = $userFactory->newFromName($userName);
+        }
 
-		// Checking whether User object is valid and has an actual id
-		if ( !$user || !$user->isRegistered() || !$user->loadFromId() ) {
-			$this->fatalError( "Error: user '$userName' could not be loaded" );
-		}
+        // Checking whether User object is valid and has an actual id
+        if (!$user || !$user->isRegistered() || !$user->loadFromId()) {
+            $this->fatalError("Error: user '$userName' could not be loaded");
+        }
 
-		// Blank the email address
-		$user->invalidateEmail();
-		$user->saveSettings();
-		$this->output( "Done!\n" );
-	}
+        // Blank the email address
+        $user->invalidateEmail();
+        $user->saveSettings();
+        $this->output("Done!\n");
+    }
 }
 
 $maintClass = DeleteUserEmail::class;

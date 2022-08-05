@@ -35,187 +35,199 @@ use MediaWiki\Site\MediaWikiPageNameNormalizer;
  *
  * @ingroup Site
  */
-class MediaWikiSite extends Site {
-	public const PATH_FILE = 'file_path';
-	public const PATH_PAGE = 'page_path';
+class MediaWikiSite extends Site
+{
+    public const PATH_FILE = 'file_path';
+    public const PATH_PAGE = 'page_path';
 
-	/**
-	 * @since 1.21
-	 *
-	 * @param string $type
-	 */
-	public function __construct( $type = self::TYPE_MEDIAWIKI ) {
-		parent::__construct( $type );
-	}
+    /**
+     * @param string $type
+     * @since 1.21
+     *
+     */
+    public function __construct($type = self::TYPE_MEDIAWIKI)
+    {
+        parent::__construct($type);
+    }
 
-	/**
-	 * Returns the database form of the given title.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string $title The target page's title, in normalized form.
-	 *
-	 * @return string
-	 */
-	public function toDBKey( $title ) {
-		return str_replace( ' ', '_', $title );
-	}
+    /**
+     * Returns the database form of the given title.
+     *
+     * @param string $title The target page's title, in normalized form.
+     *
+     * @return string
+     * @since 1.21
+     *
+     */
+    public function toDBKey($title)
+    {
+        return str_replace(' ', '_', $title);
+    }
 
-	/**
-	 * Returns the normalized form of the given page title, using the
-	 * normalization rules of the given site. If $followRedirect is set to true
-	 * and the given title is a redirect, the redirect will be resolved and
-	 * the redirect target is returned.
-	 * Only titles of existing pages will be returned.
-	 *
-	 * @note This actually makes an API request to the remote site, so beware
-	 *   that this function is slow and depends on an external service.
-	 *
-	 * @note If MW_PHPUNIT_TEST is defined, the call to the external site is
-	 *   skipped, and the title is normalized using the local normalization
-	 *   rules as implemented by the Title class.
-	 *
-	 * @see Site::normalizePageName
-	 *
-	 * @since 1.21
-	 * @since 1.37 Added $followRedirect
-	 *
-	 * @param string $pageName
-	 * @param int $followRedirect either MediaWikiPageNameNormalizer::FOLLOW_REDIRECT or
-	 * MediaWikiPageNameNormalizer::NOFOLLOW_REDIRECT
-	 *
-	 * @return string|false The normalized form of the title,
-	 * or false to indicate an invalid title, a missing page,
-	 * or some other kind of error.
-	 * @throws MWException
-	 */
-	public function normalizePageName( $pageName, $followRedirect = MediaWikiPageNameNormalizer::FOLLOW_REDIRECT ) {
-		if ( defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_DEV_ENV' ) ) {
-			// If the code is under test, don't call out to other sites, just
-			// normalize locally.
-			// Note: this may cause results to be inconsistent with the actual
-			// normalization used by the respective remote site!
+    /**
+     * Returns the normalized form of the given page title, using the
+     * normalization rules of the given site. If $followRedirect is set to true
+     * and the given title is a redirect, the redirect will be resolved and
+     * the redirect target is returned.
+     * Only titles of existing pages will be returned.
+     *
+     * @note This actually makes an API request to the remote site, so beware
+     *   that this function is slow and depends on an external service.
+     *
+     * @note If MW_PHPUNIT_TEST is defined, the call to the external site is
+     *   skipped, and the title is normalized using the local normalization
+     *   rules as implemented by the Title class.
+     *
+     * @param string $pageName
+     * @param int $followRedirect either MediaWikiPageNameNormalizer::FOLLOW_REDIRECT or
+     * MediaWikiPageNameNormalizer::NOFOLLOW_REDIRECT
+     *
+     * @return string|false The normalized form of the title,
+     * or false to indicate an invalid title, a missing page,
+     * or some other kind of error.
+     * @throws MWException
+     * @since 1.21
+     * @since 1.37 Added $followRedirect
+     *
+     * @see Site::normalizePageName
+     *
+     */
+    public function normalizePageName($pageName, $followRedirect = MediaWikiPageNameNormalizer::FOLLOW_REDIRECT)
+    {
+        if (defined('MW_PHPUNIT_TEST') || defined('MW_DEV_ENV')) {
+            // If the code is under test, don't call out to other sites, just
+            // normalize locally.
+            // Note: this may cause results to be inconsistent with the actual
+            // normalization used by the respective remote site!
 
-			$t = Title::newFromText( $pageName );
-			return $t->getPrefixedText();
-		} else {
-			static $mediaWikiPageNameNormalizer = null;
+            $t = Title::newFromText($pageName);
 
-			if ( $mediaWikiPageNameNormalizer === null ) {
-				$mediaWikiPageNameNormalizer = new MediaWikiPageNameNormalizer();
-			}
+            return $t->getPrefixedText();
+        } else {
+            static $mediaWikiPageNameNormalizer = null;
 
-			return $mediaWikiPageNameNormalizer->normalizePageName(
-				$pageName,
-				$this->getFileUrl( 'api.php' ),
-				$followRedirect
-			);
-		}
-	}
+            if ($mediaWikiPageNameNormalizer === null) {
+                $mediaWikiPageNameNormalizer = new MediaWikiPageNameNormalizer();
+            }
 
-	/**
-	 * @see Site::getLinkPathType
-	 * Returns Site::PATH_PAGE
-	 *
-	 * @since 1.21
-	 *
-	 * @return string
-	 */
-	public function getLinkPathType() {
-		return self::PATH_PAGE;
-	}
+            return $mediaWikiPageNameNormalizer->normalizePageName(
+                $pageName,
+                $this->getFileUrl('api.php'),
+                $followRedirect
+            );
+        }
+    }
 
-	/**
-	 * Returns the relative page path.
-	 *
-	 * @since 1.21
-	 *
-	 * @return string
-	 */
-	public function getRelativePagePath() {
-		return parse_url( $this->getPath( self::PATH_PAGE ), PHP_URL_PATH );
-	}
+    /**
+     * @return string
+     * @since 1.21
+     *
+     * @see Site::getLinkPathType
+     * Returns Site::PATH_PAGE
+     *
+     */
+    public function getLinkPathType()
+    {
+        return self::PATH_PAGE;
+    }
 
-	/**
-	 * Returns the relative file path.
-	 *
-	 * @since 1.21
-	 *
-	 * @return string
-	 */
-	public function getRelativeFilePath() {
-		return parse_url( $this->getPath( self::PATH_FILE ), PHP_URL_PATH );
-	}
+    /**
+     * Returns the relative page path.
+     *
+     * @return string
+     * @since 1.21
+     *
+     */
+    public function getRelativePagePath()
+    {
+        return parse_url($this->getPath(self::PATH_PAGE), PHP_URL_PATH);
+    }
 
-	/**
-	 * Sets the relative page path.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string $path
-	 */
-	public function setPagePath( $path ) {
-		$this->setPath( self::PATH_PAGE, $path );
-	}
+    /**
+     * Returns the relative file path.
+     *
+     * @return string
+     * @since 1.21
+     *
+     */
+    public function getRelativeFilePath()
+    {
+        return parse_url($this->getPath(self::PATH_FILE), PHP_URL_PATH);
+    }
 
-	/**
-	 * Sets the relative file path.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string $path
-	 */
-	public function setFilePath( $path ) {
-		$this->setPath( self::PATH_FILE, $path );
-	}
+    /**
+     * Sets the relative page path.
+     *
+     * @param string $path
+     * @since 1.21
+     *
+     */
+    public function setPagePath($path)
+    {
+        $this->setPath(self::PATH_PAGE, $path);
+    }
 
-	/**
-	 * @see Site::getPageUrl
-	 *
-	 * This implementation returns a URL constructed using the path returned by getLinkPath().
-	 * In addition to the default behavior implemented by Site::getPageUrl(), this
-	 * method converts the $pageName to DBKey-format by replacing spaces with underscores
-	 * before using it in the URL.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string|bool $pageName Page name or false (default: false)
-	 *
-	 * @return string|null
-	 */
-	public function getPageUrl( $pageName = false ) {
-		$url = $this->getLinkPath();
+    /**
+     * Sets the relative file path.
+     *
+     * @param string $path
+     * @since 1.21
+     *
+     */
+    public function setFilePath($path)
+    {
+        $this->setPath(self::PATH_FILE, $path);
+    }
 
-		if ( $url === null ) {
-			return null;
-		}
+    /**
+     * @param string|bool $pageName Page name or false (default: false)
+     *
+     * @return string|null
+     * @see Site::getPageUrl
+     *
+     * This implementation returns a URL constructed using the path returned by getLinkPath().
+     * In addition to the default behavior implemented by Site::getPageUrl(), this
+     * method converts the $pageName to DBKey-format by replacing spaces with underscores
+     * before using it in the URL.
+     *
+     * @since 1.21
+     *
+     */
+    public function getPageUrl($pageName = false)
+    {
+        $url = $this->getLinkPath();
 
-		if ( $pageName !== false ) {
-			$pageName = $this->toDBKey( trim( $pageName ) );
-			$url = str_replace( '$1', wfUrlencode( $pageName ), $url );
-		}
+        if ($url === null) {
+            return null;
+        }
 
-		return $url;
-	}
+        if ($pageName !== false) {
+            $pageName = $this->toDBKey(trim($pageName));
+            $url = str_replace('$1', wfUrlencode($pageName), $url);
+        }
 
-	/**
-	 * Returns the full file path (ie site url + relative file path).
-	 * The path should go at the $1 marker. If the $path
-	 * argument is provided, the marker will be replaced by it's value.
-	 *
-	 * @since 1.21
-	 *
-	 * @param string|bool $path
-	 *
-	 * @return string
-	 */
-	public function getFileUrl( $path = false ) {
-		$filePath = $this->getPath( self::PATH_FILE );
+        return $url;
+    }
 
-		if ( $filePath !== false ) {
-			$filePath = str_replace( '$1', $path, $filePath );
-		}
+    /**
+     * Returns the full file path (ie site url + relative file path).
+     * The path should go at the $1 marker. If the $path
+     * argument is provided, the marker will be replaced by it's value.
+     *
+     * @param string|bool $path
+     *
+     * @return string
+     * @since 1.21
+     *
+     */
+    public function getFileUrl($path = false)
+    {
+        $filePath = $this->getPath(self::PATH_FILE);
 
-		return $filePath;
-	}
+        if ($filePath !== false) {
+            $filePath = str_replace('$1', $path, $filePath);
+        }
+
+        return $filePath;
+    }
 }

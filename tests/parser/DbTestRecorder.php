@@ -21,66 +21,71 @@
 
 use Wikimedia\Rdbms\IMaintainableDatabase;
 
-class DbTestRecorder extends TestRecorder {
-	/** @var string */
-	public $version;
-	/** @var IMaintainableDatabase */
-	private $db;
-	/** @var int */
-	private $curRun;
+class DbTestRecorder extends TestRecorder
+{
+    /** @var string */
+    public $version;
+    /** @var IMaintainableDatabase */
+    private $db;
+    /** @var int */
+    private $curRun;
 
-	public function __construct( $db ) {
-		$this->db = $db;
-	}
+    public function __construct($db)
+    {
+        $this->db = $db;
+    }
 
-	/**
-	 * Set up result recording; insert a record for the run with the date
-	 * and all that fun stuff
-	 */
-	public function start() {
-		$this->db->begin( __METHOD__ );
+    /**
+     * Set up result recording; insert a record for the run with the date
+     * and all that fun stuff
+     */
+    public function start()
+    {
+        $this->db->begin(__METHOD__);
 
-		if ( !$this->db->tableExists( 'testrun' )
-			|| !$this->db->tableExists( 'testitem' )
-		) {
-			print "WARNING> `testrun` table not found in database. Trying to create table.\n";
-			$updater = DatabaseUpdater::newForDB( $this->db );
-			$this->db->sourceFile( $updater->patchPath( $this->db, 'patch-testrun.sql' ) );
-			echo "OK, resuming.\n";
-		}
+        if (!$this->db->tableExists('testrun')
+            || !$this->db->tableExists('testitem')
+        ) {
+            print "WARNING> `testrun` table not found in database. Trying to create table.\n";
+            $updater = DatabaseUpdater::newForDB($this->db);
+            $this->db->sourceFile($updater->patchPath($this->db, 'patch-testrun.sql'));
+            echo "OK, resuming.\n";
+        }
 
-		$this->db->insert( 'testrun',
-			[
-				'tr_date' => $this->db->timestamp(),
-				'tr_mw_version' => $this->version,
-				'tr_php_version' => PHP_VERSION,
-				'tr_db_version' => $this->db->getServerVersion(),
-				'tr_uname' => php_uname()
-			],
-			__METHOD__ );
-		$this->curRun = $this->db->insertId();
-	}
+        $this->db->insert('testrun',
+            [
+                'tr_date'        => $this->db->timestamp(),
+                'tr_mw_version'  => $this->version,
+                'tr_php_version' => PHP_VERSION,
+                'tr_db_version'  => $this->db->getServerVersion(),
+                'tr_uname'       => php_uname()
+            ],
+            __METHOD__);
+        $this->curRun = $this->db->insertId();
+    }
 
-	/**
-	 * Record an individual test item's success or failure to the db
-	 *
-	 * @param ParserTestResult $result
-	 */
-	public function record( ParserTestResult $result ) {
-		$desc = $result->getDescription();
-		$this->db->insert( 'testitem',
-			[
-				'ti_run' => $this->curRun,
-				'ti_name' => $desc,
-				'ti_success' => $result->isSuccess() ? 1 : 0,
-			],
-			__METHOD__ );
-	}
+    /**
+     * Record an individual test item's success or failure to the db
+     *
+     * @param ParserTestResult $result
+     */
+    public function record(ParserTestResult $result)
+    {
+        $desc = $result->getDescription();
+        $this->db->insert('testitem',
+            [
+                'ti_run'     => $this->curRun,
+                'ti_name'    => $desc,
+                'ti_success' => $result->isSuccess() ? 1 : 0,
+            ],
+            __METHOD__);
+    }
 
-	/**
-	 * Commit transaction and clean up for result recording
-	 */
-	public function end() {
-		$this->db->commit( __METHOD__ );
-	}
+    /**
+     * Commit transaction and clean up for result recording
+     */
+    public function end()
+    {
+        $this->db->commit(__METHOD__);
+    }
 }

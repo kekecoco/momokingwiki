@@ -32,17 +32,18 @@ use WikiPage;
  *
  * @since 1.35
  */
-interface ContentModelChangeFactory {
+interface ContentModelChangeFactory
+{
 
-	/**
-	 * @param Authority $performer
-	 * @param WikiPage $wikipage
-	 * @param string $newContentModel
-	 * @return ContentModelChange
-	 */
-	public function newContentModelChange(
-		Authority $performer,
-		WikiPage $wikipage,
-		string $newContentModel
-	): ContentModelChange;
+    /**
+     * @param Authority $performer
+     * @param WikiPage $wikipage
+     * @param string $newContentModel
+     * @return ContentModelChange
+     */
+    public function newContentModelChange(
+        Authority $performer,
+        WikiPage $wikipage,
+        string $newContentModel
+    ): ContentModelChange;
 }

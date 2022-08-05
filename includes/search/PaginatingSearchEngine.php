@@ -10,5 +10,6 @@
  *
  * @stable to implement
  */
-interface PaginatingSearchEngine {
+interface PaginatingSearchEngine
+{
 }

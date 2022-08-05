@@ -38,109 +38,115 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class UpdateSearchIndex extends Maintenance {
+class UpdateSearchIndex extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Script for periodic off-peak updating of the search index' );
-		$this->addOption( 's', 'Starting timestamp', false, true );
-		$this->addOption( 'e', 'Ending timestamp', false, true );
-		$this->addOption(
-			'p',
-			'File for saving/loading timestamps, searchUpdate.WIKI_ID.pos by default',
-			false,
-			true
-		);
-		$this->addOption(
-			'l',
-			'Deprecated, has no effect (formerly lock time)',
-			false,
-			true
-		);
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Script for periodic off-peak updating of the search index');
+        $this->addOption('s', 'Starting timestamp', false, true);
+        $this->addOption('e', 'Ending timestamp', false, true);
+        $this->addOption(
+            'p',
+            'File for saving/loading timestamps, searchUpdate.WIKI_ID.pos by default',
+            false,
+            true
+        );
+        $this->addOption(
+            'l',
+            'Deprecated, has no effect (formerly lock time)',
+            false,
+            true
+        );
+    }
 
-	public function getDbType() {
-		return Maintenance::DB_ADMIN;
-	}
+    public function getDbType()
+    {
+        return Maintenance::DB_ADMIN;
+    }
 
-	public function execute() {
-		$dbDomain = WikiMap::getCurrentWikiDbDomain()->getId();
-		$posFile = $this->getOption( 'p', 'searchUpdate.' . rawurlencode( $dbDomain ) . '.pos' );
-		$end = $this->getOption( 'e', wfTimestampNow() );
-		if ( $this->hasOption( 's' ) ) {
-			$start = $this->getOption( 's' );
-		} elseif ( is_readable( $posFile ) ) {
-			$start = file_get_contents( $posFile );
-		} else {
-			$start = wfTimestamp( TS_MW, time() - 86400 );
-		}
+    public function execute()
+    {
+        $dbDomain = WikiMap::getCurrentWikiDbDomain()->getId();
+        $posFile = $this->getOption('p', 'searchUpdate.' . rawurlencode($dbDomain) . '.pos');
+        $end = $this->getOption('e', wfTimestampNow());
+        if ($this->hasOption('s')) {
+            $start = $this->getOption('s');
+        } elseif (is_readable($posFile)) {
+            $start = file_get_contents($posFile);
+        } else {
+            $start = wfTimestamp(TS_MW, time() - 86400);
+        }
 
-		$this->doUpdateSearchIndex( $start, $end );
-		$file = fopen( $posFile, 'w' );
-		if ( $file !== false ) {
-			fwrite( $file, $end );
-			fclose( $file );
-		} else {
-			$this->error( "*** Couldn't write to the $posFile!\n" );
-		}
-	}
+        $this->doUpdateSearchIndex($start, $end);
+        $file = fopen($posFile, 'w');
+        if ($file !== false) {
+            fwrite($file, $end);
+            fclose($file);
+        } else {
+            $this->error("*** Couldn't write to the $posFile!\n");
+        }
+    }
 
-	private function doUpdateSearchIndex( $start, $end ) {
-		global $wgDisableSearchUpdate;
+    private function doUpdateSearchIndex($start, $end)
+    {
+        global $wgDisableSearchUpdate;
 
-		$wgDisableSearchUpdate = false;
+        $wgDisableSearchUpdate = false;
 
-		$dbw = $this->getDB( DB_PRIMARY );
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		$this->output( "Updating searchindex between $start and $end\n" );
+        $this->output("Updating searchindex between $start and $end\n");
 
-		# Select entries from recentchanges which are on top and between the specified times
-		$start = $dbw->timestamp( $start );
-		$end = $dbw->timestamp( $end );
+        # Select entries from recentchanges which are on top and between the specified times
+        $start = $dbw->timestamp($start);
+        $end = $dbw->timestamp($end);
 
-		$res = $dbw->select(
-			[ 'recentchanges', 'page' ],
-			'rc_cur_id',
-			[
-				'rc_type != ' . $dbw->addQuotes( RC_LOG ),
-				'rc_timestamp BETWEEN ' . $dbw->addQuotes( $start ) . ' AND ' . $dbw->addQuotes( $end )
-			],
-			__METHOD__,
-			[],
-			[
-				'page' => [ 'JOIN', 'rc_cur_id=page_id AND rc_this_oldid=page_latest' ]
-			]
-		);
+        $res = $dbw->select(
+            ['recentchanges', 'page'],
+            'rc_cur_id',
+            [
+                'rc_type != ' . $dbw->addQuotes(RC_LOG),
+                'rc_timestamp BETWEEN ' . $dbw->addQuotes($start) . ' AND ' . $dbw->addQuotes($end)
+            ],
+            __METHOD__,
+            [],
+            [
+                'page' => ['JOIN', 'rc_cur_id=page_id AND rc_this_oldid=page_latest']
+            ]
+        );
 
-		foreach ( $res as $row ) {
-			$this->updateSearchIndexForPage( (int)$row->rc_cur_id );
-		}
-		$this->output( "Done\n" );
-	}
+        foreach ($res as $row) {
+            $this->updateSearchIndexForPage((int)$row->rc_cur_id);
+        }
+        $this->output("Done\n");
+    }
 
-	/**
-	 * Update the searchindex table for a given pageid
-	 * @param int $pageId The page ID to update.
-	 * @return null|string
-	 */
-	private function updateSearchIndexForPage( int $pageId ) {
-		// Get current revision
-		$rev = MediaWikiServices::getInstance()
-			->getRevisionLookup()
-			->getRevisionByPageId( $pageId, 0, IDBAccessObject::READ_LATEST );
-		$title = null;
-		if ( $rev ) {
-			$titleObj = Title::newFromLinkTarget( $rev->getPageAsLinkTarget() );
-			$title = $titleObj->getPrefixedDBkey();
-			$this->output( "$title..." );
-			# Update searchindex
-			$u = new SearchUpdate( $pageId, $titleObj, $rev->getContent( SlotRecord::MAIN ) );
-			$u->doUpdate();
-			$this->output( "\n" );
-		}
+    /**
+     * Update the searchindex table for a given pageid
+     * @param int $pageId The page ID to update.
+     * @return null|string
+     */
+    private function updateSearchIndexForPage(int $pageId)
+    {
+        // Get current revision
+        $rev = MediaWikiServices::getInstance()
+            ->getRevisionLookup()
+            ->getRevisionByPageId($pageId, 0, IDBAccessObject::READ_LATEST);
+        $title = null;
+        if ($rev) {
+            $titleObj = Title::newFromLinkTarget($rev->getPageAsLinkTarget());
+            $title = $titleObj->getPrefixedDBkey();
+            $this->output("$title...");
+            # Update searchindex
+            $u = new SearchUpdate($pageId, $titleObj, $rev->getContent(SlotRecord::MAIN));
+            $u->doUpdate();
+            $this->output("\n");
+        }
 
-		return $title;
-	}
+        return $title;
+    }
 }
 
 $maintClass = UpdateSearchIndex::class;

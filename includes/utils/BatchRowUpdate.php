@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Ties together the batch update components to provide a composable
  * method of batch updating rows in a database. To use create a class
@@ -39,90 +40,96 @@
  * @file
  * @ingroup Maintenance
  */
-class BatchRowUpdate {
-	/**
-	 * @var BatchRowIterator Iterator that returns an array of
-	 *  database rows
-	 */
-	protected $reader;
 
-	/**
-	 * @var BatchRowWriter Writer capable of pushing row updates
-	 *  to the database
-	 */
-	protected $writer;
+class BatchRowUpdate
+{
+    /**
+     * @var BatchRowIterator Iterator that returns an array of
+     *  database rows
+     */
+    protected $reader;
 
-	/**
-	 * @var RowUpdateGenerator Generates single row updates
-	 *  based on the rows content
-	 */
-	protected $generator;
+    /**
+     * @var BatchRowWriter Writer capable of pushing row updates
+     *  to the database
+     */
+    protected $writer;
 
-	/**
-	 * @var callable Output callback
-	 */
-	protected $output;
+    /**
+     * @var RowUpdateGenerator Generates single row updates
+     *  based on the rows content
+     */
+    protected $generator;
 
-	/**
-	 * @param BatchRowIterator $reader Iterator that returns an
-	 *  array of database rows
-	 * @param BatchRowWriter $writer Writer capable of pushing
-	 *  row updates to the database
-	 * @param RowUpdateGenerator $generator Generates single row updates
-	 *  based on the rows content
-	 */
-	public function __construct(
-		BatchRowIterator $reader, BatchRowWriter $writer, RowUpdateGenerator $generator
-	) {
-		$this->reader = $reader;
-		$this->writer = $writer;
-		$this->generator = $generator;
-		$this->output = static function ( $text ) {
-		}; // nop
-	}
+    /**
+     * @var callable Output callback
+     */
+    protected $output;
 
-	/**
-	 * Runs the batch update process
-	 */
-	public function execute() {
-		foreach ( $this->reader as $rows ) {
-			$updates = [];
-			foreach ( $rows as $row ) {
-				$update = $this->generator->update( $row );
-				if ( $update ) {
-					$updates[] = [
-						'primaryKey' => $this->reader->extractPrimaryKeys( $row ),
-						'changes' => $update,
-					];
-				}
-			}
+    /**
+     * @param BatchRowIterator $reader Iterator that returns an
+     *  array of database rows
+     * @param BatchRowWriter $writer Writer capable of pushing
+     *  row updates to the database
+     * @param RowUpdateGenerator $generator Generates single row updates
+     *  based on the rows content
+     */
+    public function __construct(
+        BatchRowIterator $reader, BatchRowWriter $writer, RowUpdateGenerator $generator
+    )
+    {
+        $this->reader = $reader;
+        $this->writer = $writer;
+        $this->generator = $generator;
+        $this->output = static function ($text) {
+        }; // nop
+    }
 
-			if ( $updates ) {
-				$this->output( "Processing " . count( $updates ) . " rows\n" );
-				$this->writer->write( $updates );
-			}
-		}
+    /**
+     * Runs the batch update process
+     */
+    public function execute()
+    {
+        foreach ($this->reader as $rows) {
+            $updates = [];
+            foreach ($rows as $row) {
+                $update = $this->generator->update($row);
+                if ($update) {
+                    $updates[] = [
+                        'primaryKey' => $this->reader->extractPrimaryKeys($row),
+                        'changes'    => $update,
+                    ];
+                }
+            }
 
-		$this->output( "Completed\n" );
-	}
+            if ($updates) {
+                $this->output("Processing " . count($updates) . " rows\n");
+                $this->writer->write($updates);
+            }
+        }
 
-	/**
-	 * Accepts a callable which will receive a single parameter
-	 * containing string status updates
-	 *
-	 * @param callable $output A callback taking a single string
-	 *  parameter to output
-	 */
-	public function setOutput( callable $output ) {
-		$this->output = $output;
-	}
+        $this->output("Completed\n");
+    }
 
-	/**
-	 * Write out a status update
-	 *
-	 * @param string $text The value to print
-	 */
-	protected function output( $text ) {
-		call_user_func( $this->output, $text );
-	}
+    /**
+     * Accepts a callable which will receive a single parameter
+     * containing string status updates
+     *
+     * @param callable $output A callback taking a single string
+     *  parameter to output
+     */
+    public function setOutput(callable $output)
+    {
+        $this->output = $output;
+    }
+
+    /**
+     * Write out a status update
+     *
+     * @param string $text The value to print
+     */
+    protected function output($text)
+    {
+        call_user_func($this->output, $text);
+    }
 }

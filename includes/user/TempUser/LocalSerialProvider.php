@@ -11,36 +11,40 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @since 1.39
  */
-class LocalSerialProvider extends DBSerialProvider {
-	/** @var ILoadBalancer */
-	private $lb;
+class LocalSerialProvider extends DBSerialProvider
+{
+    /** @var ILoadBalancer */
+    private $lb;
 
-	/**
-	 * @param array $config
-	 *   - numShards (int, default 1): A small integer. This can be set to a
-	 *     value greater than 1 to avoid acquiring a global lock when
-	 *     allocating IDs, at the expense of making the IDs be non-monotonic.
-	 * @param ILoadBalancer $lb
-	 */
-	public function __construct( $config, ILoadBalancer $lb ) {
-		parent::__construct( $config );
-		$this->lb = $lb;
-	}
+    /**
+     * @param array $config
+     *   - numShards (int, default 1): A small integer. This can be set to a
+     *     value greater than 1 to avoid acquiring a global lock when
+     *     allocating IDs, at the expense of making the IDs be non-monotonic.
+     * @param ILoadBalancer $lb
+     */
+    public function __construct($config, ILoadBalancer $lb)
+    {
+        parent::__construct($config);
+        $this->lb = $lb;
+    }
 
-	protected function getDB() {
-		return $this->lb->getConnectionRef(
-			DB_PRIMARY,
-			[],
-			false,
-			// So that startAtomic() will start a commit, reducing lock time.
-			// Without this flag, the transaction will be open until the start
-			// of request shutdown. This could be omitted to reduce the
-			// connection overhead, with numShards tuned upwards to compensate.
-			ILoadBalancer::CONN_TRX_AUTOCOMMIT
-		);
-	}
+    protected function getDB()
+    {
+        return $this->lb->getConnectionRef(
+            DB_PRIMARY,
+            [],
+            false,
+            // So that startAtomic() will start a commit, reducing lock time.
+            // Without this flag, the transaction will be open until the start
+            // of request shutdown. This could be omitted to reduce the
+            // connection overhead, with numShards tuned upwards to compensate.
+            ILoadBalancer::CONN_TRX_AUTOCOMMIT
+        );
+    }
 
-	protected function getTableName() {
-		return 'user_autocreate_serial';
-	}
+    protected function getTableName()
+    {
+        return 'user_autocreate_serial';
+    }
 }

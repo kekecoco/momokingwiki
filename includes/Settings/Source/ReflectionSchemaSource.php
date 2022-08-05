@@ -34,132 +34,139 @@ use ReflectionException;
  *
  * @since 1.39
  */
-class ReflectionSchemaSource implements SettingsSource {
-	use JsonSchemaTrait;
+class ReflectionSchemaSource implements SettingsSource
+{
+    use JsonSchemaTrait;
 
-	/**
-	 * Name of a PHP class
-	 * @var string
-	 */
-	private $class;
+    /**
+     * Name of a PHP class
+     * @var string
+     */
+    private $class;
 
-	/**
-	 * @var bool
-	 */
-	private $includeDoc;
+    /**
+     * @var bool
+     */
+    private $includeDoc;
 
-	/**
-	 * @param string $class
-	 * @param bool $includeDoc
-	 */
-	public function __construct( string $class, bool $includeDoc = false ) {
-		$this->class = $class;
-		$this->includeDoc = $includeDoc;
-	}
+    /**
+     * @param string $class
+     * @param bool $includeDoc
+     */
+    public function __construct(string $class, bool $includeDoc = false)
+    {
+        $this->class = $class;
+        $this->includeDoc = $includeDoc;
+    }
 
-	/**
-	 * @throws SettingsBuilderException
-	 * @return array
-	 */
-	public function load(): array {
-		$schemas = [];
+    /**
+     * @return array
+     * @throws SettingsBuilderException
+     */
+    public function load(): array
+    {
+        $schemas = [];
 
-		try {
-			$class = new ReflectionClass( $this->class );
-			foreach ( $class->getReflectionConstants() as $const ) {
-				if ( !$const->isPublic() ) {
-					continue;
-				}
+        try {
+            $class = new ReflectionClass($this->class);
+            foreach ($class->getReflectionConstants() as $const) {
+                if (!$const->isPublic()) {
+                    continue;
+                }
 
-				$name = $const->getName();
-				$schema = $const->getValue();
+                $name = $const->getName();
+                $schema = $const->getValue();
 
-				if ( !is_array( $schema ) ) {
-					continue;
-				}
+                if (!is_array($schema)) {
+                    continue;
+                }
 
-				if ( $this->includeDoc ) {
-					$doc = $const->getDocComment();
-					if ( $doc ) {
-						$schema['description'] = $this->normalizeComment( $doc );
-					}
-				}
+                if ($this->includeDoc) {
+                    $doc = $const->getDocComment();
+                    if ($doc) {
+                        $schema['description'] = $this->normalizeComment($doc);
+                    }
+                }
 
-				if ( isset( $schema['dynamicDefault'] ) ) {
-					$schema['dynamicDefault'] =
-						$this->normalizeDynamicDefault( $name, $schema['dynamicDefault'] );
-				}
+                if (isset($schema['dynamicDefault'])) {
+                    $schema['dynamicDefault'] =
+                        $this->normalizeDynamicDefault($name, $schema['dynamicDefault']);
+                }
 
-				if ( !array_key_exists( 'default', $schema ) ) {
-					$schema['default'] = null;
-				}
+                if (!array_key_exists('default', $schema)) {
+                    $schema['default'] = null;
+                }
 
-				$schema = self::normalizeJsonSchema( $schema );
+                $schema = self::normalizeJsonSchema($schema);
 
-				$schemas[ $name ] = $schema;
-			}
-		} catch ( ReflectionException $e ) {
-			throw new SettingsBuilderException(
-				'Failed to load schema from class {class}',
-				[ 'class' => $this->class ],
-				0,
-				$e
-			);
-		}
+                $schemas[$name] = $schema;
+            }
+        } catch (ReflectionException $e) {
+            throw new SettingsBuilderException(
+                'Failed to load schema from class {class}',
+                ['class' => $this->class],
+                0,
+                $e
+            );
+        }
 
-		return [
-			'config-schema' => $schemas
-		];
-	}
+        return [
+            'config-schema' => $schemas
+        ];
+    }
 
-	/**
-	 * Returns this file source as a string.
-	 *
-	 * @return string
-	 */
-	public function __toString(): string {
-		return 'class ' . $this->class;
-	}
+    /**
+     * Returns this file source as a string.
+     *
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return 'class ' . $this->class;
+    }
 
-	private function normalizeComment( string $doc ) {
-		$doc = preg_replace( '/^\s*\/\*+\s*|\s*\*+\/\s*$/s', '', $doc );
-		$doc = preg_replace( '/^\s*\**$/m', " ", $doc );
-		$doc = preg_replace( '/^\s*\**[ \t]?/m', '', $doc );
-		return $doc;
-	}
+    private function normalizeComment(string $doc)
+    {
+        $doc = preg_replace('/^\s*\/\*+\s*|\s*\*+\/\s*$/s', '', $doc);
+        $doc = preg_replace('/^\s*\**$/m', " ", $doc);
+        $doc = preg_replace('/^\s*\**[ \t]?/m', '', $doc);
 
-	private function normalizeDynamicDefault( string $name, $spec ) {
-		if ( $spec === true ) {
-			$spec = [ 'callback' => [ $this->class, "getDefault{$name}" ] ];
-		}
+        return $doc;
+    }
 
-		if ( is_string( $spec ) ) {
-			$spec = [ 'callback' => $spec ];
-		}
+    private function normalizeDynamicDefault(string $name, $spec)
+    {
+        if ($spec === true) {
+            $spec = ['callback' => [$this->class, "getDefault{$name}"]];
+        }
 
-		if ( !isset( $spec['callback'] ) ) {
-			$spec['callback'] = [ $this->class, "getDefault{$name}" ];
-		}
+        if (is_string($spec)) {
+            $spec = ['callback' => $spec];
+        }
 
-		// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset per fallback above.
-		if ( $spec['callback'] instanceof Closure ) {
-			throw new SettingsBuilderException(
-				"dynamicDefaults callback for $name must be JSON serializable. " .
-				"Closures are not supported."
-			);
-		}
+        if (!isset($spec['callback'])) {
+            $spec['callback'] = [$this->class, "getDefault{$name}"];
+        }
 
-		if ( !is_callable( $spec['callback'] ) ) {
-			$pretty = var_export( $spec['callback'], true );
-			$pretty = preg_replace( '/\s+/', ' ', $pretty );
+        // @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset per fallback above.
+        if ($spec['callback'] instanceof Closure) {
+            throw new SettingsBuilderException(
+                "dynamicDefaults callback for $name must be JSON serializable. " .
+                "Closures are not supported."
+            );
+        }
 
-			throw new SettingsBuilderException(
-				"dynamicDefaults callback for $name is not callable: " .
-				$pretty
-			);
-		}
+        if (!is_callable($spec['callback'])) {
+            $pretty = var_export($spec['callback'], true);
+            $pretty = preg_replace('/\s+/', ' ', $pretty);
 
-		return $spec;
-	}
+            throw new SettingsBuilderException(
+                "dynamicDefaults callback for $name is not callable: " .
+                $pretty
+            );
+        }
+
+        return $spec;
+    }
 
 }

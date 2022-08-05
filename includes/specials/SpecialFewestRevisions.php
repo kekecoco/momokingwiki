@@ -33,111 +33,120 @@ use Wikimedia\Rdbms\IResultWrapper;
  * @ingroup SpecialPage
  * @author Martin Drashkov
  */
-class SpecialFewestRevisions extends QueryPage {
+class SpecialFewestRevisions extends QueryPage
+{
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/** @var ILanguageConverter */
-	private $languageConverter;
+    /** @var ILanguageConverter */
+    private $languageConverter;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct( 'Fewestrevisions' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->languageConverter = $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() );
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct('Fewestrevisions');
+        $this->namespaceInfo = $namespaceInfo;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->languageConverter = $languageConverterFactory->getLanguageConverter($this->getContentLanguage());
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'revision', 'page' ],
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-				'value' => 'COUNT(*)',
-			],
-			'conds' => [
-				'page_namespace' => $this->namespaceInfo->getContentNamespaces(),
-				'page_id = rev_page',
-				'page_is_redirect = 0',
-			],
-			'options' => [
-				'GROUP BY' => [ 'page_namespace', 'page_title' ]
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'  => ['revision', 'page'],
+            'fields'  => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+                'value'     => 'COUNT(*)',
+            ],
+            'conds'   => [
+                'page_namespace' => $this->namespaceInfo->getContentNamespaces(),
+                'page_id = rev_page',
+                'page_is_redirect = 0',
+            ],
+            'options' => [
+                'GROUP BY' => ['page_namespace', 'page_title']
+            ]
+        ];
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Database row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$nt = Title::makeTitleSafe( $result->namespace, $result->title );
-		if ( !$nt ) {
-			return Html::element(
-				'span',
-				[ 'class' => 'mw-invalidtitle' ],
-				Linker::getInvalidTitleDescription(
-					$this->getContext(),
-					$result->namespace,
-					$result->title
-				)
-			);
-		}
-		$linkRenderer = $this->getLinkRenderer();
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Database row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $nt = Title::makeTitleSafe($result->namespace, $result->title);
+        if (!$nt) {
+            return Html::element(
+                'span',
+                ['class' => 'mw-invalidtitle'],
+                Linker::getInvalidTitleDescription(
+                    $this->getContext(),
+                    $result->namespace,
+                    $result->title
+                )
+            );
+        }
+        $linkRenderer = $this->getLinkRenderer();
 
-		$text = $this->languageConverter->convertHtml( $nt->getPrefixedText() );
-		$plink = $linkRenderer->makeLink( $nt, new HtmlArmor( $text ) );
+        $text = $this->languageConverter->convertHtml($nt->getPrefixedText());
+        $plink = $linkRenderer->makeLink($nt, new HtmlArmor($text));
 
-		$nl = $this->msg( 'nrevisions' )->numParams( $result->value )->text();
-		$redirect = isset( $result->redirect ) && $result->redirect ?
-			' - ' . $this->msg( 'isredirect' )->escaped() : '';
-		$nlink = $linkRenderer->makeKnownLink(
-			$nt,
-			$nl,
-			[],
-			[ 'action' => 'history' ]
-		) . $redirect;
+        $nl = $this->msg('nrevisions')->numParams($result->value)->text();
+        $redirect = isset($result->redirect) && $result->redirect ?
+            ' - ' . $this->msg('isredirect')->escaped() : '';
+        $nlink = $linkRenderer->makeKnownLink(
+                $nt,
+                $nl,
+                [],
+                ['action' => 'history']
+            ) . $redirect;
 
-		return $this->getLanguage()->specialList( $plink, $nlink );
-	}
+        return $this->getLanguage()->specialList($plink, $nlink);
+    }
 
-	/**
-	 * Cache page existence for performance
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	protected function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    /**
+     * Cache page existence for performance
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    protected function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

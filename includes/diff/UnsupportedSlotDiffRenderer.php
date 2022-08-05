@@ -28,42 +28,45 @@
  *
  * @ingroup DifferenceEngine
  */
-class UnsupportedSlotDiffRenderer extends SlotDiffRenderer {
+class UnsupportedSlotDiffRenderer extends SlotDiffRenderer
+{
 
-	/**
-	 * @var MessageLocalizer
-	 */
-	private $localizer;
+    /**
+     * @var MessageLocalizer
+     */
+    private $localizer;
 
-	/**
-	 * @param MessageLocalizer $localizer
-	 */
-	public function __construct( MessageLocalizer $localizer ) {
-		$this->localizer = $localizer;
-	}
+    /**
+     * @param MessageLocalizer $localizer
+     */
+    public function __construct(MessageLocalizer $localizer)
+    {
+        $this->localizer = $localizer;
+    }
 
-	/** @inheritDoc */
-	public function getDiff( Content $oldContent = null, Content $newContent = null ) {
-		$this->normalizeContents( $oldContent, $newContent );
+    /** @inheritDoc */
+    public function getDiff(Content $oldContent = null, Content $newContent = null)
+    {
+        $this->normalizeContents($oldContent, $newContent);
 
-		$oldModel = $oldContent->getModel();
-		$newModel = $newContent->getModel();
+        $oldModel = $oldContent->getModel();
+        $newModel = $newContent->getModel();
 
-		if ( $oldModel !== $newModel ) {
-			$msg = $this->localizer->msg( 'unsupported-content-diff2', $oldModel, $newModel );
-		} else {
-			$msg = $this->localizer->msg( 'unsupported-content-diff', $oldModel );
-		}
+        if ($oldModel !== $newModel) {
+            $msg = $this->localizer->msg('unsupported-content-diff2', $oldModel, $newModel);
+        } else {
+            $msg = $this->localizer->msg('unsupported-content-diff', $oldModel);
+        }
 
-		return Html::rawElement(
-			'tr',
-			[],
-			Html::rawElement(
-				'td',
-				[ 'colspan' => 4, 'class' => 'error' ],
-				$msg->parse()
-			)
-		);
-	}
+        return Html::rawElement(
+            'tr',
+            [],
+            Html::rawElement(
+                'td',
+                ['colspan' => 4, 'class' => 'error'],
+                $msg->parse()
+            )
+        );
+    }
 
 }

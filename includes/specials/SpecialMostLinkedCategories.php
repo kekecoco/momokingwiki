@@ -35,82 +35,90 @@ use Wikimedia\Rdbms\IResultWrapper;
  *
  * @ingroup SpecialPage
  */
-class SpecialMostLinkedCategories extends QueryPage {
+class SpecialMostLinkedCategories extends QueryPage
+{
 
-	/** @var ILanguageConverter */
-	private $languageConverter;
+    /** @var ILanguageConverter */
+    private $languageConverter;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct( 'Mostlinkedcategories' );
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->languageConverter = $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct('Mostlinkedcategories');
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->languageConverter = $languageConverterFactory->getLanguageConverter($this->getContentLanguage());
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'category' ],
-			'fields' => [ 'title' => 'cat_title',
-				'namespace' => NS_CATEGORY,
-				'value' => 'cat_pages' ],
-			'conds' => [ 'cat_pages > 0' ],
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables' => ['category'],
+            'fields' => ['title'     => 'cat_title',
+                         'namespace' => NS_CATEGORY,
+                         'value'     => 'cat_pages'],
+            'conds'  => ['cat_pages > 0'],
+        ];
+    }
 
-	protected function sortDescending() {
-		return true;
-	}
+    protected function sortDescending()
+    {
+        return true;
+    }
 
-	/**
-	 * Fetch user page links and cache their existence
-	 *
-	 * @param IDatabase $db
-	 * @param IResultWrapper $res
-	 */
-	public function preprocessResults( $db, $res ) {
-		$this->executeLBFromResultWrapper( $res );
-	}
+    /**
+     * Fetch user page links and cache their existence
+     *
+     * @param IDatabase $db
+     * @param IResultWrapper $res
+     */
+    public function preprocessResults($db, $res)
+    {
+        $this->executeLBFromResultWrapper($res);
+    }
 
-	/**
-	 * @param Skin $skin
-	 * @param stdClass $result Result row
-	 * @return string
-	 */
-	public function formatResult( $skin, $result ) {
-		$nt = Title::makeTitleSafe( NS_CATEGORY, $result->title );
-		if ( !$nt ) {
-			return Html::element(
-				'span',
-				[ 'class' => 'mw-invalidtitle' ],
-				Linker::getInvalidTitleDescription(
-					$this->getContext(),
-					NS_CATEGORY,
-					$result->title )
-			);
-		}
+    /**
+     * @param Skin $skin
+     * @param stdClass $result Result row
+     * @return string
+     */
+    public function formatResult($skin, $result)
+    {
+        $nt = Title::makeTitleSafe(NS_CATEGORY, $result->title);
+        if (!$nt) {
+            return Html::element(
+                'span',
+                ['class' => 'mw-invalidtitle'],
+                Linker::getInvalidTitleDescription(
+                    $this->getContext(),
+                    NS_CATEGORY,
+                    $result->title)
+            );
+        }
 
-		$text = $this->languageConverter->convertHtml( $nt->getText() );
+        $text = $this->languageConverter->convertHtml($nt->getText());
 
-		$plink = $this->getLinkRenderer()->makeLink( $nt, new HtmlArmor( $text ) );
-		$nlinks = $this->msg( 'nmembers' )->numParams( $result->value )->escaped();
+        $plink = $this->getLinkRenderer()->makeLink($nt, new HtmlArmor($text));
+        $nlinks = $this->msg('nmembers')->numParams($result->value)->escaped();
 
-		return $this->getLanguage()->specialList( $plink, $nlinks );
-	}
+        return $this->getLanguage()->specialList($plink, $nlinks);
+    }
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

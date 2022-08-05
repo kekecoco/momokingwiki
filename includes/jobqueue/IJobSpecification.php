@@ -39,54 +39,55 @@
  * @ingroup JobQueue
  * @since 1.23
  */
-interface IJobSpecification {
-	/**
-	 * @return string Job type that defines what sort of changes this job makes
-	 */
-	public function getType();
+interface IJobSpecification
+{
+    /**
+     * @return string Job type that defines what sort of changes this job makes
+     */
+    public function getType();
 
-	/**
-	 * @return array Parameters that specify sources, targets, and options for execution
-	 */
-	public function getParams();
+    /**
+     * @return array Parameters that specify sources, targets, and options for execution
+     */
+    public function getParams();
 
-	/**
-	 * @return int|null UNIX timestamp to delay running this job until, otherwise null
-	 */
-	public function getReleaseTimestamp();
+    /**
+     * @return int|null UNIX timestamp to delay running this job until, otherwise null
+     */
+    public function getReleaseTimestamp();
 
-	/**
-	 * @return bool Whether only one of each identical set of jobs should be run
-	 */
-	public function ignoreDuplicates();
+    /**
+     * @return bool Whether only one of each identical set of jobs should be run
+     */
+    public function ignoreDuplicates();
 
-	/**
-	 * Subclasses may need to override this to make duplication detection work.
-	 * The resulting map conveys everything that makes the job unique. This is
-	 * only checked if ignoreDuplicates() returns true, meaning that duplicate
-	 * jobs are supposed to be ignored.
-	 *
-	 * @return array Map of key/values
-	 */
-	public function getDeduplicationInfo();
+    /**
+     * Subclasses may need to override this to make duplication detection work.
+     * The resulting map conveys everything that makes the job unique. This is
+     * only checked if ignoreDuplicates() returns true, meaning that duplicate
+     * jobs are supposed to be ignored.
+     *
+     * @return array Map of key/values
+     */
+    public function getDeduplicationInfo();
 
-	/**
-	 * @see JobQueue::deduplicateRootJob()
-	 * @return array
-	 * @since 1.26
-	 */
-	public function getRootJobParams();
+    /**
+     * @return array
+     * @see JobQueue::deduplicateRootJob()
+     * @since 1.26
+     */
+    public function getRootJobParams();
 
-	/**
-	 * @see JobQueue::deduplicateRootJob()
-	 * @return bool
-	 * @since 1.22
-	 */
-	public function hasRootJobParams();
+    /**
+     * @return bool
+     * @see JobQueue::deduplicateRootJob()
+     * @since 1.22
+     */
+    public function hasRootJobParams();
 
-	/**
-	 * @see JobQueue::deduplicateRootJob()
-	 * @return bool Whether this is job is a root job
-	 */
-	public function isRootJob();
+    /**
+     * @return bool Whether this is job is a root job
+     * @see JobQueue::deduplicateRootJob()
+     */
+    public function isRootJob();
 }

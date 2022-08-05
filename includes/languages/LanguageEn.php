@@ -23,5 +23,6 @@
  *
  * @ingroup Languages
  */
-class LanguageEn extends Language {
+class LanguageEn extends Language
+{
 }

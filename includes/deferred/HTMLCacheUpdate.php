@@ -28,34 +28,37 @@ use MediaWiki\Page\PageReference;
  * @deprecated Since 1.34; Enqueue jobs from HTMLCacheUpdateJob::newForBacklinks instead.
  *  Hard deprecated since 1.39.
  */
-class HTMLCacheUpdate extends DataUpdate {
-	/** @var PageReference */
-	private $pageTo;
-	/** @var string */
-	private $table;
+class HTMLCacheUpdate extends DataUpdate
+{
+    /** @var PageReference */
+    private $pageTo;
+    /** @var string */
+    private $table;
 
-	/**
-	 * @param PageReference $pageTo
-	 * @param string $table
-	 * @param string $causeAction Triggering action
-	 * @param string $causeAgent Triggering user
-	 */
-	public function __construct(
-		PageReference $pageTo, $table, $causeAction = 'unknown', $causeAgent = 'unknown'
-	) {
-		wfDeprecated( __CLASS__, '1.34' );
-		$this->pageTo = $pageTo;
-		$this->table = $table;
-		$this->causeAction = $causeAction;
-		$this->causeAgent = $causeAgent;
-	}
+    /**
+     * @param PageReference $pageTo
+     * @param string $table
+     * @param string $causeAction Triggering action
+     * @param string $causeAgent Triggering user
+     */
+    public function __construct(
+        PageReference $pageTo, $table, $causeAction = 'unknown', $causeAgent = 'unknown'
+    )
+    {
+        wfDeprecated(__CLASS__, '1.34');
+        $this->pageTo = $pageTo;
+        $this->table = $table;
+        $this->causeAction = $causeAction;
+        $this->causeAgent = $causeAgent;
+    }
 
-	public function doUpdate() {
-		$job = HTMLCacheUpdateJob::newForBacklinks(
-			$this->pageTo,
-			$this->table,
-			[ 'causeAction' => $this->getCauseAction(), 'causeAgent' => $this->getCauseAgent() ]
-		);
-		MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush( $job );
-	}
+    public function doUpdate()
+    {
+        $job = HTMLCacheUpdateJob::newForBacklinks(
+            $this->pageTo,
+            $this->table,
+            ['causeAction' => $this->getCauseAction(), 'causeAgent' => $this->getCauseAgent()]
+        );
+        MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush($job);
+    }
 }

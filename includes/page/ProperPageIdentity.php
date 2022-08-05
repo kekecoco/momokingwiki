@@ -39,46 +39,47 @@ use Wikimedia\Assert\PreconditionException;
  *
  * @since 1.36
  */
-interface ProperPageIdentity extends PageIdentity {
+interface ProperPageIdentity extends PageIdentity
+{
 
-	/**
-	 * Get the ID of the wiki this page belongs to.
-	 *
-	 * @see RevisionRecord::getWikiId()
-	 *
-	 * @return string|false The wiki's logical name, of false to indicate the local wiki.
-	 */
-	public function getWikiId();
+    /**
+     * Get the ID of the wiki this page belongs to.
+     *
+     * @return string|false The wiki's logical name, of false to indicate the local wiki.
+     * @see RevisionRecord::getWikiId()
+     *
+     */
+    public function getWikiId();
 
-	/**
-	 * Returns the page ID.
-	 * Will return 0 if the page does not currently exist.
-	 *
-	 * @param string|false $wikiId Must be provided when accessing the ID of a non-local
-	 *        PageIdentity, to prevent data corruption when using a PageIdentity belonging
-	 *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
-	 * @throws PreconditionException if this PageIdentity does not belong to the wiki
-	 *         identified by $wikiId.
-	 *
-	 * @return int
-	 */
-	public function getId( $wikiId = self::LOCAL ): int;
+    /**
+     * Returns the page ID.
+     * Will return 0 if the page does not currently exist.
+     *
+     * @param string|false $wikiId Must be provided when accessing the ID of a non-local
+     *        PageIdentity, to prevent data corruption when using a PageIdentity belonging
+     *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
+     * @return int
+     * @throws PreconditionException if this PageIdentity does not belong to the wiki
+     *         identified by $wikiId.
+     *
+     */
+    public function getId($wikiId = self::LOCAL): int;
 
-	/**
-	 * Get the page title in DB key form.
-	 *
-	 * This should always return a valid DB key.
-	 *
-	 * @return string
-	 */
-	public function getDBkey(): string;
+    /**
+     * Get the page title in DB key form.
+     *
+     * This should always return a valid DB key.
+     *
+     * @return string
+     */
+    public function getDBkey(): string;
 
-	/**
-	 * Always true.
-	 * Implementations must ensure that no "improper" instances can be created.
-	 *
-	 * @return true
-	 */
-	public function canExist(): bool;
+    /**
+     * Always true.
+     * Implementations must ensure that no "improper" instances can be created.
+     *
+     * @return true
+     */
+    public function canExist(): bool;
 
 }

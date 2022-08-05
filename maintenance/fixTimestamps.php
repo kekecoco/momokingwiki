@@ -33,95 +33,99 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class FixTimestamps extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( '' );
-		$this->addArg( 'offset', '' );
-		$this->addArg( 'start', 'Starting timestamp' );
-		$this->addArg( 'end', 'Ending timestamp' );
-	}
+class FixTimestamps extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('');
+        $this->addArg('offset', '');
+        $this->addArg('start', 'Starting timestamp');
+        $this->addArg('end', 'Ending timestamp');
+    }
 
-	public function execute() {
-		$offset = $this->getArg( 0 ) * 3600;
-		$start = $this->getArg( 1 );
-		$end = $this->getArg( 2 );
-		// maximum normal clock offset
-		$grace = 60;
+    public function execute()
+    {
+        $offset = $this->getArg(0) * 3600;
+        $start = $this->getArg(1);
+        $end = $this->getArg(2);
+        // maximum normal clock offset
+        $grace = 60;
 
-		# Find bounding revision IDs
-		$dbw = $this->getDB( DB_PRIMARY );
-		$revisionTable = $dbw->tableName( 'revision' );
-		$res = $dbw->query( "SELECT MIN(rev_id) as minrev, MAX(rev_id) as maxrev FROM $revisionTable " .
-			"WHERE rev_timestamp BETWEEN '{$start}' AND '{$end}'", __METHOD__ );
-		$row = $res->fetchObject();
+        # Find bounding revision IDs
+        $dbw = $this->getDB(DB_PRIMARY);
+        $revisionTable = $dbw->tableName('revision');
+        $res = $dbw->query("SELECT MIN(rev_id) as minrev, MAX(rev_id) as maxrev FROM $revisionTable " .
+            "WHERE rev_timestamp BETWEEN '{$start}' AND '{$end}'", __METHOD__);
+        $row = $res->fetchObject();
 
-		if ( $row->minrev === null ) {
-			$this->fatalError( "No revisions in search period." );
-		}
+        if ($row->minrev === null) {
+            $this->fatalError("No revisions in search period.");
+        }
 
-		$minRev = $row->minrev;
-		$maxRev = $row->maxrev;
+        $minRev = $row->minrev;
+        $maxRev = $row->maxrev;
 
-		# Select all timestamps and IDs
-		$sql = "SELECT rev_id, rev_timestamp FROM $revisionTable " .
-			"WHERE rev_id BETWEEN $minRev AND $maxRev";
-		if ( $offset > 0 ) {
-			$sql .= " ORDER BY rev_id DESC";
-			$expectedSign = -1;
-		} else {
-			$expectedSign = 1;
-		}
+        # Select all timestamps and IDs
+        $sql = "SELECT rev_id, rev_timestamp FROM $revisionTable " .
+            "WHERE rev_id BETWEEN $minRev AND $maxRev";
+        if ($offset > 0) {
+            $sql .= " ORDER BY rev_id DESC";
+            $expectedSign = -1;
+        } else {
+            $expectedSign = 1;
+        }
 
-		$res = $dbw->query( $sql, __METHOD__ );
+        $res = $dbw->query($sql, __METHOD__);
 
-		$lastNormal = 0;
-		$badRevs = [];
-		$numGoodRevs = 0;
+        $lastNormal = 0;
+        $badRevs = [];
+        $numGoodRevs = 0;
 
-		foreach ( $res as $row ) {
-			$timestamp = (int)wfTimestamp( TS_UNIX, $row->rev_timestamp );
-			$delta = $timestamp - $lastNormal;
-			$sign = $delta == 0 ? 0 : $delta / abs( $delta );
-			if ( $sign == 0 || $sign == $expectedSign ) {
-				// Monotonic change
-				$lastNormal = $timestamp;
-				++$numGoodRevs;
-			} elseif ( abs( $delta ) <= $grace ) {
-				// Non-monotonic change within grace interval
-				++$numGoodRevs;
-			} else {
-				// Non-monotonic change larger than grace interval
-				$badRevs[] = $row->rev_id;
-			}
-		}
+        foreach ($res as $row) {
+            $timestamp = (int)wfTimestamp(TS_UNIX, $row->rev_timestamp);
+            $delta = $timestamp - $lastNormal;
+            $sign = $delta == 0 ? 0 : $delta / abs($delta);
+            if ($sign == 0 || $sign == $expectedSign) {
+                // Monotonic change
+                $lastNormal = $timestamp;
+                ++$numGoodRevs;
+            } elseif (abs($delta) <= $grace) {
+                // Non-monotonic change within grace interval
+                ++$numGoodRevs;
+            } else {
+                // Non-monotonic change larger than grace interval
+                $badRevs[] = $row->rev_id;
+            }
+        }
 
-		$numBadRevs = count( $badRevs );
-		if ( $numBadRevs > $numGoodRevs ) {
-			$this->fatalError(
-				"The majority of revisions in the search interval are marked as bad.
+        $numBadRevs = count($badRevs);
+        if ($numBadRevs > $numGoodRevs) {
+            $this->fatalError(
+                "The majority of revisions in the search interval are marked as bad.
 
 		Are you sure the offset ($offset) has the right sign? Positive means the clock
 		was incorrectly set forward, negative means the clock was incorrectly set back.
 
 		If the offset is right, then increase the search interval until there are enough
-		good revisions to provide a majority reference." );
-		} elseif ( $numBadRevs == 0 ) {
-			$this->output( "No bad revisions found.\n" );
-			return;
-		}
+		good revisions to provide a majority reference.");
+        } elseif ($numBadRevs == 0) {
+            $this->output("No bad revisions found.\n");
 
-		$this->output( sprintf( "Fixing %d revisions (%.2f%% of revisions in search interval)\n",
-			$numBadRevs, $numBadRevs / ( $numGoodRevs + $numBadRevs ) * 100 ) );
+            return;
+        }
 
-		$fixup = -$offset;
-		$sql = "UPDATE $revisionTable " .
-			"SET rev_timestamp="
-				. "DATE_FORMAT(DATE_ADD(rev_timestamp, INTERVAL $fixup SECOND), '%Y%m%d%H%i%s') " .
-			"WHERE rev_id IN (" . $dbw->makeList( $badRevs ) . ')';
-		$dbw->query( $sql, __METHOD__ );
-		$this->output( "Done\n" );
-	}
+        $this->output(sprintf("Fixing %d revisions (%.2f%% of revisions in search interval)\n",
+            $numBadRevs, $numBadRevs / ($numGoodRevs + $numBadRevs) * 100));
+
+        $fixup = -$offset;
+        $sql = "UPDATE $revisionTable " .
+            "SET rev_timestamp="
+            . "DATE_FORMAT(DATE_ADD(rev_timestamp, INTERVAL $fixup SECOND), '%Y%m%d%H%i%s') " .
+            "WHERE rev_id IN (" . $dbw->makeList($badRevs) . ')';
+        $dbw->query($sql, __METHOD__);
+        $this->output("Done\n");
+    }
 }
 
 $maintClass = FixTimestamps::class;

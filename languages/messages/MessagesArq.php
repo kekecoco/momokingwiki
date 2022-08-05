@@ -14,6 +14,6 @@ $rtl = true;
 $digitTransformTable = [];
 
 $separatorTransformTable = [
-	'.' => ',',
-	',' => '.'
+    '.' => ',',
+    ',' => '.'
 ];

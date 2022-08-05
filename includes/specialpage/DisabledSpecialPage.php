@@ -32,40 +32,44 @@
  *
  * @since 1.33
  */
-class DisabledSpecialPage extends UnlistedSpecialPage {
+class DisabledSpecialPage extends UnlistedSpecialPage
+{
 
-	/** @var Message */
-	protected $errorMessage;
+    /** @var Message */
+    protected $errorMessage;
 
-	/**
-	 * Create a callback suitable for use in $wgSpecialPages.
-	 * @param string $name Canonical name of the special page that's being replaced.
-	 * @param Message|string|null $errorMessage Error message to show when users try to use the page.
-	 * @return Closure
-	 */
-	public static function getCallback( $name, $errorMessage = null ) {
-		return static function () use ( $name, $errorMessage ) {
-			return new DisabledSpecialPage( $name, $errorMessage );
-		};
-	}
+    /**
+     * Create a callback suitable for use in $wgSpecialPages.
+     * @param string $name Canonical name of the special page that's being replaced.
+     * @param Message|string|null $errorMessage Error message to show when users try to use the page.
+     * @return Closure
+     */
+    public static function getCallback($name, $errorMessage = null)
+    {
+        return static function () use ($name, $errorMessage) {
+            return new DisabledSpecialPage($name, $errorMessage);
+        };
+    }
 
-	/**
-	 * @param string $name Canonical name of the special page that's being replaced.
-	 * @param Message|string|null $errorMessage Error message to show when users try to use the page.
-	 */
-	public function __construct( $name, $errorMessage = null ) {
-		parent::__construct( $name );
-		$this->errorMessage = $errorMessage ?: 'disabledspecialpage-disabled';
-	}
+    /**
+     * @param string $name Canonical name of the special page that's being replaced.
+     * @param Message|string|null $errorMessage Error message to show when users try to use the page.
+     */
+    public function __construct($name, $errorMessage = null)
+    {
+        parent::__construct($name);
+        $this->errorMessage = $errorMessage ?: 'disabledspecialpage-disabled';
+    }
 
-	public function execute( $subPage ) {
-		$this->setHeaders();
-		$this->outputHeader();
+    public function execute($subPage)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
 
-		$error = Html::rawElement( 'div', [
-			'class' => 'error',
-		], $this->msg( $this->errorMessage )->parseAsBlock() );
-		$this->getOutput()->addHTML( $error );
-	}
+        $error = Html::rawElement('div', [
+            'class' => 'error',
+        ], $this->msg($this->errorMessage)->parseAsBlock());
+        $this->getOutput()->addHTML($error);
+    }
 
 }

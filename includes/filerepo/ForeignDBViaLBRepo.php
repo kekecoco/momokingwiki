@@ -26,59 +26,69 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup FileRepo
  */
-class ForeignDBViaLBRepo extends LocalRepo {
-	/** @var array */
-	protected $fileFactory = [ ForeignDBFile::class, 'newFromTitle' ];
+class ForeignDBViaLBRepo extends LocalRepo
+{
+    /** @var array */
+    protected $fileFactory = [ForeignDBFile::class, 'newFromTitle'];
 
-	/** @var array */
-	protected $fileFromRowFactory = [ ForeignDBFile::class, 'newFromRow' ];
+    /** @var array */
+    protected $fileFromRowFactory = [ForeignDBFile::class, 'newFromRow'];
 
-	/**
-	 * @param array|null $info
-	 */
-	public function __construct( $info ) {
-		parent::__construct( $info );
-		'@phan-var array $info';
-		$this->dbDomain = $info['wiki'];
-		$this->hasAccessibleSharedCache = $info['hasSharedCache'];
-	}
+    /**
+     * @param array|null $info
+     */
+    public function __construct($info)
+    {
+        parent::__construct($info);
+        '@phan-var array $info';
+        $this->dbDomain = $info['wiki'];
+        $this->hasAccessibleSharedCache = $info['hasSharedCache'];
+    }
 
-	public function getPrimaryDB() {
-		return $this->getDBLoadBalancer()->getConnectionRef( DB_PRIMARY, [], $this->dbDomain );
-	}
+    public function getPrimaryDB()
+    {
+        return $this->getDBLoadBalancer()->getConnectionRef(DB_PRIMARY, [], $this->dbDomain);
+    }
 
-	public function getMasterDB() {
-		wfDeprecated( __METHOD__, '1.37' );
-		return $this->getPrimaryDB();
-	}
+    public function getMasterDB()
+    {
+        wfDeprecated(__METHOD__, '1.37');
 
-	public function getReplicaDB() {
-		return $this->getDBLoadBalancer()->getConnectionRef( DB_REPLICA, [], $this->dbDomain );
-	}
+        return $this->getPrimaryDB();
+    }
 
-	/**
-	 * @return Closure
-	 */
-	protected function getDBFactory() {
-		return function ( $index ) {
-			return $this->getDBLoadBalancer()->getConnectionRef( $index, [], $this->dbDomain );
-		};
-	}
+    public function getReplicaDB()
+    {
+        return $this->getDBLoadBalancer()->getConnectionRef(DB_REPLICA, [], $this->dbDomain);
+    }
 
-	/**
-	 * @return ILoadBalancer
-	 */
-	protected function getDBLoadBalancer() {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+    /**
+     * @return Closure
+     */
+    protected function getDBFactory()
+    {
+        return function ($index) {
+            return $this->getDBLoadBalancer()->getConnectionRef($index, [], $this->dbDomain);
+        };
+    }
 
-		return $lbFactory->getMainLB( $this->dbDomain );
-	}
+    /**
+     * @return ILoadBalancer
+     */
+    protected function getDBLoadBalancer()
+    {
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-	protected function assertWritableRepo() {
-		throw new MWException( static::class . ': write operations are not supported.' );
-	}
+        return $lbFactory->getMainLB($this->dbDomain);
+    }
 
-	public function getInfo() {
-		return FileRepo::getInfo();
-	}
+    protected function assertWritableRepo()
+    {
+        throw new MWException(static::class . ': write operations are not supported.');
+    }
+
+    public function getInfo()
+    {
+        return FileRepo::getInfo();
+    }
 }

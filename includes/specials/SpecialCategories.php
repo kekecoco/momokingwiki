@@ -27,56 +27,60 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * @ingroup SpecialPage
  */
-class SpecialCategories extends SpecialPage {
+class SpecialCategories extends SpecialPage
+{
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+    /** @var LinkBatchFactory */
+    private $linkBatchFactory;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer
-	) {
-		parent::__construct( 'Categories' );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->loadBalancer = $loadBalancer;
-	}
+    /**
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(
+        LinkBatchFactory $linkBatchFactory,
+        ILoadBalancer $loadBalancer
+    )
+    {
+        parent::__construct('Categories');
+        $this->linkBatchFactory = $linkBatchFactory;
+        $this->loadBalancer = $loadBalancer;
+    }
 
-	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
-		$this->addHelpLink( 'Help:Categories' );
-		$this->getOutput()->setPreventClickjacking( false );
+    public function execute($par)
+    {
+        $this->setHeaders();
+        $this->outputHeader();
+        $this->addHelpLink('Help:Categories');
+        $this->getOutput()->setPreventClickjacking(false);
 
-		$from = $this->getRequest()->getText( 'from', $par );
+        $from = $this->getRequest()->getText('from', $par);
 
-		$cap = new CategoryPager(
-			$this->getContext(),
-			$this->linkBatchFactory,
-			$this->getLinkRenderer(),
-			$this->loadBalancer,
-			$from
-		);
-		$cap->doQuery();
+        $cap = new CategoryPager(
+            $this->getContext(),
+            $this->linkBatchFactory,
+            $this->getLinkRenderer(),
+            $this->loadBalancer,
+            $from
+        );
+        $cap->doQuery();
 
-		$this->getOutput()->addHTML(
-			Html::openElement( 'div', [ 'class' => 'mw-spcontent' ] ) .
-				$this->msg( 'categoriespagetext', $cap->getNumRows() )->parseAsBlock() .
-				$cap->getStartForm( $from ) .
-				$cap->getNavigationBar() .
-				'<ul>' . $cap->getBody() . '</ul>' .
-				$cap->getNavigationBar() .
-				Html::closeElement( 'div' )
-		);
-	}
+        $this->getOutput()->addHTML(
+            Html::openElement('div', ['class' => 'mw-spcontent']) .
+            $this->msg('categoriespagetext', $cap->getNumRows())->parseAsBlock() .
+            $cap->getStartForm($from) .
+            $cap->getNavigationBar() .
+            '<ul>' . $cap->getBody() . '</ul>' .
+            $cap->getNavigationBar() .
+            Html::closeElement('div')
+        );
+    }
 
-	protected function getGroupName() {
-		return 'pages';
-	}
+    protected function getGroupName()
+    {
+        return 'pages';
+    }
 }

@@ -29,18 +29,22 @@ use MediaWiki\MediaWikiServices;
  * @see ExternalStoreAccess
  * @ingroup ExternalStorage
  */
-class ExternalStoreHttp extends ExternalStoreMedium {
-	public function fetchFromURL( $url ) {
-		return MediaWikiServices::getInstance()->getHttpRequestFactory()->
-			get( $url, [], __METHOD__ );
-	}
+class ExternalStoreHttp extends ExternalStoreMedium
+{
+    public function fetchFromURL($url)
+    {
+        return MediaWikiServices::getInstance()->getHttpRequestFactory()->
+        get($url, [], __METHOD__);
+    }
 
-	public function store( $location, $data ) {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( "ExternalStoreHttp is read-only and does not support store()." );
-	}
+    public function store($location, $data)
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException("ExternalStoreHttp is read-only and does not support store().");
+    }
 
-	public function isReadOnly( $location ) {
-		return true;
-	}
+    public function isReadOnly($location)
+    {
+        return true;
+    }
 }

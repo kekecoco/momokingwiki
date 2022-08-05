@@ -27,63 +27,70 @@
  *
  * @stable to extend
  */
-abstract class DataUpdate implements DeferrableUpdate {
-	/** @var mixed Result from LBFactory::getEmptyTransactionTicket() */
-	protected $ticket;
-	/** @var string Short update cause action description */
-	protected $causeAction = 'unknown';
-	/** @var string Short update cause user description */
-	protected $causeAgent = 'unknown';
+abstract class DataUpdate implements DeferrableUpdate
+{
+    /** @var mixed Result from LBFactory::getEmptyTransactionTicket() */
+    protected $ticket;
+    /** @var string Short update cause action description */
+    protected $causeAction = 'unknown';
+    /** @var string Short update cause user description */
+    protected $causeAgent = 'unknown';
 
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		// noop
-	}
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        // noop
+    }
 
-	/**
-	 * @param mixed $ticket Result of getEmptyTransactionTicket()
-	 * @since 1.28
-	 */
-	public function setTransactionTicket( $ticket ) {
-		$this->ticket = $ticket;
-	}
+    /**
+     * @param mixed $ticket Result of getEmptyTransactionTicket()
+     * @since 1.28
+     */
+    public function setTransactionTicket($ticket)
+    {
+        $this->ticket = $ticket;
+    }
 
-	/**
-	 * @param string $action Action type
-	 * @param string $user User name
-	 */
-	public function setCause( $action, $user ) {
-		$this->causeAction = $action;
-		$this->causeAgent = $user;
-	}
+    /**
+     * @param string $action Action type
+     * @param string $user User name
+     */
+    public function setCause($action, $user)
+    {
+        $this->causeAction = $action;
+        $this->causeAgent = $user;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getCauseAction() {
-		return $this->causeAction;
-	}
+    /**
+     * @return string
+     */
+    public function getCauseAction()
+    {
+        return $this->causeAction;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getCauseAgent() {
-		return $this->causeAgent;
-	}
+    /**
+     * @return string
+     */
+    public function getCauseAgent()
+    {
+        return $this->causeAgent;
+    }
 
-	/**
-	 * Convenience method, calls doUpdate() on every DataUpdate in the array.
-	 *
-	 * @param DataUpdate[] $updates A list of DataUpdate instances
-	 * @throws Exception
-	 * @deprecated Since 1.28 Use DeferredUpdates::execute(). Hard deprecated since 1.39.
-	 */
-	public static function runUpdates( array $updates ) {
-		wfDeprecated( __METHOD__, '1.28' );
-		foreach ( $updates as $update ) {
-			$update->doUpdate();
-		}
-	}
+    /**
+     * Convenience method, calls doUpdate() on every DataUpdate in the array.
+     *
+     * @param DataUpdate[] $updates A list of DataUpdate instances
+     * @throws Exception
+     * @deprecated Since 1.28 Use DeferredUpdates::execute(). Hard deprecated since 1.39.
+     */
+    public static function runUpdates(array $updates)
+    {
+        wfDeprecated(__METHOD__, '1.28');
+        foreach ($updates as $update) {
+            $update->doUpdate();
+        }
+    }
 }

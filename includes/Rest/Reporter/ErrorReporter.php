@@ -12,13 +12,14 @@ use Throwable;
  *
  * @since 1.38
  */
-interface ErrorReporter {
+interface ErrorReporter
+{
 
-	/**
-	 * @param Throwable $error
-	 * @param Handler $handler
-	 * @param RequestInterface $request
-	 */
-	public function reportError( Throwable $error, Handler $handler, RequestInterface $request );
+    /**
+     * @param Throwable $error
+     * @param Handler $handler
+     * @param RequestInterface $request
+     */
+    public function reportError(Throwable $error, Handler $handler, RequestInterface $request);
 
 }

@@ -32,91 +32,97 @@ use MediaWiki\MediaWikiServices;
  * @ingroup Maintenance
  * @since 1.33
  */
-class RefreshExternallinksIndex extends LoggedUpdateMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			'Refresh the externallinks table el_index and el_index_60 from el_to' );
-		$this->setBatchSize( 10000 );
-	}
+class RefreshExternallinksIndex extends LoggedUpdateMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            'Refresh the externallinks table el_index and el_index_60 from el_to');
+        $this->setBatchSize(10000);
+    }
 
-	protected function getUpdateKey() {
-		return static::class
-			. ' v' . LinkFilter::VERSION
-			. ( LinkFilter::supportsIDN() ? '+' : '-' ) . 'IDN';
-	}
+    protected function getUpdateKey()
+    {
+        return static::class
+            . ' v' . LinkFilter::VERSION
+            . (LinkFilter::supportsIDN() ? '+' : '-') . 'IDN';
+    }
 
-	protected function updateSkippedMessage() {
-		return 'externallinks table indexes up to date.';
-	}
+    protected function updateSkippedMessage()
+    {
+        return 'externallinks table indexes up to date.';
+    }
 
-	protected function doDBUpdates() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbw->tableExists( 'externallinks', __METHOD__ ) ) {
-			$this->error( "externallinks table does not exist" );
-			return false;
-		}
-		$this->output( "Updating externallinks table index fields\n" );
+    protected function doDBUpdates()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbw->tableExists('externallinks', __METHOD__)) {
+            $this->error("externallinks table does not exist");
 
-		$minmax = $dbw->selectRow(
-			'externallinks',
-			[ 'min' => 'MIN(el_id)', 'max' => 'MAX(el_id)' ],
-			'',
-			__METHOD__
-		);
+            return false;
+        }
+        $this->output("Updating externallinks table index fields\n");
 
-		$updated = 0;
-		$deleted = 0;
-		$start = $minmax->min - 1;
-		$last = (int)$minmax->max;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		while ( $start < $last ) {
-			$end = min( $start + $this->mBatchSize, $last );
-			$this->output( "el_id $start - $end of $last\n" );
-			$res = $dbw->select( 'externallinks', [ 'el_id', 'el_to', 'el_index' ],
-				[
-					"el_id > $start",
-					"el_id <= $end",
-				],
-				__METHOD__,
-				[ 'ORDER BY' => 'el_id' ]
-			);
-			foreach ( $res as $row ) {
-				$newIndexes = LinkFilter::makeIndexes( $row->el_to );
-				if ( !$newIndexes ) {
-					$dbw->delete( 'externallinks', [ 'el_id' => $row->el_id ], __METHOD__ );
-					$deleted++;
-					continue;
-				}
-				if ( in_array( $row->el_index, $newIndexes, true ) ) {
-					continue;
-				}
+        $minmax = $dbw->selectRow(
+            'externallinks',
+            ['min' => 'MIN(el_id)', 'max' => 'MAX(el_id)'],
+            '',
+            __METHOD__
+        );
 
-				if ( count( $newIndexes ) === 1 ) {
-					$newIndex = $newIndexes[0];
-				} else {
-					// Assume the scheme is the only difference between the different $newIndexes.
-					// Keep this row's scheme, assuming there's another row with the other scheme.
-					$newIndex = substr( $row->el_index, 0, strpos( $row->el_index, ':' ) ) .
-						substr( $newIndexes[0], strpos( $newIndexes[0], ':' ) );
-				}
-				$dbw->update( 'externallinks',
-					[
-						'el_index' => $newIndex,
-						'el_index_60' => substr( $newIndex, 0, 60 ),
-					],
-					[ 'el_id' => $row->el_id ],
-					__METHOD__
-				);
-				$updated++;
-			}
-			$lbFactory->waitForReplication();
-			$start = $end;
-		}
-		$this->output( "Done, $updated rows updated, $deleted deleted.\n" );
+        $updated = 0;
+        $deleted = 0;
+        $start = $minmax->min - 1;
+        $last = (int)$minmax->max;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        while ($start < $last) {
+            $end = min($start + $this->mBatchSize, $last);
+            $this->output("el_id $start - $end of $last\n");
+            $res = $dbw->select('externallinks', ['el_id', 'el_to', 'el_index'],
+                [
+                    "el_id > $start",
+                    "el_id <= $end",
+                ],
+                __METHOD__,
+                ['ORDER BY' => 'el_id']
+            );
+            foreach ($res as $row) {
+                $newIndexes = LinkFilter::makeIndexes($row->el_to);
+                if (!$newIndexes) {
+                    $dbw->delete('externallinks', ['el_id' => $row->el_id], __METHOD__);
+                    $deleted++;
+                    continue;
+                }
+                if (in_array($row->el_index, $newIndexes, true)) {
+                    continue;
+                }
 
-		return true;
-	}
+                if (count($newIndexes) === 1) {
+                    $newIndex = $newIndexes[0];
+                } else {
+                    // Assume the scheme is the only difference between the different $newIndexes.
+                    // Keep this row's scheme, assuming there's another row with the other scheme.
+                    $newIndex = substr($row->el_index, 0, strpos($row->el_index, ':')) .
+                        substr($newIndexes[0], strpos($newIndexes[0], ':'));
+                }
+                $dbw->update('externallinks',
+                    [
+                        'el_index'    => $newIndex,
+                        'el_index_60' => substr($newIndex, 0, 60),
+                    ],
+                    ['el_id' => $row->el_id],
+                    __METHOD__
+                );
+                $updated++;
+            }
+            $lbFactory->waitForReplication();
+            $start = $end;
+        }
+        $this->output("Done, $updated rows updated, $deleted deleted.\n");
+
+        return true;
+    }
 }
 
 $maintClass = RefreshExternallinksIndex::class;

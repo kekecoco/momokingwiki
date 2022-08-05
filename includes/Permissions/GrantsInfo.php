@@ -30,111 +30,122 @@ use MediaWiki\MainConfigNames;
  *
  * @since 1.38
  */
-class GrantsInfo {
-	/**
-	 * @internal For use by ServiceWiring
-	 */
-	public const CONSTRUCTOR_OPTIONS = [
-		MainConfigNames::GrantPermissions,
-		MainConfigNames::GrantPermissionGroups,
-	];
+class GrantsInfo
+{
+    /**
+     * @internal For use by ServiceWiring
+     */
+    public const CONSTRUCTOR_OPTIONS = [
+        MainConfigNames::GrantPermissions,
+        MainConfigNames::GrantPermissionGroups,
+    ];
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/**
-	 * @param ServiceOptions $options
-	 */
-	public function __construct(
-		ServiceOptions $options
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-	}
+    /**
+     * @param ServiceOptions $options
+     */
+    public function __construct(
+        ServiceOptions $options
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
+        $this->options = $options;
+    }
 
-	/**
-	 * List all known grants.
-	 * @return string[]
-	 */
-	public function getValidGrants(): array {
-		return array_keys( $this->options->get( MainConfigNames::GrantPermissions ) );
-	}
+    /**
+     * List all known grants.
+     * @return string[]
+     */
+    public function getValidGrants(): array
+    {
+        return array_keys($this->options->get(MainConfigNames::GrantPermissions));
+    }
 
-	/**
-	 * Map all grants to corresponding user rights.
-	 * @return string[][] grant => array of rights in the grant
-	 */
-	public function getRightsByGrant(): array {
-		$res = [];
-		foreach ( $this->options->get( MainConfigNames::GrantPermissions ) as $grant => $rights ) {
-			$res[$grant] = array_keys( array_filter( $rights ) );
-		}
-		return $res;
-	}
+    /**
+     * Map all grants to corresponding user rights.
+     * @return string[][] grant => array of rights in the grant
+     */
+    public function getRightsByGrant(): array
+    {
+        $res = [];
+        foreach ($this->options->get(MainConfigNames::GrantPermissions) as $grant => $rights) {
+            $res[$grant] = array_keys(array_filter($rights));
+        }
 
-	/**
-	 * Fetch the rights allowed by a set of grants.
-	 * @param string[]|string $grants
-	 * @return string[]
-	 */
-	public function getGrantRights( $grants ): array {
-		$rights = [];
-		foreach ( (array)$grants as $grant ) {
-			if ( isset( $this->options->get( MainConfigNames::GrantPermissions )[$grant] ) ) {
-				$rights = array_merge(
-					$rights,
-					array_keys( array_filter( $this->options->get( MainConfigNames::GrantPermissions )[$grant] ) )
-				);
-			}
-		}
-		return array_unique( $rights );
-	}
+        return $res;
+    }
 
-	/**
-	 * Test that all grants in the list are known.
-	 * @param string[] $grants
-	 * @return bool
-	 */
-	public function grantsAreValid( array $grants ): bool {
-		return array_diff( $grants, $this->getValidGrants() ) === [];
-	}
+    /**
+     * Fetch the rights allowed by a set of grants.
+     * @param string[]|string $grants
+     * @return string[]
+     */
+    public function getGrantRights($grants): array
+    {
+        $rights = [];
+        foreach ((array)$grants as $grant) {
+            if (isset($this->options->get(MainConfigNames::GrantPermissions)[$grant])) {
+                $rights = array_merge(
+                    $rights,
+                    array_keys(array_filter($this->options->get(MainConfigNames::GrantPermissions)[$grant]))
+                );
+            }
+        }
 
-	/**
-	 * Divide the grants into groups.
-	 * @param string[]|null $grantsFilter
-	 * @return string[][] Map of (group => (grant list))
-	 */
-	public function getGrantGroups( array $grantsFilter = null ): array {
-		if ( is_array( $grantsFilter ) ) {
-			$grantsFilter = array_fill_keys( $grantsFilter, true );
-		}
+        return array_unique($rights);
+    }
 
-		$groups = [];
-		foreach ( $this->options->get( MainConfigNames::GrantPermissions ) as $grant => $rights ) {
-			if ( $grantsFilter !== null && !isset( $grantsFilter[$grant] ) ) {
-				continue;
-			}
-			if ( isset( $this->options->get( MainConfigNames::GrantPermissionGroups )[$grant] ) ) {
-				$groups[$this->options->get( MainConfigNames::GrantPermissionGroups )[$grant]][] = $grant;
-			} else {
-				$groups['other'][] = $grant;
-			}
-		}
+    /**
+     * Test that all grants in the list are known.
+     * @param string[] $grants
+     * @return bool
+     */
+    public function grantsAreValid(array $grants): bool
+    {
+        return array_diff($grants, $this->getValidGrants()) === [];
+    }
 
-		return $groups;
-	}
+    /**
+     * Divide the grants into groups.
+     * @param string[]|null $grantsFilter
+     * @return string[][] Map of (group => (grant list))
+     */
+    public function getGrantGroups(array $grantsFilter = null): array
+    {
+        if (is_array($grantsFilter)) {
+            $grantsFilter = array_fill_keys($grantsFilter, true);
+        }
 
-	/**
-	 * Get the list of grants that are hidden and should always be granted.
-	 * @return string[]
-	 */
-	public function getHiddenGrants(): array {
-		$grants = [];
-		foreach ( $this->options->get( MainConfigNames::GrantPermissionGroups ) as $grant => $group ) {
-			if ( $group === 'hidden' ) {
-				$grants[] = $grant;
-			}
-		}
-		return $grants;
-	}
+        $groups = [];
+        foreach ($this->options->get(MainConfigNames::GrantPermissions) as $grant => $rights) {
+            if ($grantsFilter !== null && !isset($grantsFilter[$grant])) {
+                continue;
+            }
+            if (isset($this->options->get(MainConfigNames::GrantPermissionGroups)[$grant])) {
+                $groups[$this->options->get(MainConfigNames::GrantPermissionGroups)[$grant]][] = $grant;
+            } else {
+                $groups['other'][] = $grant;
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Get the list of grants that are hidden and should always be granted.
+     * @return string[]
+     */
+    public function getHiddenGrants(): array
+    {
+        $grants = [];
+        foreach ($this->options->get(MainConfigNames::GrantPermissionGroups) as $grant => $group) {
+            if ($group === 'hidden') {
+                $grants[] = $grant;
+            }
+        }
+
+        return $grants;
+    }
 }

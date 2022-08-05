@@ -1,5 +1,5 @@
-var TagItemWidget = require( './TagItemWidget.js' ),
-	FilterTagItemWidget;
+var TagItemWidget = require('./TagItemWidget.js'),
+    FilterTagItemWidget;
 
 /**
  * Extend OOUI's FilterTagItemWidget to also display a popup on hover.
@@ -15,19 +15,19 @@ var TagItemWidget = require( './TagItemWidget.js' ),
  * @param {Object} config Configuration object
  */
 FilterTagItemWidget = function MwRcfiltersUiFilterTagItemWidget(
-	controller, filtersViewModel, invertModel, itemModel, config
+    controller, filtersViewModel, invertModel, itemModel, config
 ) {
-	config = config || {};
+    config = config || {};
 
-	FilterTagItemWidget.parent.call( this, controller, filtersViewModel, invertModel, itemModel, config );
+    FilterTagItemWidget.parent.call(this, controller, filtersViewModel, invertModel, itemModel, config);
 
-	this.$element
-		.addClass( 'mw-rcfilters-ui-filterTagItemWidget' );
+    this.$element
+        .addClass('mw-rcfilters-ui-filterTagItemWidget');
 };
 
 /* Initialization */
 
-OO.inheritClass( FilterTagItemWidget, TagItemWidget );
+OO.inheritClass(FilterTagItemWidget, TagItemWidget);
 
 /* Methods */
 
@@ -35,14 +35,14 @@ OO.inheritClass( FilterTagItemWidget, TagItemWidget );
  * @inheritdoc
  */
 FilterTagItemWidget.prototype.setCurrentMuteState = function () {
-	this.setFlags( {
-		muted: (
-			!this.itemModel.isSelected() ||
-			this.itemModel.isIncluded() ||
-			this.itemModel.isFullyCovered()
-		),
-		invalid: this.itemModel.isSelected() && this.itemModel.isConflicted()
-	} );
+    this.setFlags({
+        muted: (
+            !this.itemModel.isSelected() ||
+            this.itemModel.isIncluded() ||
+            this.itemModel.isFullyCovered()
+        ),
+        invalid: this.itemModel.isSelected() && this.itemModel.isConflicted()
+    });
 };
 
 module.exports = FilterTagItemWidget;

@@ -27,52 +27,59 @@
  *
  * @ingroup Languages
  */
-class LanguageZh extends LanguageZh_hans {
-	/**
-	 * this should give much better diff info
-	 *
-	 * @param string $text
-	 * @return string
-	 */
-	public function segmentForDiff( $text ) {
-		return preg_replace( '/[\xc0-\xff][\x80-\xbf]*/', ' $0', $text );
-	}
+class LanguageZh extends LanguageZh_hans
+{
+    /**
+     * this should give much better diff info
+     *
+     * @param string $text
+     * @return string
+     */
+    public function segmentForDiff($text)
+    {
+        return preg_replace('/[\xc0-\xff][\x80-\xbf]*/', ' $0', $text);
+    }
 
-	/**
-	 * @param string $text
-	 * @return string
-	 */
-	public function unsegmentForDiff( $text ) {
-		return preg_replace( '/ ([\xc0-\xff][\x80-\xbf]*)/', '$1', $text );
-	}
+    /**
+     * @param string $text
+     * @return string
+     */
+    public function unsegmentForDiff($text)
+    {
+        return preg_replace('/ ([\xc0-\xff][\x80-\xbf]*)/', '$1', $text);
+    }
 
-	/**
-	 * auto convert to zh-hans and normalize special characters.
-	 *
-	 * @param string $string
-	 * @param string $autoVariant Defaults to 'zh-hans'
-	 * @return string
-	 */
-	public function normalizeForSearch( $string, $autoVariant = 'zh-hans' ) {
-		// always convert to zh-hans before indexing. it should be
-		// better to use zh-hans for search, since conversion from
-		// Traditional to Simplified is less ambiguous than the
-		// other way around
-		$s = $this->getConverter()->autoConvert( $string, $autoVariant );
-		// LanguageZh_hans::normalizeForSearch
-		$s = parent::normalizeForSearch( $s );
-		return $s;
-	}
+    /**
+     * auto convert to zh-hans and normalize special characters.
+     *
+     * @param string $string
+     * @param string $autoVariant Defaults to 'zh-hans'
+     * @return string
+     */
+    public function normalizeForSearch($string, $autoVariant = 'zh-hans')
+    {
+        // always convert to zh-hans before indexing. it should be
+        // better to use zh-hans for search, since conversion from
+        // Traditional to Simplified is less ambiguous than the
+        // other way around
+        $s = $this->getConverter()->autoConvert($string, $autoVariant);
+        // LanguageZh_hans::normalizeForSearch
+        $s = parent::normalizeForSearch($s);
 
-	/**
-	 * @param string[] $termsArray
-	 * @return string[]
-	 */
-	public function convertForSearchResult( $termsArray ) {
-		$terms = implode( '|', $termsArray );
-		$terms = self::convertDoubleWidth( $terms );
-		$terms = implode( '|', $this->getConverter()->autoConvertToAllVariants( $terms ) );
-		$ret = array_unique( explode( '|', $terms ) );
-		return $ret;
-	}
+        return $s;
+    }
+
+    /**
+     * @param string[] $termsArray
+     * @return string[]
+     */
+    public function convertForSearchResult($termsArray)
+    {
+        $terms = implode('|', $termsArray);
+        $terms = self::convertDoubleWidth($terms);
+        $terms = implode('|', $this->getConverter()->autoConvertToAllVariants($terms));
+        $ret = array_unique(explode('|', $terms));
+
+        return $ret;
+    }
 }

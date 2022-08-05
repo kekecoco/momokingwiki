@@ -30,102 +30,111 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-class ApiQueryFileRepoInfo extends ApiQueryBase {
+class ApiQueryFileRepoInfo extends ApiQueryBase
+{
 
-	/** @var RepoGroup */
-	private $repoGroup;
+    /** @var RepoGroup */
+    private $repoGroup;
 
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param RepoGroup $repoGroup
-	 */
-	public function __construct(
-		ApiQuery $query,
-		$moduleName,
-		RepoGroup $repoGroup
-	) {
-		parent::__construct( $query, $moduleName, 'fri' );
-		$this->repoGroup = $repoGroup;
-	}
+    /**
+     * @param ApiQuery $query
+     * @param string $moduleName
+     * @param RepoGroup $repoGroup
+     */
+    public function __construct(
+        ApiQuery $query,
+        $moduleName,
+        RepoGroup $repoGroup
+    )
+    {
+        parent::__construct($query, $moduleName, 'fri');
+        $this->repoGroup = $repoGroup;
+    }
 
-	public function execute() {
-		$conf = $this->getConfig();
+    public function execute()
+    {
+        $conf = $this->getConfig();
 
-		$params = $this->extractRequestParams();
-		$props = array_fill_keys( $params['prop'], true );
+        $params = $this->extractRequestParams();
+        $props = array_fill_keys($params['prop'], true);
 
-		$repos = [];
+        $repos = [];
 
-		$foreignTargets = $conf->get( MainConfigNames::ForeignUploadTargets );
+        $foreignTargets = $conf->get(MainConfigNames::ForeignUploadTargets);
 
-		$this->repoGroup->forEachForeignRepo(
-			static function ( FileRepo $repo ) use ( &$repos, $props, $foreignTargets ) {
-				$repoProps = $repo->getInfo();
-				$repoProps['canUpload'] = in_array( $repoProps['name'], $foreignTargets );
+        $this->repoGroup->forEachForeignRepo(
+            static function (FileRepo $repo) use (&$repos, $props, $foreignTargets) {
+                $repoProps = $repo->getInfo();
+                $repoProps['canUpload'] = in_array($repoProps['name'], $foreignTargets);
 
-				$repos[] = array_intersect_key( $repoProps, $props );
-			}
-		);
+                $repos[] = array_intersect_key($repoProps, $props);
+            }
+        );
 
-		$localInfo = $this->repoGroup->getLocalRepo()->getInfo();
-		$localInfo['canUpload'] = $conf->get( MainConfigNames::EnableUploads );
-		$repos[] = array_intersect_key( $localInfo, $props );
+        $localInfo = $this->repoGroup->getLocalRepo()->getInfo();
+        $localInfo['canUpload'] = $conf->get(MainConfigNames::EnableUploads);
+        $repos[] = array_intersect_key($localInfo, $props);
 
-		$result = $this->getResult();
-		ApiResult::setIndexedTagName( $repos, 'repo' );
-		ApiResult::setArrayTypeRecursive( $repos, 'assoc' );
-		ApiResult::setArrayType( $repos, 'array' );
-		$result->addValue( [ 'query' ], 'repos', $repos );
-	}
+        $result = $this->getResult();
+        ApiResult::setIndexedTagName($repos, 'repo');
+        ApiResult::setArrayTypeRecursive($repos, 'assoc');
+        ApiResult::setArrayType($repos, 'array');
+        $result->addValue(['query'], 'repos', $repos);
+    }
 
-	public function getCacheMode( $params ) {
-		return 'public';
-	}
+    public function getCacheMode($params)
+    {
+        return 'public';
+    }
 
-	public function getAllowedParams() {
-		$props = $this->getProps();
+    public function getAllowedParams()
+    {
+        $props = $this->getProps();
 
-		return [
-			'prop' => [
-				ParamValidator::PARAM_DEFAULT => implode( '|', $props ),
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_TYPE => $props,
-				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
-			],
-		];
-	}
+        return [
+            'prop' => [
+                ParamValidator::PARAM_DEFAULT     => implode('|', $props),
+                ParamValidator::PARAM_ISMULTI     => true,
+                ParamValidator::PARAM_TYPE        => $props,
+                ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+            ],
+        ];
+    }
 
-	public function getProps() {
-		$props = [];
-		$this->repoGroup->forEachForeignRepo( static function ( FileRepo $repo ) use ( &$props ) {
-			$props = array_merge( $props, array_keys( $repo->getInfo() ) );
-		} );
+    public function getProps()
+    {
+        $props = [];
+        $this->repoGroup->forEachForeignRepo(static function (FileRepo $repo) use (&$props) {
+            $props = array_merge($props, array_keys($repo->getInfo()));
+        });
 
-		$propValues = array_values( array_unique( array_merge(
-			$props,
-			array_keys( $this->repoGroup->getLocalRepo()->getInfo() )
-		) ) );
+        $propValues = array_values(array_unique(array_merge(
+            $props,
+            array_keys($this->repoGroup->getLocalRepo()->getInfo())
+        )));
 
-		$propValues[] = 'canUpload';
+        $propValues[] = 'canUpload';
 
-		sort( $propValues );
-		return $propValues;
-	}
+        sort($propValues);
 
-	protected function getExamplesMessages() {
-		$examples = [];
+        return $propValues;
+    }
 
-		$props = array_intersect( [ 'apiurl', 'name', 'displayname' ], $this->getProps() );
-		if ( $props ) {
-			$examples['action=query&meta=filerepoinfo&friprop=' . implode( '|', $props )] =
-				'apihelp-query+filerepoinfo-example-simple';
-		}
+    protected function getExamplesMessages()
+    {
+        $examples = [];
 
-		return $examples;
-	}
+        $props = array_intersect(['apiurl', 'name', 'displayname'], $this->getProps());
+        if ($props) {
+            $examples['action=query&meta=filerepoinfo&friprop=' . implode('|', $props)] =
+                'apihelp-query+filerepoinfo-example-simple';
+        }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Filerepoinfo';
-	}
+        return $examples;
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Filerepoinfo';
+    }
 }

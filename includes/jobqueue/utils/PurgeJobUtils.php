@@ -20,69 +20,72 @@
  *
  * @file
  */
+
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\IDatabase;
 
-class PurgeJobUtils {
-	/**
-	 * Invalidate the cache of a list of pages from a single namespace.
-	 * This is intended for use by subclasses.
-	 *
-	 * @param IDatabase $dbw
-	 * @param int $namespace Namespace number
-	 * @param string[] $dbkeys
-	 */
-	public static function invalidatePages( IDatabase $dbw, $namespace, array $dbkeys ) {
-		if ( $dbkeys === [] ) {
-			return;
-		}
-		$fname = __METHOD__;
+class PurgeJobUtils
+{
+    /**
+     * Invalidate the cache of a list of pages from a single namespace.
+     * This is intended for use by subclasses.
+     *
+     * @param IDatabase $dbw
+     * @param int $namespace Namespace number
+     * @param string[] $dbkeys
+     */
+    public static function invalidatePages(IDatabase $dbw, $namespace, array $dbkeys)
+    {
+        if ($dbkeys === []) {
+            return;
+        }
+        $fname = __METHOD__;
 
-		DeferredUpdates::addUpdate( new AutoCommitUpdate(
-			$dbw,
-			__METHOD__,
-			static function () use ( $dbw, $namespace, $dbkeys, $fname ) {
-				$services = MediaWikiServices::getInstance();
-				$lbFactory = $services->getDBLoadBalancerFactory();
-				// Determine which pages need to be updated.
-				// This is necessary to prevent the job queue from smashing the DB with
-				// large numbers of concurrent invalidations of the same page.
-				$now = $dbw->timestamp();
-				$ids = $dbw->selectFieldValues(
-					'page',
-					'page_id',
-					[
-						'page_namespace' => $namespace,
-						'page_title' => $dbkeys,
-						'page_touched < ' . $dbw->addQuotes( $now )
-					],
-					$fname
-				);
+        DeferredUpdates::addUpdate(new AutoCommitUpdate(
+            $dbw,
+            __METHOD__,
+            static function () use ($dbw, $namespace, $dbkeys, $fname) {
+                $services = MediaWikiServices::getInstance();
+                $lbFactory = $services->getDBLoadBalancerFactory();
+                // Determine which pages need to be updated.
+                // This is necessary to prevent the job queue from smashing the DB with
+                // large numbers of concurrent invalidations of the same page.
+                $now = $dbw->timestamp();
+                $ids = $dbw->selectFieldValues(
+                    'page',
+                    'page_id',
+                    [
+                        'page_namespace' => $namespace,
+                        'page_title'     => $dbkeys,
+                        'page_touched < ' . $dbw->addQuotes($now)
+                    ],
+                    $fname
+                );
 
-				if ( !$ids ) {
-					return;
-				}
+                if (!$ids) {
+                    return;
+                }
 
-				$batchSize =
-					$services->getMainConfig()->get( MainConfigNames::UpdateRowsPerQuery );
-				$ticket = $lbFactory->getEmptyTransactionTicket( $fname );
-				$idBatches = array_chunk( $ids, $batchSize );
-				foreach ( $idBatches as $idBatch ) {
-					$dbw->update(
-						'page',
-						[ 'page_touched' => $now ],
-						[
-							'page_id' => $idBatch,
-							'page_touched < ' . $dbw->addQuotes( $now ) // handle races
-						],
-						$fname
-					);
-					if ( count( $idBatches ) > 1 ) {
-						$lbFactory->commitAndWaitForReplication( $fname, $ticket );
-					}
-				}
-			}
-		) );
-	}
+                $batchSize =
+                    $services->getMainConfig()->get(MainConfigNames::UpdateRowsPerQuery);
+                $ticket = $lbFactory->getEmptyTransactionTicket($fname);
+                $idBatches = array_chunk($ids, $batchSize);
+                foreach ($idBatches as $idBatch) {
+                    $dbw->update(
+                        'page',
+                        ['page_touched' => $now],
+                        [
+                            'page_id' => $idBatch,
+                            'page_touched < ' . $dbw->addQuotes($now) // handle races
+                        ],
+                        $fname
+                    );
+                    if (count($idBatches) > 1) {
+                        $lbFactory->commitAndWaitForReplication($fname, $ticket);
+                    }
+                }
+            }
+        ));
+    }
 }

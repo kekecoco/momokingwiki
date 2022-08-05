@@ -33,197 +33,217 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Feed
  */
-class FeedItem {
-	/** @var Title */
-	public $title;
+class FeedItem
+{
+    /** @var Title */
+    public $title;
 
-	public $description;
+    public $description;
 
-	public $url;
+    public $url;
 
-	public $date;
+    public $date;
 
-	public $author;
+    public $author;
 
-	public $uniqueId;
+    public $uniqueId;
 
-	public $comments;
+    public $comments;
 
-	public $rssIsPermalink = false;
+    public $rssIsPermalink = false;
 
-	/**
-	 * @param string|Title $title Item's title
-	 * @param string $description
-	 * @param string $url URL uniquely designating the item.
-	 * @param string $date Item's date
-	 * @param string $author Author's user name
-	 * @param string $comments
-	 */
-	public function __construct(
-		$title, $description, $url, $date = '', $author = '', $comments = ''
-	) {
-		$this->title = $title;
-		$this->description = $description;
-		$this->url = $url;
-		$this->uniqueId = $url;
-		$this->date = $date;
-		$this->author = $author;
-		$this->comments = $comments;
-	}
+    /**
+     * @param string|Title $title Item's title
+     * @param string $description
+     * @param string $url URL uniquely designating the item.
+     * @param string $date Item's date
+     * @param string $author Author's user name
+     * @param string $comments
+     */
+    public function __construct(
+        $title, $description, $url, $date = '', $author = '', $comments = ''
+    )
+    {
+        $this->title = $title;
+        $this->description = $description;
+        $this->url = $url;
+        $this->uniqueId = $url;
+        $this->date = $date;
+        $this->author = $author;
+        $this->comments = $comments;
+    }
 
-	/**
-	 * Encode $string so that it can be safely embedded in a XML document
-	 *
-	 * @param string $string String to encode
-	 * @return string
-	 */
-	public function xmlEncode( $string ) {
-		$string = str_replace( "\r\n", "\n", $string );
-		$string = preg_replace( '/[\x00-\x08\x0b\x0c\x0e-\x1f]/', '', $string );
-		return htmlspecialchars( $string );
-	}
+    /**
+     * Encode $string so that it can be safely embedded in a XML document
+     *
+     * @param string $string String to encode
+     * @return string
+     */
+    public function xmlEncode($string)
+    {
+        $string = str_replace("\r\n", "\n", $string);
+        $string = preg_replace('/[\x00-\x08\x0b\x0c\x0e-\x1f]/', '', $string);
 
-	/**
-	 * Get the unique id of this item; already xml-encoded
-	 * @return string
-	 */
-	public function getUniqueID() {
-		$id = $this->getUniqueIdUnescaped();
-		if ( $id ) {
-			return $this->xmlEncode( $id );
-		}
-	}
+        return htmlspecialchars($string);
+    }
 
-	/**
-	 * Get the unique id of this item, without any escaping
-	 * @return string
-	 */
-	public function getUniqueIdUnescaped() {
-		if ( $this->uniqueId ) {
-			return wfExpandUrl( $this->uniqueId, PROTO_CURRENT );
-		}
-	}
+    /**
+     * Get the unique id of this item; already xml-encoded
+     * @return string
+     */
+    public function getUniqueID()
+    {
+        $id = $this->getUniqueIdUnescaped();
+        if ($id) {
+            return $this->xmlEncode($id);
+        }
+    }
 
-	/**
-	 * Set the unique id of an item
-	 *
-	 * @param string $uniqueId Unique id for the item
-	 * @param bool $rssIsPermalink Set to true if the guid (unique id) is a permalink (RSS feeds only)
-	 */
-	public function setUniqueId( $uniqueId, $rssIsPermalink = false ) {
-		$this->uniqueId = $uniqueId;
-		$this->rssIsPermalink = $rssIsPermalink;
-	}
+    /**
+     * Get the unique id of this item, without any escaping
+     * @return string
+     */
+    public function getUniqueIdUnescaped()
+    {
+        if ($this->uniqueId) {
+            return wfExpandUrl($this->uniqueId, PROTO_CURRENT);
+        }
+    }
 
-	/**
-	 * Get the title of this item; already xml-encoded
-	 *
-	 * @return string
-	 */
-	public function getTitle() {
-		return $this->xmlEncode( $this->title );
-	}
+    /**
+     * Set the unique id of an item
+     *
+     * @param string $uniqueId Unique id for the item
+     * @param bool $rssIsPermalink Set to true if the guid (unique id) is a permalink (RSS feeds only)
+     */
+    public function setUniqueId($uniqueId, $rssIsPermalink = false)
+    {
+        $this->uniqueId = $uniqueId;
+        $this->rssIsPermalink = $rssIsPermalink;
+    }
 
-	/**
-	 * Get the URL of this item; already xml-encoded
-	 *
-	 * @return string
-	 */
-	public function getUrl() {
-		return $this->xmlEncode( $this->url );
-	}
+    /**
+     * Get the title of this item; already xml-encoded
+     *
+     * @return string
+     */
+    public function getTitle()
+    {
+        return $this->xmlEncode($this->title);
+    }
 
-	/** Get the URL of this item without any escaping
-	 *
-	 * @return string
-	 */
-	public function getUrlUnescaped() {
-		return $this->url;
-	}
+    /**
+     * Get the URL of this item; already xml-encoded
+     *
+     * @return string
+     */
+    public function getUrl()
+    {
+        return $this->xmlEncode($this->url);
+    }
 
-	/**
-	 * Get the description of this item; already xml-encoded
-	 *
-	 * @return string
-	 */
-	public function getDescription() {
-		return $this->xmlEncode( $this->description );
-	}
+    /** Get the URL of this item without any escaping
+     *
+     * @return string
+     */
+    public function getUrlUnescaped()
+    {
+        return $this->url;
+    }
 
-	/**
-	 * Get the description of this item without any escaping
-	 *
-	 * @return string
-	 */
-	public function getDescriptionUnescaped() {
-		return $this->description;
-	}
+    /**
+     * Get the description of this item; already xml-encoded
+     *
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->xmlEncode($this->description);
+    }
 
-	/**
-	 * Get the language of this item
-	 *
-	 * @return string
-	 */
-	public function getLanguage() {
-		$languageCode = MediaWikiServices::getInstance()->getMainConfig()
-			->get( MainConfigNames::LanguageCode );
-		return LanguageCode::bcp47( $languageCode );
-	}
+    /**
+     * Get the description of this item without any escaping
+     *
+     * @return string
+     */
+    public function getDescriptionUnescaped()
+    {
+        return $this->description;
+    }
 
-	/**
-	 * Get the date of this item
-	 *
-	 * @return string
-	 */
-	public function getDate() {
-		return $this->date;
-	}
+    /**
+     * Get the language of this item
+     *
+     * @return string
+     */
+    public function getLanguage()
+    {
+        $languageCode = MediaWikiServices::getInstance()->getMainConfig()
+            ->get(MainConfigNames::LanguageCode);
 
-	/**
-	 * Get the author of this item; already xml-encoded
-	 *
-	 * @return string
-	 */
-	public function getAuthor() {
-		return $this->xmlEncode( $this->author );
-	}
+        return LanguageCode::bcp47($languageCode);
+    }
 
-	/**
-	 * Get the author of this item without any escaping
-	 *
-	 * @return string
-	 */
-	public function getAuthorUnescaped() {
-		return $this->author;
-	}
+    /**
+     * Get the date of this item
+     *
+     * @return string
+     */
+    public function getDate()
+    {
+        return $this->date;
+    }
 
-	/**
-	 * Get the comment of this item; already xml-encoded
-	 *
-	 * @return string
-	 */
-	public function getComments() {
-		return $this->xmlEncode( $this->comments );
-	}
+    /**
+     * Get the author of this item; already xml-encoded
+     *
+     * @return string
+     */
+    public function getAuthor()
+    {
+        return $this->xmlEncode($this->author);
+    }
 
-	/**
-	 * Get the comment of this item without any escaping
-	 *
-	 * @return string
-	 */
-	public function getCommentsUnescaped() {
-		return $this->comments;
-	}
+    /**
+     * Get the author of this item without any escaping
+     *
+     * @return string
+     */
+    public function getAuthorUnescaped()
+    {
+        return $this->author;
+    }
 
-	/**
-	 * Quickie hack... strip out wikilinks to more legible form from the comment.
-	 *
-	 * @param string $text Wikitext
-	 * @return string
-	 */
-	public static function stripComment( $text ) {
-		return preg_replace( '/\[\[([^]]*\|)?([^]]+)\]\]/', '\2', $text );
-	}
+    /**
+     * Get the comment of this item; already xml-encoded
+     *
+     * @return string
+     */
+    public function getComments()
+    {
+        return $this->xmlEncode($this->comments);
+    }
 
-	/** #@- */
+    /**
+     * Get the comment of this item without any escaping
+     *
+     * @return string
+     */
+    public function getCommentsUnescaped()
+    {
+        return $this->comments;
+    }
+
+    /**
+     * Quickie hack... strip out wikilinks to more legible form from the comment.
+     *
+     * @param string $text Wikitext
+     * @return string
+     */
+    public static function stripComment($text)
+    {
+        return preg_replace('/\[\[([^]]*\|)?([^]]+)\]\]/', '\2', $text);
+    }
+
+    /** #@- */
 }

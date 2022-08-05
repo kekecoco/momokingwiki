@@ -8,208 +8,231 @@ use Wikimedia\Rdbms\DBReadOnlyError;
  *
  * @covers NoWriteWatchedItemStore
  */
-class NoWriteWatchedItemStoreUnitTest extends \MediaWikiUnitTestCase {
+class NoWriteWatchedItemStoreUnitTest extends \MediaWikiUnitTestCase
+{
 
-	/**
-	 * @return NoWriteWatchedItemStore
-	 */
-	private function getNoWriteStoreForErrors(): NoWriteWatchedItemStore {
-		// NoWriteWatchedItemStore where the inner actual store should never be called,
-		// because we are testing the methods that throw exceptions instead
-		// We could do a fancy constrant for never having a method that matches the
-		// specific list, but since we don't use this for the cases that we have the
-		// inner actual store do anything, it should never be used
-		$innerService = $this->createNoOpAbstractMock( WatchedItemStoreInterface::class );
-		return new NoWriteWatchedItemStore( $innerService );
-	}
+    /**
+     * @return NoWriteWatchedItemStore
+     */
+    private function getNoWriteStoreForErrors(): NoWriteWatchedItemStore
+    {
+        // NoWriteWatchedItemStore where the inner actual store should never be called,
+        // because we are testing the methods that throw exceptions instead
+        // We could do a fancy constrant for never having a method that matches the
+        // specific list, but since we don't use this for the cases that we have the
+        // inner actual store do anything, it should never be used
+        $innerService = $this->createNoOpAbstractMock(WatchedItemStoreInterface::class);
 
-	/**
-	 * @param string $method
-	 * @param mixed $result
-	 * @return NoWriteWatchedItemStore
-	 */
-	private function getNoWriteStoreForProxyCall( string $method, $result ): NoWriteWatchedItemStore {
-		// NoWriteWatchedItemStore where the inner actual store is used a single time
-		// for a method call
-		$innerService = $this->createNoOpAbstractMock(
-			WatchedItemStoreInterface::class,
-			[ $method ]
-		);
-		$innerService->expects( $this->once() )->method( $method )->willReturn( $result );
-		return new NoWriteWatchedItemStore( $innerService );
-	}
+        return new NoWriteWatchedItemStore($innerService);
+    }
 
-	public function testAddWatch() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    /**
+     * @param string $method
+     * @param mixed $result
+     * @return NoWriteWatchedItemStore
+     */
+    private function getNoWriteStoreForProxyCall(string $method, $result): NoWriteWatchedItemStore
+    {
+        // NoWriteWatchedItemStore where the inner actual store is used a single time
+        // for a method call
+        $innerService = $this->createNoOpAbstractMock(
+            WatchedItemStoreInterface::class,
+            [$method]
+        );
+        $innerService->expects($this->once())->method($method)->willReturn($result);
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->addWatch(
-			new UserIdentityValue( 1, 'MockUser' ), new TitleValue( 0, 'Foo' ) );
-	}
+        return new NoWriteWatchedItemStore($innerService);
+    }
 
-	public function testAddWatchBatchForUser() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testAddWatch()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->addWatchBatchForUser( new UserIdentityValue( 1, 'MockUser' ), [] );
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->addWatch(
+            new UserIdentityValue(1, 'MockUser'), new TitleValue(0, 'Foo'));
+    }
 
-	public function testRemoveWatch() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testAddWatchBatchForUser()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->removeWatch(
-			new UserIdentityValue( 1, 'MockUser' ), new TitleValue( 0, 'Foo' ) );
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->addWatchBatchForUser(new UserIdentityValue(1, 'MockUser'), []);
+    }
 
-	public function testSetNotificationTimestampsForUser() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testRemoveWatch()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->setNotificationTimestampsForUser(
-			new UserIdentityValue( 1, 'MockUser' ),
-			'timestamp',
-			[]
-		);
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->removeWatch(
+            new UserIdentityValue(1, 'MockUser'), new TitleValue(0, 'Foo'));
+    }
 
-	public function testUpdateNotificationTimestamp() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testSetNotificationTimestampsForUser()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->updateNotificationTimestamp(
-			new UserIdentityValue( 1, 'MockUser' ),
-			new TitleValue( 0, 'Foo' ),
-			'timestamp'
-		);
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->setNotificationTimestampsForUser(
+            new UserIdentityValue(1, 'MockUser'),
+            'timestamp',
+            []
+        );
+    }
 
-	public function testResetNotificationTimestamp() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testUpdateNotificationTimestamp()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->resetNotificationTimestamp(
-			new UserIdentityValue( 1, 'MockUser' ),
-			new TitleValue( 0, 'Foo' )
-		);
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->updateNotificationTimestamp(
+            new UserIdentityValue(1, 'MockUser'),
+            new TitleValue(0, 'Foo'),
+            'timestamp'
+        );
+    }
 
-	public function testCountWatchedItems() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countWatchedItems', __METHOD__ );
+    public function testResetNotificationTimestamp()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
 
-		$return = $noWriteService->countWatchedItems(
-			new UserIdentityValue( 1, 'MockUser' )
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->resetNotificationTimestamp(
+            new UserIdentityValue(1, 'MockUser'),
+            new TitleValue(0, 'Foo')
+        );
+    }
 
-	public function testCountWatchers() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countWatchers', __METHOD__ );
+    public function testCountWatchedItems()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countWatchedItems', __METHOD__);
 
-		$return = $noWriteService->countWatchers(
-			new TitleValue( 0, 'Foo' )
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->countWatchedItems(
+            new UserIdentityValue(1, 'MockUser')
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testCountVisitingWatchers() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countVisitingWatchers', __METHOD__ );
+    public function testCountWatchers()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countWatchers', __METHOD__);
 
-		$return = $noWriteService->countVisitingWatchers(
-			new TitleValue( 0, 'Foo' ),
-			9
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->countWatchers(
+            new TitleValue(0, 'Foo')
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testCountWatchersMultiple() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countWatchersMultiple', __METHOD__ );
+    public function testCountVisitingWatchers()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countVisitingWatchers', __METHOD__);
 
-		$return = $noWriteService->countWatchersMultiple(
-			[ new TitleValue( 0, 'Foo' ) ],
-			[]
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->countVisitingWatchers(
+            new TitleValue(0, 'Foo'),
+            9
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testCountVisitingWatchersMultiple() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countVisitingWatchersMultiple', __METHOD__ );
+    public function testCountWatchersMultiple()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countWatchersMultiple', __METHOD__);
 
-		$return = $noWriteService->countVisitingWatchersMultiple(
-			[ [ new TitleValue( 0, 'Foo' ), 99 ] ],
-			11
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->countWatchersMultiple(
+            [new TitleValue(0, 'Foo')],
+            []
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testGetWatchedItem() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'getWatchedItem', __METHOD__ );
+    public function testCountVisitingWatchersMultiple()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countVisitingWatchersMultiple', __METHOD__);
 
-		$return = $noWriteService->getWatchedItem(
-			new UserIdentityValue( 1, 'MockUser' ),
-			new TitleValue( 0, 'Foo' )
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->countVisitingWatchersMultiple(
+            [[new TitleValue(0, 'Foo'), 99]],
+            11
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testLoadWatchedItem() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'loadWatchedItem', __METHOD__ );
+    public function testGetWatchedItem()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('getWatchedItem', __METHOD__);
 
-		$return = $noWriteService->loadWatchedItem(
-			new UserIdentityValue( 1, 'MockUser' ),
-			new TitleValue( 0, 'Foo' )
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->getWatchedItem(
+            new UserIdentityValue(1, 'MockUser'),
+            new TitleValue(0, 'Foo')
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testGetWatchedItemsForUser() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'getWatchedItemsForUser', __METHOD__ );
+    public function testLoadWatchedItem()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('loadWatchedItem', __METHOD__);
 
-		$return = $noWriteService->getWatchedItemsForUser(
-			new UserIdentityValue( 1, 'MockUser' ),
-			[]
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->loadWatchedItem(
+            new UserIdentityValue(1, 'MockUser'),
+            new TitleValue(0, 'Foo')
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testIsWatched() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'isWatched', __METHOD__ );
+    public function testGetWatchedItemsForUser()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('getWatchedItemsForUser', __METHOD__);
 
-		$return = $noWriteService->isWatched(
-			new UserIdentityValue( 1, 'MockUser' ),
-			new TitleValue( 0, 'Foo' )
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->getWatchedItemsForUser(
+            new UserIdentityValue(1, 'MockUser'),
+            []
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testGetNotificationTimestampsBatch() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'getNotificationTimestampsBatch', __METHOD__ );
+    public function testIsWatched()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('isWatched', __METHOD__);
 
-		$return = $noWriteService->getNotificationTimestampsBatch(
-			new UserIdentityValue( 1, 'MockUser' ),
-			[ new TitleValue( 0, 'Foo' ) ]
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->isWatched(
+            new UserIdentityValue(1, 'MockUser'),
+            new TitleValue(0, 'Foo')
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testCountUnreadNotifications() {
-		$noWriteService = $this->getNoWriteStoreForProxyCall( 'countUnreadNotifications', __METHOD__ );
+    public function testGetNotificationTimestampsBatch()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('getNotificationTimestampsBatch', __METHOD__);
 
-		$return = $noWriteService->countUnreadNotifications(
-			new UserIdentityValue( 1, 'MockUser' ),
-			88
-		);
-		$this->assertEquals( __METHOD__, $return );
-	}
+        $return = $noWriteService->getNotificationTimestampsBatch(
+            new UserIdentityValue(1, 'MockUser'),
+            [new TitleValue(0, 'Foo')]
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
 
-	public function testDuplicateAllAssociatedEntries() {
-		$noWriteService = $this->getNoWriteStoreForErrors();
+    public function testCountUnreadNotifications()
+    {
+        $noWriteService = $this->getNoWriteStoreForProxyCall('countUnreadNotifications', __METHOD__);
 
-		$this->expectException( DBReadOnlyError::class );
-		$noWriteService->duplicateAllAssociatedEntries(
-			new TitleValue( 0, 'Foo' ),
-			new TitleValue( 0, 'Bar' )
-		);
-	}
+        $return = $noWriteService->countUnreadNotifications(
+            new UserIdentityValue(1, 'MockUser'),
+            88
+        );
+        $this->assertEquals(__METHOD__, $return);
+    }
+
+    public function testDuplicateAllAssociatedEntries()
+    {
+        $noWriteService = $this->getNoWriteStoreForErrors();
+
+        $this->expectException(DBReadOnlyError::class);
+        $noWriteService->duplicateAllAssociatedEntries(
+            new TitleValue(0, 'Foo'),
+            new TitleValue(0, 'Bar')
+        );
+    }
 
 }

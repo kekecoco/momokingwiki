@@ -34,110 +34,115 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *  the sharing are listed in $wgLocalDatabases.
  * @since 1.27
  */
-class LocalIdLookup extends CentralIdLookup {
+class LocalIdLookup extends CentralIdLookup
+{
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+    /** @var ILoadBalancer */
+    private $loadBalancer;
 
-	/** @var string|null */
-	private $sharedDB;
+    /** @var string|null */
+    private $sharedDB;
 
-	/** @var string[] */
-	private $sharedTables;
+    /** @var string[] */
+    private $sharedTables;
 
-	/** @var string[] */
-	private $localDatabases;
+    /** @var string[] */
+    private $localDatabases;
 
-	/**
-	 * @param Config $config
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct(
-		Config $config,
-		ILoadBalancer $loadBalancer
-	) {
-		$this->sharedDB = $config->get( MainConfigNames::SharedDB );
-		$this->sharedTables = $config->get( MainConfigNames::SharedTables );
-		$this->localDatabases = $config->get( MainConfigNames::LocalDatabases );
-		$this->loadBalancer = $loadBalancer;
-	}
+    /**
+     * @param Config $config
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(
+        Config $config,
+        ILoadBalancer $loadBalancer
+    )
+    {
+        $this->sharedDB = $config->get(MainConfigNames::SharedDB);
+        $this->sharedTables = $config->get(MainConfigNames::SharedTables);
+        $this->localDatabases = $config->get(MainConfigNames::LocalDatabases);
+        $this->loadBalancer = $loadBalancer;
+    }
 
-	public function isAttached( UserIdentity $user, $wikiId = UserIdentity::LOCAL ): bool {
-		// If the user has no ID, it can't be attached
-		if ( !$user->isRegistered() ) {
-			return false;
-		}
+    public function isAttached(UserIdentity $user, $wikiId = UserIdentity::LOCAL): bool
+    {
+        // If the user has no ID, it can't be attached
+        if (!$user->isRegistered()) {
+            return false;
+        }
 
-		// Easy case, we're checking locally
-		if ( !$wikiId || WikiMap::isCurrentWikiId( $wikiId ) ) {
-			return true;
-		}
+        // Easy case, we're checking locally
+        if (!$wikiId || WikiMap::isCurrentWikiId($wikiId)) {
+            return true;
+        }
 
-		// Assume that shared user tables are set up as described above, if
-		// they're being used at all.
-		return $this->sharedDB !== null &&
-			in_array( 'user', $this->sharedTables, true ) &&
-			in_array( $wikiId, $this->localDatabases, true );
-	}
+        // Assume that shared user tables are set up as described above, if
+        // they're being used at all.
+        return $this->sharedDB !== null &&
+            in_array('user', $this->sharedTables, true) &&
+            in_array($wikiId, $this->localDatabases, true);
+    }
 
-	public function lookupCentralIds(
-		array $idToName, $audience = self::AUDIENCE_PUBLIC, $flags = self::READ_NORMAL
-	): array {
-		if ( !$idToName ) {
-			return [];
-		}
-		$audience = $this->checkAudience( $audience );
-		list( $index, $options ) = DBAccessObjectUtils::getDBOptions( $flags );
-		$db = $this->loadBalancer->getConnectionRef( $index );
+    public function lookupCentralIds(
+        array $idToName, $audience = self::AUDIENCE_PUBLIC, $flags = self::READ_NORMAL
+    ): array
+    {
+        if (!$idToName) {
+            return [];
+        }
+        $audience = $this->checkAudience($audience);
+        [$index, $options] = DBAccessObjectUtils::getDBOptions($flags);
+        $db = $this->loadBalancer->getConnectionRef($index);
 
-		$tables = [ 'user' ];
-		$fields = [ 'user_id', 'user_name' ];
-		$where = [
-			'user_id' => array_map( 'intval', array_keys( $idToName ) ),
-		];
-		$join = [];
-		if ( $audience && !$audience->isAllowed( 'hideuser' ) ) {
-			$tables[] = 'ipblocks';
-			$join['ipblocks'] = [ 'LEFT JOIN', 'ipb_user=user_id' ];
-			$fields[] = 'ipb_deleted';
-		}
+        $tables = ['user'];
+        $fields = ['user_id', 'user_name'];
+        $where = [
+            'user_id' => array_map('intval', array_keys($idToName)),
+        ];
+        $join = [];
+        if ($audience && !$audience->isAllowed('hideuser')) {
+            $tables[] = 'ipblocks';
+            $join['ipblocks'] = ['LEFT JOIN', 'ipb_user=user_id'];
+            $fields[] = 'ipb_deleted';
+        }
 
-		$res = $db->select( $tables, $fields, $where, __METHOD__, $options, $join );
-		foreach ( $res as $row ) {
-			$idToName[$row->user_id] = empty( $row->ipb_deleted ) ? $row->user_name : '';
-		}
+        $res = $db->select($tables, $fields, $where, __METHOD__, $options, $join);
+        foreach ($res as $row) {
+            $idToName[$row->user_id] = empty($row->ipb_deleted) ? $row->user_name : '';
+        }
 
-		return $idToName;
-	}
+        return $idToName;
+    }
 
-	public function lookupUserNames(
-		array $nameToId, $audience = self::AUDIENCE_PUBLIC, $flags = self::READ_NORMAL
-	): array {
-		if ( !$nameToId ) {
-			return [];
-		}
+    public function lookupUserNames(
+        array $nameToId, $audience = self::AUDIENCE_PUBLIC, $flags = self::READ_NORMAL
+    ): array
+    {
+        if (!$nameToId) {
+            return [];
+        }
 
-		$audience = $this->checkAudience( $audience );
-		list( $index, $options ) = DBAccessObjectUtils::getDBOptions( $flags );
-		$db = $this->loadBalancer->getConnectionRef( $index );
+        $audience = $this->checkAudience($audience);
+        [$index, $options] = DBAccessObjectUtils::getDBOptions($flags);
+        $db = $this->loadBalancer->getConnectionRef($index);
 
-		$tables = [ 'user' ];
-		$fields = [ 'user_id', 'user_name' ];
-		$where = [
-			'user_name' => array_map( 'strval', array_keys( $nameToId ) ),
-		];
-		$join = [];
-		if ( $audience && !$audience->isAllowed( 'hideuser' ) ) {
-			$tables[] = 'ipblocks';
-			$join['ipblocks'] = [ 'LEFT JOIN', 'ipb_user=user_id' ];
-			$where[] = 'ipb_deleted = 0 OR ipb_deleted IS NULL';
-		}
+        $tables = ['user'];
+        $fields = ['user_id', 'user_name'];
+        $where = [
+            'user_name' => array_map('strval', array_keys($nameToId)),
+        ];
+        $join = [];
+        if ($audience && !$audience->isAllowed('hideuser')) {
+            $tables[] = 'ipblocks';
+            $join['ipblocks'] = ['LEFT JOIN', 'ipb_user=user_id'];
+            $where[] = 'ipb_deleted = 0 OR ipb_deleted IS NULL';
+        }
 
-		$res = $db->select( $tables, $fields, $where, __METHOD__, $options, $join );
-		foreach ( $res as $row ) {
-			$nameToId[$row->user_name] = (int)$row->user_id;
-		}
+        $res = $db->select($tables, $fields, $where, __METHOD__, $options, $join);
+        foreach ($res as $row) {
+            $nameToId[$row->user_name] = (int)$row->user_id;
+        }
 
-		return $nameToId;
-	}
+        return $nameToId;
+    }
 }

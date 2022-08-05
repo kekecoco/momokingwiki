@@ -36,180 +36,192 @@ use MWTimestamp;
  * @since 1.31
  * @since 1.32 Renamed from MediaWiki\Storage\RevisionStoreRecord
  */
-class RevisionStoreRecord extends RevisionRecord {
+class RevisionStoreRecord extends RevisionRecord
+{
 
-	/** @var bool */
-	protected $mCurrent = false;
+    /** @var bool */
+    protected $mCurrent = false;
 
-	/**
-	 * @note Avoid calling this constructor directly. Use the appropriate methods
-	 * in RevisionStore instead.
-	 *
-	 * @param PageIdentity $page The page this RevisionRecord is associated with.
-	 * @param UserIdentity $user
-	 * @param CommentStoreComment $comment
-	 * @param \stdClass $row A row from the revision table. Use RevisionStore::getQueryInfo() to build
-	 *        a query that yields the required fields.
-	 * @param RevisionSlots $slots The slots of this revision.
-	 * @param false|string $wikiId Relevant wiki id or self::LOCAL for the current one.
-	 */
-	public function __construct(
-		PageIdentity $page,
-		UserIdentity $user,
-		CommentStoreComment $comment,
-		\stdClass $row,
-		RevisionSlots $slots,
-		$wikiId = self::LOCAL
-	) {
-		parent::__construct( $page, $slots, $wikiId );
-		$this->mId = intval( $row->rev_id );
-		$this->mPageId = intval( $row->rev_page );
-		$this->mComment = $comment;
+    /**
+     * @note Avoid calling this constructor directly. Use the appropriate methods
+     * in RevisionStore instead.
+     *
+     * @param PageIdentity $page The page this RevisionRecord is associated with.
+     * @param UserIdentity $user
+     * @param CommentStoreComment $comment
+     * @param \stdClass $row A row from the revision table. Use RevisionStore::getQueryInfo() to build
+     *        a query that yields the required fields.
+     * @param RevisionSlots $slots The slots of this revision.
+     * @param false|string $wikiId Relevant wiki id or self::LOCAL for the current one.
+     */
+    public function __construct(
+        PageIdentity $page,
+        UserIdentity $user,
+        CommentStoreComment $comment,
+        \stdClass $row,
+        RevisionSlots $slots,
+        $wikiId = self::LOCAL
+    )
+    {
+        parent::__construct($page, $slots, $wikiId);
+        $this->mId = intval($row->rev_id);
+        $this->mPageId = intval($row->rev_page);
+        $this->mComment = $comment;
 
-		// Don't use MWTimestamp::convert, instead let any detailed exception from MWTimestamp
-		// bubble up (T254210)
-		$timestamp = ( new MWTimestamp( $row->rev_timestamp ) )->getTimestamp( TS_MW );
+        // Don't use MWTimestamp::convert, instead let any detailed exception from MWTimestamp
+        // bubble up (T254210)
+        $timestamp = (new MWTimestamp($row->rev_timestamp))->getTimestamp(TS_MW);
 
-		$this->mUser = $user;
-		$this->mMinorEdit = boolval( $row->rev_minor_edit );
-		$this->mTimestamp = $timestamp;
-		$this->mDeleted = intval( $row->rev_deleted );
+        $this->mUser = $user;
+        $this->mMinorEdit = boolval($row->rev_minor_edit);
+        $this->mTimestamp = $timestamp;
+        $this->mDeleted = intval($row->rev_deleted);
 
-		// NOTE: rev_parent_id = 0 indicates that there is no parent revision, while null
-		// indicates that the parent revision is unknown. As per MW 1.31, the database schema
-		// allows rev_parent_id to be NULL.
-		$this->mParentId = isset( $row->rev_parent_id ) ? intval( $row->rev_parent_id ) : null;
-		$this->mSize = isset( $row->rev_len ) ? intval( $row->rev_len ) : null;
-		$this->mSha1 = !empty( $row->rev_sha1 ) ? $row->rev_sha1 : null;
+        // NOTE: rev_parent_id = 0 indicates that there is no parent revision, while null
+        // indicates that the parent revision is unknown. As per MW 1.31, the database schema
+        // allows rev_parent_id to be NULL.
+        $this->mParentId = isset($row->rev_parent_id) ? intval($row->rev_parent_id) : null;
+        $this->mSize = isset($row->rev_len) ? intval($row->rev_len) : null;
+        $this->mSha1 = !empty($row->rev_sha1) ? $row->rev_sha1 : null;
 
-		// NOTE: we must not call $this->mTitle->getLatestRevID() here, since the state of
-		// page_latest may be in limbo during revision creation. In that case, calling
-		// $this->mTitle->getLatestRevID() would cause a bad value to be cached in the Title
-		// object. During page creation, that bad value would be 0.
-		if ( isset( $row->page_latest ) ) {
-			$this->mCurrent = ( $row->rev_id == $row->page_latest );
-		}
+        // NOTE: we must not call $this->mTitle->getLatestRevID() here, since the state of
+        // page_latest may be in limbo during revision creation. In that case, calling
+        // $this->mTitle->getLatestRevID() would cause a bad value to be cached in the Title
+        // object. During page creation, that bad value would be 0.
+        if (isset($row->page_latest)) {
+            $this->mCurrent = ($row->rev_id == $row->page_latest);
+        }
 
-		$pageIdBasedOnPage = $this->getArticleId( $this->mPage );
-		if ( $this->mPageId && $pageIdBasedOnPage && $this->mPageId !== $pageIdBasedOnPage ) {
-			throw new InvalidArgumentException(
-				'The given page (' . $this->mPage . ')' .
-				' does not belong to page ID ' . $this->mPageId .
-				' but actually belongs to ' . $this->getArticleId( $this->mPage )
-			);
-		}
-	}
+        $pageIdBasedOnPage = $this->getArticleId($this->mPage);
+        if ($this->mPageId && $pageIdBasedOnPage && $this->mPageId !== $pageIdBasedOnPage) {
+            throw new InvalidArgumentException(
+                'The given page (' . $this->mPage . ')' .
+                ' does not belong to page ID ' . $this->mPageId .
+                ' but actually belongs to ' . $this->getArticleId($this->mPage)
+            );
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function isCurrent() {
-		return $this->mCurrent;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function isCurrent()
+    {
+        return $this->mCurrent;
+    }
 
-	/**
-	 * MCR migration note: this replaced Revision::isDeleted
-	 *
-	 * @param int $field One of DELETED_* bitfield constants
-	 *
-	 * @return bool
-	 */
-	public function isDeleted( $field ) {
-		if ( $this->isCurrent() && $field === self::DELETED_TEXT ) {
-			// Current revisions of pages cannot have the content hidden. Skipping this
-			// check is very useful for Parser as it fetches templates using newKnownCurrent().
-			// Calling getVisibility() in that case triggers a verification database query.
-			return false; // no need to check
-		}
+    /**
+     * MCR migration note: this replaced Revision::isDeleted
+     *
+     * @param int $field One of DELETED_* bitfield constants
+     *
+     * @return bool
+     */
+    public function isDeleted($field)
+    {
+        if ($this->isCurrent() && $field === self::DELETED_TEXT) {
+            // Current revisions of pages cannot have the content hidden. Skipping this
+            // check is very useful for Parser as it fetches templates using newKnownCurrent().
+            // Calling getVisibility() in that case triggers a verification database query.
+            return false; // no need to check
+        }
 
-		return parent::isDeleted( $field );
-	}
+        return parent::isDeleted($field);
+    }
 
-	public function userCan( $field, Authority $performer ) {
-		if ( $this->isCurrent() && $field === self::DELETED_TEXT ) {
-			// Current revisions of pages cannot have the content hidden. Skipping this
-			// check is very useful for Parser as it fetches templates using newKnownCurrent().
-			// Calling getVisibility() in that case triggers a verification database query.
-			return true; // no need to check
-		}
+    public function userCan($field, Authority $performer)
+    {
+        if ($this->isCurrent() && $field === self::DELETED_TEXT) {
+            // Current revisions of pages cannot have the content hidden. Skipping this
+            // check is very useful for Parser as it fetches templates using newKnownCurrent().
+            // Calling getVisibility() in that case triggers a verification database query.
+            return true; // no need to check
+        }
 
-		return parent::userCan( $field, $performer );
-	}
+        return parent::userCan($field, $performer);
+    }
 
-	/**
-	 * @param string|false $wikiId The wiki ID expected by the caller.
-	 * @return int|null The revision id, never null.
-	 */
-	public function getId( $wikiId = self::LOCAL ) {
-		// overwritten just to add a guarantee to the contract
-		return parent::getId( $wikiId );
-	}
+    /**
+     * @param string|false $wikiId The wiki ID expected by the caller.
+     * @return int|null The revision id, never null.
+     */
+    public function getId($wikiId = self::LOCAL)
+    {
+        // overwritten just to add a guarantee to the contract
+        return parent::getId($wikiId);
+    }
 
-	/**
-	 * @throws RevisionAccessException if the size was unknown and could not be calculated.
-	 * @return int The nominal revision size, never null. May be computed on the fly.
-	 */
-	public function getSize() {
-		// If length is null, calculate and remember it (potentially SLOW!).
-		// This is for compatibility with old database rows that don't have the field set.
-		if ( $this->mSize === null ) {
-			$this->mSize = $this->mSlots->computeSize();
-		}
+    /**
+     * @return int The nominal revision size, never null. May be computed on the fly.
+     * @throws RevisionAccessException if the size was unknown and could not be calculated.
+     */
+    public function getSize()
+    {
+        // If length is null, calculate and remember it (potentially SLOW!).
+        // This is for compatibility with old database rows that don't have the field set.
+        if ($this->mSize === null) {
+            $this->mSize = $this->mSlots->computeSize();
+        }
 
-		return $this->mSize;
-	}
+        return $this->mSize;
+    }
 
-	/**
-	 * @throws RevisionAccessException if the hash was unknown and could not be calculated.
-	 * @return string The revision hash, never null. May be computed on the fly.
-	 */
-	public function getSha1() {
-		// If hash is null, calculate it and remember (potentially SLOW!)
-		// This is for compatibility with old database rows that don't have the field set.
-		if ( $this->mSha1 === null ) {
-			$this->mSha1 = $this->mSlots->computeSha1();
-		}
+    /**
+     * @return string The revision hash, never null. May be computed on the fly.
+     * @throws RevisionAccessException if the hash was unknown and could not be calculated.
+     */
+    public function getSha1()
+    {
+        // If hash is null, calculate it and remember (potentially SLOW!)
+        // This is for compatibility with old database rows that don't have the field set.
+        if ($this->mSha1 === null) {
+            $this->mSha1 = $this->mSlots->computeSha1();
+        }
 
-		return $this->mSha1;
-	}
+        return $this->mSha1;
+    }
 
-	/**
-	 * @param int $audience
-	 * @param Authority|null $performer
-	 *
-	 * @return UserIdentity The identity of the revision author, null if access is forbidden.
-	 */
-	public function getUser( $audience = self::FOR_PUBLIC, Authority $performer = null ) {
-		// overwritten just to add a guarantee to the contract
-		return parent::getUser( $audience, $performer );
-	}
+    /**
+     * @param int $audience
+     * @param Authority|null $performer
+     *
+     * @return UserIdentity The identity of the revision author, null if access is forbidden.
+     */
+    public function getUser($audience = self::FOR_PUBLIC, Authority $performer = null)
+    {
+        // overwritten just to add a guarantee to the contract
+        return parent::getUser($audience, $performer);
+    }
 
-	/**
-	 * @param int $audience
-	 * @param Authority|null $performer
-	 *
-	 * @return CommentStoreComment The revision comment, null if access is forbidden.
-	 */
-	public function getComment( $audience = self::FOR_PUBLIC, Authority $performer = null ) {
-		// overwritten just to add a guarantee to the contract
-		return parent::getComment( $audience, $performer );
-	}
+    /**
+     * @param int $audience
+     * @param Authority|null $performer
+     *
+     * @return CommentStoreComment The revision comment, null if access is forbidden.
+     */
+    public function getComment($audience = self::FOR_PUBLIC, Authority $performer = null)
+    {
+        // overwritten just to add a guarantee to the contract
+        return parent::getComment($audience, $performer);
+    }
 
-	/**
-	 * @return string timestamp, never null
-	 */
-	public function getTimestamp() {
-		// overwritten just to add a guarantee to the contract
-		return parent::getTimestamp();
-	}
+    /**
+     * @return string timestamp, never null
+     */
+    public function getTimestamp()
+    {
+        // overwritten just to add a guarantee to the contract
+        return parent::getTimestamp();
+    }
 
-	/**
-	 * @see RevisionStore::isComplete
-	 *
-	 * @return bool always true.
-	 */
-	public function isReadyForInsertion() {
-		return true;
-	}
+    /**
+     * @return bool always true.
+     * @see RevisionStore::isComplete
+     *
+     */
+    public function isReadyForInsertion()
+    {
+        return true;
+    }
 
 }

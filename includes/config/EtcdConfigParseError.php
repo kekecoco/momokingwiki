@@ -3,5 +3,6 @@
 /**
  * @newable
  */
-class EtcdConfigParseError extends Exception {
+class EtcdConfigParseError extends Exception
+{
 }

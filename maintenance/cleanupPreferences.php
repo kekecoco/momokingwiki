@@ -34,116 +34,121 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class CleanupPreferences extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Clean up hidden preferences or removed preferences' );
-		$this->setBatchSize( 50 );
-		$this->addOption( 'dry-run', 'Print debug info instead of actually deleting' );
-		$this->addOption( 'hidden', 'Drop hidden preferences ($wgHiddenPrefs)' );
-		$this->addOption( 'unknown',
-			'Drop unknown preferences (not in $wgDefaultUserOptions or prefixed with "userjs-")' );
-	}
+class CleanupPreferences extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Clean up hidden preferences or removed preferences');
+        $this->setBatchSize(50);
+        $this->addOption('dry-run', 'Print debug info instead of actually deleting');
+        $this->addOption('hidden', 'Drop hidden preferences ($wgHiddenPrefs)');
+        $this->addOption('unknown',
+            'Drop unknown preferences (not in $wgDefaultUserOptions or prefixed with "userjs-")');
+    }
 
-	/**
-	 * We will do this in three passes
-	 *   1) The easiest is to drop the hidden preferences from the database. We
-	 *      don't actually want them
-	 *   2) Drop preference keys that we don't know about. They could've been
-	 *      removed from core, provided by a now-disabled extension, or the result
-	 *      of a bug. We don't want them.
-	 */
-	public function execute() {
-		$dbr = $this->getDB( DB_REPLICA );
-		$hidden = $this->hasOption( 'hidden' );
-		$unknown = $this->hasOption( 'unknown' );
+    /**
+     * We will do this in three passes
+     *   1) The easiest is to drop the hidden preferences from the database. We
+     *      don't actually want them
+     *   2) Drop preference keys that we don't know about. They could've been
+     *      removed from core, provided by a now-disabled extension, or the result
+     *      of a bug. We don't want them.
+     */
+    public function execute()
+    {
+        $dbr = $this->getDB(DB_REPLICA);
+        $hidden = $this->hasOption('hidden');
+        $unknown = $this->hasOption('unknown');
 
-		if ( !$hidden && !$unknown ) {
-			$this->output( "Did not select one of --hidden, --unknown, exiting\n" );
-			return;
-		}
+        if (!$hidden && !$unknown) {
+            $this->output("Did not select one of --hidden, --unknown, exiting\n");
 
-		// Remove hidden prefs. Iterate over them to avoid the IN on a large table
-		if ( $hidden ) {
-			$hiddenPrefs = $this->getConfig()->get( MainConfigNames::HiddenPrefs );
-			if ( !$hiddenPrefs ) {
-				$this->output( "No hidden preferences, skipping\n" );
-			}
-			foreach ( $hiddenPrefs as $hiddenPref ) {
-				$this->deleteByWhere(
-					$dbr,
-					'Dropping hidden preferences',
-					[ 'up_property' => $hiddenPref ]
-				);
-			}
-		}
+            return;
+        }
 
-		// Remove unknown preferences. Special-case 'userjs-' as we can't control those names.
-		if ( $unknown ) {
-			$defaultUserOptions = MediaWikiServices::getInstance()->getUserOptionsLookup()->getDefaultOptions();
-			$where = [
-				'up_property NOT' . $dbr->buildLike( 'userjs-', $dbr->anyString() ),
-				'up_property NOT IN (' . $dbr->makeList( array_keys( $defaultUserOptions ) ) . ')',
-			];
-			// Allow extensions to add to the where clause to prevent deletion of their own prefs.
-			$this->getHookRunner()->onDeleteUnknownPreferences( $where, $dbr );
-			$this->deleteByWhere( $dbr, 'Dropping unknown preferences', $where );
-		}
-	}
+        // Remove hidden prefs. Iterate over them to avoid the IN on a large table
+        if ($hidden) {
+            $hiddenPrefs = $this->getConfig()->get(MainConfigNames::HiddenPrefs);
+            if (!$hiddenPrefs) {
+                $this->output("No hidden preferences, skipping\n");
+            }
+            foreach ($hiddenPrefs as $hiddenPref) {
+                $this->deleteByWhere(
+                    $dbr,
+                    'Dropping hidden preferences',
+                    ['up_property' => $hiddenPref]
+                );
+            }
+        }
 
-	private function deleteByWhere( $dbr, $startMessage, $where ) {
-		$this->output( $startMessage . "...\n" );
-		$dryRun = $this->hasOption( 'dry-run' );
+        // Remove unknown preferences. Special-case 'userjs-' as we can't control those names.
+        if ($unknown) {
+            $defaultUserOptions = MediaWikiServices::getInstance()->getUserOptionsLookup()->getDefaultOptions();
+            $where = [
+                'up_property NOT' . $dbr->buildLike('userjs-', $dbr->anyString()),
+                'up_property NOT IN (' . $dbr->makeList(array_keys($defaultUserOptions)) . ')',
+            ];
+            // Allow extensions to add to the where clause to prevent deletion of their own prefs.
+            $this->getHookRunner()->onDeleteUnknownPreferences($where, $dbr);
+            $this->deleteByWhere($dbr, 'Dropping unknown preferences', $where);
+        }
+    }
 
-		$iterator = new BatchRowIterator(
-			$dbr,
-			'user_properties',
-			[ 'up_user', 'up_property' ],
-			$this->getBatchSize()
-		);
-		if ( $dryRun ) {
-			$iterator->setFetchColumns( [ 'up_user', 'up_property', 'up_value' ] );
-		} else {
-			$iterator->setFetchColumns( [ 'up_user', 'up_property' ] );
-		}
-		$iterator->addConditions( $where );
-		$iterator->setCaller( __METHOD__ );
+    private function deleteByWhere($dbr, $startMessage, $where)
+    {
+        $this->output($startMessage . "...\n");
+        $dryRun = $this->hasOption('dry-run');
 
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$dbw = $this->getDB( DB_PRIMARY );
-		$total = 0;
-		foreach ( $iterator as $batch ) {
-			$numRows = count( $batch );
-			$total += $numRows;
-			// Progress or something
-			$this->output( "..doing $numRows entries\n" );
+        $iterator = new BatchRowIterator(
+            $dbr,
+            'user_properties',
+            ['up_user', 'up_property'],
+            $this->getBatchSize()
+        );
+        if ($dryRun) {
+            $iterator->setFetchColumns(['up_user', 'up_property', 'up_value']);
+        } else {
+            $iterator->setFetchColumns(['up_user', 'up_property']);
+        }
+        $iterator->addConditions($where);
+        $iterator->setCaller(__METHOD__);
 
-			// Delete our batch, then wait
-			$deleteWhere = [];
-			foreach ( $batch as $row ) {
-				if ( $dryRun ) {
-					$this->output(
-						"    DRY RUN, would drop: " .
-						"[up_user] => '{$row->up_user}' " .
-						"[up_property] => '{$row->up_property}' " .
-						"[up_value] => '{$row->up_value}'\n"
-					);
-					continue;
-				}
-				$deleteWhere[$row->up_user][$row->up_property] = true;
-			}
-			if ( $deleteWhere && !$dryRun ) {
-				$dbw->delete(
-					'user_properties',
-					$dbw->makeWhereFrom2d( $deleteWhere, 'up_user', 'up_property' ),
-					__METHOD__
-				);
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $dbw = $this->getDB(DB_PRIMARY);
+        $total = 0;
+        foreach ($iterator as $batch) {
+            $numRows = count($batch);
+            $total += $numRows;
+            // Progress or something
+            $this->output("..doing $numRows entries\n");
 
-				$lbFactory->waitForReplication();
-			}
-		}
-		$this->output( "DONE! (handled $total entries)\n" );
-	}
+            // Delete our batch, then wait
+            $deleteWhere = [];
+            foreach ($batch as $row) {
+                if ($dryRun) {
+                    $this->output(
+                        "    DRY RUN, would drop: " .
+                        "[up_user] => '{$row->up_user}' " .
+                        "[up_property] => '{$row->up_property}' " .
+                        "[up_value] => '{$row->up_value}'\n"
+                    );
+                    continue;
+                }
+                $deleteWhere[$row->up_user][$row->up_property] = true;
+            }
+            if ($deleteWhere && !$dryRun) {
+                $dbw->delete(
+                    'user_properties',
+                    $dbw->makeWhereFrom2d($deleteWhere, 'up_user', 'up_property'),
+                    __METHOD__
+                );
+
+                $lbFactory->waitForReplication();
+            }
+        }
+        $this->output("DONE! (handled $total entries)\n");
+    }
 }
 
 $maintClass = CleanupPreferences::class; // Tells it to run the class

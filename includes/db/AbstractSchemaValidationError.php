@@ -27,5 +27,6 @@ use Exception;
  * @newable
  * @since 1.38
  */
-class AbstractSchemaValidationError extends Exception {
+class AbstractSchemaValidationError extends Exception
+{
 }

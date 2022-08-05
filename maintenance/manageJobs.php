@@ -30,70 +30,75 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class ManageJobs extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Perform administrative tasks on a job queue' );
-		$this->addOption( 'type', 'Job type', true, true );
-		$this->addOption( 'action', 'Queue operation ("delete", "repush-abandoned")', true, true );
-		$this->setBatchSize( 100 );
-	}
+class ManageJobs extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Perform administrative tasks on a job queue');
+        $this->addOption('type', 'Job type', true, true);
+        $this->addOption('action', 'Queue operation ("delete", "repush-abandoned")', true, true);
+        $this->setBatchSize(100);
+    }
 
-	public function execute() {
-		$type = $this->getOption( 'type' );
-		$action = $this->getOption( 'action' );
+    public function execute()
+    {
+        $type = $this->getOption('type');
+        $action = $this->getOption('action');
 
-		$group = MediaWikiServices::getInstance()->getJobQueueGroup();
-		$queue = $group->get( $type );
+        $group = MediaWikiServices::getInstance()->getJobQueueGroup();
+        $queue = $group->get($type);
 
-		if ( $action === 'delete' ) {
-			$this->delete( $queue );
-		} elseif ( $action === 'repush-abandoned' ) {
-			$this->repushAbandoned( $queue );
-		} else {
-			$this->fatalError( "Invalid action '$action'." );
-		}
-	}
+        if ($action === 'delete') {
+            $this->delete($queue);
+        } elseif ($action === 'repush-abandoned') {
+            $this->repushAbandoned($queue);
+        } else {
+            $this->fatalError("Invalid action '$action'.");
+        }
+    }
 
-	private function delete( JobQueue $queue ) {
-		$this->output( "Queue has {$queue->getSize()} job(s); deleting...\n" );
-		$queue->delete();
-		$this->output( "Done; current size is {$queue->getSize()} job(s).\n" );
-	}
+    private function delete(JobQueue $queue)
+    {
+        $this->output("Queue has {$queue->getSize()} job(s); deleting...\n");
+        $queue->delete();
+        $this->output("Done; current size is {$queue->getSize()} job(s).\n");
+    }
 
-	private function repushAbandoned( JobQueue $queue ) {
-		$cache = ObjectCache::getInstance( CACHE_DB );
-		$key = $cache->makeGlobalKey( 'last-job-repush', $queue->getDomain(), $queue->getType() );
+    private function repushAbandoned(JobQueue $queue)
+    {
+        $cache = ObjectCache::getInstance(CACHE_DB);
+        $key = $cache->makeGlobalKey('last-job-repush', $queue->getDomain(), $queue->getType());
 
-		$now = wfTimestampNow();
-		$lastRepushTime = $cache->get( $key );
-		if ( $lastRepushTime === false ) {
-			$lastRepushTime = wfTimestamp( TS_MW, 1 ); // include all jobs
-		}
+        $now = wfTimestampNow();
+        $lastRepushTime = $cache->get($key);
+        if ($lastRepushTime === false) {
+            $lastRepushTime = wfTimestamp(TS_MW, 1); // include all jobs
+        }
 
-		$this->output( "Last re-push time: $lastRepushTime; current time: $now\n" );
+        $this->output("Last re-push time: $lastRepushTime; current time: $now\n");
 
-		$count = 0;
-		$skipped = 0;
-		foreach ( $queue->getAllAbandonedJobs() as $job ) {
-			/** @var Job $job */
-			if ( $job->getQueuedTimestamp() < wfTimestamp( TS_UNIX, $lastRepushTime ) ) {
-				++$skipped;
-				continue; // already re-pushed in prior round
-			}
+        $count = 0;
+        $skipped = 0;
+        foreach ($queue->getAllAbandonedJobs() as $job) {
+            /** @var Job $job */
+            if ($job->getQueuedTimestamp() < wfTimestamp(TS_UNIX, $lastRepushTime)) {
+                ++$skipped;
+                continue; // already re-pushed in prior round
+            }
 
-			$queue->push( $job );
-			++$count;
+            $queue->push($job);
+            ++$count;
 
-			if ( ( $count % $this->getBatchSize() ) == 0 ) {
-				$queue->waitForBackups();
-			}
-		}
+            if (($count % $this->getBatchSize()) == 0) {
+                $queue->waitForBackups();
+            }
+        }
 
-		$cache->set( $key, $now ); // next run will ignore these jobs
+        $cache->set($key, $now); // next run will ignore these jobs
 
-		$this->output( "Re-pushed $count job(s) [$skipped skipped].\n" );
-	}
+        $this->output("Re-pushed $count job(s) [$skipped skipped].\n");
+    }
 }
 
 $maintClass = ManageJobs::class;

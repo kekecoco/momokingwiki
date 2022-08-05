@@ -35,62 +35,66 @@ use MediaWiki\User\UserOptionsLookup;
  * @ingroup ResourceLoader
  * @internal
  */
-class UserOptionsModule extends Module {
+class UserOptionsModule extends Module
+{
 
-	protected $origin = self::ORIGIN_CORE_INDIVIDUAL;
+    protected $origin = self::ORIGIN_CORE_INDIVIDUAL;
 
-	protected $targets = [ 'desktop', 'mobile' ];
+    protected $targets = ['desktop', 'mobile'];
 
-	/**
-	 * @param Context $context
-	 * @return string JavaScript code
-	 */
-	public function getScript( Context $context ) {
-		$user = $context->getUserObj();
+    /**
+     * @param Context $context
+     * @return string JavaScript code
+     */
+    public function getScript(Context $context)
+    {
+        $user = $context->getUserObj();
 
-		$tokens = [
-			// Replacement is tricky - T287542
-			'patrolToken' => $user->getEditToken( 'patrol' ),
-			'watchToken' => $user->getEditToken( 'watch' ),
-			'csrfToken' => $user->getEditToken(),
-		];
-		$script = 'mw.user.tokens.set(' . $context->encodeJson( $tokens ) . ');' . "\n";
+        $tokens = [
+            // Replacement is tricky - T287542
+            'patrolToken' => $user->getEditToken('patrol'),
+            'watchToken'  => $user->getEditToken('watch'),
+            'csrfToken'   => $user->getEditToken(),
+        ];
+        $script = 'mw.user.tokens.set(' . $context->encodeJson($tokens) . ');' . "\n";
 
-		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
+        $userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
 
-		// Optimisation: Exclude the defaults, which we load separately and allow the browser
-		// to cache across page views. The defaults are loaded before this code executes,
-		// as part of the "mediawiki.base" module.
-		$options = $userOptionsLookup->getOptions( $user, UserOptionsLookup::EXCLUDE_DEFAULTS );
+        // Optimisation: Exclude the defaults, which we load separately and allow the browser
+        // to cache across page views. The defaults are loaded before this code executes,
+        // as part of the "mediawiki.base" module.
+        $options = $userOptionsLookup->getOptions($user, UserOptionsLookup::EXCLUDE_DEFAULTS);
 
-		$keysToExclude = [];
-		$this->getHookRunner()->onResourceLoaderExcludeUserOptions( $keysToExclude, $context );
-		foreach ( $keysToExclude as $excludedKey ) {
-			unset( $options[ $excludedKey ] );
-		}
+        $keysToExclude = [];
+        $this->getHookRunner()->onResourceLoaderExcludeUserOptions($keysToExclude, $context);
+        foreach ($keysToExclude as $excludedKey) {
+            unset($options[$excludedKey]);
+        }
 
-		// Optimisation: Only output this function call if the user has non-default settings.
-		if ( $options ) {
-			$script .= 'mw.user.options.set(' . $context->encodeJson( $options ) . ');' . "\n";
-		}
+        // Optimisation: Only output this function call if the user has non-default settings.
+        if ($options) {
+            $script .= 'mw.user.options.set(' . $context->encodeJson($options) . ');' . "\n";
+        }
 
-		return $script;
-	}
+        return $script;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function supportsURLLoading() {
-		return false;
-	}
+    /**
+     * @return bool
+     */
+    public function supportsURLLoading()
+    {
+        return false;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getGroup() {
-		return self::GROUP_PRIVATE;
-	}
+    /**
+     * @return string
+     */
+    public function getGroup()
+    {
+        return self::GROUP_PRIVATE;
+    }
 }
 
 /** @deprecated since 1.39 */
-class_alias( UserOptionsModule::class, 'ResourceLoaderUserOptionsModule' );
+class_alias(UserOptionsModule::class, 'ResourceLoaderUserOptionsModule');

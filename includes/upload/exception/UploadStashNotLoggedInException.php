@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashNotLoggedInException extends UploadStashException {
+class UploadStashNotLoggedInException extends UploadStashException
+{
 }

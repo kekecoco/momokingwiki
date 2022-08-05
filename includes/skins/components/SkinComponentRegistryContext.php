@@ -29,73 +29,82 @@ use User;
  * @internal for use inside Skin and SkinTemplate classes only
  * @unstable
  */
-class SkinComponentRegistryContext implements ComponentRegistryContext {
-	/** @var Skin */
-	private $skin;
+class SkinComponentRegistryContext implements ComponentRegistryContext
+{
+    /** @var Skin */
+    private $skin;
 
-	/** @var MessageLocalizer|null */
-	private $localizer = null;
+    /** @var MessageLocalizer|null */
+    private $localizer = null;
 
-	/**
-	 * @param Skin $skin
-	 */
-	public function __construct( Skin $skin ) {
-		$this->skin = $skin;
-	}
+    /**
+     * @param Skin $skin
+     */
+    public function __construct(Skin $skin)
+    {
+        $this->skin = $skin;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getConfig(): Config {
-		return $this->skin->getConfig();
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getConfig(): Config
+    {
+        return $this->skin->getConfig();
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getTitle(): Title {
-		return $this->skin->getTitle() ?? Title::makeTitle( NS_MAIN, 'Foo' );
-	}
+    /**
+     * @inheritDoc
+     */
+    public function getTitle(): Title
+    {
+        return $this->skin->getTitle() ?? Title::makeTitle(NS_MAIN, 'Foo');
+    }
 
-	/**
-	 * @return Title|null the "relevant" title - see Skin::getRelevantTitle
-	 */
-	public function getRelevantTitle() {
-		return $this->skin->getRelevantTitle() ?? $this->getTitle();
-	}
+    /**
+     * @return Title|null the "relevant" title - see Skin::getRelevantTitle
+     */
+    public function getRelevantTitle()
+    {
+        return $this->skin->getRelevantTitle() ?? $this->getTitle();
+    }
 
-	/**
-	 * @return OutputPage
-	 */
-	public function getOutput(): OutputPage {
-		return $this->skin->getOutput();
-	}
+    /**
+     * @return OutputPage
+     */
+    public function getOutput(): OutputPage
+    {
+        return $this->skin->getOutput();
+    }
 
-	/**
-	 * @return User
-	 */
-	public function getUser() {
-		return $this->skin->getUser();
-	}
+    /**
+     * @return User
+     */
+    public function getUser()
+    {
+        return $this->skin->getUser();
+    }
 
-	/**
-	 * @return string|null $language
-	 */
-	public function getLanguage() {
-		return $this->skin->getLanguage()->getCode();
-	}
+    /**
+     * @return string|null $language
+     */
+    public function getLanguage()
+    {
+        return $this->skin->getLanguage()->getCode();
+    }
 
-	/**
-	 * @return MessageLocalizer
-	 */
-	public function getMessageLocalizer(): MessageLocalizer {
-		if ( $this->localizer === null ) {
-			// Cannot call getContext in constructor,
-			// because Skin::class does not have a context yet.
-			// But it is valid to call it now
-			$this->localizer = $this->skin->getContext();
-		}
+    /**
+     * @return MessageLocalizer
+     */
+    public function getMessageLocalizer(): MessageLocalizer
+    {
+        if ($this->localizer === null) {
+            // Cannot call getContext in constructor,
+            // because Skin::class does not have a context yet.
+            // But it is valid to call it now
+            $this->localizer = $this->skin->getContext();
+        }
 
-		return $this->localizer;
-	}
+        return $this->localizer;
+    }
 }

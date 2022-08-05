@@ -59,81 +59,90 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class CLIParser extends Maintenance {
-	protected $parser;
+class CLIParser extends Maintenance
+{
+    protected $parser;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Parse a given wikitext' );
-		$this->addOption(
-			'title',
-			'Title name for the given wikitext (Default: \'CLIParser\')',
-			false,
-			true
-		);
-		$this->addArg( 'file', 'File containing wikitext (Default: stdin)', false );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Parse a given wikitext');
+        $this->addOption(
+            'title',
+            'Title name for the given wikitext (Default: \'CLIParser\')',
+            false,
+            true
+        );
+        $this->addArg('file', 'File containing wikitext (Default: stdin)', false);
+    }
 
-	public function execute() {
-		$this->initParser();
-		print $this->render( $this->Wikitext() );
-	}
+    public function execute()
+    {
+        $this->initParser();
+        print $this->render($this->Wikitext());
+    }
 
-	/**
-	 * @param string $wikitext Wikitext to get rendered
-	 * @return string HTML Rendering
-	 */
-	public function render( $wikitext ) {
-		return $this->parse( $wikitext )->getText( [ 'wrapperDivClass' => '' ] );
-	}
+    /**
+     * @param string $wikitext Wikitext to get rendered
+     * @return string HTML Rendering
+     */
+    public function render($wikitext)
+    {
+        return $this->parse($wikitext)->getText(['wrapperDivClass' => '']);
+    }
 
-	/**
-	 * Get wikitext from a the file passed as argument or STDIN
-	 * @return string Wikitext
-	 */
-	protected function Wikitext() {
-		$php_stdin = 'php://stdin';
-		$input_file = $this->getArg( 0, $php_stdin );
+    /**
+     * Get wikitext from a the file passed as argument or STDIN
+     * @return string Wikitext
+     */
+    protected function Wikitext()
+    {
+        $php_stdin = 'php://stdin';
+        $input_file = $this->getArg(0, $php_stdin);
 
-		if ( $input_file === $php_stdin && !$this->mQuiet ) {
-			$ctrl = wfIsWindows() ? 'CTRL+Z' : 'CTRL+D';
-			$this->error( basename( __FILE__ )
-				. ": warning: reading wikitext from STDIN. Press $ctrl to parse.\n" );
-		}
+        if ($input_file === $php_stdin && !$this->mQuiet) {
+            $ctrl = wfIsWindows() ? 'CTRL+Z' : 'CTRL+D';
+            $this->error(basename(__FILE__)
+                . ": warning: reading wikitext from STDIN. Press $ctrl to parse.\n");
+        }
 
-		return file_get_contents( $input_file );
-	}
+        return file_get_contents($input_file);
+    }
 
-	protected function initParser() {
-		$this->parser = MediaWikiServices::getInstance()->getParserFactory()->create();
-	}
+    protected function initParser()
+    {
+        $this->parser = MediaWikiServices::getInstance()->getParserFactory()->create();
+    }
 
-	/**
-	 * Title object to use for CLI parsing.
-	 * Default title is 'CLIParser', it can be overridden with the option
-	 * --title <Your:Title>
-	 *
-	 * @return Title
-	 */
-	protected function getTitle() {
-		$title = $this->getOption( 'title' ) ?: 'CLIParser';
+    /**
+     * Title object to use for CLI parsing.
+     * Default title is 'CLIParser', it can be overridden with the option
+     * --title <Your:Title>
+     *
+     * @return Title
+     */
+    protected function getTitle()
+    {
+        $title = $this->getOption('title') ?: 'CLIParser';
 
-		return Title::newFromText( $title );
-	}
+        return Title::newFromText($title);
+    }
 
-	/**
-	 * @param string $wikitext Wikitext to parse
-	 * @return ParserOutput
-	 */
-	protected function parse( $wikitext ) {
-		$options = ParserOptions::newFromAnon();
-		$options->setOption( 'enableLimitReport', false );
-		return $this->parser->parse(
-			$wikitext,
-			$this->getTitle(),
-			$options
-		);
-	}
+    /**
+     * @param string $wikitext Wikitext to parse
+     * @return ParserOutput
+     */
+    protected function parse($wikitext)
+    {
+        $options = ParserOptions::newFromAnon();
+        $options->setOption('enableLimitReport', false);
+
+        return $this->parser->parse(
+            $wikitext,
+            $this->getTitle(),
+            $options
+        );
+    }
 }
 
 $maintClass = CLIParser::class;

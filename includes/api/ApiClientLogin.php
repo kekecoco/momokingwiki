@@ -29,126 +29,139 @@ use MediaWiki\Auth\CreateFromLoginAuthenticationRequest;
  *
  * @ingroup API
  */
-class ApiClientLogin extends ApiBase {
+class ApiClientLogin extends ApiBase
+{
 
-	/** @var AuthManager */
-	private $authManager;
+    /** @var AuthManager */
+    private $authManager;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param AuthManager $authManager
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		AuthManager $authManager
-	) {
-		parent::__construct( $main, $action, 'login' );
-		$this->authManager = $authManager;
-	}
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param AuthManager $authManager
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        AuthManager $authManager
+    )
+    {
+        parent::__construct($main, $action, 'login');
+        $this->authManager = $authManager;
+    }
 
-	public function getFinalDescription() {
-		// A bit of a hack to append 'api-help-authmanager-general-usage'
-		$msgs = parent::getFinalDescription();
-		$msgs[] = ApiBase::makeMessage( 'api-help-authmanager-general-usage', $this->getContext(), [
-			$this->getModulePrefix(),
-			$this->getModuleName(),
-			$this->getModulePath(),
-			AuthManager::ACTION_LOGIN,
-			$this->needsToken(),
-		] );
-		return $msgs;
-	}
+    public function getFinalDescription()
+    {
+        // A bit of a hack to append 'api-help-authmanager-general-usage'
+        $msgs = parent::getFinalDescription();
+        $msgs[] = ApiBase::makeMessage('api-help-authmanager-general-usage', $this->getContext(), [
+            $this->getModulePrefix(),
+            $this->getModuleName(),
+            $this->getModulePath(),
+            AuthManager::ACTION_LOGIN,
+            $this->needsToken(),
+        ]);
 
-	public function execute() {
-		$params = $this->extractRequestParams();
+        return $msgs;
+    }
 
-		$this->requireAtLeastOneParameter( $params, 'continue', 'returnurl' );
+    public function execute()
+    {
+        $params = $this->extractRequestParams();
 
-		if ( $params['returnurl'] !== null ) {
-			$bits = wfParseUrl( $params['returnurl'] );
-			if ( !$bits || $bits['scheme'] === '' ) {
-				$encParamName = $this->encodeParamName( 'returnurl' );
-				$this->dieWithError(
-					[ 'apierror-badurl', $encParamName, wfEscapeWikiText( $params['returnurl'] ) ],
-					"badurl_{$encParamName}"
-				);
-			}
-		}
+        $this->requireAtLeastOneParameter($params, 'continue', 'returnurl');
 
-		$helper = new ApiAuthManagerHelper( $this, $this->authManager );
+        if ($params['returnurl'] !== null) {
+            $bits = wfParseUrl($params['returnurl']);
+            if (!$bits || $bits['scheme'] === '') {
+                $encParamName = $this->encodeParamName('returnurl');
+                $this->dieWithError(
+                    ['apierror-badurl', $encParamName, wfEscapeWikiText($params['returnurl'])],
+                    "badurl_{$encParamName}"
+                );
+            }
+        }
 
-		// Make sure it's possible to log in
-		if ( !$this->authManager->canAuthenticateNow() ) {
-			$this->getResult()->addValue( null, 'clientlogin', $helper->formatAuthenticationResponse(
-				AuthenticationResponse::newFail( $this->msg( 'userlogin-cannot-' . AuthManager::ACTION_LOGIN ) )
-			) );
-			$helper->logAuthenticationResult( 'login', 'userlogin-cannot-' . AuthManager::ACTION_LOGIN );
-			return;
-		}
+        $helper = new ApiAuthManagerHelper($this, $this->authManager);
 
-		// Perform the login step
-		if ( $params['continue'] ) {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_LOGIN_CONTINUE );
-			$res = $this->authManager->continueAuthentication( $reqs );
-		} else {
-			$reqs = $helper->loadAuthenticationRequests( AuthManager::ACTION_LOGIN );
-			if ( $params['preservestate'] ) {
-				$req = $helper->getPreservedRequest();
-				if ( $req ) {
-					$reqs[] = $req;
-				}
-			}
-			$res = $this->authManager->beginAuthentication( $reqs, $params['returnurl'] );
-		}
+        // Make sure it's possible to log in
+        if (!$this->authManager->canAuthenticateNow()) {
+            $this->getResult()->addValue(null, 'clientlogin', $helper->formatAuthenticationResponse(
+                AuthenticationResponse::newFail($this->msg('userlogin-cannot-' . AuthManager::ACTION_LOGIN))
+            ));
+            $helper->logAuthenticationResult('login', 'userlogin-cannot-' . AuthManager::ACTION_LOGIN);
 
-		// Remove CreateFromLoginAuthenticationRequest from $res->neededRequests.
-		// It's there so a RESTART treated as UI will work right, but showing
-		// it to the API client is just confusing.
-		$res->neededRequests = ApiAuthManagerHelper::blacklistAuthenticationRequests(
-			$res->neededRequests, [ CreateFromLoginAuthenticationRequest::class ]
-		);
+            return;
+        }
 
-		$this->getResult()->addValue( null, 'clientlogin',
-			$helper->formatAuthenticationResponse( $res ) );
-		$helper->logAuthenticationResult( 'login', $res );
-	}
+        // Perform the login step
+        if ($params['continue']) {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_LOGIN_CONTINUE);
+            $res = $this->authManager->continueAuthentication($reqs);
+        } else {
+            $reqs = $helper->loadAuthenticationRequests(AuthManager::ACTION_LOGIN);
+            if ($params['preservestate']) {
+                $req = $helper->getPreservedRequest();
+                if ($req) {
+                    $reqs[] = $req;
+                }
+            }
+            $res = $this->authManager->beginAuthentication($reqs, $params['returnurl']);
+        }
 
-	public function isReadMode() {
-		return false;
-	}
+        // Remove CreateFromLoginAuthenticationRequest from $res->neededRequests.
+        // It's there so a RESTART treated as UI will work right, but showing
+        // it to the API client is just confusing.
+        $res->neededRequests = ApiAuthManagerHelper::blacklistAuthenticationRequests(
+            $res->neededRequests, [CreateFromLoginAuthenticationRequest::class]
+        );
 
-	public function isWriteMode() {
-		// (T283394) Logging in triggers some database writes, so should be marked appropriately.
-		return true;
-	}
+        $this->getResult()->addValue(null, 'clientlogin',
+            $helper->formatAuthenticationResponse($res));
+        $helper->logAuthenticationResult('login', $res);
+    }
 
-	public function needsToken() {
-		return 'login';
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	public function getAllowedParams() {
-		return ApiAuthManagerHelper::getStandardParams( AuthManager::ACTION_LOGIN,
-			'requests', 'messageformat', 'mergerequestfields', 'preservestate', 'returnurl', 'continue'
-		);
-	}
+    public function isWriteMode()
+    {
+        // (T283394) Logging in triggers some database writes, so should be marked appropriately.
+        return true;
+    }
 
-	public function dynamicParameterDocumentation() {
-		return [ 'api-help-authmanagerhelper-additional-params', AuthManager::ACTION_LOGIN ];
-	}
+    public function needsToken()
+    {
+        return 'login';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=clientlogin&username=Example&password=ExamplePassword&'
-				. 'loginreturnurl=http://example.org/&logintoken=123ABC'
-				=> 'apihelp-clientlogin-example-login',
-			'action=clientlogin&logincontinue=1&OATHToken=987654&logintoken=123ABC'
-				=> 'apihelp-clientlogin-example-login2',
-		];
-	}
+    public function getAllowedParams()
+    {
+        return ApiAuthManagerHelper::getStandardParams(AuthManager::ACTION_LOGIN,
+            'requests', 'messageformat', 'mergerequestfields', 'preservestate', 'returnurl', 'continue'
+        );
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Login';
-	}
+    public function dynamicParameterDocumentation()
+    {
+        return ['api-help-authmanagerhelper-additional-params', AuthManager::ACTION_LOGIN];
+    }
+
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=clientlogin&username=Example&password=ExamplePassword&'
+            . 'loginreturnurl=http://example.org/&logintoken=123ABC'
+            => 'apihelp-clientlogin-example-login',
+            'action=clientlogin&logincontinue=1&OATHToken=987654&logintoken=123ABC'
+            => 'apihelp-clientlogin-example-login2',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Login';
+    }
 }

@@ -28,70 +28,79 @@
  * @note marked as newable in 1.35 for lack of a better alternative,
  *       but should use a factory in the future.
  */
-class PoolCounterWorkViaCallback extends PoolCounterWork {
-	/** @var callable */
-	protected $doWork;
-	/** @var callable|null */
-	protected $doCachedWork;
-	/** @var callable|null */
-	protected $fallback;
-	/** @var callable|null */
-	protected $error;
+class PoolCounterWorkViaCallback extends PoolCounterWork
+{
+    /** @var callable */
+    protected $doWork;
+    /** @var callable|null */
+    protected $doCachedWork;
+    /** @var callable|null */
+    protected $fallback;
+    /** @var callable|null */
+    protected $error;
 
-	/**
-	 * Build a PoolCounterWork class from a type, key, and callback map.
-	 *
-	 * The callback map must at least have a callback for the 'doWork' method.
-	 * Additionally, callbacks can be provided for the 'doCachedWork', 'fallback',
-	 * and 'error' methods. Methods without callbacks will be no-ops that return false.
-	 * If a 'doCachedWork' callback is provided, then execute() may wait for any prior
-	 * process in the pool to finish and reuse its cached result.
-	 *
-	 * @stable to call
-	 *
-	 * @param string $type The class of actions to limit concurrency for
-	 * @param string $key
-	 * @param array $callbacks Map of callbacks
-	 * @throws MWException
-	 */
-	public function __construct( $type, $key, array $callbacks ) {
-		parent::__construct( $type, $key );
-		foreach ( [ 'doWork', 'doCachedWork', 'fallback', 'error' ] as $name ) {
-			if ( isset( $callbacks[$name] ) ) {
-				if ( !is_callable( $callbacks[$name] ) ) {
-					throw new MWException( "Invalid callback provided for '$name' function." );
-				}
-				$this->$name = $callbacks[$name];
-			}
-		}
-		if ( !isset( $this->doWork ) ) {
-			throw new MWException( "No callback provided for 'doWork' function." );
-		}
-		$this->cacheable = isset( $this->doCachedWork );
-	}
+    /**
+     * Build a PoolCounterWork class from a type, key, and callback map.
+     *
+     * The callback map must at least have a callback for the 'doWork' method.
+     * Additionally, callbacks can be provided for the 'doCachedWork', 'fallback',
+     * and 'error' methods. Methods without callbacks will be no-ops that return false.
+     * If a 'doCachedWork' callback is provided, then execute() may wait for any prior
+     * process in the pool to finish and reuse its cached result.
+     *
+     * @stable to call
+     *
+     * @param string $type The class of actions to limit concurrency for
+     * @param string $key
+     * @param array $callbacks Map of callbacks
+     * @throws MWException
+     */
+    public function __construct($type, $key, array $callbacks)
+    {
+        parent::__construct($type, $key);
+        foreach (['doWork', 'doCachedWork', 'fallback', 'error'] as $name) {
+            if (isset($callbacks[$name])) {
+                if (!is_callable($callbacks[$name])) {
+                    throw new MWException("Invalid callback provided for '$name' function.");
+                }
+                $this->$name = $callbacks[$name];
+            }
+        }
+        if (!isset($this->doWork)) {
+            throw new MWException("No callback provided for 'doWork' function.");
+        }
+        $this->cacheable = isset($this->doCachedWork);
+    }
 
-	public function doWork() {
-		return ( $this->doWork )();
-	}
+    public function doWork()
+    {
+        return ($this->doWork)();
+    }
 
-	public function getCachedWork() {
-		if ( $this->doCachedWork ) {
-			return ( $this->doCachedWork )();
-		}
-		return false;
-	}
+    public function getCachedWork()
+    {
+        if ($this->doCachedWork) {
+            return ($this->doCachedWork)();
+        }
 
-	public function fallback( $fast ) {
-		if ( $this->fallback ) {
-			return ( $this->fallback )( $fast );
-		}
-		return false;
-	}
+        return false;
+    }
 
-	public function error( $status ) {
-		if ( $this->error ) {
-			return ( $this->error )( $status );
-		}
-		return false;
-	}
+    public function fallback($fast)
+    {
+        if ($this->fallback) {
+            return ($this->fallback)($fast);
+        }
+
+        return false;
+    }
+
+    public function error($status)
+    {
+        if ($this->error) {
+            return ($this->error)($status);
+        }
+
+        return false;
+    }
 }

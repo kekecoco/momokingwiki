@@ -25,17 +25,20 @@
 /**
  * Iterator for listing directories
  */
-class SwiftFileBackendDirList extends SwiftFileBackendList {
-	/**
-	 * @see Iterator::current()
-	 * @return string|bool String (relative path) or false
-	 */
-	#[\ReturnTypeWillChange]
-	public function current() {
-		return substr( current( $this->bufferIter ), $this->suffixStart, -1 );
-	}
+class SwiftFileBackendDirList extends SwiftFileBackendList
+{
+    /**
+     * @return string|bool String (relative path) or false
+     * @see Iterator::current()
+     */
+    #[\ReturnTypeWillChange]
+    public function current()
+    {
+        return substr(current($this->bufferIter), $this->suffixStart, -1);
+    }
 
-	protected function pageFromList( $container, $dir, &$after, $limit, array $params ) {
-		return $this->backend->getDirListPageInternal( $container, $dir, $after, $limit, $params );
-	}
+    protected function pageFromList($container, $dir, &$after, $limit, array $params)
+    {
+        return $this->backend->getDirListPageInternal($container, $dir, $after, $limit, $params);
+    }
 }

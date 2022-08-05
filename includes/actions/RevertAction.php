@@ -30,184 +30,199 @@
  *
  * @ingroup Actions
  */
-class RevertAction extends FormAction {
+class RevertAction extends FormAction
+{
 
-	/** @var Language */
-	private $contentLanguage;
+    /** @var Language */
+    private $contentLanguage;
 
-	/** @var RepoGroup */
-	private $repoGroup;
+    /** @var RepoGroup */
+    private $repoGroup;
 
-	/**
-	 * @param Page $page
-	 * @param IContextSource $context
-	 * @param Language $contentLanguage
-	 * @param RepoGroup $repoGroup
-	 */
-	public function __construct(
-		Page $page,
-		IContextSource $context,
-		Language $contentLanguage,
-		RepoGroup $repoGroup
-	) {
-		parent::__construct( $page, $context );
-		$this->contentLanguage = $contentLanguage;
-		$this->repoGroup = $repoGroup;
-	}
+    /**
+     * @param Page $page
+     * @param IContextSource $context
+     * @param Language $contentLanguage
+     * @param RepoGroup $repoGroup
+     */
+    public function __construct(
+        Page $page,
+        IContextSource $context,
+        Language $contentLanguage,
+        RepoGroup $repoGroup
+    )
+    {
+        parent::__construct($page, $context);
+        $this->contentLanguage = $contentLanguage;
+        $this->repoGroup = $repoGroup;
+    }
 
-	/**
-	 * @var OldLocalFile
-	 */
-	protected $oldFile;
+    /**
+     * @var OldLocalFile
+     */
+    protected $oldFile;
 
-	public function getName() {
-		return 'revert';
-	}
+    public function getName()
+    {
+        return 'revert';
+    }
 
-	public function getRestriction() {
-		return 'upload';
-	}
+    public function getRestriction()
+    {
+        return 'upload';
+    }
 
-	protected function checkCanExecute( User $user ) {
-		if ( $this->getTitle()->getNamespace() !== NS_FILE ) {
-			throw new ErrorPageError( $this->msg( 'nosuchaction' ), $this->msg( 'nosuchactiontext' ) );
-		}
-		parent::checkCanExecute( $user );
+    protected function checkCanExecute(User $user)
+    {
+        if ($this->getTitle()->getNamespace() !== NS_FILE) {
+            throw new ErrorPageError($this->msg('nosuchaction'), $this->msg('nosuchactiontext'));
+        }
+        parent::checkCanExecute($user);
 
-		$oldimage = $this->getRequest()->getText( 'oldimage' );
-		if ( strlen( $oldimage ) < 16
-			|| strpos( $oldimage, '/' ) !== false
-			|| strpos( $oldimage, '\\' ) !== false
-		) {
-			throw new ErrorPageError( 'internalerror', 'unexpected', [ 'oldimage', $oldimage ] );
-		}
+        $oldimage = $this->getRequest()->getText('oldimage');
+        if (strlen($oldimage) < 16
+            || strpos($oldimage, '/') !== false
+            || strpos($oldimage, '\\') !== false
+        ) {
+            throw new ErrorPageError('internalerror', 'unexpected', ['oldimage', $oldimage]);
+        }
 
-		$this->oldFile = $this->repoGroup->getLocalRepo()
-			->newFromArchiveName( $this->getTitle(), $oldimage );
+        $this->oldFile = $this->repoGroup->getLocalRepo()
+            ->newFromArchiveName($this->getTitle(), $oldimage);
 
-		if ( !$this->oldFile->exists() ) {
-			throw new ErrorPageError( '', 'filerevert-badversion' );
-		}
-	}
+        if (!$this->oldFile->exists()) {
+            throw new ErrorPageError('', 'filerevert-badversion');
+        }
+    }
 
-	protected function usesOOUI() {
-		return true;
-	}
+    protected function usesOOUI()
+    {
+        return true;
+    }
 
-	protected function alterForm( HTMLForm $form ) {
-		$form->setWrapperLegendMsg( 'filerevert-legend' );
-		$form->setSubmitTextMsg( 'filerevert-submit' );
-		$form->addHiddenField( 'oldimage', $this->getRequest()->getText( 'oldimage' ) );
-		$form->setTokenSalt( [ 'revert', $this->getTitle()->getPrefixedDBkey() ] );
-	}
+    protected function alterForm(HTMLForm $form)
+    {
+        $form->setWrapperLegendMsg('filerevert-legend');
+        $form->setSubmitTextMsg('filerevert-submit');
+        $form->addHiddenField('oldimage', $this->getRequest()->getText('oldimage'));
+        $form->setTokenSalt(['revert', $this->getTitle()->getPrefixedDBkey()]);
+    }
 
-	protected function getFormFields() {
-		$timestamp = $this->oldFile->getTimestamp();
+    protected function getFormFields()
+    {
+        $timestamp = $this->oldFile->getTimestamp();
 
-		$user = $this->getUser();
-		$lang = $this->getLanguage();
-		$userDate = $lang->userDate( $timestamp, $user );
-		$userTime = $lang->userTime( $timestamp, $user );
-		$siteTs = MWTimestamp::getLocalInstance( $timestamp );
-		$ts = $siteTs->format( 'YmdHis' );
-		$contLang = $this->contentLanguage;
-		$siteDate = $contLang->date( $ts, false, false );
-		$siteTime = $contLang->time( $ts, false, false );
-		$tzMsg = $siteTs->getTimezoneMessage()->inContentLanguage()->text();
+        $user = $this->getUser();
+        $lang = $this->getLanguage();
+        $userDate = $lang->userDate($timestamp, $user);
+        $userTime = $lang->userTime($timestamp, $user);
+        $siteTs = MWTimestamp::getLocalInstance($timestamp);
+        $ts = $siteTs->format('YmdHis');
+        $contLang = $this->contentLanguage;
+        $siteDate = $contLang->date($ts, false, false);
+        $siteTime = $contLang->time($ts, false, false);
+        $tzMsg = $siteTs->getTimezoneMessage()->inContentLanguage()->text();
 
-		return [
-			'intro' => [
-				'type' => 'info',
-				'raw' => true,
-				'default' => $this->msg( 'filerevert-intro',
-					$this->getTitle()->getText(), $userDate, $userTime,
-					wfExpandUrl(
-						$this->getFile()
-							->getArchiveUrl(
-								$this->getRequest()->getText( 'oldimage' )
-							),
-						PROTO_CURRENT
-					) )->parseAsBlock()
-			],
-			'comment' => [
-				'type' => 'text',
-				'label-message' => 'filerevert-comment',
-				'default' => $this->msg( 'filerevert-defaultcomment', $siteDate, $siteTime,
-					$tzMsg )->inContentLanguage()->text()
-			]
-		];
-	}
+        return [
+            'intro'   => [
+                'type'    => 'info',
+                'raw'     => true,
+                'default' => $this->msg('filerevert-intro',
+                    $this->getTitle()->getText(), $userDate, $userTime,
+                    wfExpandUrl(
+                        $this->getFile()
+                            ->getArchiveUrl(
+                                $this->getRequest()->getText('oldimage')
+                            ),
+                        PROTO_CURRENT
+                    ))->parseAsBlock()
+            ],
+            'comment' => [
+                'type'          => 'text',
+                'label-message' => 'filerevert-comment',
+                'default'       => $this->msg('filerevert-defaultcomment', $siteDate, $siteTime,
+                    $tzMsg)->inContentLanguage()->text()
+            ]
+        ];
+    }
 
-	public function onSubmit( $data ) {
-		$this->useTransactionalTimeLimit();
+    public function onSubmit($data)
+    {
+        $this->useTransactionalTimeLimit();
 
-		$old = $this->getRequest()->getText( 'oldimage' );
-		/** @var LocalFile $localFile */
-		$localFile = $this->getFile();
-		'@phan-var LocalFile $localFile';
-		$oldFile = OldLocalFile::newFromArchiveName( $this->getTitle(), $localFile->getRepo(), $old );
+        $old = $this->getRequest()->getText('oldimage');
+        /** @var LocalFile $localFile */
+        $localFile = $this->getFile();
+        '@phan-var LocalFile $localFile';
+        $oldFile = OldLocalFile::newFromArchiveName($this->getTitle(), $localFile->getRepo(), $old);
 
-		$source = $localFile->getArchiveVirtualUrl( $old );
-		$comment = $data['comment'];
+        $source = $localFile->getArchiveVirtualUrl($old);
+        $comment = $data['comment'];
 
-		if ( $localFile->getSha1() === $oldFile->getSha1() ) {
-			return Status::newFatal( 'filerevert-identical' );
-		}
+        if ($localFile->getSha1() === $oldFile->getSha1()) {
+            return Status::newFatal('filerevert-identical');
+        }
 
-		// TODO: Preserve file properties from database instead of reloading from file
-		return $localFile->upload(
-			$source,
-			$comment,
-			$comment,
-			0,
-			false,
-			false,
-			$this->getAuthority(),
-			[],
-			true,
-			true
-		);
-	}
+        // TODO: Preserve file properties from database instead of reloading from file
+        return $localFile->upload(
+            $source,
+            $comment,
+            $comment,
+            0,
+            false,
+            false,
+            $this->getAuthority(),
+            [],
+            true,
+            true
+        );
+    }
 
-	public function onSuccess() {
-		$timestamp = $this->oldFile->getTimestamp();
-		$user = $this->getUser();
-		$lang = $this->getLanguage();
-		$userDate = $lang->userDate( $timestamp, $user );
-		$userTime = $lang->userTime( $timestamp, $user );
+    public function onSuccess()
+    {
+        $timestamp = $this->oldFile->getTimestamp();
+        $user = $this->getUser();
+        $lang = $this->getLanguage();
+        $userDate = $lang->userDate($timestamp, $user);
+        $userTime = $lang->userTime($timestamp, $user);
 
-		$this->getOutput()->addWikiMsg( 'filerevert-success', $this->getTitle()->getText(),
-			$userDate, $userTime,
-			wfExpandUrl(
-				$this->getFile()
-					->getArchiveUrl(
-						$this->getRequest()->getText( 'oldimage' )
-					),
-				PROTO_CURRENT
-			) );
-		$this->getOutput()->returnToMain( false, $this->getTitle() );
-	}
+        $this->getOutput()->addWikiMsg('filerevert-success', $this->getTitle()->getText(),
+            $userDate, $userTime,
+            wfExpandUrl(
+                $this->getFile()
+                    ->getArchiveUrl(
+                        $this->getRequest()->getText('oldimage')
+                    ),
+                PROTO_CURRENT
+            ));
+        $this->getOutput()->returnToMain(false, $this->getTitle());
+    }
 
-	protected function getPageTitle() {
-		return $this->msg( 'filerevert', $this->getTitle()->getText() )->text();
-	}
+    protected function getPageTitle()
+    {
+        return $this->msg('filerevert', $this->getTitle()->getText())->text();
+    }
 
-	protected function getDescription() {
-		return OutputPage::buildBacklinkSubtitle( $this->getTitle() )->escaped();
-	}
+    protected function getDescription()
+    {
+        return OutputPage::buildBacklinkSubtitle($this->getTitle())->escaped();
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	/**
-	 * @since 1.35
-	 * @return File
-	 */
-	private function getFile(): File {
-		/** @var \WikiFilePage $wikiPage */
-		$wikiPage = $this->getWikiPage();
-		// @phan-suppress-next-line PhanUndeclaredMethod
-		return $wikiPage->getFile();
-	}
+    /**
+     * @return File
+     * @since 1.35
+     */
+    private function getFile(): File
+    {
+        /** @var \WikiFilePage $wikiPage */
+        $wikiPage = $this->getWikiPage();
+
+        // @phan-suppress-next-line PhanUndeclaredMethod
+        return $wikiPage->getFile();
+    }
 }

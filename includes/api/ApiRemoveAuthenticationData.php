@@ -29,100 +29,109 @@ use MediaWiki\MainConfigNames;
  *
  * @ingroup API
  */
-class ApiRemoveAuthenticationData extends ApiBase {
+class ApiRemoveAuthenticationData extends ApiBase
+{
 
-	private $authAction;
-	private $operation;
+    private $authAction;
+    private $operation;
 
-	/** @var AuthManager */
-	private $authManager;
+    /** @var AuthManager */
+    private $authManager;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param AuthManager $authManager
-	 */
-	public function __construct(
-		ApiMain $main,
-		$action,
-		AuthManager $authManager
-	) {
-		parent::__construct( $main, $action );
+    /**
+     * @param ApiMain $main
+     * @param string $action
+     * @param AuthManager $authManager
+     */
+    public function __construct(
+        ApiMain $main,
+        $action,
+        AuthManager $authManager
+    )
+    {
+        parent::__construct($main, $action);
 
-		$this->authAction = $action === 'unlinkaccount'
-			? AuthManager::ACTION_UNLINK
-			: AuthManager::ACTION_REMOVE;
-		$this->operation = $action === 'unlinkaccount'
-			? 'UnlinkAccount'
-			: 'RemoveCredentials';
+        $this->authAction = $action === 'unlinkaccount'
+            ? AuthManager::ACTION_UNLINK
+            : AuthManager::ACTION_REMOVE;
+        $this->operation = $action === 'unlinkaccount'
+            ? 'UnlinkAccount'
+            : 'RemoveCredentials';
 
-		$this->authManager = $authManager;
-	}
+        $this->authManager = $authManager;
+    }
 
-	public function execute() {
-		if ( !$this->getUser()->isRegistered() ) {
-			$this->dieWithError( 'apierror-mustbeloggedin-removeauth', 'notloggedin' );
-		}
+    public function execute()
+    {
+        if (!$this->getUser()->isRegistered()) {
+            $this->dieWithError('apierror-mustbeloggedin-removeauth', 'notloggedin');
+        }
 
-		$params = $this->extractRequestParams();
+        $params = $this->extractRequestParams();
 
-		// Check security-sensitive operation status
-		ApiAuthManagerHelper::newForModule( $this, $this->authManager )
-			->securitySensitiveOperation( $this->operation );
+        // Check security-sensitive operation status
+        ApiAuthManagerHelper::newForModule($this, $this->authManager)
+            ->securitySensitiveOperation($this->operation);
 
-		// Fetch the request. No need to load from the request, so don't use
-		// ApiAuthManagerHelper's method.
-		$remove = $this->authAction === AuthManager::ACTION_REMOVE
-			? array_fill_keys( $this->getConfig()->get(
-				MainConfigNames::RemoveCredentialsBlacklist ), true )
-			: [];
-		$reqs = array_filter(
-			$this->authManager->getAuthenticationRequests( $this->authAction, $this->getUser() ),
-			static function ( AuthenticationRequest $req ) use ( $params, $remove ) {
-				return $req->getUniqueId() === $params['request'] &&
-					!isset( $remove[get_class( $req )] );
-			}
-		);
-		if ( count( $reqs ) !== 1 ) {
-			$this->dieWithError( 'apierror-changeauth-norequest', 'badrequest' );
-		}
-		$req = reset( $reqs );
+        // Fetch the request. No need to load from the request, so don't use
+        // ApiAuthManagerHelper's method.
+        $remove = $this->authAction === AuthManager::ACTION_REMOVE
+            ? array_fill_keys($this->getConfig()->get(
+                MainConfigNames::RemoveCredentialsBlacklist), true)
+            : [];
+        $reqs = array_filter(
+            $this->authManager->getAuthenticationRequests($this->authAction, $this->getUser()),
+            static function (AuthenticationRequest $req) use ($params, $remove) {
+                return $req->getUniqueId() === $params['request'] &&
+                    !isset($remove[get_class($req)]);
+            }
+        );
+        if (count($reqs) !== 1) {
+            $this->dieWithError('apierror-changeauth-norequest', 'badrequest');
+        }
+        $req = reset($reqs);
 
-		// Perform the removal
-		$status = $this->authManager->allowsAuthenticationDataChange( $req, true );
-		$this->getHookRunner()->onChangeAuthenticationDataAudit( $req, $status );
-		if ( !$status->isGood() ) {
-			$this->dieStatus( $status );
-		}
-		$this->authManager->changeAuthenticationData( $req );
+        // Perform the removal
+        $status = $this->authManager->allowsAuthenticationDataChange($req, true);
+        $this->getHookRunner()->onChangeAuthenticationDataAudit($req, $status);
+        if (!$status->isGood()) {
+            $this->dieStatus($status);
+        }
+        $this->authManager->changeAuthenticationData($req);
 
-		$this->getResult()->addValue( null, $this->getModuleName(), [ 'status' => 'success' ] );
-	}
+        $this->getResult()->addValue(null, $this->getModuleName(), ['status' => 'success']);
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	public function getAllowedParams() {
-		return ApiAuthManagerHelper::getStandardParams( $this->authAction,
-			'request'
-		);
-	}
+    public function getAllowedParams()
+    {
+        return ApiAuthManagerHelper::getStandardParams($this->authAction,
+            'request'
+        );
+    }
 
-	protected function getExamplesMessages() {
-		$path = $this->getModulePath();
-		$action = $this->getModuleName();
-		return [
-			"action={$action}&request=FooAuthenticationRequest&token=123ABC"
-				=> "apihelp-{$path}-example-simple",
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        $path = $this->getModulePath();
+        $action = $this->getModuleName();
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Manage_authentication_data';
-	}
+        return [
+            "action={$action}&request=FooAuthenticationRequest&token=123ABC"
+            => "apihelp-{$path}-example-simple",
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Manage_authentication_data';
+    }
 }

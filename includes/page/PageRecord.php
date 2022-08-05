@@ -20,47 +20,48 @@ namespace MediaWiki\Page;
  * @stable to type
  * @since 1.36
  */
-interface PageRecord extends ProperPageIdentity {
+interface PageRecord extends ProperPageIdentity
+{
 
-	/**
-	 * False if the page has had more than one edit.
-	 *
-	 * @warning this is not guaranteed to always return true for old pages that have only one edit.
-	 *
-	 * @return bool
-	 */
-	public function isNew();
+    /**
+     * False if the page has had more than one edit.
+     *
+     * @warning this is not guaranteed to always return true for old pages that have only one edit.
+     *
+     * @return bool
+     */
+    public function isNew();
 
-	/**
-	 * True if the page is a redirect.
-	 *
-	 * @return bool
-	 */
-	public function isRedirect();
+    /**
+     * True if the page is a redirect.
+     *
+     * @return bool
+     */
+    public function isRedirect();
 
-	/**
-	 * The ID of the page's latest revision.
-	 *
-	 * @param string|false $wikiId Must be provided when accessing the ID of the latest revision of
-	 *        a non-local PageRecord, to prevent data corruption when using a PageRecord belonging
-	 *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
-	 *
-	 * @return int The revision ID of the page's latest revision, or 0 if the page does not exist.
-	 */
-	public function getLatest( $wikiId = self::LOCAL );
+    /**
+     * The ID of the page's latest revision.
+     *
+     * @param string|false $wikiId Must be provided when accessing the ID of the latest revision of
+     *        a non-local PageRecord, to prevent data corruption when using a PageRecord belonging
+     *        to one wiki in the context of another. Should be omitted if expecting the local wiki.
+     *
+     * @return int The revision ID of the page's latest revision, or 0 if the page does not exist.
+     */
+    public function getLatest($wikiId = self::LOCAL);
 
-	/**
-	 * Timestamp at which the page was last flagged for rerendering.
-	 *
-	 * @return string
-	 */
-	public function getTouched();
+    /**
+     * Timestamp at which the page was last flagged for rerendering.
+     *
+     * @return string
+     */
+    public function getTouched();
 
-	/**
-	 * The page's language, if explicitly recorded.
-	 * The effective page language needs to be determined programmatically.
-	 *
-	 * @return ?string
-	 */
-	public function getLanguage();
+    /**
+     * The page's language, if explicitly recorded.
+     * The effective page language needs to be determined programmatically.
+     *
+     * @return ?string
+     */
+    public function getLanguage();
 }

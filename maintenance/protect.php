@@ -30,63 +30,66 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class Protect extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Protect or unprotect a page from the command line.' );
-		$this->addOption( 'unprotect', 'Removes protection' );
-		$this->addOption( 'semiprotect', 'Adds semi-protection' );
-		$this->addOption( 'cascade', 'Add cascading protection' );
-		$this->addOption( 'user', 'Username to protect with', false, true, 'u' );
-		$this->addOption( 'reason', 'Reason for un/protection', false, true, 'r' );
-		$this->addArg( 'title', 'Title to protect', true );
-	}
+class Protect extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Protect or unprotect a page from the command line.');
+        $this->addOption('unprotect', 'Removes protection');
+        $this->addOption('semiprotect', 'Adds semi-protection');
+        $this->addOption('cascade', 'Add cascading protection');
+        $this->addOption('user', 'Username to protect with', false, true, 'u');
+        $this->addOption('reason', 'Reason for un/protection', false, true, 'r');
+        $this->addArg('title', 'Title to protect', true);
+    }
 
-	public function execute() {
-		$userName = $this->getOption( 'user', false );
-		$reason = $this->getOption( 'reason', '' );
+    public function execute()
+    {
+        $userName = $this->getOption('user', false);
+        $reason = $this->getOption('reason', '');
 
-		$cascade = $this->hasOption( 'cascade' );
+        $cascade = $this->hasOption('cascade');
 
-		$protection = "sysop";
-		if ( $this->hasOption( 'semiprotect' ) ) {
-			$protection = "autoconfirmed";
-		} elseif ( $this->hasOption( 'unprotect' ) ) {
-			$protection = "";
-		}
+        $protection = "sysop";
+        if ($this->hasOption('semiprotect')) {
+            $protection = "autoconfirmed";
+        } elseif ($this->hasOption('unprotect')) {
+            $protection = "";
+        }
 
-		if ( $userName === false ) {
-			$user = User::newSystemUser( User::MAINTENANCE_SCRIPT_USER, [ 'steal' => true ] );
-		} else {
-			$user = User::newFromName( $userName );
-		}
-		if ( !$user ) {
-			$this->fatalError( "Invalid username" );
-		}
+        if ($userName === false) {
+            $user = User::newSystemUser(User::MAINTENANCE_SCRIPT_USER, ['steal' => true]);
+        } else {
+            $user = User::newFromName($userName);
+        }
+        if (!$user) {
+            $this->fatalError("Invalid username");
+        }
 
-		$t = Title::newFromText( $this->getArg( 0 ) );
-		if ( !$t ) {
-			$this->fatalError( "Invalid title" );
-		}
+        $t = Title::newFromText($this->getArg(0));
+        if (!$t) {
+            $this->fatalError("Invalid title");
+        }
 
-		$services = MediaWikiServices::getInstance();
-		$restrictions = [];
-		foreach ( $services->getRestrictionStore()->listApplicableRestrictionTypes( $t ) as $type ) {
-			$restrictions[$type] = $protection;
-		}
+        $services = MediaWikiServices::getInstance();
+        $restrictions = [];
+        foreach ($services->getRestrictionStore()->listApplicableRestrictionTypes($t) as $type) {
+            $restrictions[$type] = $protection;
+        }
 
-		# un/protect the article
-		$this->output( "Updating protection status..." );
+        # un/protect the article
+        $this->output("Updating protection status...");
 
-		$page = $services->getWikiPageFactory()->newFromTitle( $t );
-		$status = $page->doUpdateRestrictions( $restrictions, [], $cascade, $reason, $user );
+        $page = $services->getWikiPageFactory()->newFromTitle($t);
+        $status = $page->doUpdateRestrictions($restrictions, [], $cascade, $reason, $user);
 
-		if ( $status->isOK() ) {
-			$this->output( "done\n" );
-		} else {
-			$this->output( "failed\n" );
-		}
-	}
+        if ($status->isOK()) {
+            $this->output("done\n");
+        } else {
+            $this->output("failed\n");
+        }
+    }
 }
 
 $maintClass = Protect::class;

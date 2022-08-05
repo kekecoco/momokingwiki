@@ -30,139 +30,157 @@ use MediaWiki\MainConfigNames;
  *
  * @ingroup SpecialPage
  */
-class SpecialUserLogin extends LoginSignupSpecialPage {
-	protected static $allowedActions = [
-		AuthManager::ACTION_LOGIN,
-		AuthManager::ACTION_LOGIN_CONTINUE
-	];
+class SpecialUserLogin extends LoginSignupSpecialPage
+{
+    protected static $allowedActions = [
+        AuthManager::ACTION_LOGIN,
+        AuthManager::ACTION_LOGIN_CONTINUE
+    ];
 
-	protected static $messages = [
-		'authform-newtoken' => 'nocookiesforlogin',
-		'authform-notoken' => 'sessionfailure',
-		'authform-wrongtoken' => 'sessionfailure',
-	];
+    protected static $messages = [
+        'authform-newtoken'   => 'nocookiesforlogin',
+        'authform-notoken'    => 'sessionfailure',
+        'authform-wrongtoken' => 'sessionfailure',
+    ];
 
-	/**
-	 * @param AuthManager $authManager
-	 */
-	public function __construct( AuthManager $authManager ) {
-		parent::__construct( 'Userlogin' );
-		$this->setAuthManager( $authManager );
-	}
+    /**
+     * @param AuthManager $authManager
+     */
+    public function __construct(AuthManager $authManager)
+    {
+        parent::__construct('Userlogin');
+        $this->setAuthManager($authManager);
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 
-	protected function getLoginSecurityLevel() {
-		return false;
-	}
+    protected function getLoginSecurityLevel()
+    {
+        return false;
+    }
 
-	protected function getDefaultAction( $subPage ) {
-		return AuthManager::ACTION_LOGIN;
-	}
+    protected function getDefaultAction($subPage)
+    {
+        return AuthManager::ACTION_LOGIN;
+    }
 
-	public function getDescription() {
-		return $this->msg( 'login' )->text();
-	}
+    public function getDescription()
+    {
+        return $this->msg('login')->text();
+    }
 
-	public function setHeaders() {
-		// override the page title if we are doing a forced reauthentication
-		parent::setHeaders();
-		if ( $this->securityLevel && $this->getUser()->isRegistered() ) {
-			$this->getOutput()->setPageTitle( $this->msg( 'login-security' ) );
-		}
-	}
+    public function setHeaders()
+    {
+        // override the page title if we are doing a forced reauthentication
+        parent::setHeaders();
+        if ($this->securityLevel && $this->getUser()->isRegistered()) {
+            $this->getOutput()->setPageTitle($this->msg('login-security'));
+        }
+    }
 
-	protected function isSignup() {
-		return false;
-	}
+    protected function isSignup()
+    {
+        return false;
+    }
 
-	protected function beforeExecute( $subPage ) {
-		if ( $subPage === 'signup' || $this->getRequest()->getText( 'type' ) === 'signup' ) {
-			// B/C for old account creation URLs
-			$title = SpecialPage::getTitleFor( 'CreateAccount' );
-			$query = array_diff_key( $this->getRequest()->getValues(),
-				array_fill_keys( [ 'type', 'title' ], true ) );
-			$url = $title->getFullURL( $query, false, PROTO_CURRENT );
-			$this->getOutput()->redirect( $url );
-			return false;
-		}
-		return parent::beforeExecute( $subPage );
-	}
+    protected function beforeExecute($subPage)
+    {
+        if ($subPage === 'signup' || $this->getRequest()->getText('type') === 'signup') {
+            // B/C for old account creation URLs
+            $title = SpecialPage::getTitleFor('CreateAccount');
+            $query = array_diff_key($this->getRequest()->getValues(),
+                array_fill_keys(['type', 'title'], true));
+            $url = $title->getFullURL($query, false, PROTO_CURRENT);
+            $this->getOutput()->redirect($url);
 
-	/**
-	 * Run any hooks registered for logins, then HTTP redirect to
-	 * $this->mReturnTo (or Main Page if that's undefined).  Formerly we had a
-	 * nice message here, but that's really not as useful as just being sent to
-	 * wherever you logged in from.  It should be clear that the action was
-	 * successful, given the lack of error messages plus the appearance of your
-	 * name in the upper right.
-	 * @param bool $direct True if the action was successful just now; false if that happened
-	 *    pre-redirection (so this handler was called already)
-	 * @param StatusValue|null $extraMessages
-	 */
-	protected function successfulAction( $direct = false, $extraMessages = null ) {
-		$secureLogin = $this->getConfig()->get( MainConfigNames::SecureLogin );
+            return false;
+        }
 
-		$user = $this->targetUser ?: $this->getUser();
-		$session = $this->getRequest()->getSession();
+        return parent::beforeExecute($subPage);
+    }
 
-		if ( $direct ) {
-			$user->touch();
+    /**
+     * Run any hooks registered for logins, then HTTP redirect to
+     * $this->mReturnTo (or Main Page if that's undefined).  Formerly we had a
+     * nice message here, but that's really not as useful as just being sent to
+     * wherever you logged in from.  It should be clear that the action was
+     * successful, given the lack of error messages plus the appearance of your
+     * name in the upper right.
+     * @param bool $direct True if the action was successful just now; false if that happened
+     *    pre-redirection (so this handler was called already)
+     * @param StatusValue|null $extraMessages
+     */
+    protected function successfulAction($direct = false, $extraMessages = null)
+    {
+        $secureLogin = $this->getConfig()->get(MainConfigNames::SecureLogin);
 
-			$this->clearToken();
+        $user = $this->targetUser ?: $this->getUser();
+        $session = $this->getRequest()->getSession();
 
-			if ( $user->requiresHTTPS() ) {
-				$this->mStickHTTPS = true;
-			}
-			$session->setForceHTTPS( $secureLogin && $this->mStickHTTPS );
+        if ($direct) {
+            $user->touch();
 
-			// If the user does not have a session cookie at this point, they probably need to
-			// do something to their browser.
-			if ( !$this->hasSessionCookie() ) {
-				$this->mainLoginForm( [ /*?*/ ], $session->getProvider()->whyNoSession() );
-				// TODO something more specific? This used to use nocookieslogin
-				return;
-			}
-		}
+            $this->clearToken();
 
-		# Run any hooks; display injected HTML if any, else redirect
-		$injected_html = '';
-		$this->getHookRunner()->onUserLoginComplete(
-			$user, $injected_html, $direct );
+            if ($user->requiresHTTPS()) {
+                $this->mStickHTTPS = true;
+            }
+            $session->setForceHTTPS($secureLogin && $this->mStickHTTPS);
 
-		if ( $injected_html !== '' || $extraMessages ) {
-			$this->showSuccessPage( 'success', $this->msg( 'loginsuccesstitle' ),
-				'loginsuccess', $injected_html, $extraMessages );
-		} else {
-			$helper = new LoginHelper( $this->getContext() );
-			$helper->showReturnToPage( 'successredirect', $this->mReturnTo, $this->mReturnToQuery,
-				$this->mStickHTTPS );
-		}
-	}
+            // If the user does not have a session cookie at this point, they probably need to
+            // do something to their browser.
+            if (!$this->hasSessionCookie()) {
+                $this->mainLoginForm([ /*?*/], $session->getProvider()->whyNoSession());
 
-	protected function getToken() {
-		return $this->getRequest()->getSession()->getToken( '', 'login' );
-	}
+                // TODO something more specific? This used to use nocookieslogin
+                return;
+            }
+        }
 
-	protected function clearToken() {
-		return $this->getRequest()->getSession()->resetToken( 'login' );
-	}
+        # Run any hooks; display injected HTML if any, else redirect
+        $injected_html = '';
+        $this->getHookRunner()->onUserLoginComplete(
+            $user, $injected_html, $direct);
 
-	protected function getTokenName() {
-		return 'wpLoginToken';
-	}
+        if ($injected_html !== '' || $extraMessages) {
+            $this->showSuccessPage('success', $this->msg('loginsuccesstitle'),
+                'loginsuccess', $injected_html, $extraMessages);
+        } else {
+            $helper = new LoginHelper($this->getContext());
+            $helper->showReturnToPage('successredirect', $this->mReturnTo, $this->mReturnToQuery,
+                $this->mStickHTTPS);
+        }
+    }
 
-	protected function getGroupName() {
-		return 'login';
-	}
+    protected function getToken()
+    {
+        return $this->getRequest()->getSession()->getToken('', 'login');
+    }
 
-	protected function logAuthResult( $success, $status = null ) {
-		LoggerFactory::getInstance( 'authevents' )->info( 'Login attempt', [
-			'event' => 'login',
-			'successful' => $success,
-			'status' => strval( $status ),
-		] );
-	}
+    protected function clearToken()
+    {
+        return $this->getRequest()->getSession()->resetToken('login');
+    }
+
+    protected function getTokenName()
+    {
+        return 'wpLoginToken';
+    }
+
+    protected function getGroupName()
+    {
+        return 'login';
+    }
+
+    protected function logAuthResult($success, $status = null)
+    {
+        LoggerFactory::getInstance('authevents')->info('Login attempt', [
+            'event'      => 'login',
+            'successful' => $success,
+            'status'     => strval($status),
+        ]);
+    }
 }

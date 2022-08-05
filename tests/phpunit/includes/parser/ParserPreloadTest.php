@@ -19,63 +19,69 @@
  * @covers PPNode_Hash_Array
  * @covers PPNode_Hash_Attr
  */
-class ParserPreloadTest extends MediaWikiIntegrationTestCase {
-	/**
-	 * @var Parser
-	 */
-	private $testParser;
-	/**
-	 * @var ParserOptions
-	 */
-	private $testParserOptions;
-	/**
-	 * @var Title
-	 */
-	private $title;
+class ParserPreloadTest extends MediaWikiIntegrationTestCase
+{
+    /**
+     * @var Parser
+     */
+    private $testParser;
+    /**
+     * @var ParserOptions
+     */
+    private $testParserOptions;
+    /**
+     * @var Title
+     */
+    private $title;
 
-	protected function setUp(): void {
-		parent::setUp();
-		$services = $this->getServiceContainer();
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $services = $this->getServiceContainer();
 
-		$this->testParserOptions = ParserOptions::newFromUserAndLang( new User,
-			$this->getServiceContainer()->getContentLanguage() );
+        $this->testParserOptions = ParserOptions::newFromUserAndLang(new User,
+            $this->getServiceContainer()->getContentLanguage());
 
-		$this->testParser = $services->getParserFactory()->create();
-		$this->testParser->setOptions( $this->testParserOptions );
-		$this->testParser->clearState();
+        $this->testParser = $services->getParserFactory()->create();
+        $this->testParser->setOptions($this->testParserOptions);
+        $this->testParser->clearState();
 
-		$this->title = Title::makeTitle( NS_MAIN, 'Preload Test' );
-	}
+        $this->title = Title::makeTitle(NS_MAIN, 'Preload Test');
+    }
 
-	public function testPreloadSimpleText() {
-		$this->assertPreloaded( 'simple', 'simple' );
-	}
+    public function testPreloadSimpleText()
+    {
+        $this->assertPreloaded('simple', 'simple');
+    }
 
-	public function testPreloadedPreIsUnstripped() {
-		$this->assertPreloaded(
-			'<pre>monospaced</pre>',
-			'<pre>monospaced</pre>',
-			'<pre> in preloaded text must be unstripped (T29467)'
-		);
-	}
+    public function testPreloadedPreIsUnstripped()
+    {
+        $this->assertPreloaded(
+            '<pre>monospaced</pre>',
+            '<pre>monospaced</pre>',
+            '<pre> in preloaded text must be unstripped (T29467)'
+        );
+    }
 
-	public function testPreloadedNowikiIsUnstripped() {
-		$this->assertPreloaded(
-			'<nowiki>[[Dummy title]]</nowiki>',
-			'<nowiki>[[Dummy title]]</nowiki>',
-			'<nowiki> in preloaded text must be unstripped (T29467)'
-		);
-	}
+    public function testPreloadedNowikiIsUnstripped()
+    {
+        $this->assertPreloaded(
+            '<nowiki>[[Dummy title]]</nowiki>',
+            '<nowiki>[[Dummy title]]</nowiki>',
+            '<nowiki> in preloaded text must be unstripped (T29467)'
+        );
+    }
 
-	protected function assertPreloaded( $expected, $text, $msg = '' ) {
-		$this->assertEquals(
-			$expected,
-			$this->testParser->getPreloadText(
-				$text,
-				$this->title,
-				$this->testParserOptions
-			),
-			$msg
-		);
-	}
+    protected function assertPreloaded($expected, $text, $msg = '')
+    {
+        $this->assertEquals(
+            $expected,
+            $this->testParser->getPreloadText(
+                $text,
+                $this->title,
+                $this->testParserOptions
+            ),
+            $msg
+        );
+    }
 }

@@ -28,61 +28,70 @@ use MediaWiki\Session\BotPasswordSessionProvider;
  *
  * @ingroup API
  */
-class ApiLogout extends ApiBase {
+class ApiLogout extends ApiBase
+{
 
-	public function execute() {
-		$session = MediaWiki\Session\SessionManager::getGlobalSession();
+    public function execute()
+    {
+        $session = MediaWiki\Session\SessionManager::getGlobalSession();
 
-		// Handle bot password logout specially
-		if ( $session->getProvider() instanceof BotPasswordSessionProvider ) {
-			$session->unpersist();
-			return;
-		}
+        // Handle bot password logout specially
+        if ($session->getProvider() instanceof BotPasswordSessionProvider) {
+            $session->unpersist();
 
-		// Make sure it's possible to log out
-		if ( !$session->canSetUser() ) {
-			$this->dieWithError(
-				[
-					'cannotlogoutnow-text',
-					$session->getProvider()->describe( $this->getErrorFormatter()->getLanguage() )
-				],
-				'cannotlogout'
-			);
-		}
+            return;
+        }
 
-		$user = $this->getUser();
-		$oldName = $user->getName();
-		$user->logout();
+        // Make sure it's possible to log out
+        if (!$session->canSetUser()) {
+            $this->dieWithError(
+                [
+                    'cannotlogoutnow-text',
+                    $session->getProvider()->describe($this->getErrorFormatter()->getLanguage())
+                ],
+                'cannotlogout'
+            );
+        }
 
-		// Give extensions to do something after user logout
-		$injected_html = '';
-		$this->getHookRunner()->onUserLogoutComplete( $user, $injected_html, $oldName );
-	}
+        $user = $this->getUser();
+        $oldName = $user->getName();
+        $user->logout();
 
-	public function mustBePosted() {
-		return true;
-	}
+        // Give extensions to do something after user logout
+        $injected_html = '';
+        $this->getHookRunner()->onUserLogoutComplete($user, $injected_html, $oldName);
+    }
 
-	public function needsToken() {
-		return 'csrf';
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	protected function getWebUITokenSalt( array $params ) {
-		return 'logoutToken';
-	}
+    public function needsToken()
+    {
+        return 'csrf';
+    }
 
-	public function isReadMode() {
-		return false;
-	}
+    protected function getWebUITokenSalt(array $params)
+    {
+        return 'logoutToken';
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=logout&token=123ABC'
-				=> 'apihelp-logout-example-logout',
-		];
-	}
+    public function isReadMode()
+    {
+        return false;
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Logout';
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=logout&token=123ABC'
+            => 'apihelp-logout-example-logout',
+        ];
+    }
+
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Logout';
+    }
 }

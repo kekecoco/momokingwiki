@@ -44,61 +44,65 @@ require_once __DIR__ . '/Maintenance.php';
  * Interactive shell with completion and global scope.
  *
  */
-class MediaWikiShell extends Maintenance {
+class MediaWikiShell extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( 'd',
-			'For back compatibility with eval.php. ' .
-			'1 send debug to stderr. ' .
-			'With 2 additionally initialize database with debugging ',
-			false, true
-		);
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption('d',
+            'For back compatibility with eval.php. ' .
+            '1 send debug to stderr. ' .
+            'With 2 additionally initialize database with debugging ',
+            false, true
+        );
+    }
 
-	public function execute() {
-		if ( !class_exists( \Psy\Shell::class ) ) {
-			$this->fatalError( 'PsySH not found. Please run composer with the --dev option.' );
-		}
+    public function execute()
+    {
+        if (!class_exists(\Psy\Shell::class)) {
+            $this->fatalError('PsySH not found. Please run composer with the --dev option.');
+        }
 
-		$traverser = new \PhpParser\NodeTraverser();
-		$codeCleaner = new \Psy\CodeCleaner( null, null, $traverser );
+        $traverser = new \PhpParser\NodeTraverser();
+        $codeCleaner = new \Psy\CodeCleaner(null, null, $traverser);
 
-		// add this after initializing the code cleaner so all the default passes get added first
-		$traverser->addVisitor( new CodeCleanerGlobalsPass() );
+        // add this after initializing the code cleaner so all the default passes get added first
+        $traverser->addVisitor(new CodeCleanerGlobalsPass());
 
-		$config = new \Psy\Configuration();
-		$config->setCodeCleaner( $codeCleaner );
-		$config->setUpdateCheck( \Psy\VersionUpdater\Checker::NEVER );
-		// prevent https://github.com/bobthecow/psysh/issues/443 when using sudo -E
-		$config->setRuntimeDir( wfTempDir() );
+        $config = new \Psy\Configuration();
+        $config->setCodeCleaner($codeCleaner);
+        $config->setUpdateCheck(\Psy\VersionUpdater\Checker::NEVER);
+        // prevent https://github.com/bobthecow/psysh/issues/443 when using sudo -E
+        $config->setRuntimeDir(wfTempDir());
 
-		$shell = new \Psy\Shell( $config );
-		if ( $this->hasOption( 'd' ) ) {
-			$this->setupLegacy();
-		}
+        $shell = new \Psy\Shell($config);
+        if ($this->hasOption('d')) {
+            $this->setupLegacy();
+        }
 
-		Hooks::runner()->onMaintenanceShellStart();
+        Hooks::runner()->onMaintenanceShellStart();
 
-		$shell->run();
-	}
+        $shell->run();
+    }
 
-	/**
-	 * For back compatibility with eval.php
-	 */
-	protected function setupLegacy() {
-		$d = intval( $this->getOption( 'd' ) );
-		if ( $d > 0 ) {
-			LoggerFactory::registerProvider( new ConsoleSpi );
-			// Some services hold Logger instances in object properties
-			MediaWikiServices::resetGlobalInstance();
-		}
-		if ( $d > 1 ) {
-			# Set DBO_DEBUG (equivalent of $wgDebugDumpSql)
-			$this->getDB( DB_PRIMARY )->setFlag( DBO_DEBUG );
-			$this->getDB( DB_REPLICA )->setFlag( DBO_DEBUG );
-		}
-	}
+    /**
+     * For back compatibility with eval.php
+     */
+    protected function setupLegacy()
+    {
+        $d = intval($this->getOption('d'));
+        if ($d > 0) {
+            LoggerFactory::registerProvider(new ConsoleSpi);
+            // Some services hold Logger instances in object properties
+            MediaWikiServices::resetGlobalInstance();
+        }
+        if ($d > 1) {
+            # Set DBO_DEBUG (equivalent of $wgDebugDumpSql)
+            $this->getDB(DB_PRIMARY)->setFlag(DBO_DEBUG);
+            $this->getDB(DB_REPLICA)->setFlag(DBO_DEBUG);
+        }
+    }
 
 }
 

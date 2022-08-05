@@ -38,69 +38,75 @@ use StatusValue;
  * @internal
  * @author DannyS712
  */
-class AutoSummaryMissingSummaryConstraint implements IEditConstraint {
+class AutoSummaryMissingSummaryConstraint implements IEditConstraint
+{
 
-	/** @var string */
-	private $userSummary;
+    /** @var string */
+    private $userSummary;
 
-	/** @var string */
-	private $autoSummary;
+    /** @var string */
+    private $autoSummary;
 
-	/** @var bool */
-	private $allowBlankSummary;
+    /** @var bool */
+    private $allowBlankSummary;
 
-	/** @var Content */
-	private $newContent;
+    /** @var Content */
+    private $newContent;
 
-	/** @var Content */
-	private $originalContent;
+    /** @var Content */
+    private $originalContent;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param string $userSummary
-	 * @param string $autoSummary
-	 * @param bool $allowBlankSummary
-	 * @param Content $newContent
-	 * @param Content $originalContent
-	 */
-	public function __construct(
-		string $userSummary,
-		string $autoSummary,
-		bool $allowBlankSummary,
-		Content $newContent,
-		Content $originalContent
-	) {
-		$this->userSummary = $userSummary;
-		$this->autoSummary = $autoSummary;
-		$this->allowBlankSummary = $allowBlankSummary;
-		$this->newContent = $newContent;
-		$this->originalContent = $originalContent;
-	}
+    /**
+     * @param string $userSummary
+     * @param string $autoSummary
+     * @param bool $allowBlankSummary
+     * @param Content $newContent
+     * @param Content $originalContent
+     */
+    public function __construct(
+        string $userSummary,
+        string $autoSummary,
+        bool $allowBlankSummary,
+        Content $newContent,
+        Content $originalContent
+    )
+    {
+        $this->userSummary = $userSummary;
+        $this->autoSummary = $autoSummary;
+        $this->allowBlankSummary = $allowBlankSummary;
+        $this->newContent = $newContent;
+        $this->originalContent = $originalContent;
+    }
 
-	public function checkConstraint(): string {
-		if (
-			!$this->allowBlankSummary &&
-			!$this->newContent->equals( $this->originalContent ) &&
-			!$this->newContent->isRedirect() &&
-			md5( $this->userSummary ) == $this->autoSummary
-		) {
-			// TODO this was == in EditPage, can it be === ?
-			$this->result = self::CONSTRAINT_FAILED;
-		} else {
-			$this->result = self::CONSTRAINT_PASSED;
-		}
-		return $this->result;
-	}
+    public function checkConstraint(): string
+    {
+        if (
+            !$this->allowBlankSummary &&
+            !$this->newContent->equals($this->originalContent) &&
+            !$this->newContent->isRedirect() &&
+            md5($this->userSummary) == $this->autoSummary
+        ) {
+            // TODO this was == in EditPage, can it be === ?
+            $this->result = self::CONSTRAINT_FAILED;
+        } else {
+            $this->result = self::CONSTRAINT_PASSED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->fatal( 'missingsummary' );
-			$statusValue->value = self::AS_SUMMARY_NEEDED;
-		}
-		return $statusValue;
-	}
+        return $this->result;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->fatal('missingsummary');
+            $statusValue->value = self::AS_SUMMARY_NEEDED;
+        }
+
+        return $statusValue;
+    }
 
 }

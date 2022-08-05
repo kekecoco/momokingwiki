@@ -30,159 +30,168 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * @ingroup API
  * @since 1.21
  */
-class ApiQueryPagesWithProp extends ApiQueryGeneratorBase {
+class ApiQueryPagesWithProp extends ApiQueryGeneratorBase
+{
 
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 */
-	public function __construct( ApiQuery $query, $moduleName ) {
-		parent::__construct( $query, $moduleName, 'pwp' );
-	}
+    /**
+     * @param ApiQuery $query
+     * @param string $moduleName
+     */
+    public function __construct(ApiQuery $query, $moduleName)
+    {
+        parent::__construct($query, $moduleName, 'pwp');
+    }
 
-	public function execute() {
-		$this->run();
-	}
+    public function execute()
+    {
+        $this->run();
+    }
 
-	public function getCacheMode( $params ) {
-		return 'public';
-	}
+    public function getCacheMode($params)
+    {
+        return 'public';
+    }
 
-	public function executeGenerator( $resultPageSet ) {
-		$this->run( $resultPageSet );
-	}
+    public function executeGenerator($resultPageSet)
+    {
+        $this->run($resultPageSet);
+    }
 
-	/**
-	 * @param ApiPageSet|null $resultPageSet
-	 * @return void
-	 */
-	private function run( $resultPageSet = null ) {
-		$params = $this->extractRequestParams();
+    /**
+     * @param ApiPageSet|null $resultPageSet
+     * @return void
+     */
+    private function run($resultPageSet = null)
+    {
+        $params = $this->extractRequestParams();
 
-		$prop = array_fill_keys( $params['prop'], true );
-		$fld_ids = isset( $prop['ids'] );
-		$fld_title = isset( $prop['title'] );
-		$fld_value = isset( $prop['value'] );
+        $prop = array_fill_keys($params['prop'], true);
+        $fld_ids = isset($prop['ids']);
+        $fld_title = isset($prop['title']);
+        $fld_value = isset($prop['value']);
 
-		if ( $resultPageSet === null ) {
-			$this->addFields( [ 'page_id' ] );
-			$this->addFieldsIf( [ 'page_title', 'page_namespace' ], $fld_title );
-			$this->addFieldsIf( 'pp_value', $fld_value );
-		} else {
-			$this->addFields( $resultPageSet->getPageTableFields() );
-		}
-		$this->addTables( [ 'page_props', 'page' ] );
-		$this->addWhere( 'pp_page=page_id' );
-		$this->addWhereFld( 'pp_propname', $params['propname'] );
+        if ($resultPageSet === null) {
+            $this->addFields(['page_id']);
+            $this->addFieldsIf(['page_title', 'page_namespace'], $fld_title);
+            $this->addFieldsIf('pp_value', $fld_value);
+        } else {
+            $this->addFields($resultPageSet->getPageTableFields());
+        }
+        $this->addTables(['page_props', 'page']);
+        $this->addWhere('pp_page=page_id');
+        $this->addWhereFld('pp_propname', $params['propname']);
 
-		$dir = ( $params['dir'] == 'ascending' ) ? 'newer' : 'older';
+        $dir = ($params['dir'] == 'ascending') ? 'newer' : 'older';
 
-		if ( $params['continue'] ) {
-			$cont = explode( '|', $params['continue'] );
-			$this->dieContinueUsageIf( count( $cont ) != 1 );
+        if ($params['continue']) {
+            $cont = explode('|', $params['continue']);
+            $this->dieContinueUsageIf(count($cont) != 1);
 
-			// Add a WHERE clause
-			$from = (int)$cont[0];
-			$this->addWhereRange( 'pp_page', $dir, $from, null );
-		}
+            // Add a WHERE clause
+            $from = (int)$cont[0];
+            $this->addWhereRange('pp_page', $dir, $from, null);
+        }
 
-		$sort = ( $params['dir'] === 'descending' ? ' DESC' : '' );
-		$this->addOption( 'ORDER BY', 'pp_page' . $sort );
+        $sort = ($params['dir'] === 'descending' ? ' DESC' : '');
+        $this->addOption('ORDER BY', 'pp_page' . $sort);
 
-		$limit = $params['limit'];
-		$this->addOption( 'LIMIT', $limit + 1 );
+        $limit = $params['limit'];
+        $this->addOption('LIMIT', $limit + 1);
 
-		$result = $this->getResult();
-		$count = 0;
-		$res = $this->select( __METHOD__ );
+        $result = $this->getResult();
+        $count = 0;
+        $res = $this->select(__METHOD__);
 
-		if ( $fld_title && $resultPageSet === null ) {
-			$this->executeGenderCacheFromResultWrapper( $res, __METHOD__ );
-		}
+        if ($fld_title && $resultPageSet === null) {
+            $this->executeGenderCacheFromResultWrapper($res, __METHOD__);
+        }
 
-		foreach ( $res as $row ) {
-			if ( ++$count > $limit ) {
-				// We've reached the one extra which shows that there are
-				// additional pages to be had. Stop here...
-				$this->setContinueEnumParameter( 'continue', $row->page_id );
-				break;
-			}
+        foreach ($res as $row) {
+            if (++$count > $limit) {
+                // We've reached the one extra which shows that there are
+                // additional pages to be had. Stop here...
+                $this->setContinueEnumParameter('continue', $row->page_id);
+                break;
+            }
 
-			if ( $resultPageSet === null ) {
-				$vals = [
-					ApiResult::META_TYPE => 'assoc',
-				];
-				if ( $fld_ids ) {
-					$vals['pageid'] = (int)$row->page_id;
-				}
-				if ( $fld_title ) {
-					$title = Title::makeTitle( $row->page_namespace, $row->page_title );
-					ApiQueryBase::addTitleInfo( $vals, $title );
-				}
-				if ( $fld_value ) {
-					$vals['value'] = $row->pp_value;
-				}
-				$fit = $result->addValue( [ 'query', $this->getModuleName() ], null, $vals );
-				if ( !$fit ) {
-					$this->setContinueEnumParameter( 'continue', $row->page_id );
-					break;
-				}
-			} else {
-				$resultPageSet->processDbRow( $row );
-			}
-		}
+            if ($resultPageSet === null) {
+                $vals = [
+                    ApiResult::META_TYPE => 'assoc',
+                ];
+                if ($fld_ids) {
+                    $vals['pageid'] = (int)$row->page_id;
+                }
+                if ($fld_title) {
+                    $title = Title::makeTitle($row->page_namespace, $row->page_title);
+                    ApiQueryBase::addTitleInfo($vals, $title);
+                }
+                if ($fld_value) {
+                    $vals['value'] = $row->pp_value;
+                }
+                $fit = $result->addValue(['query', $this->getModuleName()], null, $vals);
+                if (!$fit) {
+                    $this->setContinueEnumParameter('continue', $row->page_id);
+                    break;
+                }
+            } else {
+                $resultPageSet->processDbRow($row);
+            }
+        }
 
-		if ( $resultPageSet === null ) {
-			$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'page' );
-		}
-	}
+        if ($resultPageSet === null) {
+            $result->addIndexedTagName(['query', $this->getModuleName()], 'page');
+        }
+    }
 
-	public function getAllowedParams() {
-		return [
-			'propname' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'prop' => [
-				ParamValidator::PARAM_DEFAULT => 'ids|title',
-				ParamValidator::PARAM_ISMULTI => true,
-				ParamValidator::PARAM_TYPE => [
-					'ids',
-					'title',
-					'value',
-				],
-				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
-			],
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-			'limit' => [
-				ParamValidator::PARAM_TYPE => 'limit',
-				ParamValidator::PARAM_DEFAULT => 10,
-				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
-				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2
-			],
-			'dir' => [
-				ParamValidator::PARAM_DEFAULT => 'ascending',
-				ParamValidator::PARAM_TYPE => [
-					'ascending',
-					'descending',
-				]
-			],
-		];
-	}
+    public function getAllowedParams()
+    {
+        return [
+            'propname' => [
+                ParamValidator::PARAM_TYPE     => 'string',
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
+            'prop'     => [
+                ParamValidator::PARAM_DEFAULT     => 'ids|title',
+                ParamValidator::PARAM_ISMULTI     => true,
+                ParamValidator::PARAM_TYPE        => [
+                    'ids',
+                    'title',
+                    'value',
+                ],
+                ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+            ],
+            'continue' => [
+                ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+            ],
+            'limit'    => [
+                ParamValidator::PARAM_TYPE    => 'limit',
+                ParamValidator::PARAM_DEFAULT => 10,
+                IntegerDef::PARAM_MIN         => 1,
+                IntegerDef::PARAM_MAX         => ApiBase::LIMIT_BIG1,
+                IntegerDef::PARAM_MAX2        => ApiBase::LIMIT_BIG2
+            ],
+            'dir'      => [
+                ParamValidator::PARAM_DEFAULT => 'ascending',
+                ParamValidator::PARAM_TYPE    => [
+                    'ascending',
+                    'descending',
+                ]
+            ],
+        ];
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=query&list=pageswithprop&pwppropname=displaytitle&pwpprop=ids|title|value'
-				=> 'apihelp-query+pageswithprop-example-simple',
-			'action=query&generator=pageswithprop&gpwppropname=notoc&prop=info'
-				=> 'apihelp-query+pageswithprop-example-generator',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=query&list=pageswithprop&pwppropname=displaytitle&pwpprop=ids|title|value'
+            => 'apihelp-query+pageswithprop-example-simple',
+            'action=query&generator=pageswithprop&gpwppropname=notoc&prop=info'
+            => 'apihelp-query+pageswithprop-example-generator',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Pageswithprop';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Pageswithprop';
+    }
 }

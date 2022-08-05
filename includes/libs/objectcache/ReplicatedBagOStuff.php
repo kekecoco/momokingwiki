@@ -18,6 +18,7 @@
  * @file
  * @ingroup Cache
  */
+
 use Wikimedia\ObjectFactory\ObjectFactory;
 
 /**
@@ -31,329 +32,356 @@ use Wikimedia\ObjectFactory\ObjectFactory;
  * @ingroup Cache
  * @since 1.26
  */
-class ReplicatedBagOStuff extends BagOStuff {
-	/** @var BagOStuff */
-	private $writeStore;
-	/** @var BagOStuff */
-	private $readStore;
+class ReplicatedBagOStuff extends BagOStuff
+{
+    /** @var BagOStuff */
+    private $writeStore;
+    /** @var BagOStuff */
+    private $readStore;
 
-	/** @var int Seconds to read from the master source for a key after writing to it */
-	private $consistencyWindow;
-	/** @var float[] Map of (key => UNIX timestamp) */
-	private $lastKeyWrites = [];
+    /** @var int Seconds to read from the master source for a key after writing to it */
+    private $consistencyWindow;
+    /** @var float[] Map of (key => UNIX timestamp) */
+    private $lastKeyWrites = [];
 
-	/** @var int Max expected delay (in seconds) for writes to reach replicas */
-	private const MAX_WRITE_DELAY = 5;
+    /** @var int Max expected delay (in seconds) for writes to reach replicas */
+    private const MAX_WRITE_DELAY = 5;
 
-	/**
-	 * Constructor. Parameters are:
-	 *   - writeFactory: ObjectFactory::getObjectFromSpec array yielding BagOStuff.
-	 *      This object will be used for writes (e.g. the primary DB).
-	 *   - readFactory: ObjectFactory::getObjectFromSpec array yielding BagOStuff.
-	 *      This object will be used for reads (e.g. a replica DB).
-	 *   - sessionConsistencyWindow: Seconds to read from the master source for a key
-	 *      after writing to it. [Default: ReplicatedBagOStuff::MAX_WRITE_DELAY]
-	 *
-	 * @param array $params
-	 * @throws InvalidArgumentException
-	 */
-	public function __construct( $params ) {
-		parent::__construct( $params );
+    /**
+     * Constructor. Parameters are:
+     *   - writeFactory: ObjectFactory::getObjectFromSpec array yielding BagOStuff.
+     *      This object will be used for writes (e.g. the primary DB).
+     *   - readFactory: ObjectFactory::getObjectFromSpec array yielding BagOStuff.
+     *      This object will be used for reads (e.g. a replica DB).
+     *   - sessionConsistencyWindow: Seconds to read from the master source for a key
+     *      after writing to it. [Default: ReplicatedBagOStuff::MAX_WRITE_DELAY]
+     *
+     * @param array $params
+     * @throws InvalidArgumentException
+     */
+    public function __construct($params)
+    {
+        parent::__construct($params);
 
-		if ( !isset( $params['writeFactory'] ) ) {
-			throw new InvalidArgumentException(
-				__METHOD__ . ': the "writeFactory" parameter is required' );
-		} elseif ( !isset( $params['readFactory'] ) ) {
-			throw new InvalidArgumentException(
-				__METHOD__ . ': the "readFactory" parameter is required' );
-		}
+        if (!isset($params['writeFactory'])) {
+            throw new InvalidArgumentException(
+                __METHOD__ . ': the "writeFactory" parameter is required');
+        } elseif (!isset($params['readFactory'])) {
+            throw new InvalidArgumentException(
+                __METHOD__ . ': the "readFactory" parameter is required');
+        }
 
-		$this->consistencyWindow = $params['sessionConsistencyWindow'] ?? self::MAX_WRITE_DELAY;
-		$this->writeStore = ( $params['writeFactory'] instanceof BagOStuff )
-			? $params['writeFactory']
-			: ObjectFactory::getObjectFromSpec( $params['writeFactory'] );
-		$this->readStore = ( $params['readFactory'] instanceof BagOStuff )
-			? $params['readFactory']
-			: ObjectFactory::getObjectFromSpec( $params['readFactory'] );
-		$this->attrMap = $this->mergeFlagMaps( [ $this->readStore, $this->writeStore ] );
-	}
+        $this->consistencyWindow = $params['sessionConsistencyWindow'] ?? self::MAX_WRITE_DELAY;
+        $this->writeStore = ($params['writeFactory'] instanceof BagOStuff)
+            ? $params['writeFactory']
+            : ObjectFactory::getObjectFromSpec($params['writeFactory']);
+        $this->readStore = ($params['readFactory'] instanceof BagOStuff)
+            ? $params['readFactory']
+            : ObjectFactory::getObjectFromSpec($params['readFactory']);
+        $this->attrMap = $this->mergeFlagMaps([$this->readStore, $this->writeStore]);
+    }
 
-	public function get( $key, $flags = 0 ) {
-		$store = (
-			$this->hadRecentSessionWrite( [ $key ] ) ||
-			$this->fieldHasFlags( $flags, self::READ_LATEST )
-		)
-			// Try to maintain session consistency and respect READ_LATEST
-			? $this->writeStore
-			// Otherwise, just use the default "read" store
-			: $this->readStore;
+    public function get($key, $flags = 0)
+    {
+        $store = (
+            $this->hadRecentSessionWrite([$key]) ||
+            $this->fieldHasFlags($flags, self::READ_LATEST)
+        )
+            // Try to maintain session consistency and respect READ_LATEST
+            ? $this->writeStore
+            // Otherwise, just use the default "read" store
+            : $this->readStore;
 
-		return $store->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $store->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function set( $key, $value, $exptime = 0, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function set($key, $value, $exptime = 0, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function delete( $key, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function delete($key, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function add( $key, $value, $exptime = 0, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function add($key, $value, $exptime = 0, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function merge( $key, callable $callback, $exptime = 0, $attempts = 10, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function merge($key, callable $callback, $exptime = 0, $attempts = 10, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function changeTTL( $key, $exptime = 0, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function changeTTL($key, $exptime = 0, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function lock( $key, $timeout = 6, $exptime = 6, $rclass = '' ) {
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+    public function lock($key, $timeout = 6, $exptime = 6, $rclass = '')
+    {
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function unlock( $key ) {
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+    public function unlock($key)
+    {
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function deleteObjectsExpiringBefore(
-		$timestamp,
-		callable $progress = null,
-		$limit = INF,
-		string $tag = null
-	) {
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_NONKEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+    public function deleteObjectsExpiringBefore(
+        $timestamp,
+        callable $progress = null,
+        $limit = INF,
+        string $tag = null
+    )
+    {
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_NONKEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function getMulti( array $keys, $flags = 0 ) {
-		$store = (
-			$this->hadRecentSessionWrite( $keys ) ||
-			$this->fieldHasFlags( $flags, self::READ_LATEST )
-		)
-			// Try to maintain session consistency and respect READ_LATEST
-			? $this->writeStore
-			// Otherwise, just use the default "read" store
-			: $this->readStore;
+    public function getMulti(array $keys, $flags = 0)
+    {
+        $store = (
+            $this->hadRecentSessionWrite($keys) ||
+            $this->fieldHasFlags($flags, self::READ_LATEST)
+        )
+            // Try to maintain session consistency and respect READ_LATEST
+            ? $this->writeStore
+            // Otherwise, just use the default "read" store
+            : $this->readStore;
 
-		return $store->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEYARR,
-			self::RES_KEYMAP,
-			func_get_args(),
-			$this
-		);
-	}
+        return $store->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEYARR,
+            self::RES_KEYMAP,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function setMulti( array $valueByKey, $exptime = 0, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( array_keys( $valueByKey ) );
+    public function setMulti(array $valueByKey, $exptime = 0, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite(array_keys($valueByKey));
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEYMAP,
-			self::RES_KEYMAP,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEYMAP,
+            self::RES_KEYMAP,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function deleteMulti( array $keys, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( $keys );
+    public function deleteMulti(array $keys, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite($keys);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEYARR,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEYARR,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function changeTTLMulti( array $keys, $exptime, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( $keys );
+    public function changeTTLMulti(array $keys, $exptime, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite($keys);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEYARR,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEYARR,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function incr( $key, $value = 1, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function incr($key, $value = 1, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function decr( $key, $value = 1, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function decr($key, $value = 1, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function incrWithInit( $key, $exptime, $step = 1, $init = null, $flags = 0 ) {
-		$this->remarkRecentSessionWrite( [ $key ] );
+    public function incrWithInit($key, $exptime, $step = 1, $init = null, $flags = 0)
+    {
+        $this->remarkRecentSessionWrite([$key]);
 
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEY,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEY,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function makeKeyInternal( $keyspace, $components ) {
-		return $this->genericKeyFromComponents( $keyspace, ...$components );
-	}
+    public function makeKeyInternal($keyspace, $components)
+    {
+        return $this->genericKeyFromComponents($keyspace, ...$components);
+    }
 
-	public function makeKey( $collection, ...$components ) {
-		return $this->genericKeyFromComponents( $this->keyspace, $collection, ...$components );
-	}
+    public function makeKey($collection, ...$components)
+    {
+        return $this->genericKeyFromComponents($this->keyspace, $collection, ...$components);
+    }
 
-	public function makeGlobalKey( $collection, ...$components ) {
-		return $this->genericKeyFromComponents( self::GLOBAL_KEYSPACE, $collection, ...$components );
-	}
+    public function makeGlobalKey($collection, ...$components)
+    {
+        return $this->genericKeyFromComponents(self::GLOBAL_KEYSPACE, $collection, ...$components);
+    }
 
-	protected function convertGenericKey( $key ) {
-		// short-circuit; already uses "generic" keys
-		return $key;
-	}
+    protected function convertGenericKey($key)
+    {
+        // short-circuit; already uses "generic" keys
+        return $key;
+    }
 
-	public function addBusyCallback( callable $workCallback ) {
-		return $this->writeStore->addBusyCallback( $workCallback );
-	}
+    public function addBusyCallback(callable $workCallback)
+    {
+        return $this->writeStore->addBusyCallback($workCallback);
+    }
 
-	public function setNewPreparedValues( array $valueByKey ) {
-		return $this->writeStore->proxyCall(
-			__FUNCTION__,
-			self::ARG0_KEYMAP,
-			self::RES_NONKEY,
-			func_get_args(),
-			$this
-		);
-	}
+    public function setNewPreparedValues(array $valueByKey)
+    {
+        return $this->writeStore->proxyCall(
+            __FUNCTION__,
+            self::ARG0_KEYMAP,
+            self::RES_NONKEY,
+            func_get_args(),
+            $this
+        );
+    }
 
-	public function setMockTime( &$time ) {
-		parent::setMockTime( $time );
-		$this->writeStore->setMockTime( $time );
-		$this->readStore->setMockTime( $time );
-	}
+    public function setMockTime(&$time)
+    {
+        parent::setMockTime($time);
+        $this->writeStore->setMockTime($time);
+        $this->readStore->setMockTime($time);
+    }
 
-	/**
-	 * @param string[] $keys
-	 * @return bool
-	 */
-	private function hadRecentSessionWrite( array $keys ) {
-		$now = $this->getCurrentTime();
-		foreach ( $keys as $key ) {
-			$ts = $this->lastKeyWrites[$key] ?? 0;
-			if ( $ts && ( $now - $ts ) <= $this->consistencyWindow ) {
-				return true;
-			}
-		}
+    /**
+     * @param string[] $keys
+     * @return bool
+     */
+    private function hadRecentSessionWrite(array $keys)
+    {
+        $now = $this->getCurrentTime();
+        foreach ($keys as $key) {
+            $ts = $this->lastKeyWrites[$key] ?? 0;
+            if ($ts && ($now - $ts) <= $this->consistencyWindow) {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	/**
-	 * @param string[] $keys
-	 */
-	private function remarkRecentSessionWrite( array $keys ) {
-		$now = $this->getCurrentTime();
-		foreach ( $keys as $key ) {
-			// move to the end
-			unset( $this->lastKeyWrites[$key] );
-			$this->lastKeyWrites[$key] = $now;
-		}
-		// Prune out the map if the first key is obsolete
-		if ( ( $now - reset( $this->lastKeyWrites ) ) > $this->consistencyWindow ) {
-			$this->lastKeyWrites = array_filter(
-				$this->lastKeyWrites,
-				function ( $timestamp ) use ( $now ) {
-					return ( ( $now - $timestamp ) <= $this->consistencyWindow );
-				}
-			);
-		}
-	}
+    /**
+     * @param string[] $keys
+     */
+    private function remarkRecentSessionWrite(array $keys)
+    {
+        $now = $this->getCurrentTime();
+        foreach ($keys as $key) {
+            // move to the end
+            unset($this->lastKeyWrites[$key]);
+            $this->lastKeyWrites[$key] = $now;
+        }
+        // Prune out the map if the first key is obsolete
+        if (($now - reset($this->lastKeyWrites)) > $this->consistencyWindow) {
+            $this->lastKeyWrites = array_filter(
+                $this->lastKeyWrites,
+                function ($timestamp) use ($now) {
+                    return (($now - $timestamp) <= $this->consistencyWindow);
+                }
+            );
+        }
+    }
 }

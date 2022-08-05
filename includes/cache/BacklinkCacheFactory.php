@@ -30,34 +30,38 @@ use WANObjectCache;
 /**
  * @since 1.37
  */
-class BacklinkCacheFactory {
-	/** @var BacklinkCache */
-	private $latestBacklinkCache;
+class BacklinkCacheFactory
+{
+    /** @var BacklinkCache */
+    private $latestBacklinkCache;
 
-	/** @var WANObjectCache */
-	private $wanCache;
+    /** @var WANObjectCache */
+    private $wanCache;
 
-	/**
-	 * @param WANObjectCache $wanCache
-	 */
-	public function __construct( WANObjectCache $wanCache ) {
-		$this->wanCache = $wanCache;
-	}
+    /**
+     * @param WANObjectCache $wanCache
+     */
+    public function __construct(WANObjectCache $wanCache)
+    {
+        $this->wanCache = $wanCache;
+    }
 
-	/**
-	 * Returns a BacklinkCache for $page. May re-use previously
-	 * created instances.
-	 *
-	 * Currently, only one cache instance can exist; callers that
-	 * need multiple backlink cache objects should keep them in scope.
-	 *
-	 * @param PageReference $page Page to get a backlink cache for
-	 * @return BacklinkCache
-	 */
-	public function getBacklinkCache( PageReference $page ): BacklinkCache {
-		if ( !$this->latestBacklinkCache || !$this->latestBacklinkCache->getPage()->isSamePageAs( $page ) ) {
-			$this->latestBacklinkCache = new BacklinkCache( $this->wanCache, $page );
-		}
-		return $this->latestBacklinkCache;
-	}
+    /**
+     * Returns a BacklinkCache for $page. May re-use previously
+     * created instances.
+     *
+     * Currently, only one cache instance can exist; callers that
+     * need multiple backlink cache objects should keep them in scope.
+     *
+     * @param PageReference $page Page to get a backlink cache for
+     * @return BacklinkCache
+     */
+    public function getBacklinkCache(PageReference $page): BacklinkCache
+    {
+        if (!$this->latestBacklinkCache || !$this->latestBacklinkCache->getPage()->isSamePageAs($page)) {
+            $this->latestBacklinkCache = new BacklinkCache($this->wanCache, $page);
+        }
+
+        return $this->latestBacklinkCache;
+    }
 }

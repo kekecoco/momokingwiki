@@ -29,8 +29,10 @@ use Throwable;
  * @stable to extend
  * @ingroup Database
  */
-class DBLanguageError extends DBUnexpectedError {
-	public function __construct( $error, Throwable $prev = null ) {
-		parent::__construct( null, $error, $prev );
-	}
+class DBLanguageError extends DBUnexpectedError
+{
+    public function __construct($error, Throwable $prev = null)
+    {
+        parent::__construct(null, $error, $prev);
+    }
 }

@@ -24,26 +24,29 @@
  * @newable
  * @ingroup Upload
  */
-class UploadStashException extends MWException implements ILocalizedException {
-	/** @var string|array|MessageSpecifier */
-	protected $messageSpec;
+class UploadStashException extends MWException implements ILocalizedException
+{
+    /** @var string|array|MessageSpecifier */
+    protected $messageSpec;
 
-	/**
-	 * @param string|array|MessageSpecifier $messageSpec See Message::newFromSpecifier
-	 * @param int $code Exception code
-	 * @param Throwable|null $previous The previous exception used for the exception
-	 *  chaining.
-	 */
-	public function __construct( $messageSpec, $code = 0, Throwable $previous = null ) {
-		$this->messageSpec = $messageSpec;
+    /**
+     * @param string|array|MessageSpecifier $messageSpec See Message::newFromSpecifier
+     * @param int $code Exception code
+     * @param Throwable|null $previous The previous exception used for the exception
+     *  chaining.
+     */
+    public function __construct($messageSpec, $code = 0, Throwable $previous = null)
+    {
+        $this->messageSpec = $messageSpec;
 
-		$msg = $this->getMessageObject()->text();
-		$msg = preg_replace( '!</?(var|kbd|samp|code)>!', '"', $msg );
-		$msg = Sanitizer::stripAllTags( $msg );
-		parent::__construct( $msg, $code, $previous );
-	}
+        $msg = $this->getMessageObject()->text();
+        $msg = preg_replace('!</?(var|kbd|samp|code)>!', '"', $msg);
+        $msg = Sanitizer::stripAllTags($msg);
+        parent::__construct($msg, $code, $previous);
+    }
 
-	public function getMessageObject() {
-		return Message::newFromSpecifier( $this->messageSpec );
-	}
+    public function getMessageObject()
+    {
+        return Message::newFromSpecifier($this->messageSpec);
+    }
 }

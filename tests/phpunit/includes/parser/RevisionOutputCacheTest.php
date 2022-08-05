@@ -29,349 +29,370 @@ use Wikimedia\TestingAccessWrapper;
  * @covers \MediaWiki\Parser\RevisionOutputCache
  * @package MediaWiki\Tests\Parser
  */
-class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
+class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase
+{
 
-	/** @var int */
-	private $time;
+    /** @var int */
+    private $time;
 
-	/** @var string */
-	private $cacheTime;
+    /** @var string */
+    private $cacheTime;
 
-	/** @var RevisionRecord */
-	private $revision;
+    /** @var RevisionRecord */
+    private $revision;
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$this->time = time();
-		$this->cacheTime = MWTimestamp::convert( TS_MW, $this->time + 1 );
-		MWTimestamp::setFakeTime( $this->time );
+        $this->time = time();
+        $this->cacheTime = MWTimestamp::convert(TS_MW, $this->time + 1);
+        MWTimestamp::setFakeTime($this->time);
 
-		$this->revision = new MutableRevisionRecord(
-			new PageIdentityValue(
-				42,
-				NS_MAIN,
-				'Testing_Testing',
-				PageIdentity::LOCAL
-			),
-			RevisionRecord::LOCAL
-		);
-		$this->revision->setId( 24 );
-		$this->revision->setTimestamp( MWTimestamp::convert( TS_MW, $this->time ) );
-	}
+        $this->revision = new MutableRevisionRecord(
+            new PageIdentityValue(
+                42,
+                NS_MAIN,
+                'Testing_Testing',
+                PageIdentity::LOCAL
+            ),
+            RevisionRecord::LOCAL
+        );
+        $this->revision->setId(24);
+        $this->revision->setTimestamp(MWTimestamp::convert(TS_MW, $this->time));
+    }
 
-	/**
-	 * @param BagOStuff|null $storage
-	 * @param LoggerInterface|null $logger
-	 * @param int $expiry
-	 * @param string $epoch
-	 *
-	 * @return RevisionOutputCache
-	 */
-	private function createRevisionOutputCache(
-		BagOStuff $storage = null,
-		LoggerInterface $logger = null,
-		$expiry = 3600,
-		$epoch = '19900220000000'
-	): RevisionOutputCache {
-		return new RevisionOutputCache(
-			'test',
-			new WANObjectCache( [ 'cache' => $storage ?: new HashBagOStuff() ] ),
-			$expiry,
-			$epoch,
-			new JsonCodec(),
-			new NullStatsdDataFactory(),
-			$logger ?: new NullLogger()
-		);
-	}
+    /**
+     * @param BagOStuff|null $storage
+     * @param LoggerInterface|null $logger
+     * @param int $expiry
+     * @param string $epoch
+     *
+     * @return RevisionOutputCache
+     */
+    private function createRevisionOutputCache(
+        BagOStuff $storage = null,
+        LoggerInterface $logger = null,
+        $expiry = 3600,
+        $epoch = '19900220000000'
+    ): RevisionOutputCache
+    {
+        return new RevisionOutputCache(
+            'test',
+            new WANObjectCache(['cache' => $storage ?: new HashBagOStuff()]),
+            $expiry,
+            $epoch,
+            new JsonCodec(),
+            new NullStatsdDataFactory(),
+            $logger ?: new NullLogger()
+        );
+    }
 
-	/**
-	 * @return array
-	 */
-	private function getDummyUsedOptions(): array {
-		return array_slice(
-			ParserOptions::allCacheVaryingOptions(),
-			0,
-			2
-		);
-	}
+    /**
+     * @return array
+     */
+    private function getDummyUsedOptions(): array
+    {
+        return array_slice(
+            ParserOptions::allCacheVaryingOptions(),
+            0,
+            2
+        );
+    }
 
-	/**
-	 * @return ParserOutput
-	 */
-	private function createDummyParserOutput(): ParserOutput {
-		$parserOutput = new ParserOutput();
-		$parserOutput->setText( 'TEST' );
-		foreach ( $this->getDummyUsedOptions() as $option ) {
-			$parserOutput->recordOption( $option );
-		}
-		$parserOutput->updateCacheExpiry( 4242 );
-		return $parserOutput;
-	}
+    /**
+     * @return ParserOutput
+     */
+    private function createDummyParserOutput(): ParserOutput
+    {
+        $parserOutput = new ParserOutput();
+        $parserOutput->setText('TEST');
+        foreach ($this->getDummyUsedOptions() as $option) {
+            $parserOutput->recordOption($option);
+        }
+        $parserOutput->updateCacheExpiry(4242);
 
-	/**
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::makeParserOutputKey
-	 */
-	public function testMakeParserOutputKey() {
-		$cache = $this->createRevisionOutputCache();
+        return $parserOutput;
+    }
 
-		$options1 = ParserOptions::newFromAnon();
-		$options1->setOption( $this->getDummyUsedOptions()[0], 'value1' );
-		$key1 = $cache->makeParserOutputKey( $this->revision, $options1, $this->getDummyUsedOptions() );
-		$this->assertNotNull( $key1 );
+    /**
+     * @covers \MediaWiki\Parser\RevisionOutputCache::makeParserOutputKey
+     */
+    public function testMakeParserOutputKey()
+    {
+        $cache = $this->createRevisionOutputCache();
 
-		$options2 = ParserOptions::newFromAnon();
-		$options2->setOption( $this->getDummyUsedOptions()[0], 'value2' );
-		$key2 = $cache->makeParserOutputKey( $this->revision, $options2, $this->getDummyUsedOptions() );
-		$this->assertNotNull( $key2 );
-		$this->assertNotSame( $key1, $key2 );
-	}
+        $options1 = ParserOptions::newFromAnon();
+        $options1->setOption($this->getDummyUsedOptions()[0], 'value1');
+        $key1 = $cache->makeParserOutputKey($this->revision, $options1, $this->getDummyUsedOptions());
+        $this->assertNotNull($key1);
 
-	/*
-	 * Test that fetching without storing first returns false.
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 */
-	public function testGetEmpty() {
-		$cache = $this->createRevisionOutputCache();
-		$options = ParserOptions::newFromAnon();
+        $options2 = ParserOptions::newFromAnon();
+        $options2->setOption($this->getDummyUsedOptions()[0], 'value2');
+        $key2 = $cache->makeParserOutputKey($this->revision, $options2, $this->getDummyUsedOptions());
+        $this->assertNotNull($key2);
+        $this->assertNotSame($key1, $key2);
+    }
 
-		$this->assertFalse( $cache->get( $this->revision, $options ) );
-	}
+    /*
+     * Test that fetching without storing first returns false.
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     */
+    public function testGetEmpty()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $options = ParserOptions::newFromAnon();
 
-	/**
-	 * Test that fetching with the same options return the saved value.
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::save
-	 */
-	public function testSaveGetSameOptions() {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+        $this->assertFalse($cache->get($this->revision, $options));
+    }
 
-		$options1 = ParserOptions::newFromAnon();
-		$options1->setOption( $this->getDummyUsedOptions()[0], 'value1' );
-		$cache->save( $parserOutput, $this->revision, $options1, $this->cacheTime );
+    /**
+     * Test that fetching with the same options return the saved value.
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     * @covers \MediaWiki\Parser\RevisionOutputCache::save
+     */
+    public function testSaveGetSameOptions()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		$savedOutput = $cache->get( $this->revision, $options1 );
-		$this->assertInstanceOf( ParserOutput::class, $savedOutput );
-		// RevisionOutputCache adds a comment to the HTML, so check if the result starts with page content.
-		$this->assertStringStartsWith( 'TEST_TEXT', $savedOutput->getText() );
-		$this->assertSame( $this->cacheTime, $savedOutput->getCacheTime() );
-		$this->assertSame( $this->revision->getId(), $savedOutput->getCacheRevisionId() );
-	}
+        $options1 = ParserOptions::newFromAnon();
+        $options1->setOption($this->getDummyUsedOptions()[0], 'value1');
+        $cache->save($parserOutput, $this->revision, $options1, $this->cacheTime);
 
-	/**
-	 * Test that non-cacheable output is not stored
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::save
-	 */
-	public function testDoesNotStoreNonCacheable() {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
-		$parserOutput->updateCacheExpiry( 0 );
+        $savedOutput = $cache->get($this->revision, $options1);
+        $this->assertInstanceOf(ParserOutput::class, $savedOutput);
+        // RevisionOutputCache adds a comment to the HTML, so check if the result starts with page content.
+        $this->assertStringStartsWith('TEST_TEXT', $savedOutput->getText());
+        $this->assertSame($this->cacheTime, $savedOutput->getCacheTime());
+        $this->assertSame($this->revision->getId(), $savedOutput->getCacheRevisionId());
+    }
 
-		$options1 = ParserOptions::newFromAnon();
-		$cache->save( $parserOutput, $this->revision, $options1, $this->cacheTime );
+    /**
+     * Test that non-cacheable output is not stored
+     * @covers \MediaWiki\Parser\RevisionOutputCache::save
+     */
+    public function testDoesNotStoreNonCacheable()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
+        $parserOutput->updateCacheExpiry(0);
 
-		$this->assertFalse( $cache->get( $this->revision, $options1 ) );
-	}
+        $options1 = ParserOptions::newFromAnon();
+        $cache->save($parserOutput, $this->revision, $options1, $this->cacheTime);
 
-	/**
-	 * Test that setting the cache epoch will cause outdated entries to be ignored
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 */
-	public function testExpiresByEpoch() {
-		$store = new HashBagOStuff();
-		$cache = $this->createRevisionOutputCache( $store );
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+        $this->assertFalse($cache->get($this->revision, $options1));
+    }
 
-		$options = ParserOptions::newFromAnon();
-		$cache->save( $parserOutput, $this->revision, $options, $this->cacheTime );
+    /**
+     * Test that setting the cache epoch will cause outdated entries to be ignored
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     */
+    public function testExpiresByEpoch()
+    {
+        $store = new HashBagOStuff();
+        $cache = $this->createRevisionOutputCache($store);
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		// determine cache epoch younger than cache time
-		$cacheTime = MWTimestamp::convert( TS_UNIX, $parserOutput->getCacheTime() );
-		$epoch = MWTimestamp::convert( TS_MW, $cacheTime + 60 );
+        $options = ParserOptions::newFromAnon();
+        $cache->save($parserOutput, $this->revision, $options, $this->cacheTime);
 
-		// create a cache with the new epoch
-		$cache = $this->createRevisionOutputCache( $store, null, 60 * 60, $epoch );
-		$this->assertFalse( $cache->get( $this->revision, $options ) );
-	}
+        // determine cache epoch younger than cache time
+        $cacheTime = MWTimestamp::convert(TS_UNIX, $parserOutput->getCacheTime());
+        $epoch = MWTimestamp::convert(TS_MW, $cacheTime + 60);
 
-	/**
-	 * Test that setting the cache expiry period will cause outdated entries to be ignored
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 */
-	public function testExpiresByDuration() {
-		$store = new HashBagOStuff();
+        // create a cache with the new epoch
+        $cache = $this->createRevisionOutputCache($store, null, 60 * 60, $epoch);
+        $this->assertFalse($cache->get($this->revision, $options));
+    }
 
-		// original cache is good for an hour
-		$cache = $this->createRevisionOutputCache( $store );
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+    /**
+     * Test that setting the cache expiry period will cause outdated entries to be ignored
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     */
+    public function testExpiresByDuration()
+    {
+        $store = new HashBagOStuff();
 
-		$options = ParserOptions::newFromAnon();
-		$cache->save( $parserOutput, $this->revision, $options, $this->cacheTime );
+        // original cache is good for an hour
+        $cache = $this->createRevisionOutputCache($store);
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		// move the clock forward by 60 seconds
-		$cacheTime = MWTimestamp::convert( TS_UNIX, $parserOutput->getCacheTime() );
-		MWTimestamp::setFakeTime( $cacheTime + 60 );
+        $options = ParserOptions::newFromAnon();
+        $cache->save($parserOutput, $this->revision, $options, $this->cacheTime);
 
-		// create a cache that expires after 30 seconds
-		$cache = $this->createRevisionOutputCache( $store, null, 30 );
-		$this->assertFalse( $cache->get( $this->revision, $options ) );
-	}
+        // move the clock forward by 60 seconds
+        $cacheTime = MWTimestamp::convert(TS_UNIX, $parserOutput->getCacheTime());
+        MWTimestamp::setFakeTime($cacheTime + 60);
 
-	/**
-	 * Test that ParserOptions::isSafeToCache is respected on save
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::save
-	 */
-	public function testDoesNotStoreNotSafeToCache() {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+        // create a cache that expires after 30 seconds
+        $cache = $this->createRevisionOutputCache($store, null, 30);
+        $this->assertFalse($cache->get($this->revision, $options));
+    }
 
-		$options = ParserOptions::newFromAnon();
-		$options->setOption( 'wrapclass', 'wrapwrap' );
+    /**
+     * Test that ParserOptions::isSafeToCache is respected on save
+     * @covers \MediaWiki\Parser\RevisionOutputCache::save
+     */
+    public function testDoesNotStoreNotSafeToCache()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		$cache->save( $parserOutput, $this->revision, $options, $this->cacheTime );
+        $options = ParserOptions::newFromAnon();
+        $options->setOption('wrapclass', 'wrapwrap');
 
-		$this->assertFalse( $cache->get( $this->revision, $options ) );
-	}
+        $cache->save($parserOutput, $this->revision, $options, $this->cacheTime);
 
-	/**
-	 * Test that ParserOptions::isSafeToCache is respected on get
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 */
-	public function testDoesNotGetNotSafeToCache() {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+        $this->assertFalse($cache->get($this->revision, $options));
+    }
 
-		$cache->save( $parserOutput, $this->revision, ParserOptions::newFromAnon(), $this->cacheTime );
+    /**
+     * Test that ParserOptions::isSafeToCache is respected on get
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     */
+    public function testDoesNotGetNotSafeToCache()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		$otherOptions = ParserOptions::newFromAnon();
-		$otherOptions->setOption( 'wrapclass', 'wrapwrap' );
+        $cache->save($parserOutput, $this->revision, ParserOptions::newFromAnon(), $this->cacheTime);
 
-		$this->assertFalse( $cache->get( $this->revision, $otherOptions ) );
-	}
+        $otherOptions = ParserOptions::newFromAnon();
+        $otherOptions->setOption('wrapclass', 'wrapwrap');
 
-	/**
-	 * Test that fetching with different used option don't return a value.
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::save
-	 */
-	public function testSaveGetDifferentUsedOption() {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
-		$optionName = $this->getDummyUsedOptions()[0];
-		$parserOutput->recordOption( $optionName );
+        $this->assertFalse($cache->get($this->revision, $otherOptions));
+    }
 
-		$options1 = ParserOptions::newFromAnon();
-		$options1->setOption( $optionName, 'value1' );
-		$cache->save( $parserOutput, $this->revision, $options1, $this->cacheTime );
+    /**
+     * Test that fetching with different used option don't return a value.
+     * @covers \MediaWiki\Parser\RevisionOutputCache::get
+     * @covers \MediaWiki\Parser\RevisionOutputCache::save
+     */
+    public function testSaveGetDifferentUsedOption()
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
+        $optionName = $this->getDummyUsedOptions()[0];
+        $parserOutput->recordOption($optionName);
 
-		$options2 = ParserOptions::newFromAnon();
-		$options2->setOption( $optionName, 'value2' );
-		$this->assertFalse( $cache->get( $this->revision, $options2 ) );
-	}
+        $options1 = ParserOptions::newFromAnon();
+        $options1->setOption($optionName, 'value1');
+        $cache->save($parserOutput, $this->revision, $options1, $this->cacheTime);
 
-	/**
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::save
-	 */
-	public function testSaveNoText() {
-		$this->expectException( InvalidArgumentException::class );
-		$this->createRevisionOutputCache()->save(
-			new ParserOutput( null ),
-			$this->revision,
-			ParserOptions::newFromAnon()
-		);
-	}
+        $options2 = ParserOptions::newFromAnon();
+        $options2->setOption($optionName, 'value2');
+        $this->assertFalse($cache->get($this->revision, $options2));
+    }
 
-	public function provideCorruptData() {
-		yield 'JSON serialization, bad data' => [ 'bla bla' ];
-		yield 'JSON serialization, no _class_' => [ '{"test":"test"}' ];
-		yield 'JSON serialization, non-existing _class_' => [ '{"_class_":"NonExistentBogusClass"}' ];
+    /**
+     * @covers \MediaWiki\Parser\RevisionOutputCache::save
+     */
+    public function testSaveNoText()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->createRevisionOutputCache()->save(
+            new ParserOutput(null),
+            $this->revision,
+            ParserOptions::newFromAnon()
+        );
+    }
 
-		$wrongInstance = new JsonUnserializableSuperClass( 'test' );
-		yield 'JSON serialization, wrong class' => [ json_encode( $wrongInstance->jsonSerialize() ) ];
-	}
+    public function provideCorruptData()
+    {
+        yield 'JSON serialization, bad data' => ['bla bla'];
+        yield 'JSON serialization, no _class_' => ['{"test":"test"}'];
+        yield 'JSON serialization, non-existing _class_' => ['{"_class_":"NonExistentBogusClass"}'];
 
-	/**
-	 * Test that we handle corrupt data gracefully.
-	 * This is important for forward-compatibility with JSON serialization.
-	 * We want to be sure that we don't crash horribly if we have to roll
-	 * back to a version of the code that doesn't know about JSON.
-	 *
-	 * @dataProvider provideCorruptData
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::get
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::restoreFromJson
-	 * @param string $data
-	 */
-	public function testCorruptData( string $data ) {
-		$cache = $this->createRevisionOutputCache();
-		$parserOutput = new ParserOutput( 'TEST_TEXT' );
+        $wrongInstance = new JsonUnserializableSuperClass('test');
+        yield 'JSON serialization, wrong class' => [json_encode($wrongInstance->jsonSerialize())];
+    }
 
-		$options1 = ParserOptions::newFromAnon();
-		$cache->save( $parserOutput, $this->revision, $options1, $this->cacheTime );
+    /**
+     * Test that we handle corrupt data gracefully.
+     * This is important for forward-compatibility with JSON serialization.
+     * We want to be sure that we don't crash horribly if we have to roll
+     * back to a version of the code that doesn't know about JSON.
+     *
+     * @dataProvider provideCorruptData
+     * @covers       \MediaWiki\Parser\RevisionOutputCache::get
+     * @covers       \MediaWiki\Parser\RevisionOutputCache::restoreFromJson
+     * @param string $data
+     */
+    public function testCorruptData(string $data)
+    {
+        $cache = $this->createRevisionOutputCache();
+        $parserOutput = new ParserOutput('TEST_TEXT');
 
-		$outputKey = $cache->makeParserOutputKey(
-			$this->revision,
-			$options1,
-			$parserOutput->getUsedOptions()
-		);
+        $options1 = ParserOptions::newFromAnon();
+        $cache->save($parserOutput, $this->revision, $options1, $this->cacheTime);
 
-		$backend = TestingAccessWrapper::newFromObject( $cache )->cache;
-		$backend->set( $outputKey, $data );
+        $outputKey = $cache->makeParserOutputKey(
+            $this->revision,
+            $options1,
+            $parserOutput->getUsedOptions()
+        );
 
-		// just make sure we don't crash and burn
-		$this->assertFalse( $cache->get( $this->revision, $options1 ) );
-	}
+        $backend = TestingAccessWrapper::newFromObject($cache)->cache;
+        $backend->set($outputKey, $data);
 
-	/**
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
-	 */
-	public function testNonSerializableJsonIsReported() {
-		$testLogger = new TestLogger( true );
-		$cache = $this->createRevisionOutputCache( null, $testLogger );
+        // just make sure we don't crash and burn
+        $this->assertFalse($cache->get($this->revision, $options1));
+    }
 
-		$parserOutput = $this->createDummyParserOutput();
-		$parserOutput->setExtensionData( 'test', new User() );
-		$cache->save( $parserOutput, $this->revision, ParserOptions::newFromAnon() );
-		$this->assertArraySubmapSame(
-			[ [ LogLevel::ERROR, 'Unable to serialize JSON' ] ],
-			$testLogger->getBuffer()
-		);
-	}
+    /**
+     * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
+     */
+    public function testNonSerializableJsonIsReported()
+    {
+        $testLogger = new TestLogger(true);
+        $cache = $this->createRevisionOutputCache(null, $testLogger);
 
-	/**
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
-	 */
-	public function testCyclicStructuresDoNotBlowUpInJson() {
-		$testLogger = new TestLogger( true );
-		$cache = $this->createRevisionOutputCache( null, $testLogger );
+        $parserOutput = $this->createDummyParserOutput();
+        $parserOutput->setExtensionData('test', new User());
+        $cache->save($parserOutput, $this->revision, ParserOptions::newFromAnon());
+        $this->assertArraySubmapSame(
+            [[LogLevel::ERROR, 'Unable to serialize JSON']],
+            $testLogger->getBuffer()
+        );
+    }
 
-		$parserOutput = $this->createDummyParserOutput();
-		$cyclicArray = [ 'a' => 'b' ];
-		$cyclicArray['c'] = &$cyclicArray;
-		$parserOutput->setExtensionData( 'test', $cyclicArray );
-		$cache->save( $parserOutput, $this->revision, ParserOptions::newFromAnon() );
-		$this->assertArraySubmapSame(
-			[ [ LogLevel::ERROR, 'Unable to serialize JSON' ] ],
-			$testLogger->getBuffer()
-		);
-	}
+    /**
+     * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
+     */
+    public function testCyclicStructuresDoNotBlowUpInJson()
+    {
+        $testLogger = new TestLogger(true);
+        $cache = $this->createRevisionOutputCache(null, $testLogger);
 
-	/**
-	 * Tests that unicode characters are not \u escaped
-	 * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
-	 */
-	public function testJsonEncodeUnicode() {
-		$unicodeCharacter = "Э";
-		$cache = $this->createRevisionOutputCache( new HashBagOStuff() );
-		$parserOutput = $this->createDummyParserOutput();
-		$parserOutput->setText( $unicodeCharacter );
-		$cache->save( $parserOutput, $this->revision, ParserOptions::newFromAnon() );
+        $parserOutput = $this->createDummyParserOutput();
+        $cyclicArray = ['a' => 'b'];
+        $cyclicArray['c'] = &$cyclicArray;
+        $parserOutput->setExtensionData('test', $cyclicArray);
+        $cache->save($parserOutput, $this->revision, ParserOptions::newFromAnon());
+        $this->assertArraySubmapSame(
+            [[LogLevel::ERROR, 'Unable to serialize JSON']],
+            $testLogger->getBuffer()
+        );
+    }
 
-		$backend = TestingAccessWrapper::newFromObject( $cache )->cache;
-		$json = $backend->get(
-			$cache->makeParserOutputKey( $this->revision, ParserOptions::newFromAnon() )
-		);
-		$this->assertStringNotContainsString( "\u003E", $json );
-		$this->assertStringContainsString( $unicodeCharacter, $json );
-	}
+    /**
+     * Tests that unicode characters are not \u escaped
+     * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
+     */
+    public function testJsonEncodeUnicode()
+    {
+        $unicodeCharacter = "Э";
+        $cache = $this->createRevisionOutputCache(new HashBagOStuff());
+        $parserOutput = $this->createDummyParserOutput();
+        $parserOutput->setText($unicodeCharacter);
+        $cache->save($parserOutput, $this->revision, ParserOptions::newFromAnon());
+
+        $backend = TestingAccessWrapper::newFromObject($cache)->cache;
+        $json = $backend->get(
+            $cache->makeParserOutputKey($this->revision, ParserOptions::newFromAnon())
+        );
+        $this->assertStringNotContainsString("\u003E", $json);
+        $this->assertStringContainsString($unicodeCharacter, $json);
+    }
 }

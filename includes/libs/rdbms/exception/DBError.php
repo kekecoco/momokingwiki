@@ -29,24 +29,26 @@ use RuntimeException;
  * @stable to extend
  * @ingroup Database
  */
-class DBError extends RuntimeException {
-	/** @var IDatabase|null */
-	public $db;
+class DBError extends RuntimeException
+{
+    /** @var IDatabase|null */
+    public $db;
 
-	/**
-	 * Construct a database error
-	 * @stable to call
-	 * @param IDatabase|null $db Object which threw the error
-	 * @param string $error A simple error message to be used for debugging
-	 * @param \Throwable|null $prev Previous throwable
-	 */
-	public function __construct( ?IDatabase $db, $error, \Throwable $prev = null ) {
-		parent::__construct( $error, 0, $prev );
-		$this->db = $db;
-	}
+    /**
+     * Construct a database error
+     * @stable to call
+     * @param IDatabase|null $db Object which threw the error
+     * @param string $error A simple error message to be used for debugging
+     * @param \Throwable|null $prev Previous throwable
+     */
+    public function __construct(?IDatabase $db, $error, \Throwable $prev = null)
+    {
+        parent::__construct($error, 0, $prev);
+        $this->db = $db;
+    }
 }
 
 /**
  * @deprecated since 1.29
  */
-class_alias( DBError::class, 'DBError' );
+class_alias(DBError::class, 'DBError');

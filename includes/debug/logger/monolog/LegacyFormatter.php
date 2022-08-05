@@ -33,16 +33,20 @@ use Monolog\Formatter\NormalizerFormatter;
  * @copyright © 2013 Wikimedia Foundation and contributors
  * @see \MediaWiki\Logger\LegacyLogger
  */
-class LegacyFormatter extends NormalizerFormatter {
+class LegacyFormatter extends NormalizerFormatter
+{
 
-	public function __construct() {
-		parent::__construct( 'c' );
-	}
+    public function __construct()
+    {
+        parent::__construct('c');
+    }
 
-	public function format( array $record ): string {
-		$normalized = parent::format( $record );
-		return LegacyLogger::format(
-			$normalized['channel'], $normalized['message'], $normalized
-		);
-	}
+    public function format(array $record): string
+    {
+        $normalized = parent::format($record);
+
+        return LegacyLogger::format(
+            $normalized['channel'], $normalized['message'], $normalized
+        );
+    }
 }

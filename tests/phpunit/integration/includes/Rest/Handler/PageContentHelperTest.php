@@ -17,267 +17,280 @@ use MediaWikiIntegrationTestCase;
  * @covers \MediaWiki\Rest\Handler\PageContentHelper
  * @group Database
  */
-class PageContentHelperTest extends MediaWikiIntegrationTestCase {
-	use MockAuthorityTrait;
+class PageContentHelperTest extends MediaWikiIntegrationTestCase
+{
+    use MockAuthorityTrait;
 
-	private const NO_REVISION_ETAG = '"b620cd7841f9ea8f545f11cc44ce794f848fa2d3"';
+    private const NO_REVISION_ETAG = '"b620cd7841f9ea8f545f11cc44ce794f848fa2d3"';
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		// Clean up these tables after each test
-		$this->tablesUsed = [
-			'page',
-			'revision',
-			'comment',
-			'text',
-			'content'
-		];
-	}
+        // Clean up these tables after each test
+        $this->tablesUsed = [
+            'page',
+            'revision',
+            'comment',
+            'text',
+            'content'
+        ];
+    }
 
-	/**
-	 * @param array $params
-	 * @param Authority|null $authority
-	 * @return PageContentHelper
-	 * @throws \Exception
-	 */
-	private function newHelper(
-		array $params = [],
-		Authority $authority = null
-	): PageContentHelper {
-		$helper = new PageContentHelper(
-			new HashConfig( [
-				'RightsUrl' => 'https://example.com/rights',
-				'RightsText' => 'some rights',
-			] ),
-			$this->getServiceContainer()->getRevisionLookup(),
-			$this->getServiceContainer()->getTitleFormatter(),
-			$this->getServiceContainer()->getPageStore()
-		);
+    /**
+     * @param array $params
+     * @param Authority|null $authority
+     * @return PageContentHelper
+     * @throws \Exception
+     */
+    private function newHelper(
+        array $params = [],
+        Authority $authority = null
+    ): PageContentHelper
+    {
+        $helper = new PageContentHelper(
+            new HashConfig([
+                'RightsUrl'  => 'https://example.com/rights',
+                'RightsText' => 'some rights',
+            ]),
+            $this->getServiceContainer()->getRevisionLookup(),
+            $this->getServiceContainer()->getTitleFormatter(),
+            $this->getServiceContainer()->getPageStore()
+        );
 
-		$authority = $authority ?: $this->mockRegisteredUltimateAuthority();
-		$helper->init( $authority, $params );
-		return $helper;
-	}
+        $authority = $authority ?: $this->mockRegisteredUltimateAuthority();
+        $helper->init($authority, $params);
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getRole()
-	 */
-	public function testGetRole() {
-		$helper = $this->newHelper();
-		$this->assertSame( SlotRecord::MAIN, $helper->getRole() );
-	}
+        return $helper;
+    }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
-	 */
-	public function testGetTitle() {
-		$this->getExistingTestPage( 'Foo' );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getRole()
+     */
+    public function testGetRole()
+    {
+        $helper = $this->newHelper();
+        $this->assertSame(SlotRecord::MAIN, $helper->getRole());
+    }
 
-		$helper = $this->newHelper( [ 'title' => 'Foo' ] );
-		$this->assertSame( 'Foo', $helper->getTitleText() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
+     */
+    public function testGetTitle()
+    {
+        $this->getExistingTestPage('Foo');
 
-		$this->assertInstanceOf( ExistingPageRecord::class, $helper->getPage() );
-		$this->assertSame(
-			'Foo',
-			$this->getServiceContainer()->getTitleFormatter()->getPrefixedDBkey( $helper->getPage() )
-		);
-	}
+        $helper = $this->newHelper(['title' => 'Foo']);
+        $this->assertSame('Foo', $helper->getTitleText());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
-	 */
-	public function testGetTargetRevisionAndContent() {
-		$page = $this->getExistingTestPage( __METHOD__ );
-		$rev = $page->getRevisionRecord();
+        $this->assertInstanceOf(ExistingPageRecord::class, $helper->getPage());
+        $this->assertSame(
+            'Foo',
+            $this->getServiceContainer()->getTitleFormatter()->getPrefixedDBkey($helper->getPage())
+        );
+    }
 
-		$helper = $this->newHelper( [ 'title' => $page->getTitle()->getPrefixedDBkey() ] );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
+     */
+    public function testGetTargetRevisionAndContent()
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
+        $rev = $page->getRevisionRecord();
 
-		$targetRev = $helper->getTargetRevision();
-		$this->assertInstanceOf( RevisionRecord::class, $targetRev );
-		$this->assertSame( $rev->getId(), $targetRev->getId() );
+        $helper = $this->newHelper(['title' => $page->getTitle()->getPrefixedDBkey()]);
 
-		$pageContent = $helper->getContent();
-		$this->assertSame(
-			$rev->getContent( SlotRecord::MAIN )->serialize(),
-			$pageContent->serialize()
-		);
-	}
+        $targetRev = $helper->getTargetRevision();
+        $this->assertInstanceOf(RevisionRecord::class, $targetRev);
+        $this->assertSame($rev->getId(), $targetRev->getId());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
-	 */
-	public function testNoTitle() {
-		$helper = $this->newHelper();
+        $pageContent = $helper->getContent();
+        $this->assertSame(
+            $rev->getContent(SlotRecord::MAIN)->serialize(),
+            $pageContent->serialize()
+        );
+    }
 
-		$this->assertNull( $helper->getTitleText() );
-		$this->assertNull( $helper->getPage() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
+     */
+    public function testNoTitle()
+    {
+        $helper = $this->newHelper();
 
-		$this->assertFalse( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertNull($helper->getTitleText());
+        $this->assertNull($helper->getPage());
 
-		$this->assertNull( $helper->getTargetRevision() );
+        $this->assertFalse($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		$this->assertNull( $helper->getLastModified() );
-		$this->assertSame( self::NO_REVISION_ETAG, $helper->getETag() );
+        $this->assertNull($helper->getTargetRevision());
 
-		try {
-			$helper->getContent();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
+        $this->assertNull($helper->getLastModified());
+        $this->assertSame(self::NO_REVISION_ETAG, $helper->getETag());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
-	}
+        try {
+            $helper->getContent();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
-	 */
-	public function testNonExistingPage() {
-		$page = $this->getNonexistingTestPage( __METHOD__ );
-		$title = $page->getTitle();
-		$helper = $this->newHelper( [ 'title' => $title->getPrefixedDBkey() ] );
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
+    }
 
-		$this->assertSame( $title->getPrefixedDBkey(), $helper->getTitleText() );
-		$this->assertNull( $helper->getPage() );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
+     */
+    public function testNonExistingPage()
+    {
+        $page = $this->getNonexistingTestPage(__METHOD__);
+        $title = $page->getTitle();
+        $helper = $this->newHelper(['title' => $title->getPrefixedDBkey()]);
 
-		$this->assertFalse( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertSame($title->getPrefixedDBkey(), $helper->getTitleText());
+        $this->assertNull($helper->getPage());
 
-		$this->assertNull( $helper->getTargetRevision() );
+        $this->assertFalse($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		$this->assertNull( $helper->getLastModified() );
-		$this->assertSame( self::NO_REVISION_ETAG, $helper->getETag() );
+        $this->assertNull($helper->getTargetRevision());
 
-		try {
-			$helper->getContent();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
+        $this->assertNull($helper->getLastModified());
+        $this->assertSame(self::NO_REVISION_ETAG, $helper->getETag());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 404, $ex->getCode() );
-		}
-	}
+        try {
+            $helper->getContent();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
-	 */
-	public function testForbidenPage() {
-		$page = $this->getExistingTestPage( __METHOD__ );
-		$title = $page->getTitle();
-		$helper = $this->newHelper(
-			[ 'title' => $title->getPrefixedDBkey() ],
-			$this->mockAnonNullAuthority()
-		);
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(404, $ex->getCode());
+        }
+    }
 
-		$this->assertSame( $title->getPrefixedDBkey(), $helper->getTitleText() );
-		$this->assertTrue( $helper->getPage()->isSamePageAs( $title ) );
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTitleText()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getPage()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::isAccessible()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::hasContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getTargetRevision()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getContent()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getLastModified()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getETag()
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::checkAccess()
+     */
+    public function testForbidenPage()
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
+        $title = $page->getTitle();
+        $helper = $this->newHelper(
+            ['title' => $title->getPrefixedDBkey()],
+            $this->mockAnonNullAuthority()
+        );
 
-		$this->assertTrue( $helper->hasContent() );
-		$this->assertFalse( $helper->isAccessible() );
+        $this->assertSame($title->getPrefixedDBkey(), $helper->getTitleText());
+        $this->assertTrue($helper->getPage()->isSamePageAs($title));
 
-		$this->assertNull( $helper->getLastModified() );
+        $this->assertTrue($helper->hasContent());
+        $this->assertFalse($helper->isAccessible());
 
-		try {
-			$helper->checkAccess();
-			$this->fail( 'Expected HttpException' );
-		} catch ( HttpException $ex ) {
-			$this->assertSame( 403, $ex->getCode() );
-		}
-	}
+        $this->assertNull($helper->getLastModified());
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::getParamSettings()
-	 */
-	public function testParameterSettings() {
-		$helper = $this->newHelper();
-		$settings = $helper->getParamSettings();
-		$this->assertArrayHasKey( 'title', $settings );
-	}
+        try {
+            $helper->checkAccess();
+            $this->fail('Expected HttpException');
+        } catch (HttpException $ex) {
+            $this->assertSame(403, $ex->getCode());
+        }
+    }
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::setCacheControl()
-	 */
-	public function testCacheControl() {
-		$helper = $this->newHelper();
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::getParamSettings()
+     */
+    public function testParameterSettings()
+    {
+        $helper = $this->newHelper();
+        $settings = $helper->getParamSettings();
+        $this->assertArrayHasKey('title', $settings);
+    }
 
-		$response = new Response();
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::setCacheControl()
+     */
+    public function testCacheControl()
+    {
+        $helper = $this->newHelper();
 
-		$helper->setCacheControl( $response ); // default
-		$this->assertStringContainsString( 'max-age=5', $response->getHeaderLine( 'Cache-Control' ) );
+        $response = new Response();
 
-		$helper->setCacheControl( $response, 2 ); // explicit
-		$this->assertStringContainsString( 'max-age=2', $response->getHeaderLine( 'Cache-Control' ) );
+        $helper->setCacheControl($response); // default
+        $this->assertStringContainsString('max-age=5', $response->getHeaderLine('Cache-Control'));
 
-		$helper->setCacheControl( $response, 1000 * 1000 ); // too big
-		$this->assertStringContainsString( 'max-age=5', $response->getHeaderLine( 'Cache-Control' ) );
-	}
+        $helper->setCacheControl($response, 2); // explicit
+        $this->assertStringContainsString('max-age=2', $response->getHeaderLine('Cache-Control'));
 
-	/**
-	 * @covers \MediaWiki\Rest\Handler\PageContentHelper::constructMetadata()
-	 */
-	public function testConstructMetadata() {
-		$page = $this->getExistingTestPage( __METHOD__ );
-		$title = $page->getTitle();
+        $helper->setCacheControl($response, 1000 * 1000); // too big
+        $this->assertStringContainsString('max-age=5', $response->getHeaderLine('Cache-Control'));
+    }
 
-		$revision = $page->getRevisionRecord();
-		$content = $revision->getContent( SlotRecord::MAIN );
-		$expected = [
-			'id' => $title->getArticleID(),
-			'key' => $title->getPrefixedDBkey(),
-			'title' => $title->getPrefixedText(),
-			'latest' => [
-				'id' => $revision->getId(),
-				'timestamp' => wfTimestampOrNull( TS_ISO_8601, $revision->getTimestamp() )
-			],
-			'content_model' => $content->getModel(),
-			'license' => [
-				'url' => 'https://example.com/rights',
-				'title' => 'some rights',
-			]
-		];
+    /**
+     * @covers \MediaWiki\Rest\Handler\PageContentHelper::constructMetadata()
+     */
+    public function testConstructMetadata()
+    {
+        $page = $this->getExistingTestPage(__METHOD__);
+        $title = $page->getTitle();
 
-		$helper = $this->newHelper( [ 'title' => $title->getPrefixedDBkey() ] );
-		$data = $helper->constructMetadata();
+        $revision = $page->getRevisionRecord();
+        $content = $revision->getContent(SlotRecord::MAIN);
+        $expected = [
+            'id'            => $title->getArticleID(),
+            'key'           => $title->getPrefixedDBkey(),
+            'title'         => $title->getPrefixedText(),
+            'latest'        => [
+                'id'        => $revision->getId(),
+                'timestamp' => wfTimestampOrNull(TS_ISO_8601, $revision->getTimestamp())
+            ],
+            'content_model' => $content->getModel(),
+            'license'       => [
+                'url'   => 'https://example.com/rights',
+                'title' => 'some rights',
+            ]
+        ];
 
-		$this->assertEquals( $expected, $data );
-	}
+        $helper = $this->newHelper(['title' => $title->getPrefixedDBkey()]);
+        $data = $helper->constructMetadata();
+
+        $this->assertEquals($expected, $data);
+    }
 
 }

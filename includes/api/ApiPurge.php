@@ -25,171 +25,180 @@ use MediaWiki\Page\WikiPageFactory;
  * API interface for page purging
  * @ingroup API
  */
-class ApiPurge extends ApiBase {
-	/** @var ApiPageSet|null */
-	private $mPageSet = null;
+class ApiPurge extends ApiBase
+{
+    /** @var ApiPageSet|null */
+    private $mPageSet = null;
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
+    /** @var WikiPageFactory */
+    private $wikiPageFactory;
 
-	/** @var TitleFormatter */
-	private $titleFormatter;
+    /** @var TitleFormatter */
+    private $titleFormatter;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param TitleFormatter $titleFormatter
-	 */
-	public function __construct(
-		ApiMain $mainModule,
-		$moduleName,
-		WikiPageFactory $wikiPageFactory,
-		TitleFormatter $titleFormatter
-	) {
-		parent::__construct( $mainModule, $moduleName );
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->titleFormatter = $titleFormatter;
-	}
+    /**
+     * @param ApiMain $mainModule
+     * @param string $moduleName
+     * @param WikiPageFactory $wikiPageFactory
+     * @param TitleFormatter $titleFormatter
+     */
+    public function __construct(
+        ApiMain $mainModule,
+        $moduleName,
+        WikiPageFactory $wikiPageFactory,
+        TitleFormatter $titleFormatter
+    )
+    {
+        parent::__construct($mainModule, $moduleName);
+        $this->wikiPageFactory = $wikiPageFactory;
+        $this->titleFormatter = $titleFormatter;
+    }
 
-	/**
-	 * Purges the cache of a page
-	 */
-	public function execute() {
-		$user = $this->getUser();
+    /**
+     * Purges the cache of a page
+     */
+    public function execute()
+    {
+        $user = $this->getUser();
 
-		// Fail early if the user is sitewide blocked.
-		$block = $user->getBlock();
-		if ( $block && $block->isSitewide() ) {
-			$this->dieBlocked( $block );
-		}
+        // Fail early if the user is sitewide blocked.
+        $block = $user->getBlock();
+        if ($block && $block->isSitewide()) {
+            $this->dieBlocked($block);
+        }
 
-		$params = $this->extractRequestParams();
+        $params = $this->extractRequestParams();
 
-		$continuationManager = new ApiContinuationManager( $this, [], [] );
-		$this->setContinuationManager( $continuationManager );
+        $continuationManager = new ApiContinuationManager($this, [], []);
+        $this->setContinuationManager($continuationManager);
 
-		$forceLinkUpdate = $params['forcelinkupdate'];
-		$forceRecursiveLinkUpdate = $params['forcerecursivelinkupdate'];
-		$pageSet = $this->getPageSet();
-		$pageSet->execute();
+        $forceLinkUpdate = $params['forcelinkupdate'];
+        $forceRecursiveLinkUpdate = $params['forcerecursivelinkupdate'];
+        $pageSet = $this->getPageSet();
+        $pageSet->execute();
 
-		$result = $pageSet->getInvalidTitlesAndRevisions();
-		$userName = $user->getName();
+        $result = $pageSet->getInvalidTitlesAndRevisions();
+        $userName = $user->getName();
 
-		foreach ( $pageSet->getGoodPages() as $pageIdentity ) {
-			$title = $this->titleFormatter->getPrefixedText( $pageIdentity );
-			$r = [
-				'ns' => $pageIdentity->getNamespace(),
-				'title' => $title,
-			];
-			$page = $this->wikiPageFactory->newFromTitle( $pageIdentity );
-			if ( !$user->pingLimiter( 'purge' ) ) {
-				// Directly purge and skip the UI part of purge()
-				$page->doPurge();
-				$r['purged'] = true;
-			} else {
-				$this->addWarning( 'apierror-ratelimited' );
-			}
+        foreach ($pageSet->getGoodPages() as $pageIdentity) {
+            $title = $this->titleFormatter->getPrefixedText($pageIdentity);
+            $r = [
+                'ns'    => $pageIdentity->getNamespace(),
+                'title' => $title,
+            ];
+            $page = $this->wikiPageFactory->newFromTitle($pageIdentity);
+            if (!$user->pingLimiter('purge')) {
+                // Directly purge and skip the UI part of purge()
+                $page->doPurge();
+                $r['purged'] = true;
+            } else {
+                $this->addWarning('apierror-ratelimited');
+            }
 
-			if ( $forceLinkUpdate || $forceRecursiveLinkUpdate ) {
-				if ( !$user->pingLimiter( 'linkpurge' ) ) {
-					# Logging to better see expensive usage patterns
-					if ( $forceRecursiveLinkUpdate ) {
-						LoggerFactory::getInstance( 'RecursiveLinkPurge' )->info(
-							"Recursive link purge enqueued for {title}",
-							[
-								'user' => $userName,
-								'title' => $title
-							]
-						);
-					}
+            if ($forceLinkUpdate || $forceRecursiveLinkUpdate) {
+                if (!$user->pingLimiter('linkpurge')) {
+                    # Logging to better see expensive usage patterns
+                    if ($forceRecursiveLinkUpdate) {
+                        LoggerFactory::getInstance('RecursiveLinkPurge')->info(
+                            "Recursive link purge enqueued for {title}",
+                            [
+                                'user'  => $userName,
+                                'title' => $title
+                            ]
+                        );
+                    }
 
-					$page->updateParserCache( [
-						'causeAction' => 'api-purge',
-						'causeAgent' => $userName,
-					] );
-					$page->doSecondaryDataUpdates( [
-						'recursive' => $forceRecursiveLinkUpdate,
-						'causeAction' => 'api-purge',
-						'causeAgent' => $userName,
-						'defer' => DeferredUpdates::PRESEND,
-					] );
-					$r['linkupdate'] = true;
-				} else {
-					$this->addWarning( 'apierror-ratelimited' );
-					$forceLinkUpdate = false;
-				}
-			}
+                    $page->updateParserCache([
+                        'causeAction' => 'api-purge',
+                        'causeAgent'  => $userName,
+                    ]);
+                    $page->doSecondaryDataUpdates([
+                        'recursive'   => $forceRecursiveLinkUpdate,
+                        'causeAction' => 'api-purge',
+                        'causeAgent'  => $userName,
+                        'defer'       => DeferredUpdates::PRESEND,
+                    ]);
+                    $r['linkupdate'] = true;
+                } else {
+                    $this->addWarning('apierror-ratelimited');
+                    $forceLinkUpdate = false;
+                }
+            }
 
-			$result[] = $r;
-		}
-		$apiResult = $this->getResult();
-		ApiResult::setIndexedTagName( $result, 'page' );
-		$apiResult->addValue( null, $this->getModuleName(), $result );
+            $result[] = $r;
+        }
+        $apiResult = $this->getResult();
+        ApiResult::setIndexedTagName($result, 'page');
+        $apiResult->addValue(null, $this->getModuleName(), $result);
 
-		$values = $pageSet->getNormalizedTitlesAsResult( $apiResult );
-		if ( $values ) {
-			$apiResult->addValue( null, 'normalized', $values );
-		}
-		$values = $pageSet->getConvertedTitlesAsResult( $apiResult );
-		if ( $values ) {
-			$apiResult->addValue( null, 'converted', $values );
-		}
-		$values = $pageSet->getRedirectTitlesAsResult( $apiResult );
-		if ( $values ) {
-			$apiResult->addValue( null, 'redirects', $values );
-		}
+        $values = $pageSet->getNormalizedTitlesAsResult($apiResult);
+        if ($values) {
+            $apiResult->addValue(null, 'normalized', $values);
+        }
+        $values = $pageSet->getConvertedTitlesAsResult($apiResult);
+        if ($values) {
+            $apiResult->addValue(null, 'converted', $values);
+        }
+        $values = $pageSet->getRedirectTitlesAsResult($apiResult);
+        if ($values) {
+            $apiResult->addValue(null, 'redirects', $values);
+        }
 
-		$this->setContinuationManager( null );
-		$continuationManager->setContinuationIntoResult( $apiResult );
-	}
+        $this->setContinuationManager(null);
+        $continuationManager->setContinuationIntoResult($apiResult);
+    }
 
-	/**
-	 * Get a cached instance of an ApiPageSet object
-	 * @return ApiPageSet
-	 */
-	private function getPageSet() {
-		if ( $this->mPageSet === null ) {
-			$this->mPageSet = new ApiPageSet( $this );
-		}
+    /**
+     * Get a cached instance of an ApiPageSet object
+     * @return ApiPageSet
+     */
+    private function getPageSet()
+    {
+        if ($this->mPageSet === null) {
+            $this->mPageSet = new ApiPageSet($this);
+        }
 
-		return $this->mPageSet;
-	}
+        return $this->mPageSet;
+    }
 
-	public function isWriteMode() {
-		return true;
-	}
+    public function isWriteMode()
+    {
+        return true;
+    }
 
-	public function mustBePosted() {
-		return true;
-	}
+    public function mustBePosted()
+    {
+        return true;
+    }
 
-	public function getAllowedParams( $flags = 0 ) {
-		$result = [
-			'forcelinkupdate' => false,
-			'forcerecursivelinkupdate' => false,
-			'continue' => [
-				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
-			],
-		];
-		if ( $flags ) {
-			$result += $this->getPageSet()->getFinalParams( $flags );
-		}
+    public function getAllowedParams($flags = 0)
+    {
+        $result = [
+            'forcelinkupdate'          => false,
+            'forcerecursivelinkupdate' => false,
+            'continue'                 => [
+                ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+            ],
+        ];
+        if ($flags) {
+            $result += $this->getPageSet()->getFinalParams($flags);
+        }
 
-		return $result;
-	}
+        return $result;
+    }
 
-	protected function getExamplesMessages() {
-		return [
-			'action=purge&titles=Main_Page|API'
-				=> 'apihelp-purge-example-simple',
-			'action=purge&generator=allpages&gapnamespace=0&gaplimit=10'
-				=> 'apihelp-purge-example-generator',
-		];
-	}
+    protected function getExamplesMessages()
+    {
+        return [
+            'action=purge&titles=Main_Page|API'
+            => 'apihelp-purge-example-simple',
+            'action=purge&generator=allpages&gapnamespace=0&gaplimit=10'
+            => 'apihelp-purge-example-generator',
+        ];
+    }
 
-	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Purge';
-	}
+    public function getHelpUrls()
+    {
+        return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Purge';
+    }
 }

@@ -37,17 +37,20 @@
  * @see $wgRCFeeds
  * @since 1.22
  */
-class UDPRCFeedEngine extends FormattedRCFeed {
+class UDPRCFeedEngine extends FormattedRCFeed
+{
 
-	/**
-	 * @see FormattedRCFeed::send
-	 * @param array $feed
-	 * @param string $line
-	 * @return bool
-	 */
-	public function send( array $feed, $line ) {
-		$transport = UDPTransport::newFromString( $feed['uri'] );
-		$transport->emit( $line );
-		return true;
-	}
+    /**
+     * @param array $feed
+     * @param string $line
+     * @return bool
+     * @see FormattedRCFeed::send
+     */
+    public function send(array $feed, $line)
+    {
+        $transport = UDPTransport::newFromString($feed['uri']);
+        $transport->emit($line);
+
+        return true;
+    }
 }

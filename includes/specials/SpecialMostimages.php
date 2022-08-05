@@ -32,48 +32,55 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class MostimagesPage extends ImageQueryPage {
+class MostimagesPage extends ImageQueryPage
+{
 
-	/**
-	 * @param ILoadBalancer|string $loadBalancer
-	 */
-	public function __construct( $loadBalancer ) {
-		parent::__construct( is_string( $loadBalancer ) ? $loadBalancer : 'Mostimages' );
-		// This class is extended and therefor fallback to global state - T265307
-		if ( !$loadBalancer instanceof ILoadBalancer ) {
-			$loadBalancer = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		}
-		$this->setDBLoadBalancer( $loadBalancer );
-	}
+    /**
+     * @param ILoadBalancer|string $loadBalancer
+     */
+    public function __construct($loadBalancer)
+    {
+        parent::__construct(is_string($loadBalancer) ? $loadBalancer : 'Mostimages');
+        // This class is extended and therefor fallback to global state - T265307
+        if (!$loadBalancer instanceof ILoadBalancer) {
+            $loadBalancer = MediaWikiServices::getInstance()->getDBLoadBalancer();
+        }
+        $this->setDBLoadBalancer($loadBalancer);
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'imagelinks' ],
-			'fields' => [
-				'namespace' => NS_FILE,
-				'title' => 'il_to',
-				'value' => 'COUNT(*)'
-			],
-			'options' => [
-				'GROUP BY' => 'il_to',
-				'HAVING' => 'COUNT(*) > 1'
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'  => ['imagelinks'],
+            'fields'  => [
+                'namespace' => NS_FILE,
+                'title'     => 'il_to',
+                'value'     => 'COUNT(*)'
+            ],
+            'options' => [
+                'GROUP BY' => 'il_to',
+                'HAVING'   => 'COUNT(*) > 1'
+            ]
+        ];
+    }
 
-	protected function getCellHtml( $row ) {
-		return $this->msg( 'nimagelinks' )->numParams( $row->value )->escaped() . '<br />';
-	}
+    protected function getCellHtml($row)
+    {
+        return $this->msg('nimagelinks')->numParams($row->value)->escaped() . '<br />';
+    }
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

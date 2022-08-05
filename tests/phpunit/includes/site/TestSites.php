@@ -26,87 +26,90 @@
  *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-class TestSites {
+class TestSites
+{
 
-	/**
-	 * @since 1.21
-	 *
-	 * @return array
-	 */
-	public static function getSites() {
-		$sites = [];
+    /**
+     * @return array
+     * @since 1.21
+     *
+     */
+    public static function getSites()
+    {
+        $sites = [];
 
-		$site = new Site();
-		$site->setGlobalId( 'foobar' );
-		$sites[] = $site;
+        $site = new Site();
+        $site->setGlobalId('foobar');
+        $sites[] = $site;
 
-		$site = new MediaWikiSite();
-		$site->setGlobalId( 'enwiktionary' );
-		$site->setGroup( 'wiktionary' );
-		$site->setLanguageCode( 'en' );
-		$site->addNavigationId( 'enwiktionary' );
-		$site->setPath( MediaWikiSite::PATH_PAGE, "https://en.wiktionary.org/wiki/$1" );
-		$site->setPath( MediaWikiSite::PATH_FILE, "https://en.wiktionary.org/w/$1" );
-		$sites[] = $site;
+        $site = new MediaWikiSite();
+        $site->setGlobalId('enwiktionary');
+        $site->setGroup('wiktionary');
+        $site->setLanguageCode('en');
+        $site->addNavigationId('enwiktionary');
+        $site->setPath(MediaWikiSite::PATH_PAGE, "https://en.wiktionary.org/wiki/$1");
+        $site->setPath(MediaWikiSite::PATH_FILE, "https://en.wiktionary.org/w/$1");
+        $sites[] = $site;
 
-		$site = new MediaWikiSite();
-		$site->setGlobalId( 'dewiktionary' );
-		$site->setGroup( 'wiktionary' );
-		$site->setLanguageCode( 'de' );
-		$site->addInterwikiId( 'dewiktionary' );
-		$site->addInterwikiId( 'wiktionaryde' );
-		$site->setPath( MediaWikiSite::PATH_PAGE, "https://de.wiktionary.org/wiki/$1" );
-		$site->setPath( MediaWikiSite::PATH_FILE, "https://de.wiktionary.org/w/$1" );
-		$sites[] = $site;
+        $site = new MediaWikiSite();
+        $site->setGlobalId('dewiktionary');
+        $site->setGroup('wiktionary');
+        $site->setLanguageCode('de');
+        $site->addInterwikiId('dewiktionary');
+        $site->addInterwikiId('wiktionaryde');
+        $site->setPath(MediaWikiSite::PATH_PAGE, "https://de.wiktionary.org/wiki/$1");
+        $site->setPath(MediaWikiSite::PATH_FILE, "https://de.wiktionary.org/w/$1");
+        $sites[] = $site;
 
-		$site = new Site();
-		$site->setGlobalId( 'spam' );
-		$site->setGroup( 'spam' );
-		$site->setLanguageCode( 'en' );
-		$site->addNavigationId( 'spam' );
-		$site->addNavigationId( 'spamz' );
-		$site->addInterwikiId( 'spamzz' );
-		$site->setLinkPath( "http://spamzz.test/testing/" );
-		$sites[] = $site;
+        $site = new Site();
+        $site->setGlobalId('spam');
+        $site->setGroup('spam');
+        $site->setLanguageCode('en');
+        $site->addNavigationId('spam');
+        $site->addNavigationId('spamz');
+        $site->addInterwikiId('spamzz');
+        $site->setLinkPath("http://spamzz.test/testing/");
+        $sites[] = $site;
 
-		/**
-		 * Add at least one right-to-left language (current RTL languages in MediaWiki core are:
-		 * aeb, ar, arc, arz, azb, bcc, bqi, ckb, dv, en_rtl, fa, glk, he, khw, kk_arab, kk_cn,
-		 * ks_arab, ku_arab, lrc, mzn, pnb, ps, sd, ug_arab, ur, yi).
-		 */
-		$languageCodes = [
-			'de',
-			'en',
-			'fa', // right-to-left
-			'nl',
-			'nn',
-			'no',
-			'sr',
-			'sv',
-		];
-		foreach ( $languageCodes as $langCode ) {
-			$site = new MediaWikiSite();
-			$site->setGlobalId( $langCode . 'wiki' );
-			$site->setGroup( 'wikipedia' );
-			$site->setLanguageCode( $langCode );
-			$site->addInterwikiId( $langCode );
-			$site->addNavigationId( $langCode );
-			$site->setPath( MediaWikiSite::PATH_PAGE, "https://$langCode.wikipedia.org/wiki/$1" );
-			$site->setPath( MediaWikiSite::PATH_FILE, "https://$langCode.wikipedia.org/w/$1" );
-			$sites[] = $site;
-		}
+        /**
+         * Add at least one right-to-left language (current RTL languages in MediaWiki core are:
+         * aeb, ar, arc, arz, azb, bcc, bqi, ckb, dv, en_rtl, fa, glk, he, khw, kk_arab, kk_cn,
+         * ks_arab, ku_arab, lrc, mzn, pnb, ps, sd, ug_arab, ur, yi).
+         */
+        $languageCodes = [
+            'de',
+            'en',
+            'fa', // right-to-left
+            'nl',
+            'nn',
+            'no',
+            'sr',
+            'sv',
+        ];
+        foreach ($languageCodes as $langCode) {
+            $site = new MediaWikiSite();
+            $site->setGlobalId($langCode . 'wiki');
+            $site->setGroup('wikipedia');
+            $site->setLanguageCode($langCode);
+            $site->addInterwikiId($langCode);
+            $site->addNavigationId($langCode);
+            $site->setPath(MediaWikiSite::PATH_PAGE, "https://$langCode.wikipedia.org/wiki/$1");
+            $site->setPath(MediaWikiSite::PATH_FILE, "https://$langCode.wikipedia.org/w/$1");
+            $sites[] = $site;
+        }
 
-		return $sites;
-	}
+        return $sites;
+    }
 
-	/**
-	 * Inserts sites into the database for the unit tests that need them.
-	 *
-	 * @since 0.1
-	 */
-	public static function insertIntoDb() {
-		$sitesTable = \MediaWiki\MediaWikiServices::getInstance()->getSiteStore();
-		$sitesTable->clear();
-		$sitesTable->saveSites( self::getSites() );
-	}
+    /**
+     * Inserts sites into the database for the unit tests that need them.
+     *
+     * @since 0.1
+     */
+    public static function insertIntoDb()
+    {
+        $sitesTable = \MediaWiki\MediaWikiServices::getInstance()->getSiteStore();
+        $sitesTable->clear();
+        $sitesTable->saveSites(self::getSites());
+    }
 }

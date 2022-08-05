@@ -32,155 +32,169 @@ use MediaWiki\User\UserIdentity;
  * @newable
  * @since 1.36
  */
-class UltimateAuthority implements Authority {
+class UltimateAuthority implements Authority
+{
 
-	/** @var UserIdentity */
-	private $actor;
+    /** @var UserIdentity */
+    private $actor;
 
-	/** @var bool */
-	private $isTemp;
+    /** @var bool */
+    private $isTemp;
 
-	/**
-	 * @stable to call
-	 * @param UserIdentity $actor
-	 * @param bool $isTemp
-	 */
-	public function __construct( UserIdentity $actor, $isTemp = false ) {
-		$this->actor = $actor;
-		$this->isTemp = $isTemp;
-	}
+    /**
+     * @stable to call
+     * @param UserIdentity $actor
+     * @param bool $isTemp
+     */
+    public function __construct(UserIdentity $actor, $isTemp = false)
+    {
+        $this->actor = $actor;
+        $this->isTemp = $isTemp;
+    }
 
-	/**
-	 * The user identity associated with this authority.
-	 *
-	 * @return UserIdentity
-	 */
-	public function getUser(): UserIdentity {
-		return $this->actor;
-	}
+    /**
+     * The user identity associated with this authority.
+     *
+     * @return UserIdentity
+     */
+    public function getUser(): UserIdentity
+    {
+        return $this->actor;
+    }
 
-	/**
-	 * @param int $freshness
-	 *
-	 * @return ?Block always null
-	 * @since 1.37
-	 */
-	public function getBlock( int $freshness = self::READ_NORMAL ): ?Block {
-		return null;
-	}
+    /**
+     * @param int $freshness
+     *
+     * @return ?Block always null
+     * @since 1.37
+     */
+    public function getBlock(int $freshness = self::READ_NORMAL): ?Block
+    {
+        return null;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return bool
-	 */
-	public function isAllowed( string $permission ): bool {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @return bool
+     */
+    public function isAllowed(string $permission): bool
+    {
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return bool
-	 */
-	public function isAllowedAny( ...$permissions ): bool {
-		if ( !$permissions ) {
-			throw new InvalidArgumentException( 'At least one permission must be specified' );
-		}
+    /**
+     * @inheritDoc
+     *
+     * @return bool
+     */
+    public function isAllowedAny(...$permissions): bool
+    {
+        if (!$permissions) {
+            throw new InvalidArgumentException('At least one permission must be specified');
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @return bool
-	 */
-	public function isAllowedAll( ...$permissions ): bool {
-		if ( !$permissions ) {
-			throw new InvalidArgumentException( 'At least one permission must be specified' );
-		}
+    /**
+     * @inheritDoc
+     *
+     * @return bool
+     */
+    public function isAllowedAll(...$permissions): bool
+    {
+        if (!$permissions) {
+            throw new InvalidArgumentException('At least one permission must be specified');
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function probablyCan(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function probablyCan(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function definitelyCan(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function definitelyCan(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function authorizeRead(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function authorizeRead(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        return true;
+    }
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param string $action
-	 * @param PageIdentity $target
-	 * @param PermissionStatus|null $status
-	 *
-	 * @return bool
-	 */
-	public function authorizeWrite(
-		string $action,
-		PageIdentity $target,
-		PermissionStatus $status = null
-	): bool {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param string $action
+     * @param PageIdentity $target
+     * @param PermissionStatus|null $status
+     *
+     * @return bool
+     */
+    public function authorizeWrite(
+        string $action,
+        PageIdentity $target,
+        PermissionStatus $status = null
+    ): bool
+    {
+        return true;
+    }
 
-	public function isRegistered(): bool {
-		return $this->actor->isRegistered();
-	}
+    public function isRegistered(): bool
+    {
+        return $this->actor->isRegistered();
+    }
 
-	public function isTemp(): bool {
-		return $this->isTemp;
-	}
+    public function isTemp(): bool
+    {
+        return $this->isTemp;
+    }
 
-	public function isNamed(): bool {
-		return $this->isRegistered() && !$this->isTemp();
-	}
+    public function isNamed(): bool
+    {
+        return $this->isRegistered() && !$this->isTemp();
+    }
 }

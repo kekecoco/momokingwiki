@@ -28,9 +28,10 @@
  * @ingroup JobQueue
  * @since 1.33
  */
-interface GenericParameterJob extends IJobSpecification {
-	/**
-	 * @param array $params JSON-serializable map of parameters
-	 */
-	public function __construct( array $params );
+interface GenericParameterJob extends IJobSpecification
+{
+    /**
+     * @param array $params JSON-serializable map of parameters
+     */
+    public function __construct(array $params);
 }

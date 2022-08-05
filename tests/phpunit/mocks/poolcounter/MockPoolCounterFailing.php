@@ -20,19 +20,24 @@
  * @file
  */
 
-class MockPoolCounterFailing extends PoolCounter {
-	public function __construct() {
-	}
+class MockPoolCounterFailing extends PoolCounter
+{
+    public function __construct()
+    {
+    }
 
-	public function acquireForMe( $timeout = null ) {
-		return Status::newGood( PoolCounter::QUEUE_FULL );
-	}
+    public function acquireForMe($timeout = null)
+    {
+        return Status::newGood(PoolCounter::QUEUE_FULL);
+    }
 
-	public function acquireForAnyone( $timeout = null ) {
-		return Status::newGood( PoolCounter::QUEUE_FULL );
-	}
+    public function acquireForAnyone($timeout = null)
+    {
+        return Status::newGood(PoolCounter::QUEUE_FULL);
+    }
 
-	public function release() {
-		return Status::newGood( PoolCounter::NOT_LOCKED );
-	}
+    public function release()
+    {
+        return Status::newGood(PoolCounter::NOT_LOCKED);
+    }
 }

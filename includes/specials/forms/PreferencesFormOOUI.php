@@ -23,208 +23,224 @@
  *
  * @since 1.32
  */
-class PreferencesFormOOUI extends OOUIHTMLForm {
-	/** @var bool Override default value from HTMLForm */
-	protected $mSubSectionBeforeFields = false;
+class PreferencesFormOOUI extends OOUIHTMLForm
+{
+    /** @var bool Override default value from HTMLForm */
+    protected $mSubSectionBeforeFields = false;
 
-	/** @var User|null */
-	private $modifiedUser;
+    /** @var User|null */
+    private $modifiedUser;
 
-	/** @var bool */
-	private $privateInfoEditable = true;
+    /** @var bool */
+    private $privateInfoEditable = true;
 
-	/** @var bool */
-	private $optionsEditable = true;
+    /** @var bool */
+    private $optionsEditable = true;
 
-	/**
-	 * @param User $user
-	 */
-	public function setModifiedUser( $user ) {
-		$this->modifiedUser = $user;
-	}
+    /**
+     * @param User $user
+     */
+    public function setModifiedUser($user)
+    {
+        $this->modifiedUser = $user;
+    }
 
-	/**
-	 * @return User
-	 */
-	public function getModifiedUser() {
-		if ( $this->modifiedUser === null ) {
-			return $this->getUser();
-		} else {
-			return $this->modifiedUser;
-		}
-	}
+    /**
+     * @return User
+     */
+    public function getModifiedUser()
+    {
+        if ($this->modifiedUser === null) {
+            return $this->getUser();
+        } else {
+            return $this->modifiedUser;
+        }
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function isPrivateInfoEditable() {
-		return $this->privateInfoEditable;
-	}
+    /**
+     * @return bool
+     */
+    public function isPrivateInfoEditable()
+    {
+        return $this->privateInfoEditable;
+    }
 
-	/**
-	 * Whether the
-	 * @param bool $editable
-	 */
-	public function setPrivateInfoEditable( $editable ) {
-		$this->privateInfoEditable = $editable;
-	}
+    /**
+     * Whether the
+     * @param bool $editable
+     */
+    public function setPrivateInfoEditable($editable)
+    {
+        $this->privateInfoEditable = $editable;
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function areOptionsEditable() {
-		return $this->optionsEditable;
-	}
+    /**
+     * @return bool
+     */
+    public function areOptionsEditable()
+    {
+        return $this->optionsEditable;
+    }
 
-	/**
-	 * @param bool $optionsEditable
-	 */
-	public function setOptionsEditable( $optionsEditable ) {
-		$this->optionsEditable = $optionsEditable;
-	}
+    /**
+     * @param bool $optionsEditable
+     */
+    public function setOptionsEditable($optionsEditable)
+    {
+        $this->optionsEditable = $optionsEditable;
+    }
 
-	/**
-	 * Get extra parameters for the query string when redirecting after
-	 * successful save.
-	 *
-	 * @return array
-	 */
-	public function getExtraSuccessRedirectParameters() {
-		return [];
-	}
+    /**
+     * Get extra parameters for the query string when redirecting after
+     * successful save.
+     *
+     * @return array
+     */
+    public function getExtraSuccessRedirectParameters()
+    {
+        return [];
+    }
 
-	/**
-	 * @param string $html
-	 * @return string
-	 */
-	public function wrapForm( $html ) {
-		$html = Xml::tags( 'div', [ 'id' => 'preferences' ], $html );
+    /**
+     * @param string $html
+     * @return string
+     */
+    public function wrapForm($html)
+    {
+        $html = Xml::tags('div', ['id' => 'preferences'], $html);
 
-		return parent::wrapForm( $html );
-	}
+        return parent::wrapForm($html);
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getButtons() {
-		if ( !$this->areOptionsEditable() && !$this->isPrivateInfoEditable() ) {
-			return '';
-		}
+    /**
+     * @return string
+     */
+    public function getButtons()
+    {
+        if (!$this->areOptionsEditable() && !$this->isPrivateInfoEditable()) {
+            return '';
+        }
 
-		$html = parent::getButtons();
+        $html = parent::getButtons();
 
-		if ( $this->areOptionsEditable() ) {
-			$html = Xml::tags( 'div', [ 'class' => 'mw-prefs-buttons' ], $html );
-		}
+        if ($this->areOptionsEditable()) {
+            $html = Xml::tags('div', ['class' => 'mw-prefs-buttons'], $html);
+        }
 
-		return $html;
-	}
+        return $html;
+    }
 
-	/**
-	 * Separate multi-option preferences into multiple preferences, since we
-	 * have to store them separately
-	 * @param array $data
-	 * @return array
-	 */
-	public function filterDataForSubmit( $data ) {
-		foreach ( $this->mFlatFields as $fieldname => $field ) {
-			if ( $field instanceof HTMLNestedFilterable ) {
-				$info = $field->mParams;
-				$prefix = $info['prefix'] ?? $fieldname;
-				foreach ( $field->filterDataForSubmit( $data[$fieldname] ) as $key => $value ) {
-					$data["$prefix$key"] = $value;
-				}
-				unset( $data[$fieldname] );
-			}
-		}
+    /**
+     * Separate multi-option preferences into multiple preferences, since we
+     * have to store them separately
+     * @param array $data
+     * @return array
+     */
+    public function filterDataForSubmit($data)
+    {
+        foreach ($this->mFlatFields as $fieldname => $field) {
+            if ($field instanceof HTMLNestedFilterable) {
+                $info = $field->mParams;
+                $prefix = $info['prefix'] ?? $fieldname;
+                foreach ($field->filterDataForSubmit($data[$fieldname]) as $key => $value) {
+                    $data["$prefix$key"] = $value;
+                }
+                unset($data[$fieldname]);
+            }
+        }
 
-		return $data;
-	}
+        return $data;
+    }
 
-	protected function wrapFieldSetSection( $legend, $section, $attributes, $isRoot ) {
-		$layout = parent::wrapFieldSetSection( $legend, $section, $attributes, $isRoot );
+    protected function wrapFieldSetSection($legend, $section, $attributes, $isRoot)
+    {
+        $layout = parent::wrapFieldSetSection($legend, $section, $attributes, $isRoot);
 
-		$layout->addClasses( [ 'mw-prefs-fieldset-wrapper' ] );
-		$layout->removeClasses( [ 'oo-ui-panelLayout-framed' ] );
+        $layout->addClasses(['mw-prefs-fieldset-wrapper']);
+        $layout->removeClasses(['oo-ui-panelLayout-framed']);
 
-		return $layout;
-	}
+        return $layout;
+    }
 
-	/**
-	 * Get the whole body of the form.
-	 * @return string
-	 */
-	public function getBody() {
-		$tabPanels = [];
-		foreach ( $this->mFieldTree as $key => $val ) {
-			if ( !is_array( $val ) ) {
-				wfDebug( __METHOD__ . " encountered a field not attached to a section: '$key'" );
-				continue;
-			}
-			$label = $this->getLegend( $key );
-			$content =
-				$this->getHeaderText( $key ) .
-				$this->displaySection(
-					$val,
-					"",
-					"mw-prefsection-$key-"
-				) .
-				$this->getFooterText( $key );
+    /**
+     * Get the whole body of the form.
+     * @return string
+     */
+    public function getBody()
+    {
+        $tabPanels = [];
+        foreach ($this->mFieldTree as $key => $val) {
+            if (!is_array($val)) {
+                wfDebug(__METHOD__ . " encountered a field not attached to a section: '$key'");
+                continue;
+            }
+            $label = $this->getLegend($key);
+            $content =
+                $this->getHeaderText($key) .
+                $this->displaySection(
+                    $val,
+                    "",
+                    "mw-prefsection-$key-"
+                ) .
+                $this->getFooterText($key);
 
-			$tabPanels[] = new OOUI\TabPanelLayout( 'mw-prefsection-' . $key, [
-				'classes' => [ 'mw-htmlform-autoinfuse-lazy' ],
-				'label' => $label,
-				'content' => new OOUI\FieldsetLayout( [
-					'classes' => [ 'mw-prefs-section-fieldset' ],
-					'id' => "mw-prefsection-$key",
-					'label' => $label,
-					'items' => [
-						new OOUI\Widget( [
-							'content' => new OOUI\HtmlSnippet( $content )
-						] ),
-					],
-				] ),
-				'expanded' => false,
-				'framed' => true,
-			] );
-		}
+            $tabPanels[] = new OOUI\TabPanelLayout('mw-prefsection-' . $key, [
+                'classes'  => ['mw-htmlform-autoinfuse-lazy'],
+                'label'    => $label,
+                'content'  => new OOUI\FieldsetLayout([
+                    'classes' => ['mw-prefs-section-fieldset'],
+                    'id'      => "mw-prefsection-$key",
+                    'label'   => $label,
+                    'items'   => [
+                        new OOUI\Widget([
+                            'content' => new OOUI\HtmlSnippet($content)
+                        ]),
+                    ],
+                ]),
+                'expanded' => false,
+                'framed'   => true,
+            ]);
+        }
 
-		$indexLayout = new OOUI\IndexLayout( [
-			'infusable' => true,
-			'expanded' => false,
-			'autoFocus' => false,
-			'classes' => [ 'mw-prefs-tabs' ],
-		] );
-		$indexLayout->addTabPanels( $tabPanels );
+        $indexLayout = new OOUI\IndexLayout([
+            'infusable' => true,
+            'expanded'  => false,
+            'autoFocus' => false,
+            'classes'   => ['mw-prefs-tabs'],
+        ]);
+        $indexLayout->addTabPanels($tabPanels);
 
-		$header = $this->formatFormHeader();
-		$form = new OOUI\PanelLayout( [
-			'framed' => true,
-			'expanded' => false,
-			'classes' => [ 'mw-prefs-tabs-wrapper' ],
-			'content' => $indexLayout
-		] );
+        $header = $this->formatFormHeader();
+        $form = new OOUI\PanelLayout([
+            'framed'   => true,
+            'expanded' => false,
+            'classes'  => ['mw-prefs-tabs-wrapper'],
+            'content'  => $indexLayout
+        ]);
 
-		return $header . $form;
-	}
+        return $header . $form;
+    }
 
-	/**
-	 * Get the "<legend>" for a given section key. Normally this is the
-	 * prefs-$key message but we'll allow extensions to override it.
-	 * @param string $key
-	 * @return string
-	 */
-	public function getLegend( $key ) {
-		$legend = parent::getLegend( $key );
-		$this->getHookRunner()->onPreferencesGetLegend( $this, $key, $legend );
-		return $legend;
-	}
+    /**
+     * Get the "<legend>" for a given section key. Normally this is the
+     * prefs-$key message but we'll allow extensions to override it.
+     * @param string $key
+     * @return string
+     */
+    public function getLegend($key)
+    {
+        $legend = parent::getLegend($key);
+        $this->getHookRunner()->onPreferencesGetLegend($this, $key, $legend);
 
-	/**
-	 * Get the keys of each top level preference section.
-	 * @return string[] List of section keys
-	 */
-	public function getPreferenceSections() {
-		return array_keys( array_filter( $this->mFieldTree, 'is_array' ) );
-	}
+        return $legend;
+    }
+
+    /**
+     * Get the keys of each top level preference section.
+     * @return string[] List of section keys
+     */
+    public function getPreferenceSections()
+    {
+        return array_keys(array_filter($this->mFieldTree, 'is_array'));
+    }
 }

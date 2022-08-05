@@ -26,11 +26,13 @@
 /**
  * @ingroup Dump
  */
-class DumpGZipOutput extends DumpPipeOutput {
-	/**
-	 * @param string $file
-	 */
-	public function __construct( $file ) {
-		parent::__construct( "gzip", $file );
-	}
+class DumpGZipOutput extends DumpPipeOutput
+{
+    /**
+     * @param string $file
+     */
+    public function __construct($file)
+    {
+        parent::__construct("gzip", $file);
+    }
 }

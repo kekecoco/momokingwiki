@@ -23,79 +23,92 @@
  * @ingroup Parser
  */
 // phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
-class PPNode_Hash_Attr implements PPNode {
+class PPNode_Hash_Attr implements PPNode
+{
 
-	/** @var string */
-	public $name;
-	/** @var string */
-	public $value;
-	/** @var array */
-	private $store;
-	/** @var int */
-	private $index;
+    /** @var string */
+    public $name;
+    /** @var string */
+    public $value;
+    /** @var array */
+    private $store;
+    /** @var int */
+    private $index;
 
-	/**
-	 * Construct an object using the data from $store[$index]. The rest of the
-	 * store array can be accessed via getNextSibling().
-	 *
-	 * @param array $store
-	 * @param int $index
-	 */
-	public function __construct( array $store, $index ) {
-		$descriptor = $store[$index];
-		if ( $descriptor[PPNode_Hash_Tree::NAME][0] !== '@' ) {
-			throw new MWException( __METHOD__ . ': invalid name in attribute descriptor' );
-		}
-		$this->name = substr( $descriptor[PPNode_Hash_Tree::NAME], 1 );
-		$this->value = $descriptor[PPNode_Hash_Tree::CHILDREN][0];
-		$this->store = $store;
-		$this->index = $index;
-	}
+    /**
+     * Construct an object using the data from $store[$index]. The rest of the
+     * store array can be accessed via getNextSibling().
+     *
+     * @param array $store
+     * @param int $index
+     */
+    public function __construct(array $store, $index)
+    {
+        $descriptor = $store[$index];
+        if ($descriptor[PPNode_Hash_Tree::NAME][0] !== '@') {
+            throw new MWException(__METHOD__ . ': invalid name in attribute descriptor');
+        }
+        $this->name = substr($descriptor[PPNode_Hash_Tree::NAME], 1);
+        $this->value = $descriptor[PPNode_Hash_Tree::CHILDREN][0];
+        $this->store = $store;
+        $this->index = $index;
+    }
 
-	public function __toString() {
-		return "<@{$this->name}>" . htmlspecialchars( $this->value, ENT_COMPAT ) . "</@{$this->name}>";
-	}
+    public function __toString()
+    {
+        return "<@{$this->name}>" . htmlspecialchars($this->value, ENT_COMPAT) . "</@{$this->name}>";
+    }
 
-	public function getName() {
-		return $this->name;
-	}
+    public function getName()
+    {
+        return $this->name;
+    }
 
-	public function getNextSibling() {
-		return PPNode_Hash_Tree::factory( $this->store, $this->index + 1 );
-	}
+    public function getNextSibling()
+    {
+        return PPNode_Hash_Tree::factory($this->store, $this->index + 1);
+    }
 
-	public function getChildren() {
-		return false;
-	}
+    public function getChildren()
+    {
+        return false;
+    }
 
-	public function getFirstChild() {
-		return false;
-	}
+    public function getFirstChild()
+    {
+        return false;
+    }
 
-	public function getChildrenOfType( $name ) {
-		return false;
-	}
+    public function getChildrenOfType($name)
+    {
+        return false;
+    }
 
-	public function getLength() {
-		return false;
-	}
+    public function getLength()
+    {
+        return false;
+    }
 
-	public function item( $i ) {
-		return false;
-	}
+    public function item($i)
+    {
+        return false;
+    }
 
-	public function splitArg() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitArg()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitExt() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitExt()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 
-	public function splitHeading() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod
-		throw new MWException( __METHOD__ . ': not supported' );
-	}
+    public function splitHeading()
+    {
+        // @phan-suppress-previous-line PhanPluginNeverReturnMethod
+        throw new MWException(__METHOD__ . ': not supported');
+    }
 }

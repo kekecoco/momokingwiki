@@ -35,200 +35,211 @@ use Wikimedia\Assert\ParameterAssertionException;
  *
  * @group Title
  */
-class PageStoreRecordTest extends MediaWikiUnitTestCase {
+class PageStoreRecordTest extends MediaWikiUnitTestCase
+{
 
-	public function goodConstructorProvider() {
-		return [
-			'local' => [
-				(object)[
-					'page_id' => 7,
-					'page_namespace' => NS_MAIN,
-					'page_title' => 'Test',
-					'page_touched' => '20200909001122',
-					'page_latest' => 1717,
-					'page_is_new' => true,
-					'page_is_redirect' => true,
-					'page_lang' => 'it',
-				],
-				PageIdentity::LOCAL
-			],
-			'non-local' => [
-				(object)[
-					'page_id' => 3,
-					'page_namespace' => NS_USER,
-					'page_title' => 'Test',
-					'page_touched' => '20200909001122',
-					'page_latest' => 1717,
-					'page_is_new' => false,
-					'page_is_redirect' => false,
-					'page_lang' => 'und',
-				],
-				'h2g2'
-			],
-			'no language' => [
-				(object)[
-					'page_id' => 3,
-					'page_namespace' => NS_USER,
-					'page_title' => 'Test',
-					'page_touched' => '20200909001122',
-					'page_latest' => 1717,
-					'page_is_new' => false,
-					'page_is_redirect' => false,
-				],
-				PageIdentity::LOCAL
-			]
-		];
-	}
+    public function goodConstructorProvider()
+    {
+        return [
+            'local'       => [
+                (object)[
+                    'page_id'          => 7,
+                    'page_namespace'   => NS_MAIN,
+                    'page_title'       => 'Test',
+                    'page_touched'     => '20200909001122',
+                    'page_latest'      => 1717,
+                    'page_is_new'      => true,
+                    'page_is_redirect' => true,
+                    'page_lang'        => 'it',
+                ],
+                PageIdentity::LOCAL
+            ],
+            'non-local'   => [
+                (object)[
+                    'page_id'          => 3,
+                    'page_namespace'   => NS_USER,
+                    'page_title'       => 'Test',
+                    'page_touched'     => '20200909001122',
+                    'page_latest'      => 1717,
+                    'page_is_new'      => false,
+                    'page_is_redirect' => false,
+                    'page_lang'        => 'und',
+                ],
+                'h2g2'
+            ],
+            'no language' => [
+                (object)[
+                    'page_id'          => 3,
+                    'page_namespace'   => NS_USER,
+                    'page_title'       => 'Test',
+                    'page_touched'     => '20200909001122',
+                    'page_latest'      => 1717,
+                    'page_is_new'      => false,
+                    'page_is_redirect' => false,
+                ],
+                PageIdentity::LOCAL
+            ]
+        ];
+    }
 
-	/**
-	 * @dataProvider goodConstructorProvider
-	 */
-	public function testConstruction( $row, $wikiId ) {
-		$pageRecord = new PageStoreRecord( $row, $wikiId );
+    /**
+     * @dataProvider goodConstructorProvider
+     */
+    public function testConstruction($row, $wikiId)
+    {
+        $pageRecord = new PageStoreRecord($row, $wikiId);
 
-		$this->assertSame( $row->page_id, $pageRecord->getId( $wikiId ) );
-		$this->assertSame( $row->page_id > 0, $pageRecord->exists() );
-		$this->assertSame( $row->page_namespace, $pageRecord->getNamespace() );
-		$this->assertSame( $row->page_title, $pageRecord->getDBkey() );
+        $this->assertSame($row->page_id, $pageRecord->getId($wikiId));
+        $this->assertSame($row->page_id > 0, $pageRecord->exists());
+        $this->assertSame($row->page_namespace, $pageRecord->getNamespace());
+        $this->assertSame($row->page_title, $pageRecord->getDBkey());
 
-		$this->assertTrue( $pageRecord->canExist() );
+        $this->assertTrue($pageRecord->canExist());
 
-		$this->assertSame( $wikiId, $pageRecord->getWikiId() );
-		$this->assertSame( $row->page_touched, $pageRecord->getTouched() );
-		$this->assertSame( $row->page_latest, $pageRecord->getLatest( $wikiId ) );
-		$this->assertSame( $row->page_is_new, $pageRecord->isNew() );
-		$this->assertSame( $row->page_is_redirect, $pageRecord->isRedirect() );
+        $this->assertSame($wikiId, $pageRecord->getWikiId());
+        $this->assertSame($row->page_touched, $pageRecord->getTouched());
+        $this->assertSame($row->page_latest, $pageRecord->getLatest($wikiId));
+        $this->assertSame($row->page_is_new, $pageRecord->isNew());
+        $this->assertSame($row->page_is_redirect, $pageRecord->isRedirect());
 
-		$this->assertSame( $row->page_lang ?? null, $pageRecord->getLanguage() );
+        $this->assertSame($row->page_lang ?? null, $pageRecord->getLanguage());
 
-		foreach ( $row as $name => $value ) {
-			$this->assertEquals( $value, $pageRecord->getField( $name ) );
-		}
-	}
+        foreach ($row as $name => $value) {
+            $this->assertEquals($value, $pageRecord->getField($name));
+        }
+    }
 
-	public function badConstructorProvider() {
-		$row = [
-			'page_id' => 1,
-			'page_namespace' => NS_MAIN,
-			'page_title' => 'Test',
-			'page_touched' => '20200909001122',
-			'page_latest' => 1717,
-			'page_is_new' => true,
-			'page_is_redirect' => true,
-			'page_lang' => 'fi',
-		];
-		return [
-			'nonexisting page' => [ (object)( [ 'page_id' => 0 ] + $row ) ],
-			'negative id' => [ (object)( [ 'page_id' => -1 ] + $row ) ],
-			'special page' => [ (object)( [ 'page_namespace' => NS_SPECIAL ] + $row ) ],
-			'empty title' => [ (object)( [ 'page_title' => '' ] + $row ) ],
+    public function badConstructorProvider()
+    {
+        $row = [
+            'page_id'          => 1,
+            'page_namespace'   => NS_MAIN,
+            'page_title'       => 'Test',
+            'page_touched'     => '20200909001122',
+            'page_latest'      => 1717,
+            'page_is_new'      => true,
+            'page_is_redirect' => true,
+            'page_lang'        => 'fi',
+        ];
 
-			// missing data
-			'missing touched' => [ (object)array_diff_key( $row, [ 'page_touched' => 'foo' ] ) ],
-			'missing latest' => [ (object)array_diff_key( $row, [ 'page_latest' => 'foo' ] ) ],
-			'missing is_new' => [ (object)array_diff_key( $row, [ 'page_is_new' => 'foo' ] ) ],
-			'missing is_redirect'
-				=> [ (object)array_diff_key( $row, [ 'page_is_redirect' => 'foo' ] ) ],
-		];
-	}
+        return [
+            'nonexisting page' => [(object)(['page_id' => 0] + $row)],
+            'negative id'      => [(object)(['page_id' => -1] + $row)],
+            'special page'     => [(object)(['page_namespace' => NS_SPECIAL] + $row)],
+            'empty title'      => [(object)(['page_title' => ''] + $row)],
 
-	/**
-	 * @dataProvider badConstructorProvider
-	 */
-	public function testConstructionErrors( $row ) {
-		$this->expectException( ParameterAssertionException::class );
-		new PageStoreRecord( $row, PageStoreRecord::LOCAL );
-	}
+            // missing data
+            'missing touched'  => [(object)array_diff_key($row, ['page_touched' => 'foo'])],
+            'missing latest'   => [(object)array_diff_key($row, ['page_latest' => 'foo'])],
+            'missing is_new'   => [(object)array_diff_key($row, ['page_is_new' => 'foo'])],
+            'missing is_redirect'
+                               => [(object)array_diff_key($row, ['page_is_redirect' => 'foo'])],
+        ];
+    }
 
-	public function testGetLatestRequiresForeignWikiId() {
-		$row = (object)[
-			'page_id' => 7,
-			'page_namespace' => NS_MAIN,
-			'page_title' => 'Test',
-			'page_touched' => '20200909001122',
-			'page_latest' => 1717,
-			'page_is_new' => true,
-			'page_is_redirect' => true,
-			'page_lang' => 'it',
-		];
-		$pageRecord = new PageStoreRecord( $row, 'acme' );
+    /**
+     * @dataProvider badConstructorProvider
+     */
+    public function testConstructionErrors($row)
+    {
+        $this->expectException(ParameterAssertionException::class);
+        new PageStoreRecord($row, PageStoreRecord::LOCAL);
+    }
 
-		$this->expectException( RuntimeException::class );
-		$pageRecord->getLatest( 'xyzzy' );
-	}
+    public function testGetLatestRequiresForeignWikiId()
+    {
+        $row = (object)[
+            'page_id'          => 7,
+            'page_namespace'   => NS_MAIN,
+            'page_title'       => 'Test',
+            'page_touched'     => '20200909001122',
+            'page_latest'      => 1717,
+            'page_is_new'      => true,
+            'page_is_redirect' => true,
+            'page_lang'        => 'it',
+        ];
+        $pageRecord = new PageStoreRecord($row, 'acme');
 
-	public function provideToString() {
-		$row = [
-			'page_id' => 7,
-			'page_namespace' => NS_MAIN,
-			'page_title' => 'Test',
-			'page_touched' => '20200909001122',
-			'page_latest' => 1717,
-			'page_is_new' => true,
-			'page_is_redirect' => true,
-			'page_lang' => 'it',
-		];
+        $this->expectException(RuntimeException::class);
+        $pageRecord->getLatest('xyzzy');
+    }
 
-		yield [
-			new PageStoreRecord( (object)$row, PageIdentity::LOCAL ),
-			'[0:Test]'
-		];
-		yield [
-			new PageStoreRecord( (object)( [ 'page_namespace' => 200 ] + $row ), 'codewiki' ),
-			'[200:Test]@codewiki'
-		];
-	}
+    public function provideToString()
+    {
+        $row = [
+            'page_id'          => 7,
+            'page_namespace'   => NS_MAIN,
+            'page_title'       => 'Test',
+            'page_touched'     => '20200909001122',
+            'page_latest'      => 1717,
+            'page_is_new'      => true,
+            'page_is_redirect' => true,
+            'page_lang'        => 'it',
+        ];
 
-	/**
-	 * @dataProvider provideToString
-	 */
-	public function testToString( PageStoreRecord $value, $expected ) {
-		$this->assertSame(
-			$expected,
-			$value->__toString()
-		);
-	}
+        yield [
+            new PageStoreRecord((object)$row, PageIdentity::LOCAL),
+            '[0:Test]'
+        ];
+        yield [
+            new PageStoreRecord((object)(['page_namespace' => 200] + $row), 'codewiki'),
+            '[200:Test]@codewiki'
+        ];
+    }
 
-	public function provideIsSamePageAs() {
-		$row = [
-			'page_id' => 7,
-			'page_namespace' => NS_MAIN,
-			'page_title' => 'Test',
-			'page_touched' => '20200909001122',
-			'page_latest' => 1717,
-			'page_is_new' => true,
-			'page_is_redirect' => true,
-			'page_lang' => 'it',
-		];
+    /**
+     * @dataProvider provideToString
+     */
+    public function testToString(PageStoreRecord $value, $expected)
+    {
+        $this->assertSame(
+            $expected,
+            $value->__toString()
+        );
+    }
 
-		yield [
-			new PageStoreRecord( (object)$row, PageRecord::LOCAL ),
-			new PageStoreRecord( (object)$row, PageRecord::LOCAL ),
-			true
-		];
-		yield [
-			new PageStoreRecord( (object)$row, PageRecord::LOCAL ),
-			new PageStoreRecord( (object)$row, 'acme' ),
-			false
-		];
-		yield [
-			new PageStoreRecord( (object)$row, 'acme' ),
-			new PageStoreRecord( (object)$row, 'acme' ),
-			true
-		];
-		yield [
-			new PageStoreRecord( (object)$row, 'acme' ),
-			new PageIdentityValue( 7, NS_MAIN, 'Test', 'acme' ),
-			true
-		];
-	}
+    public function provideIsSamePageAs()
+    {
+        $row = [
+            'page_id'          => 7,
+            'page_namespace'   => NS_MAIN,
+            'page_title'       => 'Test',
+            'page_touched'     => '20200909001122',
+            'page_latest'      => 1717,
+            'page_is_new'      => true,
+            'page_is_redirect' => true,
+            'page_lang'        => 'it',
+        ];
 
-	/**
-	 * @dataProvider provideIsSamePageAs
-	 */
-	public function testIsSamePageAs( PageReference $a, PageReference $b, $expected ) {
-		$this->assertSame( $expected, $a->isSamePageAs( $b ) );
-		$this->assertSame( $expected, $b->isSamePageAs( $a ) );
-	}
+        yield [
+            new PageStoreRecord((object)$row, PageRecord::LOCAL),
+            new PageStoreRecord((object)$row, PageRecord::LOCAL),
+            true
+        ];
+        yield [
+            new PageStoreRecord((object)$row, PageRecord::LOCAL),
+            new PageStoreRecord((object)$row, 'acme'),
+            false
+        ];
+        yield [
+            new PageStoreRecord((object)$row, 'acme'),
+            new PageStoreRecord((object)$row, 'acme'),
+            true
+        ];
+        yield [
+            new PageStoreRecord((object)$row, 'acme'),
+            new PageIdentityValue(7, NS_MAIN, 'Test', 'acme'),
+            true
+        ];
+    }
+
+    /**
+     * @dataProvider provideIsSamePageAs
+     */
+    public function testIsSamePageAs(PageReference $a, PageReference $b, $expected)
+    {
+        $this->assertSame($expected, $a->isSamePageAs($b));
+        $this->assertSame($expected, $b->isSamePageAs($a));
+    }
 
 }

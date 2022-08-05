@@ -26,103 +26,106 @@ require_once __DIR__ . '/../includes/Benchmarker.php';
  *
  * @ingroup Benchmark
  */
-class BenchmarkLruHash extends Benchmarker {
-	protected $defaultCount = 1000;
+class BenchmarkLruHash extends Benchmarker
+{
+    protected $defaultCount = 1000;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Benchmarks HashBagOStuff and MapCacheLRU.' );
-		$this->addOption( 'method', 'One of "construct" or "set". Default: [All]', false, true );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Benchmarks HashBagOStuff and MapCacheLRU.');
+        $this->addOption('method', 'One of "construct" or "set". Default: [All]', false, true);
+    }
 
-	public function execute() {
-		$exampleKeys = [];
-		$max = 100;
-		$count = 500;
-		while ( $count-- ) {
-			$exampleKeys[] = wfRandomString();
-		}
-		// 1000 keys (1...500, 500...1)
-		$keys = array_merge( $exampleKeys, array_reverse( $exampleKeys ) );
+    public function execute()
+    {
+        $exampleKeys = [];
+        $max = 100;
+        $count = 500;
+        while ($count--) {
+            $exampleKeys[] = wfRandomString();
+        }
+        // 1000 keys (1...500, 500...1)
+        $keys = array_merge($exampleKeys, array_reverse($exampleKeys));
 
-		$method = $this->getOption( 'method' );
-		$benches = [];
+        $method = $this->getOption('method');
+        $benches = [];
 
-		if ( !$method || $method === 'construct' ) {
-			$benches['HashBagOStuff::__construct'] = [
-				'function' => static function () use ( $max ) {
-					$obj = new HashBagOStuff( [ 'maxKeys' => $max ] );
-				},
-			];
-			$benches['MapCacheLRU::__construct'] = [
-				'function' => static function () use ( $max ) {
-					$obj = new MapCacheLRU( $max );
-				},
-			];
-		}
+        if (!$method || $method === 'construct') {
+            $benches['HashBagOStuff::__construct'] = [
+                'function' => static function () use ($max) {
+                    $obj = new HashBagOStuff(['maxKeys' => $max]);
+                },
+            ];
+            $benches['MapCacheLRU::__construct'] = [
+                'function' => static function () use ($max) {
+                    $obj = new MapCacheLRU($max);
+                },
+            ];
+        }
 
-		if ( !$method || $method === 'set' ) {
-			$hObj = null;
-			'@phan-var BagOStuff $hObj';
-			$benches['HashBagOStuff::set'] = [
-				'setup' => static function () use ( &$hObj, $max ) {
-					$hObj = new HashBagOStuff( [ 'maxKeys' => $max ] );
-				},
-				'function' => static function () use ( &$hObj, $keys ) {
-					foreach ( $keys as $i => $key ) {
-						$hObj->set( $key, $i );
-					}
-				}
-			];
-			$mObj = null;
-			'@phan-var MapCacheLRU $mObj';
-			$benches['MapCacheLRU::set'] = [
-				'setup' => static function () use ( &$mObj, $max ) {
-					$mObj = new MapCacheLRU( $max );
-				},
-				'function' => static function () use ( &$mObj, $keys ) {
-					foreach ( $keys as $i => $key ) {
-						$mObj->set( $key, $i );
-					}
-				}
-			];
-		}
+        if (!$method || $method === 'set') {
+            $hObj = null;
+            '@phan-var BagOStuff $hObj';
+            $benches['HashBagOStuff::set'] = [
+                'setup'    => static function () use (&$hObj, $max) {
+                    $hObj = new HashBagOStuff(['maxKeys' => $max]);
+                },
+                'function' => static function () use (&$hObj, $keys) {
+                    foreach ($keys as $i => $key) {
+                        $hObj->set($key, $i);
+                    }
+                }
+            ];
+            $mObj = null;
+            '@phan-var MapCacheLRU $mObj';
+            $benches['MapCacheLRU::set'] = [
+                'setup'    => static function () use (&$mObj, $max) {
+                    $mObj = new MapCacheLRU($max);
+                },
+                'function' => static function () use (&$mObj, $keys) {
+                    foreach ($keys as $i => $key) {
+                        $mObj->set($key, $i);
+                    }
+                }
+            ];
+        }
 
-		if ( !$method || $method === 'get' ) {
-			$hObj = null;
-			'@phan-var BagOStuff $hObj';
-			$benches['HashBagOStuff::get'] = [
-				'setup' => static function () use ( &$hObj, $max, $keys ) {
-					$hObj = new HashBagOStuff( [ 'maxKeys' => $max ] );
-					foreach ( $keys as $i => $key ) {
-						$hObj->set( $key, $i );
-					}
-				},
-				'function' => static function () use ( &$hObj, $keys ) {
-					foreach ( $keys as $key ) {
-						$hObj->get( $key );
-					}
-				}
-			];
-			$mObj = null;
-			'@phan-var MapCacheLRU $mObj';
-			$benches['MapCacheLRU::get'] = [
-				'setup' => static function () use ( &$mObj, $max, $keys ) {
-					$mObj = new MapCacheLRU( $max );
-					foreach ( $keys as $i => $key ) {
-						$mObj->set( $key, $i );
-					}
-				},
-				'function' => static function () use ( &$mObj, $keys ) {
-					foreach ( $keys as $key ) {
-						$mObj->get( $key );
-					}
-				}
-			];
-		}
+        if (!$method || $method === 'get') {
+            $hObj = null;
+            '@phan-var BagOStuff $hObj';
+            $benches['HashBagOStuff::get'] = [
+                'setup'    => static function () use (&$hObj, $max, $keys) {
+                    $hObj = new HashBagOStuff(['maxKeys' => $max]);
+                    foreach ($keys as $i => $key) {
+                        $hObj->set($key, $i);
+                    }
+                },
+                'function' => static function () use (&$hObj, $keys) {
+                    foreach ($keys as $key) {
+                        $hObj->get($key);
+                    }
+                }
+            ];
+            $mObj = null;
+            '@phan-var MapCacheLRU $mObj';
+            $benches['MapCacheLRU::get'] = [
+                'setup'    => static function () use (&$mObj, $max, $keys) {
+                    $mObj = new MapCacheLRU($max);
+                    foreach ($keys as $i => $key) {
+                        $mObj->set($key, $i);
+                    }
+                },
+                'function' => static function () use (&$mObj, $keys) {
+                    foreach ($keys as $key) {
+                        $mObj->get($key);
+                    }
+                }
+            ];
+        }
 
-		$this->bench( $benches );
-	}
+        $this->bench($benches);
+    }
 }
 
 $maintClass = BenchmarkLruHash::class;

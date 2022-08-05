@@ -38,96 +38,104 @@ use Wikimedia\Assert\Assert;
  *
  * @since 1.36
  */
-class PageIdentityValue extends PageReferenceValue implements ProperPageIdentity {
+class PageIdentityValue extends PageReferenceValue implements ProperPageIdentity
+{
 
-	/** @var int */
-	private $pageId;
+    /** @var int */
+    private $pageId;
 
-	/**
-	 * Constructs a PageIdentityValue, or returns null if the parameters are not valid.
-	 *
-	 * @note This does not perform any normalization, and only basic validation.
-	 * For full normalization and validation, use TitleParser::makeTitleValueSafe()
-	 * together with PageLookup::getPageForLink().
-	 *
-	 * @param int $pageId The ID of this page, or 0 if the page does not exist.
-	 * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
-	 * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
-	 * @param string|bool $wikiId The Id of the wiki this page belongs to,
-	 *        or self::LOCAL for the local wiki.
-	 *
-	 * @return PageIdentityValue|null
-	 */
-	public static function tryNew( int $pageId, int $namespace, string $dbKey, $wikiId ) {
-		try {
-			return new static( $pageId, $namespace, $dbKey, $wikiId );
-		} catch ( InvalidArgumentException $ex ) {
-			return null;
-		}
-	}
+    /**
+     * Constructs a PageIdentityValue, or returns null if the parameters are not valid.
+     *
+     * @note This does not perform any normalization, and only basic validation.
+     * For full normalization and validation, use TitleParser::makeTitleValueSafe()
+     * together with PageLookup::getPageForLink().
+     *
+     * @param int $pageId The ID of this page, or 0 if the page does not exist.
+     * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
+     * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
+     * @param string|bool $wikiId The Id of the wiki this page belongs to,
+     *        or self::LOCAL for the local wiki.
+     *
+     * @return PageIdentityValue|null
+     */
+    public static function tryNew(int $pageId, int $namespace, string $dbKey, $wikiId)
+    {
+        try {
+            return new static($pageId, $namespace, $dbKey, $wikiId);
+        } catch (InvalidArgumentException $ex) {
+            return null;
+        }
+    }
 
-	/**
-	 * @param int $pageId The ID of this page, or 0 if the page does not exist.
-	 * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
-	 * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
-	 * @param string|bool $wikiId The Id of the wiki this page belongs to,
-	 *        or self::LOCAL for the local wiki.
-	 */
-	public function __construct( int $pageId, int $namespace, string $dbKey, $wikiId ) {
-		Assert::parameter( $pageId >= 0, '$pageId', 'must not be negative' );
-		Assert::parameter( $namespace >= 0, '$namespace', 'must not be negative' );
+    /**
+     * @param int $pageId The ID of this page, or 0 if the page does not exist.
+     * @param int $namespace A valid namespace ID. Validation is the caller's responsibility!
+     * @param string $dbKey A valid DB key. Validation is the caller's responsibility!
+     * @param string|bool $wikiId The Id of the wiki this page belongs to,
+     *        or self::LOCAL for the local wiki.
+     */
+    public function __construct(int $pageId, int $namespace, string $dbKey, $wikiId)
+    {
+        Assert::parameter($pageId >= 0, '$pageId', 'must not be negative');
+        Assert::parameter($namespace >= 0, '$namespace', 'must not be negative');
 
-		// Not full validation, intended to help detect lack of validation in the caller.
-		Assert::parameter(
-			!preg_match( '/[#|]/', $dbKey ),
-			'$dbKey',
-			'must not contain pipes or hashes: ' . $dbKey
-		);
+        // Not full validation, intended to help detect lack of validation in the caller.
+        Assert::parameter(
+            !preg_match('/[#|]/', $dbKey),
+            '$dbKey',
+            'must not contain pipes or hashes: ' . $dbKey
+        );
 
-		parent::__construct( $namespace, $dbKey, $wikiId );
+        parent::__construct($namespace, $dbKey, $wikiId);
 
-		$this->pageId = $pageId;
-	}
+        $this->pageId = $pageId;
+    }
 
-	/**
-	 * Create PageIdentity for a local page.
-	 *
-	 * @param int $pageId
-	 * @param int $namespace
-	 * @param string $dbKey
-	 * @return PageIdentityValue
-	 */
-	public static function localIdentity( int $pageId, int $namespace, string $dbKey ): self {
-		return new self( $pageId, $namespace, $dbKey, self::LOCAL );
-	}
+    /**
+     * Create PageIdentity for a local page.
+     *
+     * @param int $pageId
+     * @param int $namespace
+     * @param string $dbKey
+     * @return PageIdentityValue
+     */
+    public static function localIdentity(int $pageId, int $namespace, string $dbKey): self
+    {
+        return new self($pageId, $namespace, $dbKey, self::LOCAL);
+    }
 
-	/**
-	 * The numerical page ID provided to the constructor.
-	 *
-	 * @param string|false $wikiId The wiki ID expected by the caller.
-	 *        Omit if expecting the local wiki.
-	 *
-	 * @return int
-	 */
-	public function getId( $wikiId = self::LOCAL ): int {
-		$this->assertWiki( $wikiId );
-		return $this->pageId;
-	}
+    /**
+     * The numerical page ID provided to the constructor.
+     *
+     * @param string|false $wikiId The wiki ID expected by the caller.
+     *        Omit if expecting the local wiki.
+     *
+     * @return int
+     */
+    public function getId($wikiId = self::LOCAL): int
+    {
+        $this->assertWiki($wikiId);
 
-	/**
-	 * Returns whether the page currently exists.
-	 * Returns true if getId() returns a value greater than zero.
-	 * @return bool
-	 */
-	public function exists(): bool {
-		return $this->getId( $this->getWikiId() ) > 0;
-	}
+        return $this->pageId;
+    }
 
-	/**
-	 * @return bool always true
-	 */
-	public function canExist(): bool {
-		return true;
-	}
+    /**
+     * Returns whether the page currently exists.
+     * Returns true if getId() returns a value greater than zero.
+     * @return bool
+     */
+    public function exists(): bool
+    {
+        return $this->getId($this->getWikiId()) > 0;
+    }
+
+    /**
+     * @return bool always true
+     */
+    public function canExist(): bool
+    {
+        return true;
+    }
 
 }

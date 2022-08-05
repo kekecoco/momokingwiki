@@ -46,32 +46,35 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup JobQueue
  */
-class NullJob extends Job implements GenericParameterJob {
-	/**
-	 * @param array $params Job parameters (lives, usleep)
-	 */
-	public function __construct( array $params ) {
-		parent::__construct( 'null', $params );
-		if ( !isset( $this->params['lives'] ) ) {
-			$this->params['lives'] = 1;
-		}
-		if ( !isset( $this->params['usleep'] ) ) {
-			$this->params['usleep'] = 0;
-		}
-		$this->removeDuplicates = !empty( $this->params['removeDuplicates'] );
-	}
+class NullJob extends Job implements GenericParameterJob
+{
+    /**
+     * @param array $params Job parameters (lives, usleep)
+     */
+    public function __construct(array $params)
+    {
+        parent::__construct('null', $params);
+        if (!isset($this->params['lives'])) {
+            $this->params['lives'] = 1;
+        }
+        if (!isset($this->params['usleep'])) {
+            $this->params['usleep'] = 0;
+        }
+        $this->removeDuplicates = !empty($this->params['removeDuplicates']);
+    }
 
-	public function run() {
-		if ( $this->params['usleep'] > 0 ) {
-			usleep( $this->params['usleep'] );
-		}
-		if ( $this->params['lives'] > 1 ) {
-			$params = $this->params;
-			$params['lives']--;
-			$job = new self( $params );
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $job );
-		}
+    public function run()
+    {
+        if ($this->params['usleep'] > 0) {
+            usleep($this->params['usleep']);
+        }
+        if ($this->params['lives'] > 1) {
+            $params = $this->params;
+            $params['lives']--;
+            $job = new self($params);
+            MediaWikiServices::getInstance()->getJobQueueGroup()->push($job);
+        }
 
-		return true;
-	}
+        return true;
+    }
 }

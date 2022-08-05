@@ -30,24 +30,29 @@
  *
  * @ingroup API
  */
-class ApiQueryDisabled extends ApiQueryBase {
+class ApiQueryDisabled extends ApiQueryBase
+{
 
-	public function execute() {
-		$this->addWarning( [ 'apierror-moduledisabled', $this->getModuleName() ] );
-	}
+    public function execute()
+    {
+        $this->addWarning(['apierror-moduledisabled', $this->getModuleName()]);
+    }
 
-	public function getAllowedParams() {
-		return [];
-	}
+    public function getAllowedParams()
+    {
+        return [];
+    }
 
-	public function getSummaryMessage() {
-		return 'apihelp-query+disabled-summary';
-	}
+    public function getSummaryMessage()
+    {
+        return 'apihelp-query+disabled-summary';
+    }
 
-	public function getExtendedDescription() {
-		return [ [
-			'apihelp-query+disabled-extended-description',
-			'api-help-no-extended-description',
-		] ];
-	}
+    public function getExtendedDescription()
+    {
+        return [[
+            'apihelp-query+disabled-extended-description',
+            'api-help-no-extended-description',
+        ]];
+    }
 }

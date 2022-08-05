@@ -25,12 +25,15 @@
  * at all
  * @ingroup API
  */
-class ApiFormatNone extends ApiFormatBase {
+class ApiFormatNone extends ApiFormatBase
+{
 
-	public function getMimeType() {
-		return 'text/plain';
-	}
+    public function getMimeType()
+    {
+        return 'text/plain';
+    }
 
-	public function execute() {
-	}
+    public function execute()
+    {
+    }
 }

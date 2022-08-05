@@ -31,60 +31,66 @@ use Title;
  * @since 1.36
  * @internal
  */
-class SimpleAntiSpamConstraint implements IEditConstraint {
+class SimpleAntiSpamConstraint implements IEditConstraint
+{
 
-	/** @var LoggerInterface */
-	private $logger;
+    /** @var LoggerInterface */
+    private $logger;
 
-	/** @var string */
-	private $input;
+    /** @var string */
+    private $input;
 
-	/** @var UserIdentity */
-	private $user;
+    /** @var UserIdentity */
+    private $user;
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/**
-	 * @param LoggerInterface $logger for logging hits
-	 * @param string $inputText
-	 * @param UserIdentity $user for logging hits
-	 * @param Title $title for logging hits
-	 */
-	public function __construct(
-		LoggerInterface $logger,
-		string $inputText,
-		UserIdentity $user,
-		Title $title
-	) {
-		$this->logger = $logger;
-		$this->input = $inputText;
-		$this->user = $user;
-		$this->title = $title;
-	}
+    /**
+     * @param LoggerInterface $logger for logging hits
+     * @param string $inputText
+     * @param UserIdentity $user for logging hits
+     * @param Title $title for logging hits
+     */
+    public function __construct(
+        LoggerInterface $logger,
+        string $inputText,
+        UserIdentity $user,
+        Title $title
+    )
+    {
+        $this->logger = $logger;
+        $this->input = $inputText;
+        $this->user = $user;
+        $this->title = $title;
+    }
 
-	public function checkConstraint(): string {
-		if ( $this->input === '' ) {
-			return self::CONSTRAINT_PASSED;
-		}
-		$this->logger->debug(
-			'{name} editing "{title}" submitted bogus field "{input}"',
-			[
-				'name' => $this->user->getName(),
-				'title' => $this->title->getPrefixedText(),
-				'input' => $this->input
-			]
-		);
-		return self::CONSTRAINT_FAILED;
-	}
+    public function checkConstraint(): string
+    {
+        if ($this->input === '') {
+            return self::CONSTRAINT_PASSED;
+        }
+        $this->logger->debug(
+            '{name} editing "{title}" submitted bogus field "{input}"',
+            [
+                'name'  => $this->user->getName(),
+                'title' => $this->title->getPrefixedText(),
+                'input' => $this->input
+            ]
+        );
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->input !== '' ) {
-			$statusValue->fatal( 'spamprotectionmatch', false );
-			$statusValue->value = self::AS_SPAM_ERROR;
-		}
-		return $statusValue;
-	}
+        return self::CONSTRAINT_FAILED;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->input !== '') {
+            $statusValue->fatal('spamprotectionmatch', false);
+            $statusValue->value = self::AS_SPAM_ERROR;
+        }
+
+        return $statusValue;
+    }
 
 }

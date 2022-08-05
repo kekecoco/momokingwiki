@@ -27,303 +27,313 @@
  * @ingroup Installer
  * @since 1.17
  */
-class LocalSettingsGenerator {
+class LocalSettingsGenerator
+{
 
-	protected $extensions = [];
-	protected $skins = [];
-	protected $values = [];
-	protected $groupPermissions = [];
-	protected $dbSettings = '';
-	protected $IP;
+    protected $extensions = [];
+    protected $skins = [];
+    protected $values = [];
+    protected $groupPermissions = [];
+    protected $dbSettings = '';
+    protected $IP;
 
-	/**
-	 * @var Installer
-	 */
-	protected $installer;
+    /**
+     * @var Installer
+     */
+    protected $installer;
 
-	/**
-	 * @param Installer $installer
-	 */
-	public function __construct( Installer $installer ) {
-		$this->installer = $installer;
+    /**
+     * @param Installer $installer
+     */
+    public function __construct(Installer $installer)
+    {
+        $this->installer = $installer;
 
-		$this->extensions = $installer->getVar( '_Extensions' );
-		$this->skins = $installer->getVar( '_Skins' );
-		$this->IP = $installer->getVar( 'IP' );
+        $this->extensions = $installer->getVar('_Extensions');
+        $this->skins = $installer->getVar('_Skins');
+        $this->IP = $installer->getVar('IP');
 
-		$db = $installer->getDBInstaller( $installer->getVar( 'wgDBtype' ) );
+        $db = $installer->getDBInstaller($installer->getVar('wgDBtype'));
 
-		$confItems = array_merge(
-			[
-				'wgServer', 'wgScriptPath',
-				'wgPasswordSender', 'wgImageMagickConvertCommand',
-				'wgLanguageCode', 'wgLocaltimezone', 'wgEnableEmail', 'wgEnableUserEmail',
-				'wgDiff3', 'wgEnotifUserTalk', 'wgEnotifWatchlist', 'wgEmailAuthentication',
-				'wgDBtype', 'wgSecretKey', 'wgRightsUrl', 'wgSitename', 'wgRightsIcon',
-				'wgRightsText', '_MainCacheType', 'wgEnableUploads',
-				'_MemCachedServers', 'wgDBserver', 'wgDBuser',
-				'wgDBpassword', 'wgUseInstantCommons', 'wgUpgradeKey', 'wgDefaultSkin',
-				'wgMetaNamespace', 'wgAuthenticationTokenVersion', 'wgPingback',
-				'_Logo1x', '_LogoTagline', '_LogoWordmark', '_LogoIcon',
-				'_LogoWordmarkWidth', '_LogoWordmarkHeight',
-				'_LogoTaglineWidth', '_LogoTaglineHeight'
-			],
-			$db->getGlobalNames()
-		);
+        $confItems = array_merge(
+            [
+                'wgServer', 'wgScriptPath',
+                'wgPasswordSender', 'wgImageMagickConvertCommand',
+                'wgLanguageCode', 'wgLocaltimezone', 'wgEnableEmail', 'wgEnableUserEmail',
+                'wgDiff3', 'wgEnotifUserTalk', 'wgEnotifWatchlist', 'wgEmailAuthentication',
+                'wgDBtype', 'wgSecretKey', 'wgRightsUrl', 'wgSitename', 'wgRightsIcon',
+                'wgRightsText', '_MainCacheType', 'wgEnableUploads',
+                '_MemCachedServers', 'wgDBserver', 'wgDBuser',
+                'wgDBpassword', 'wgUseInstantCommons', 'wgUpgradeKey', 'wgDefaultSkin',
+                'wgMetaNamespace', 'wgAuthenticationTokenVersion', 'wgPingback',
+                '_Logo1x', '_LogoTagline', '_LogoWordmark', '_LogoIcon',
+                '_LogoWordmarkWidth', '_LogoWordmarkHeight',
+                '_LogoTaglineWidth', '_LogoTaglineHeight'
+            ],
+            $db->getGlobalNames()
+        );
 
-		// The WebInstaller form field for "Logo" contains a literal "$wgResourceBasePath",
-		// and site admins are told in the help text that they can use $wgStylePath and $wgScriptPath
-		// within their input, such treat this as raw PHP for now.
-		$unescaped = [ 'wgRightsIcon', '_Caches',
-			'_Logo1x', '_LogoWordmark', '_LogoTagline', '_LogoIcon',
-		];
-		$boolItems = [
-			'wgEnableEmail', 'wgEnableUserEmail', 'wgEnotifUserTalk',
-			'wgEnotifWatchlist', 'wgEmailAuthentication', 'wgEnableUploads', 'wgUseInstantCommons',
-			'wgPingback',
-		];
+        // The WebInstaller form field for "Logo" contains a literal "$wgResourceBasePath",
+        // and site admins are told in the help text that they can use $wgStylePath and $wgScriptPath
+        // within their input, such treat this as raw PHP for now.
+        $unescaped = ['wgRightsIcon', '_Caches',
+            '_Logo1x', '_LogoWordmark', '_LogoTagline', '_LogoIcon',
+        ];
+        $boolItems = [
+            'wgEnableEmail', 'wgEnableUserEmail', 'wgEnotifUserTalk',
+            'wgEnotifWatchlist', 'wgEmailAuthentication', 'wgEnableUploads', 'wgUseInstantCommons',
+            'wgPingback',
+        ];
 
-		foreach ( $confItems as $c ) {
-			$val = $installer->getVar( $c );
+        foreach ($confItems as $c) {
+            $val = $installer->getVar($c);
 
-			if ( in_array( $c, $boolItems ) ) {
-				$val = wfBoolToStr( $val );
-			}
+            if (in_array($c, $boolItems)) {
+                $val = wfBoolToStr($val);
+            }
 
-			if ( !in_array( $c, $unescaped ) && $val !== null ) {
-				$val = self::escapePhpString( $val );
-			}
+            if (!in_array($c, $unescaped) && $val !== null) {
+                $val = self::escapePhpString($val);
+            }
 
-			$this->values[$c] = $val;
-		}
+            $this->values[$c] = $val;
+        }
 
-		$this->dbSettings = $db->getLocalSettings();
-		$this->values['wgEmergencyContact'] = $this->values['wgPasswordSender'];
-	}
+        $this->dbSettings = $db->getLocalSettings();
+        $this->values['wgEmergencyContact'] = $this->values['wgPasswordSender'];
+    }
 
-	/**
-	 * For $wgGroupPermissions, set a given ['group']['permission'] value.
-	 * @param string $group Group name
-	 * @param array $rightsArr An array of permissions, in the form of:
-	 *   [ 'right' => true, 'right2' => false ]
-	 */
-	public function setGroupRights( $group, $rightsArr ) {
-		$this->groupPermissions[$group] = $rightsArr;
-	}
+    /**
+     * For $wgGroupPermissions, set a given ['group']['permission'] value.
+     * @param string $group Group name
+     * @param array $rightsArr An array of permissions, in the form of:
+     *   [ 'right' => true, 'right2' => false ]
+     */
+    public function setGroupRights($group, $rightsArr)
+    {
+        $this->groupPermissions[$group] = $rightsArr;
+    }
 
-	/**
-	 * Returns the escaped version of a string of php code.
-	 *
-	 * @param string $string
-	 *
-	 * @return string|false
-	 */
-	public static function escapePhpString( $string ) {
-		if ( is_array( $string ) || is_object( $string ) ) {
-			return false;
-		}
+    /**
+     * Returns the escaped version of a string of php code.
+     *
+     * @param string $string
+     *
+     * @return string|false
+     */
+    public static function escapePhpString($string)
+    {
+        if (is_array($string) || is_object($string)) {
+            return false;
+        }
 
-		return strtr(
-			$string,
-			[
-				"\n" => "\\n",
-				"\r" => "\\r",
-				"\t" => "\\t",
-				"\\" => "\\\\",
-				"\$" => "\\\$",
-				"\"" => "\\\""
-			]
-		);
-	}
+        return strtr(
+            $string,
+            [
+                "\n" => "\\n",
+                "\r" => "\\r",
+                "\t" => "\\t",
+                "\\" => "\\\\",
+                "\$" => "\\\$",
+                "\"" => "\\\""
+            ]
+        );
+    }
 
-	/**
-	 * Return the full text of the generated LocalSettings.php file,
-	 * including the extensions and skins.
-	 *
-	 * @return string
-	 */
-	public function getText() {
-		$localSettings = $this->getDefaultText();
+    /**
+     * Return the full text of the generated LocalSettings.php file,
+     * including the extensions and skins.
+     *
+     * @return string
+     */
+    public function getText()
+    {
+        $localSettings = $this->getDefaultText();
 
-		if ( count( $this->skins ) ) {
-			$localSettings .= "
+        if (count($this->skins)) {
+            $localSettings .= "
 # Enabled skins.
 # The following skins were automatically enabled:\n";
 
-			foreach ( $this->skins as $skinName ) {
-				$localSettings .= $this->generateExtEnableLine( 'skins', $skinName );
-			}
+            foreach ($this->skins as $skinName) {
+                $localSettings .= $this->generateExtEnableLine('skins', $skinName);
+            }
 
-			$localSettings .= "\n";
-		}
+            $localSettings .= "\n";
+        }
 
-		if ( count( $this->extensions ) ) {
-			$localSettings .= "
+        if (count($this->extensions)) {
+            $localSettings .= "
 # Enabled extensions. Most of the extensions are enabled by adding
 # wfLoadExtension( 'ExtensionName' );
 # to LocalSettings.php. Check specific extension documentation for more details.
 # The following extensions were automatically enabled:\n";
 
-			foreach ( $this->extensions as $extName ) {
-				$localSettings .= $this->generateExtEnableLine( 'extensions', $extName );
-			}
+            foreach ($this->extensions as $extName) {
+                $localSettings .= $this->generateExtEnableLine('extensions', $extName);
+            }
 
-			$localSettings .= "\n";
-		}
+            $localSettings .= "\n";
+        }
 
-		$localSettings .= "
+        $localSettings .= "
 # End of automatically generated settings.
 # Add more configuration options below.\n\n";
 
-		return $localSettings;
-	}
+        return $localSettings;
+    }
 
-	/**
-	 * Generate the appropriate line to enable the given extension or skin
-	 *
-	 * @param string $dir Either "extensions" or "skins"
-	 * @param string $name Name of extension/skin
-	 * @throws InvalidArgumentException
-	 * @return string
-	 */
-	private function generateExtEnableLine( $dir, $name ) {
-		if ( $dir === 'extensions' ) {
-			$jsonFile = 'extension.json';
-			$function = 'wfLoadExtension';
-		} elseif ( $dir === 'skins' ) {
-			$jsonFile = 'skin.json';
-			$function = 'wfLoadSkin';
-		} else {
-			throw new InvalidArgumentException( '$dir was not "extensions" or "skins"' );
-		}
+    /**
+     * Generate the appropriate line to enable the given extension or skin
+     *
+     * @param string $dir Either "extensions" or "skins"
+     * @param string $name Name of extension/skin
+     * @return string
+     * @throws InvalidArgumentException
+     */
+    private function generateExtEnableLine($dir, $name)
+    {
+        if ($dir === 'extensions') {
+            $jsonFile = 'extension.json';
+            $function = 'wfLoadExtension';
+        } elseif ($dir === 'skins') {
+            $jsonFile = 'skin.json';
+            $function = 'wfLoadSkin';
+        } else {
+            throw new InvalidArgumentException('$dir was not "extensions" or "skins"');
+        }
 
-		$encName = self::escapePhpString( $name );
+        $encName = self::escapePhpString($name);
 
-		if ( file_exists( "{$this->IP}/$dir/$encName/$jsonFile" ) ) {
-			return "$function( '$encName' );\n";
-		} else {
-			return "require_once \"\$IP/$dir/$encName/$encName.php\";\n";
-		}
-	}
+        if (file_exists("{$this->IP}/$dir/$encName/$jsonFile")) {
+            return "$function( '$encName' );\n";
+        } else {
+            return "require_once \"\$IP/$dir/$encName/$encName.php\";\n";
+        }
+    }
 
-	/**
-	 * Write the generated LocalSettings to a file
-	 *
-	 * @param string $fileName Full path to filename to write to
-	 */
-	public function writeFile( $fileName ) {
-		file_put_contents( $fileName, $this->getText() );
-	}
+    /**
+     * Write the generated LocalSettings to a file
+     *
+     * @param string $fileName Full path to filename to write to
+     */
+    public function writeFile($fileName)
+    {
+        file_put_contents($fileName, $this->getText());
+    }
 
-	/**
-	 * @return string
-	 */
-	protected function buildMemcachedServerList() {
-		$servers = $this->values['_MemCachedServers'];
+    /**
+     * @return string
+     */
+    protected function buildMemcachedServerList()
+    {
+        $servers = $this->values['_MemCachedServers'];
 
-		if ( !$servers ) {
-			return '[]';
-		} else {
-			$ret = '[ ';
-			$servers = explode( ',', $servers );
+        if (!$servers) {
+            return '[]';
+        } else {
+            $ret = '[ ';
+            $servers = explode(',', $servers);
 
-			foreach ( $servers as $srv ) {
-				$srv = trim( $srv );
-				$ret .= "'$srv', ";
-			}
+            foreach ($servers as $srv) {
+                $srv = trim($srv);
+                $ret .= "'$srv', ";
+            }
 
-			return rtrim( $ret, ', ' ) . ' ]';
-		}
-	}
+            return rtrim($ret, ', ') . ' ]';
+        }
+    }
 
-	/**
-	 * @return string
-	 */
-	protected function getDefaultText() {
-		if ( !$this->values['wgImageMagickConvertCommand'] ) {
-			$this->values['wgImageMagickConvertCommand'] = '/usr/bin/convert';
-			$magic = '#';
-		} else {
-			$magic = '';
-		}
+    /**
+     * @return string
+     */
+    protected function getDefaultText()
+    {
+        if (!$this->values['wgImageMagickConvertCommand']) {
+            $this->values['wgImageMagickConvertCommand'] = '/usr/bin/convert';
+            $magic = '#';
+        } else {
+            $magic = '';
+        }
 
-		$metaNamespace = '';
-		if ( $this->values['wgMetaNamespace'] !== $this->values['wgSitename'] ) {
-			$metaNamespace = "\$wgMetaNamespace = \"{$this->values['wgMetaNamespace']}\";\n";
-		}
+        $metaNamespace = '';
+        if ($this->values['wgMetaNamespace'] !== $this->values['wgSitename']) {
+            $metaNamespace = "\$wgMetaNamespace = \"{$this->values['wgMetaNamespace']}\";\n";
+        }
 
-		$groupRights = '';
-		$noFollow = '';
-		if ( $this->groupPermissions ) {
-			$groupRights .= "# The following permissions were set based on your choice in the installer\n";
-			foreach ( $this->groupPermissions as $group => $rightArr ) {
-				$group = self::escapePhpString( $group );
-				foreach ( $rightArr as $right => $perm ) {
-					$right = self::escapePhpString( $right );
-					$groupRights .= "\$wgGroupPermissions['$group']['$right'] = " .
-						wfBoolToStr( $perm ) . ";\n";
-				}
-			}
-			$groupRights .= "\n";
+        $groupRights = '';
+        $noFollow = '';
+        if ($this->groupPermissions) {
+            $groupRights .= "# The following permissions were set based on your choice in the installer\n";
+            foreach ($this->groupPermissions as $group => $rightArr) {
+                $group = self::escapePhpString($group);
+                foreach ($rightArr as $right => $perm) {
+                    $right = self::escapePhpString($right);
+                    $groupRights .= "\$wgGroupPermissions['$group']['$right'] = " .
+                        wfBoolToStr($perm) . ";\n";
+                }
+            }
+            $groupRights .= "\n";
 
-			if ( ( isset( $this->groupPermissions['*']['edit'] ) &&
-					$this->groupPermissions['*']['edit'] === false )
-				&& ( isset( $this->groupPermissions['*']['createaccount'] ) &&
-					$this->groupPermissions['*']['createaccount'] === false )
-				&& ( isset( $this->groupPermissions['*']['read'] ) &&
-					$this->groupPermissions['*']['read'] !== false )
-			) {
-				$noFollow = "# Set \$wgNoFollowLinks to true if you open up your wiki to editing by\n"
-					. "# the general public and wish to apply nofollow to external links as a\n"
-					. "# deterrent to spammers. Nofollow is not a comprehensive anti-spam solution\n"
-					. "# and open wikis will generally require other anti-spam measures; for more\n"
-					. "# information, see https://www.mediawiki.org/wiki/Manual:Combating_spam\n"
-					. "\$wgNoFollowLinks = false;\n\n";
-			}
-		}
+            if ((isset($this->groupPermissions['*']['edit']) &&
+                    $this->groupPermissions['*']['edit'] === false)
+                && (isset($this->groupPermissions['*']['createaccount']) &&
+                    $this->groupPermissions['*']['createaccount'] === false)
+                && (isset($this->groupPermissions['*']['read']) &&
+                    $this->groupPermissions['*']['read'] !== false)
+            ) {
+                $noFollow = "# Set \$wgNoFollowLinks to true if you open up your wiki to editing by\n"
+                    . "# the general public and wish to apply nofollow to external links as a\n"
+                    . "# deterrent to spammers. Nofollow is not a comprehensive anti-spam solution\n"
+                    . "# and open wikis will generally require other anti-spam measures; for more\n"
+                    . "# information, see https://www.mediawiki.org/wiki/Manual:Combating_spam\n"
+                    . "\$wgNoFollowLinks = false;\n\n";
+            }
+        }
 
-		$serverSetting = "";
-		if ( array_key_exists( 'wgServer', $this->values ) && $this->values['wgServer'] !== null ) {
-			$serverSetting = "\n## The protocol and server name to use in fully-qualified URLs\n";
-			$serverSetting .= "\$wgServer = \"{$this->values['wgServer']}\";";
-		}
+        $serverSetting = "";
+        if (array_key_exists('wgServer', $this->values) && $this->values['wgServer'] !== null) {
+            $serverSetting = "\n## The protocol and server name to use in fully-qualified URLs\n";
+            $serverSetting .= "\$wgServer = \"{$this->values['wgServer']}\";";
+        }
 
-		switch ( $this->values['_MainCacheType'] ) {
-			case 'anything':
-			case 'db':
-			case 'memcached':
-			case 'accel':
-				$cacheType = 'CACHE_' . strtoupper( $this->values['_MainCacheType'] );
-				break;
-			case 'none':
-			default:
-				$cacheType = 'CACHE_NONE';
-		}
+        switch ($this->values['_MainCacheType']) {
+            case 'anything':
+            case 'db':
+            case 'memcached':
+            case 'accel':
+                $cacheType = 'CACHE_' . strtoupper($this->values['_MainCacheType']);
+                break;
+            case 'none':
+            default:
+                $cacheType = 'CACHE_NONE';
+        }
 
-		$mcservers = $this->buildMemcachedServerList();
-		if ( file_exists( dirname( __DIR__ ) . '/PlatformSettings.php' ) ) {
-			$platformSettings = "\n## Include platform/distribution defaults";
-			$platformSettings .= "\nrequire_once \"\$IP/includes/PlatformSettings.php\";";
-		} else {
-			$platformSettings = '';
-		}
+        $mcservers = $this->buildMemcachedServerList();
+        if (file_exists(dirname(__DIR__) . '/PlatformSettings.php')) {
+            $platformSettings = "\n## Include platform/distribution defaults";
+            $platformSettings .= "\nrequire_once \"\$IP/includes/PlatformSettings.php\";";
+        } else {
+            $platformSettings = '';
+        }
 
-		$this->values['taglineConfig'] = $this->values['_LogoTagline'] ? "'tagline' => [
+        $this->values['taglineConfig'] = $this->values['_LogoTagline'] ? "'tagline' => [
 		\"src\" => \"{$this->values['_LogoTagline']}\",
 		\"width\" => {$this->values['_LogoTaglineWidth']},
 		\"height\" => {$this->values['_LogoTaglineHeight']}
 	]," : "";
 
-		$this->values['wordmarkConfig'] = $this->values['_LogoWordmark'] ? "'wordmark' => [
+        $this->values['wordmarkConfig'] = $this->values['_LogoWordmark'] ? "'wordmark' => [
 		\"src\" => \"{$this->values['_LogoWordmark']}\",
 		\"width\" => {$this->values['_LogoWordmarkWidth']},
 		\"height\" => {$this->values['_LogoWordmarkHeight']},
 	]," : "";
 
-		$this->values['sidebarLogo'] = $this->values['_Logo1x'] ?: $this->values['_LogoIcon'];
+        $this->values['sidebarLogo'] = $this->values['_Logo1x'] ?: $this->values['_LogoIcon'];
 
-		$version = MW_VERSION;
-		return "<?php
+        $version = MW_VERSION;
+
+        return "<?php
 # This file was automatically generated by the MediaWiki {$version}
 # installer. If you make manual changes, please keep track in case you
 # need to recreate them later.
@@ -444,5 +454,5 @@ ${serverSetting}
 ## names, e.g. 'vector' or 'monobook':
 \$wgDefaultSkin = \"{$this->values['wgDefaultSkin']}\";
 ";
-	}
+    }
 }

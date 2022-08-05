@@ -19,13 +19,15 @@
  * @ingroup Installer
  */
 
-class WebInstallerCopying extends WebInstallerDocument {
+class WebInstallerCopying extends WebInstallerDocument
+{
 
-	/**
-	 * @return string
-	 */
-	protected function getFileName() {
-		return 'COPYING';
-	}
+    /**
+     * @return string
+     */
+    protected function getFileName()
+    {
+        return 'COPYING';
+    }
 
 }

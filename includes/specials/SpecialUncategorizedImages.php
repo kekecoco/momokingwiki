@@ -30,59 +30,68 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @ingroup SpecialPage
  * @todo FIXME: Use an instance of UncategorizedPagesPage or something
  */
-class SpecialUncategorizedImages extends ImageQueryPage {
+class SpecialUncategorizedImages extends ImageQueryPage
+{
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct( ILoadBalancer $loadBalancer ) {
-		parent::__construct( 'Uncategorizedimages' );
-		$this->setDBLoadBalancer( $loadBalancer );
-	}
+    /**
+     * @param ILoadBalancer $loadBalancer
+     */
+    public function __construct(ILoadBalancer $loadBalancer)
+    {
+        parent::__construct('Uncategorizedimages');
+        $this->setDBLoadBalancer($loadBalancer);
+    }
 
-	protected function sortDescending() {
-		return false;
-	}
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	public function isExpensive() {
-		return true;
-	}
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	protected function getOrderFields() {
-		return [ 'title' ];
-	}
+    protected function getOrderFields()
+    {
+        return ['title'];
+    }
 
-	public function execute( $par ) {
-		$this->addHelpLink( 'Help:Categories' );
-		parent::execute( $par );
-	}
+    public function execute($par)
+    {
+        $this->addHelpLink('Help:Categories');
+        parent::execute($par);
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'page', 'categorylinks' ],
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-			],
-			'conds' => [
-				'cl_from IS NULL',
-				'page_namespace' => NS_FILE,
-				'page_is_redirect' => 0,
-			],
-			'join_conds' => [
-				'categorylinks' => [
-					'LEFT JOIN',
-					'cl_from=page_id',
-				],
-			],
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'     => ['page', 'categorylinks'],
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+            ],
+            'conds'      => [
+                'cl_from IS NULL',
+                'page_namespace'   => NS_FILE,
+                'page_is_redirect' => 0,
+            ],
+            'join_conds' => [
+                'categorylinks' => [
+                    'LEFT JOIN',
+                    'cl_from=page_id',
+                ],
+            ],
+        ];
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

@@ -23,6 +23,7 @@
 use MediaWiki\MediaWikiServices;
 
 // phpcs:disable MediaWiki.Files.ClassMatchesFilename.NotMatch
+
 /**
  * Handles searching prefixes of user names
  *
@@ -34,22 +35,24 @@ use MediaWiki\MediaWikiServices;
  *
  * @since 1.27
  */
-class UserNamePrefixSearch {
+class UserNamePrefixSearch
+{
 
-	/**
-	 * Do a prefix search of user names and return a list of matching user names.
-	 *
-	 * @deprecated since 1.36, use the MediaWiki\User\UserNamePrefixSearch service instead
-	 *
-	 * @param string|User $audience The string 'public' or a user object to show the search for
-	 * @param string $search
-	 * @param int $limit
-	 * @param int $offset How many results to offset from the beginning
-	 * @return string[]
-	 */
-	public static function search( $audience, $search, $limit, $offset = 0 ) {
-		return MediaWikiServices::getInstance()
-			->getUserNamePrefixSearch()
-			->search( $audience, (string)$search, (int)$limit, (int)$offset );
-	}
+    /**
+     * Do a prefix search of user names and return a list of matching user names.
+     *
+     * @param string|User $audience The string 'public' or a user object to show the search for
+     * @param string $search
+     * @param int $limit
+     * @param int $offset How many results to offset from the beginning
+     * @return string[]
+     * @deprecated since 1.36, use the MediaWiki\User\UserNamePrefixSearch service instead
+     *
+     */
+    public static function search($audience, $search, $limit, $offset = 0)
+    {
+        return MediaWikiServices::getInstance()
+            ->getUserNamePrefixSearch()
+            ->search($audience, (string)$search, (int)$limit, (int)$offset);
+    }
 }

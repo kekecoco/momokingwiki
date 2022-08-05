@@ -11,9 +11,9 @@ $fallback = 'hy';
 
 /** @phpcs-require-sorted-array */
 $magicWords = [
-	'redirect' => [ '0', '#REDIRECT', '#ՎԵՐԱՀՂՈՒՄ', '#ՎԵՐԱՅՂՈՒՄ' ],
+    'redirect' => ['0', '#REDIRECT', '#ՎԵՐԱՀՂՈՒՄ', '#ՎԵՐԱՅՂՈՒՄ'],
 ];
 
 $namespaceNames = [
-	NS_CATEGORY => 'Ստորոգութիւն',
+    NS_CATEGORY => 'Ստորոգութիւն',
 ];

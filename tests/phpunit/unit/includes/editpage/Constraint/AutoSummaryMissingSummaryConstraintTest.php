@@ -28,47 +28,50 @@ use MediaWiki\EditPage\Constraint\IEditConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\AutoSummaryMissingSummaryConstraint
  */
-class AutoSummaryMissingSummaryConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class AutoSummaryMissingSummaryConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$originalContent = $this->createMock( Content::class );
-		$newContent = $this->createMock( Content::class );
-		$newContent->expects( $this->once() )
-			->method( 'equals' )
-			->with( $originalContent )
-			->willReturn( false );
-		$newContent->expects( $this->once() )
-			->method( 'isRedirect' )
-			->willReturn( false );
-		$constraint = new AutoSummaryMissingSummaryConstraint(
-			'UserSummary',
-			'AutoSummary',
-			false,
-			$newContent,
-			$originalContent
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testPass()
+    {
+        $originalContent = $this->createMock(Content::class);
+        $newContent = $this->createMock(Content::class);
+        $newContent->expects($this->once())
+            ->method('equals')
+            ->with($originalContent)
+            ->willReturn(false);
+        $newContent->expects($this->once())
+            ->method('isRedirect')
+            ->willReturn(false);
+        $constraint = new AutoSummaryMissingSummaryConstraint(
+            'UserSummary',
+            'AutoSummary',
+            false,
+            $newContent,
+            $originalContent
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$originalContent = $this->createMock( Content::class );
-		$newContent = $this->createMock( Content::class );
-		$newContent->expects( $this->once() )
-			->method( 'equals' )
-			->with( $originalContent )
-			->willReturn( false );
-		$newContent->expects( $this->once() )
-			->method( 'isRedirect' )
-			->willReturn( false );
-		$constraint = new AutoSummaryMissingSummaryConstraint(
-			'UserSummary',
-			md5( 'UserSummary' ),
-			false,
-			$newContent,
-			$originalContent
-		);
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_SUMMARY_NEEDED );
-	}
+    public function testFailure()
+    {
+        $originalContent = $this->createMock(Content::class);
+        $newContent = $this->createMock(Content::class);
+        $newContent->expects($this->once())
+            ->method('equals')
+            ->with($originalContent)
+            ->willReturn(false);
+        $newContent->expects($this->once())
+            ->method('isRedirect')
+            ->willReturn(false);
+        $constraint = new AutoSummaryMissingSummaryConstraint(
+            'UserSummary',
+            md5('UserSummary'),
+            false,
+            $newContent,
+            $originalContent
+        );
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_SUMMARY_NEEDED);
+    }
 
 }

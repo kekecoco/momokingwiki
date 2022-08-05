@@ -1,4 +1,5 @@
 <?php
 
-class TestAnotherAutoloadedClass {
+class TestAnotherAutoloadedClass
+{
 }

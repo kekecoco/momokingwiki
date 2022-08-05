@@ -30,86 +30,95 @@ use Wikimedia\Rdbms\ILoadBalancer;
  *
  * @ingroup SpecialPage
  */
-class SpecialDeadendPages extends PageQueryPage {
+class SpecialDeadendPages extends PageQueryPage
+{
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
+    /** @var NamespaceInfo */
+    private $namespaceInfo;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct( 'Deadendpages' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->setDBLoadBalancer( $loadBalancer );
-		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->setLanguageConverter( $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() ) );
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct('Deadendpages');
+        $this->namespaceInfo = $namespaceInfo;
+        $this->setDBLoadBalancer($loadBalancer);
+        $this->setLinkBatchFactory($linkBatchFactory);
+        $this->setLanguageConverter($languageConverterFactory->getLanguageConverter($this->getContentLanguage()));
+    }
 
-	protected function getPageHeader() {
-		return $this->msg( 'deadendpagestext' )->parseAsBlock();
-	}
+    protected function getPageHeader()
+    {
+        return $this->msg('deadendpagestext')->parseAsBlock();
+    }
 
-	/**
-	 * LEFT JOIN is expensive
-	 *
-	 * @return bool
-	 */
-	public function isExpensive() {
-		return true;
-	}
+    /**
+     * LEFT JOIN is expensive
+     *
+     * @return bool
+     */
+    public function isExpensive()
+    {
+        return true;
+    }
 
-	public function isSyndicated() {
-		return false;
-	}
+    public function isSyndicated()
+    {
+        return false;
+    }
 
-	/**
-	 * @return bool
-	 */
-	protected function sortDescending() {
-		return false;
-	}
+    /**
+     * @return bool
+     */
+    protected function sortDescending()
+    {
+        return false;
+    }
 
-	public function getQueryInfo() {
-		return [
-			'tables' => [ 'page', 'pagelinks' ],
-			'fields' => [
-				'namespace' => 'page_namespace',
-				'title' => 'page_title',
-			],
-			'conds' => [
-				'pl_from IS NULL',
-				'page_namespace' => $this->namespaceInfo->getContentNamespaces(),
-				'page_is_redirect' => 0
-			],
-			'join_conds' => [
-				'pagelinks' => [
-					'LEFT JOIN',
-					[ 'page_id=pl_from' ]
-				]
-			]
-		];
-	}
+    public function getQueryInfo()
+    {
+        return [
+            'tables'     => ['page', 'pagelinks'],
+            'fields'     => [
+                'namespace' => 'page_namespace',
+                'title'     => 'page_title',
+            ],
+            'conds'      => [
+                'pl_from IS NULL',
+                'page_namespace'   => $this->namespaceInfo->getContentNamespaces(),
+                'page_is_redirect' => 0
+            ],
+            'join_conds' => [
+                'pagelinks' => [
+                    'LEFT JOIN',
+                    ['page_id=pl_from']
+                ]
+            ]
+        ];
+    }
 
-	protected function getOrderFields() {
-		// For some crazy reason ordering by a constant
-		// causes a filesort
-		if ( count( $this->namespaceInfo->getContentNamespaces() ) > 1 ) {
-			return [ 'page_namespace', 'page_title' ];
-		} else {
-			return [ 'page_title' ];
-		}
-	}
+    protected function getOrderFields()
+    {
+        // For some crazy reason ordering by a constant
+        // causes a filesort
+        if (count($this->namespaceInfo->getContentNamespaces()) > 1) {
+            return ['page_namespace', 'page_title'];
+        } else {
+            return ['page_title'];
+        }
+    }
 
-	protected function getGroupName() {
-		return 'maintenance';
-	}
+    protected function getGroupName()
+    {
+        return 'maintenance';
+    }
 }

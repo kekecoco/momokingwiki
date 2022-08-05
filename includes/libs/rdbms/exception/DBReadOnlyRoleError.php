@@ -27,5 +27,6 @@ namespace Wikimedia\Rdbms;
  * @newable
  * @ingroup Database
  */
-class DBReadOnlyRoleError extends DBUnexpectedError {
+class DBReadOnlyRoleError extends DBUnexpectedError
+{
 }

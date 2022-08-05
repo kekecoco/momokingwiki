@@ -37,36 +37,41 @@ namespace MediaWiki\Session;
  * @ingroup Session
  * @since 1.27
  */
-final class SessionId {
-	/** @var string */
-	private $id;
+final class SessionId
+{
+    /** @var string */
+    private $id;
 
-	/**
-	 * @stable to call
-	 *
-	 * @param string $id
-	 */
-	public function __construct( $id ) {
-		$this->id = $id;
-	}
+    /**
+     * @stable to call
+     *
+     * @param string $id
+     */
+    public function __construct($id)
+    {
+        $this->id = $id;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getId() {
-		return $this->id;
-	}
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
 
-	/**
-	 * @internal For use by \MediaWiki\Session\SessionManager only
-	 * @param string $id
-	 */
-	public function setId( $id ) {
-		$this->id = $id;
-	}
+    /**
+     * @param string $id
+     * @internal For use by \MediaWiki\Session\SessionManager only
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
-	public function __toString() {
-		return $this->id;
-	}
+    public function __toString()
+    {
+        return $this->id;
+    }
 
 }

@@ -31,123 +31,126 @@ use MediaWiki\Block\DatabaseBlock;
  *
  * @ingroup Maintenance
  */
-class CleanupBlocks extends Maintenance {
+class CleanupBlocks extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( "Cleanup user blocks with user names not matching the 'user' table" );
-		$this->setBatchSize( 1000 );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription("Cleanup user blocks with user names not matching the 'user' table");
+        $this->setBatchSize(1000);
+    }
 
-	public function execute() {
-		$db = $this->getDB( DB_PRIMARY );
-		$blockQuery = DatabaseBlock::getQueryInfo();
+    public function execute()
+    {
+        $db = $this->getDB(DB_PRIMARY);
+        $blockQuery = DatabaseBlock::getQueryInfo();
 
-		$max = $db->newSelectQueryBuilder()
-			->select( 'MAX(ipb_user)' )
-			->from( 'ipblocks' )
-			->caller( __METHOD__ )
-			->fetchField();
+        $max = $db->newSelectQueryBuilder()
+            ->select('MAX(ipb_user)')
+            ->from('ipblocks')
+            ->caller(__METHOD__)
+            ->fetchField();
 
-		// Step 1: Clean up any duplicate user blocks
-		$batchSize = $this->getBatchSize();
-		for ( $from = 1; $from <= $max; $from += $batchSize ) {
-			$to = min( $max, $from + $batchSize - 1 );
-			$this->output( "Cleaning up duplicate ipb_user ($from-$to of $max)\n" );
+        // Step 1: Clean up any duplicate user blocks
+        $batchSize = $this->getBatchSize();
+        for ($from = 1; $from <= $max; $from += $batchSize) {
+            $to = min($max, $from + $batchSize - 1);
+            $this->output("Cleaning up duplicate ipb_user ($from-$to of $max)\n");
 
-			$delete = [];
+            $delete = [];
 
-			$res = $db->newSelectQueryBuilder()
-				->select( 'ipb_user' )
-				->from( 'ipblocks' )
-				->where( [
-					'ipb_user >= ' . $from,
-					'ipb_user <= ' . (int)$to,
-				] )
-				->groupBy( 'ipb_user' )
-				->having( 'COUNT(*) > 1' )
-				->caller( __METHOD__ )
-				->fetchResultSet();
-			foreach ( $res as $row ) {
-				$bestBlock = null;
-				$res2 = $db->newSelectQueryBuilder()
-					->select( $blockQuery['fields'] )
-					->tables( $blockQuery['tables'] )
-					->where( [
-						'ipb_user' => $row->ipb_user,
-					] )
-					->joinConds( $blockQuery['joins'] )
-					->caller( __METHOD__ )
-					->fetchResultSet();
-				foreach ( $res2 as $row2 ) {
-					$block = DatabaseBlock::newFromRow( $row2 );
-					if ( !$bestBlock ) {
-						$bestBlock = $block;
-						continue;
-					}
+            $res = $db->newSelectQueryBuilder()
+                ->select('ipb_user')
+                ->from('ipblocks')
+                ->where([
+                    'ipb_user >= ' . $from,
+                    'ipb_user <= ' . (int)$to,
+                ])
+                ->groupBy('ipb_user')
+                ->having('COUNT(*) > 1')
+                ->caller(__METHOD__)
+                ->fetchResultSet();
+            foreach ($res as $row) {
+                $bestBlock = null;
+                $res2 = $db->newSelectQueryBuilder()
+                    ->select($blockQuery['fields'])
+                    ->tables($blockQuery['tables'])
+                    ->where([
+                        'ipb_user' => $row->ipb_user,
+                    ])
+                    ->joinConds($blockQuery['joins'])
+                    ->caller(__METHOD__)
+                    ->fetchResultSet();
+                foreach ($res2 as $row2) {
+                    $block = DatabaseBlock::newFromRow($row2);
+                    if (!$bestBlock) {
+                        $bestBlock = $block;
+                        continue;
+                    }
 
-					// Find the most-restrictive block.
-					$keep = null;
-					if ( $keep === null && $block->getExpiry() !== $bestBlock->getExpiry() ) {
-						// This works for infinite blocks because 'infinity' > '20141024234513'
-						$keep = $block->getExpiry() > $bestBlock->getExpiry();
-					}
-					if ( $keep === null ) {
-						if ( $block->isCreateAccountBlocked() xor $bestBlock->isCreateAccountBlocked() ) {
-							$keep = $block->isCreateAccountBlocked();
-						} elseif ( $block->isEmailBlocked() xor $bestBlock->isEmailBlocked() ) {
-							$keep = $block->isEmailBlocked();
-						} elseif ( $block->isUsertalkEditAllowed() xor $bestBlock->isUsertalkEditAllowed() ) {
-							$keep = $block->isUsertalkEditAllowed();
-						}
-					}
+                    // Find the most-restrictive block.
+                    $keep = null;
+                    if ($keep === null && $block->getExpiry() !== $bestBlock->getExpiry()) {
+                        // This works for infinite blocks because 'infinity' > '20141024234513'
+                        $keep = $block->getExpiry() > $bestBlock->getExpiry();
+                    }
+                    if ($keep === null) {
+                        if ($block->isCreateAccountBlocked() xor $bestBlock->isCreateAccountBlocked()) {
+                            $keep = $block->isCreateAccountBlocked();
+                        } elseif ($block->isEmailBlocked() xor $bestBlock->isEmailBlocked()) {
+                            $keep = $block->isEmailBlocked();
+                        } elseif ($block->isUsertalkEditAllowed() xor $bestBlock->isUsertalkEditAllowed()) {
+                            $keep = $block->isUsertalkEditAllowed();
+                        }
+                    }
 
-					if ( $keep ) {
-						$delete[] = $bestBlock->getId();
-						$bestBlock = $block;
-					} else {
-						$delete[] = $block->getId();
-					}
-				}
-			}
+                    if ($keep) {
+                        $delete[] = $bestBlock->getId();
+                        $bestBlock = $block;
+                    } else {
+                        $delete[] = $block->getId();
+                    }
+                }
+            }
 
-			if ( $delete ) {
-				$db->delete(
-					'ipblocks',
-					[ 'ipb_id' => $delete ],
-					__METHOD__
-				);
-			}
-		}
+            if ($delete) {
+                $db->delete(
+                    'ipblocks',
+                    ['ipb_id' => $delete],
+                    __METHOD__
+                );
+            }
+        }
 
-		// Step 2: Update the user name in any blocks where it doesn't match
-		for ( $from = 1; $from <= $max; $from += $batchSize ) {
-			$to = min( $max, $from + $batchSize - 1 );
-			$this->output( "Cleaning up mismatched user name ($from-$to of $max)\n" );
+        // Step 2: Update the user name in any blocks where it doesn't match
+        for ($from = 1; $from <= $max; $from += $batchSize) {
+            $to = min($max, $from + $batchSize - 1);
+            $this->output("Cleaning up mismatched user name ($from-$to of $max)\n");
 
-			$res = $db->newSelectQueryBuilder()
-				->select( [ 'ipb_id', 'user_name' ] )
-				->tables( [ 'ipblocks', 'user' ] )
-				->where( [
-					'ipb_user = user_id',
-					"ipb_user >= " . $from,
-					"ipb_user <= " . (int)$to,
-					'ipb_address != user_name',
-				] )
-				->caller( __METHOD__ )
-				->fetchResultSet();
-			foreach ( $res as $row ) {
-				$db->update(
-					'ipblocks',
-					[ 'ipb_address' => $row->user_name ],
-					[ 'ipb_id' => $row->ipb_id ],
-					__METHOD__
-				);
-			}
-		}
+            $res = $db->newSelectQueryBuilder()
+                ->select(['ipb_id', 'user_name'])
+                ->tables(['ipblocks', 'user'])
+                ->where([
+                    'ipb_user = user_id',
+                    "ipb_user >= " . $from,
+                    "ipb_user <= " . (int)$to,
+                    'ipb_address != user_name',
+                ])
+                ->caller(__METHOD__)
+                ->fetchResultSet();
+            foreach ($res as $row) {
+                $db->update(
+                    'ipblocks',
+                    ['ipb_address' => $row->user_name],
+                    ['ipb_id' => $row->ipb_id],
+                    __METHOD__
+                );
+            }
+        }
 
-		$this->output( "Done!\n" );
-	}
+        $this->output("Done!\n");
+    }
 }
 
 $maintClass = CleanupBlocks::class;

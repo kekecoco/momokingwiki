@@ -32,77 +32,83 @@ namespace MediaWiki\Auth;
  * @ingroup Auth
  * @since 1.27
  */
-class CreateFromLoginAuthenticationRequest extends AuthenticationRequest {
-	public $required = self::OPTIONAL;
+class CreateFromLoginAuthenticationRequest extends AuthenticationRequest
+{
+    public $required = self::OPTIONAL;
 
-	/** @var AuthenticationRequest|null */
-	public $createRequest;
+    /** @var AuthenticationRequest|null */
+    public $createRequest;
 
-	/** @var AuthenticationRequest[] */
-	public $maybeLink = [];
+    /** @var AuthenticationRequest[] */
+    public $maybeLink = [];
 
-	/**
-	 * @stable to call
-	 * @param AuthenticationRequest|null $createRequest A request to use to
-	 *  begin creating the account
-	 * @param AuthenticationRequest[] $maybeLink Additional accounts to link
-	 *  after creation.
-	 */
-	public function __construct(
-		AuthenticationRequest $createRequest = null, array $maybeLink = []
-	) {
-		$this->createRequest = $createRequest;
-		$this->maybeLink = $maybeLink;
-		$this->username = $createRequest ? $createRequest->username : null;
-	}
+    /**
+     * @stable to call
+     * @param AuthenticationRequest|null $createRequest A request to use to
+     *  begin creating the account
+     * @param AuthenticationRequest[] $maybeLink Additional accounts to link
+     *  after creation.
+     */
+    public function __construct(
+        AuthenticationRequest $createRequest = null, array $maybeLink = []
+    )
+    {
+        $this->createRequest = $createRequest;
+        $this->maybeLink = $maybeLink;
+        $this->username = $createRequest ? $createRequest->username : null;
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function getFieldInfo() {
-		return [];
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function getFieldInfo()
+    {
+        return [];
+    }
 
-	/**
-	 * @inheritDoc
-	 * @stable to override
-	 */
-	public function loadFromSubmission( array $data ) {
-		return true;
-	}
+    /**
+     * @inheritDoc
+     * @stable to override
+     */
+    public function loadFromSubmission(array $data)
+    {
+        return true;
+    }
 
-	/**
-	 * Indicate whether this request contains any state for the specified
-	 * action.
-	 * @stable to override
-	 * @param string $action One of the AuthManager::ACTION_* constants
-	 * @return bool
-	 */
-	public function hasStateForAction( $action ) {
-		switch ( $action ) {
-			case AuthManager::ACTION_LOGIN:
-				return (bool)$this->maybeLink;
-			case AuthManager::ACTION_CREATE:
-				return $this->maybeLink || $this->createRequest;
-			default:
-				return false;
-		}
-	}
+    /**
+     * Indicate whether this request contains any state for the specified
+     * action.
+     * @stable to override
+     * @param string $action One of the AuthManager::ACTION_* constants
+     * @return bool
+     */
+    public function hasStateForAction($action)
+    {
+        switch ($action) {
+            case AuthManager::ACTION_LOGIN:
+                return (bool)$this->maybeLink;
+            case AuthManager::ACTION_CREATE:
+                return $this->maybeLink || $this->createRequest;
+            default:
+                return false;
+        }
+    }
 
-	/**
-	 * Indicate whether this request contains state for the specified
-	 * action sufficient to replace other primary-required requests.
-	 * @stable to override
-	 * @param string $action One of the AuthManager::ACTION_* constants
-	 * @return bool
-	 */
-	public function hasPrimaryStateForAction( $action ) {
-		switch ( $action ) {
-			case AuthManager::ACTION_CREATE:
-				return (bool)$this->createRequest;
-			default:
-				return false;
-		}
-	}
+    /**
+     * Indicate whether this request contains state for the specified
+     * action sufficient to replace other primary-required requests.
+     * @stable to override
+     * @param string $action One of the AuthManager::ACTION_* constants
+     * @return bool
+     */
+    public function hasPrimaryStateForAction($action)
+    {
+        switch ($action) {
+            case AuthManager::ACTION_CREATE:
+                return (bool)$this->createRequest;
+            default:
+                return false;
+        }
+    }
 }

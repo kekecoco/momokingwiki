@@ -29,33 +29,37 @@ use Wikimedia\Assert\Assert;
  * @ingroup Cache
  * @since 1.32
  */
-class MessageCacheUpdate implements DeferrableUpdate, MergeableUpdate {
-	/** @var array[] Map of (language code => list of (DB key, DB key without code)) */
-	private $replacements = [];
+class MessageCacheUpdate implements DeferrableUpdate, MergeableUpdate
+{
+    /** @var array[] Map of (language code => list of (DB key, DB key without code)) */
+    private $replacements = [];
 
-	/**
-	 * @param string $code Language code
-	 * @param string $title Message cache key with initial uppercase letter
-	 * @param string $msg Message cache key with initial uppercase letter and without the code
-	 */
-	public function __construct( $code, $title, $msg ) {
-		$this->replacements[$code][] = [ $title, $msg ];
-	}
+    /**
+     * @param string $code Language code
+     * @param string $title Message cache key with initial uppercase letter
+     * @param string $msg Message cache key with initial uppercase letter and without the code
+     */
+    public function __construct($code, $title, $msg)
+    {
+        $this->replacements[$code][] = [$title, $msg];
+    }
 
-	public function merge( MergeableUpdate $update ) {
-		/** @var self $update */
-		Assert::parameterType( __CLASS__, $update, '$update' );
-		'@phan-var self $update';
+    public function merge(MergeableUpdate $update)
+    {
+        /** @var self $update */
+        Assert::parameterType(__CLASS__, $update, '$update');
+        '@phan-var self $update';
 
-		foreach ( $update->replacements as $code => $messages ) {
-			$this->replacements[$code] = array_merge( $this->replacements[$code] ?? [], $messages );
-		}
-	}
+        foreach ($update->replacements as $code => $messages) {
+            $this->replacements[$code] = array_merge($this->replacements[$code] ?? [], $messages);
+        }
+    }
 
-	public function doUpdate() {
-		$messageCache = MediaWikiServices::getInstance()->getMessageCache();
-		foreach ( $this->replacements as $code => $replacements ) {
-			$messageCache->refreshAndReplaceInternal( $code, $replacements );
-		}
-	}
+    public function doUpdate()
+    {
+        $messageCache = MediaWikiServices::getInstance()->getMessageCache();
+        foreach ($this->replacements as $code => $replacements) {
+            $messageCache->refreshAndReplaceInternal($code, $replacements);
+        }
+    }
 }

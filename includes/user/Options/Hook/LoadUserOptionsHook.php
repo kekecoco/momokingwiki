@@ -11,15 +11,16 @@ use MediaWiki\User\UserIdentity;
  * @stable to implement
  * @ingroup Hooks
  */
-interface LoadUserOptionsHook {
-	/**
-	 * This hook is called when user options/preferences are being loaded from the database.
-	 *
-	 * @since 1.37
-	 *
-	 * @param UserIdentity $user
-	 * @param array &$options Options, can be modified.
-	 * @return void This hook must not abort, it must return no value
-	 */
-	public function onLoadUserOptions( UserIdentity $user, array &$options ): void;
+interface LoadUserOptionsHook
+{
+    /**
+     * This hook is called when user options/preferences are being loaded from the database.
+     *
+     * @param UserIdentity $user
+     * @param array &$options Options, can be modified.
+     * @return void This hook must not abort, it must return no value
+     * @since 1.37
+     *
+     */
+    public function onLoadUserOptions(UserIdentity $user, array &$options): void;
 }

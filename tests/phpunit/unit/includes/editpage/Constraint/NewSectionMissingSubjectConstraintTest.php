@@ -28,17 +28,20 @@ use MediaWiki\EditPage\Constraint\NewSectionMissingSubjectConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\NewSectionMissingSubjectConstraint
  */
-class NewSectionMissingSubjectConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class NewSectionMissingSubjectConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$constraint = new NewSectionMissingSubjectConstraint( 'Subject', false );
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testPass()
+    {
+        $constraint = new NewSectionMissingSubjectConstraint('Subject', false);
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$constraint = new NewSectionMissingSubjectConstraint( '', false );
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_SUMMARY_NEEDED );
-	}
+    public function testFailure()
+    {
+        $constraint = new NewSectionMissingSubjectConstraint('', false);
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_SUMMARY_NEEDED);
+    }
 
 }

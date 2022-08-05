@@ -27,26 +27,29 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.37
  */
-class FindClasses extends Maintenance {
+class FindClasses extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Finds the files containing classes via the autoloader.' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Finds the files containing classes via the autoloader.');
+    }
 
-	public function execute() {
-		$input = file( 'php://stdin' );
+    public function execute()
+    {
+        $input = file('php://stdin');
 
-		foreach ( $input as $line ) {
-			$class = trim( $line );
-			$filename = AutoLoader::find( $class );
-			if ( $filename ) {
-				print "$filename\n";
-			} elseif ( $class ) {
-				print "#$class\n";
-			}
-		}
-	}
+        foreach ($input as $line) {
+            $class = trim($line);
+            $filename = AutoLoader::find($class);
+            if ($filename) {
+                print "$filename\n";
+            } elseif ($class) {
+                print "#$class\n";
+            }
+        }
+    }
 }
 
 $maintClass = FindClasses::class;

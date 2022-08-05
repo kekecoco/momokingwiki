@@ -27,29 +27,34 @@ use MediaWiki\MainConfigNames;
  *
  * @ingroup Actions
  */
-class ProtectAction extends FormlessAction {
+class ProtectAction extends FormlessAction
+{
 
-	public function getName() {
-		return 'protect';
-	}
+    public function getName()
+    {
+        return 'protect';
+    }
 
-	public function onView() {
-		return null;
-	}
+    public function onView()
+    {
+        return null;
+    }
 
-	public function show() {
-		if ( $this->getContext()->getConfig()->get( MainConfigNames::UseMediaWikiUIEverywhere ) ) {
-			$out = $this->getOutput();
-			$out->addModuleStyles( [
-				'mediawiki.ui.input',
-				'mediawiki.ui.checkbox',
-			] );
-		}
+    public function show()
+    {
+        if ($this->getContext()->getConfig()->get(MainConfigNames::UseMediaWikiUIEverywhere)) {
+            $out = $this->getOutput();
+            $out->addModuleStyles([
+                'mediawiki.ui.input',
+                'mediawiki.ui.checkbox',
+            ]);
+        }
 
-		$this->getArticle()->protect();
-	}
+        $this->getArticle()->protect();
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 }

@@ -28,150 +28,157 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class TableCleanup extends Maintenance {
-	protected $defaultParams = [
-		'table' => 'page',
-		'conds' => [],
-		'index' => 'page_id',
-		'callback' => 'processRow',
-	];
+class TableCleanup extends Maintenance
+{
+    protected $defaultParams = [
+        'table'    => 'page',
+        'conds'    => [],
+        'index'    => 'page_id',
+        'callback' => 'processRow',
+    ];
 
-	protected $dryrun = false;
-	protected $reportInterval = 100;
+    protected $dryrun = false;
+    protected $reportInterval = 100;
 
-	protected $processed, $updated, $count, $startTime, $table;
+    protected $processed, $updated, $count, $startTime, $table;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( 'dry-run', 'Perform a dry run' );
-		$this->addOption( 'reporting-interval', 'How often to print status line' );
-		$this->setBatchSize( 100 );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption('dry-run', 'Perform a dry run');
+        $this->addOption('reporting-interval', 'How often to print status line');
+        $this->setBatchSize(100);
+    }
 
-	public function execute() {
-		$this->reportInterval = $this->getOption( 'reporting-interval', $this->reportInterval );
+    public function execute()
+    {
+        $this->reportInterval = $this->getOption('reporting-interval', $this->reportInterval);
 
-		$this->dryrun = $this->hasOption( 'dry-run' );
+        $this->dryrun = $this->hasOption('dry-run');
 
-		if ( $this->dryrun ) {
-			$this->output( "Checking for bad titles...\n" );
-		} else {
-			$this->output( "Checking and fixing bad titles...\n" );
-		}
+        if ($this->dryrun) {
+            $this->output("Checking for bad titles...\n");
+        } else {
+            $this->output("Checking and fixing bad titles...\n");
+        }
 
-		$this->runTable( $this->defaultParams );
-	}
+        $this->runTable($this->defaultParams);
+    }
 
-	protected function init( $count, $table ) {
-		$this->processed = 0;
-		$this->updated = 0;
-		$this->count = $count;
-		$this->startTime = microtime( true );
-		$this->table = $table;
-	}
+    protected function init($count, $table)
+    {
+        $this->processed = 0;
+        $this->updated = 0;
+        $this->count = $count;
+        $this->startTime = microtime(true);
+        $this->table = $table;
+    }
 
-	/**
-	 * @param int $updated
-	 */
-	protected function progress( $updated ) {
-		$this->updated += $updated;
-		$this->processed++;
-		if ( $this->processed % $this->reportInterval != 0 ) {
-			return;
-		}
-		$portion = $this->processed / $this->count;
-		$updateRate = $this->updated / $this->processed;
+    /**
+     * @param int $updated
+     */
+    protected function progress($updated)
+    {
+        $this->updated += $updated;
+        $this->processed++;
+        if ($this->processed % $this->reportInterval != 0) {
+            return;
+        }
+        $portion = $this->processed / $this->count;
+        $updateRate = $this->updated / $this->processed;
 
-		$now = microtime( true );
-		$delta = $now - $this->startTime;
-		$estimatedTotalTime = $delta / $portion;
-		$eta = $this->startTime + $estimatedTotalTime;
+        $now = microtime(true);
+        $delta = $now - $this->startTime;
+        $estimatedTotalTime = $delta / $portion;
+        $eta = $this->startTime + $estimatedTotalTime;
 
-		$this->output(
-			sprintf( "%s %s: %6.2f%% done on %s; ETA %s [%d/%d] %.2f/sec <%.2f%% updated>\n",
-				WikiMap::getCurrentWikiDbDomain()->getId(),
-				wfTimestamp( TS_DB, intval( $now ) ),
-				$portion * 100.0,
-				$this->table,
-				wfTimestamp( TS_DB, intval( $eta ) ),
-				$this->processed,
-				$this->count,
-				$this->processed / $delta,
-				$updateRate * 100.0
-			)
-		);
-		flush();
-	}
+        $this->output(
+            sprintf("%s %s: %6.2f%% done on %s; ETA %s [%d/%d] %.2f/sec <%.2f%% updated>\n",
+                WikiMap::getCurrentWikiDbDomain()->getId(),
+                wfTimestamp(TS_DB, intval($now)),
+                $portion * 100.0,
+                $this->table,
+                wfTimestamp(TS_DB, intval($eta)),
+                $this->processed,
+                $this->count,
+                $this->processed / $delta,
+                $updateRate * 100.0
+            )
+        );
+        flush();
+    }
 
-	/**
-	 * @param array $params
-	 * @throws MWException
-	 */
-	public function runTable( $params ) {
-		$dbr = $this->getDB( DB_REPLICA );
+    /**
+     * @param array $params
+     * @throws MWException
+     */
+    public function runTable($params)
+    {
+        $dbr = $this->getDB(DB_REPLICA);
 
-		if ( array_diff( array_keys( $params ),
-			[ 'table', 'conds', 'index', 'callback' ] )
-		) {
-			throw new MWException( __METHOD__ . ': Missing parameter ' . implode( ', ', $params ) );
-		}
+        if (array_diff(array_keys($params),
+            ['table', 'conds', 'index', 'callback'])
+        ) {
+            throw new MWException(__METHOD__ . ': Missing parameter ' . implode(', ', $params));
+        }
 
-		$table = $params['table'];
-		// count(*) would melt the DB for huge tables, we can estimate here
-		$count = $dbr->estimateRowCount( $table, '*', '', __METHOD__ );
-		$this->init( $count, $table );
-		$this->output( "Processing $table...\n" );
+        $table = $params['table'];
+        // count(*) would melt the DB for huge tables, we can estimate here
+        $count = $dbr->estimateRowCount($table, '*', '', __METHOD__);
+        $this->init($count, $table);
+        $this->output("Processing $table...\n");
 
-		$index = (array)$params['index'];
-		$indexConds = [];
-		$options = [
-			'ORDER BY' => implode( ',', $index ),
-			'LIMIT' => $this->getBatchSize()
-		];
-		$callback = [ $this, $params['callback'] ];
+        $index = (array)$params['index'];
+        $indexConds = [];
+        $options = [
+            'ORDER BY' => implode(',', $index),
+            'LIMIT'    => $this->getBatchSize()
+        ];
+        $callback = [$this, $params['callback']];
 
-		while ( true ) {
-			$conds = array_merge( $params['conds'], $indexConds );
-			$res = $dbr->select( $table, '*', $conds, __METHOD__, $options );
-			if ( !$res->numRows() ) {
-				// Done
-				break;
-			}
+        while (true) {
+            $conds = array_merge($params['conds'], $indexConds);
+            $res = $dbr->select($table, '*', $conds, __METHOD__, $options);
+            if (!$res->numRows()) {
+                // Done
+                break;
+            }
 
-			foreach ( $res as $row ) {
-				call_user_func( $callback, $row );
-			}
+            foreach ($res as $row) {
+                call_user_func($callback, $row);
+            }
 
-			if ( $res->numRows() < $this->getBatchSize() ) {
-				// Done
-				break;
-			}
+            if ($res->numRows() < $this->getBatchSize()) {
+                // Done
+                break;
+            }
 
-			// Update the conditions to select the next batch.
-			// Construct a condition string by starting with the least significant part
-			// of the index, and adding more significant parts progressively to the left
-			// of the string.
-			$nextCond = '';
-			foreach ( array_reverse( $index ) as $field ) {
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable $res has at at least one item
-				$encValue = $dbr->addQuotes( $row->$field );
-				if ( $nextCond === '' ) {
-					$nextCond = "$field > $encValue";
-				} else {
-					$nextCond = "$field > $encValue OR ($field = $encValue AND ($nextCond))";
-				}
-			}
-			$indexConds = [ $nextCond ];
-		}
+            // Update the conditions to select the next batch.
+            // Construct a condition string by starting with the least significant part
+            // of the index, and adding more significant parts progressively to the left
+            // of the string.
+            $nextCond = '';
+            foreach (array_reverse($index) as $field) {
+                // @phan-suppress-next-line PhanPossiblyUndeclaredVariable $res has at at least one item
+                $encValue = $dbr->addQuotes($row->$field);
+                if ($nextCond === '') {
+                    $nextCond = "$field > $encValue";
+                } else {
+                    $nextCond = "$field > $encValue OR ($field = $encValue AND ($nextCond))";
+                }
+            }
+            $indexConds = [$nextCond];
+        }
 
-		$this->output( "Finished $table... $this->updated of $this->processed rows updated\n" );
-	}
+        $this->output("Finished $table... $this->updated of $this->processed rows updated\n");
+    }
 
-	/**
-	 * @param string[] $matches
-	 * @return string
-	 */
-	protected function hexChar( $matches ) {
-		return sprintf( "\\x%02x", ord( $matches[1] ) );
-	}
+    /**
+     * @param string[] $matches
+     * @return string
+     */
+    protected function hexChar($matches)
+    {
+        return sprintf("\\x%02x", ord($matches[1]));
+    }
 }

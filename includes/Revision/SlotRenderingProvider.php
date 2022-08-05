@@ -9,18 +9,19 @@ use ParserOutput;
  *
  * @since 1.32
  */
-interface SlotRenderingProvider {
+interface SlotRenderingProvider
+{
 
-	/**
-	 * @param string $role
-	 * @param array $hints Hints given as an associative array. Known keys:
-	 *      - 'generate-html' => bool: Whether the caller is interested in output HTML (as opposed
-	 *        to just meta-data). Default is to generate HTML.
-	 *
-	 * @throws SuppressedDataException if the content is not accessible for the audience
-	 *         specified in the constructor.
-	 * @return ParserOutput
-	 */
-	public function getSlotParserOutput( $role, array $hints = [] );
+    /**
+     * @param string $role
+     * @param array $hints Hints given as an associative array. Known keys:
+     *      - 'generate-html' => bool: Whether the caller is interested in output HTML (as opposed
+     *        to just meta-data). Default is to generate HTML.
+     *
+     * @return ParserOutput
+     * @throws SuppressedDataException if the content is not accessible for the audience
+     *         specified in the constructor.
+     */
+    public function getSlotParserOutput($role, array $hints = []);
 
 }

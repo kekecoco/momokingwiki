@@ -1,63 +1,63 @@
-( function () {
+(function () {
 
-	var getBucket = mw.experiments.getBucket;
+    var getBucket = mw.experiments.getBucket;
 
-	function createExperiment() {
-		return {
-			name: 'experiment',
-			enabled: true,
-			buckets: {
-				control: 0.25,
-				A: 0.25,
-				B: 0.25,
-				C: 0.25
-			}
-		};
-	}
+    function createExperiment() {
+        return {
+            name: 'experiment',
+            enabled: true,
+            buckets: {
+                control: 0.25,
+                A: 0.25,
+                B: 0.25,
+                C: 0.25
+            }
+        };
+    }
 
-	QUnit.module( 'mediawiki.experiments' );
+    QUnit.module('mediawiki.experiments');
 
-	QUnit.test( 'getBucket( experiment, token )', function ( assert ) {
-		var experiment = createExperiment(),
-			token = '123457890';
+    QUnit.test('getBucket( experiment, token )', function (assert) {
+        var experiment = createExperiment(),
+            token = '123457890';
 
-		assert.strictEqual(
-			getBucket( experiment, token ),
-			getBucket( experiment, token ),
-			'It returns the same bucket for the same experiment-token pair.'
-		);
+        assert.strictEqual(
+            getBucket(experiment, token),
+            getBucket(experiment, token),
+            'It returns the same bucket for the same experiment-token pair.'
+        );
 
-		// --------
-		experiment = createExperiment();
-		experiment.buckets = {
-			A: 0.314159265359
-		};
+        // --------
+        experiment = createExperiment();
+        experiment.buckets = {
+            A: 0.314159265359
+        };
 
-		assert.strictEqual(
-			getBucket( experiment, token ),
-			'A',
-			'It returns the bucket if only one is defined.'
-		);
+        assert.strictEqual(
+            getBucket(experiment, token),
+            'A',
+            'It returns the bucket if only one is defined.'
+        );
 
-		// --------
-		experiment = createExperiment();
-		experiment.enabled = false;
+        // --------
+        experiment = createExperiment();
+        experiment.enabled = false;
 
-		assert.strictEqual(
-			getBucket( experiment, token ),
-			'control',
-			'It returns "control" if the experiment is disabled.'
-		);
+        assert.strictEqual(
+            getBucket(experiment, token),
+            'control',
+            'It returns "control" if the experiment is disabled.'
+        );
 
-		// --------
-		experiment = createExperiment();
-		experiment.buckets = {};
+        // --------
+        experiment = createExperiment();
+        experiment.buckets = {};
 
-		assert.strictEqual(
-			getBucket( experiment, token ),
-			'control',
-			'It returns "control" if the experiment doesn\'t have any buckets.'
-		);
-	} );
+        assert.strictEqual(
+            getBucket(experiment, token),
+            'control',
+            'It returns "control" if the experiment doesn\'t have any buckets.'
+        );
+    });
 
-}() );
+}());

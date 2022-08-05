@@ -24,44 +24,45 @@
 
 use MediaWiki\MediaWikiServices;
 
-if ( !defined( 'MEDIAWIKI' ) ) {
-	$optionsWithArgs = [ 'm' ];
+if (!defined('MEDIAWIKI')) {
+    $optionsWithArgs = ['m'];
 
-	require_once __DIR__ . '/../CommandLineInc.php';
+    require_once __DIR__ . '/../CommandLineInc.php';
 
-	resolveStubs();
+    resolveStubs();
 }
 
 /**
  * Convert history stubs that point to an external row to direct
  * external pointers
  */
-function resolveStubs() {
-	$fname = 'resolveStubs';
+function resolveStubs()
+{
+    $fname = 'resolveStubs';
 
-	$dbr = wfGetDB( DB_REPLICA );
-	$maxID = $dbr->selectField( 'text', 'MAX(old_id)', '', $fname );
-	$blockSize = 10000;
-	$numBlocks = intval( $maxID / $blockSize ) + 1;
-	$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+    $dbr = wfGetDB(DB_REPLICA);
+    $maxID = $dbr->selectField('text', 'MAX(old_id)', '', $fname);
+    $blockSize = 10000;
+    $numBlocks = intval($maxID / $blockSize) + 1;
+    $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-	for ( $b = 0; $b < $numBlocks; $b++ ) {
-		$lbFactory->waitForReplication();
+    for ($b = 0; $b < $numBlocks; $b++) {
+        $lbFactory->waitForReplication();
 
-		printf( "%5.2f%%\n", $b / $numBlocks * 100 );
-		$start = intval( $maxID / $numBlocks ) * $b + 1;
-		$end = intval( $maxID / $numBlocks ) * ( $b + 1 );
+        printf("%5.2f%%\n", $b / $numBlocks * 100);
+        $start = intval($maxID / $numBlocks) * $b + 1;
+        $end = intval($maxID / $numBlocks) * ($b + 1);
 
-		$res = $dbr->select( 'text', [ 'old_id', 'old_text', 'old_flags' ],
-			"old_id>=$start AND old_id<=$end " .
-			"AND old_flags LIKE '%object%' AND old_flags NOT LIKE '%external%' " .
-			'AND LOWER(CONVERT(LEFT(old_text,22) USING latin1)) = \'o:15:"historyblobstub"\'',
-			$fname );
-		foreach ( $res as $row ) {
-			resolveStub( $row->old_id, $row->old_text, $row->old_flags );
-		}
-	}
-	print "100%\n";
+        $res = $dbr->select('text', ['old_id', 'old_text', 'old_flags'],
+            "old_id>=$start AND old_id<=$end " .
+            "AND old_flags LIKE '%object%' AND old_flags NOT LIKE '%external%' " .
+            'AND LOWER(CONVERT(LEFT(old_text,22) USING latin1)) = \'o:15:"historyblobstub"\'',
+            $fname);
+        foreach ($res as $row) {
+            resolveStub($row->old_id, $row->old_text, $row->old_flags);
+        }
+    }
+    print "100%\n";
 }
 
 /**
@@ -70,53 +71,54 @@ function resolveStubs() {
  * @param string $stubText
  * @param string $flags
  */
-function resolveStub( $id, $stubText, $flags ) {
-	$fname = 'resolveStub';
+function resolveStub($id, $stubText, $flags)
+{
+    $fname = 'resolveStub';
 
-	$stub = unserialize( $stubText );
-	$flags = explode( ',', $flags );
+    $stub = unserialize($stubText);
+    $flags = explode(',', $flags);
 
-	$dbr = wfGetDB( DB_REPLICA );
-	$dbw = wfGetDB( DB_PRIMARY );
+    $dbr = wfGetDB(DB_REPLICA);
+    $dbw = wfGetDB(DB_PRIMARY);
 
-	if ( strtolower( get_class( $stub ) ) !== 'historyblobstub' ) {
-		print "Error found object of class " . get_class( $stub ) . ", expecting historyblobstub\n";
+    if (strtolower(get_class($stub)) !== 'historyblobstub') {
+        print "Error found object of class " . get_class($stub) . ", expecting historyblobstub\n";
 
-		return;
-	}
+        return;
+    }
 
-	# Get the (maybe) external row
-	$externalRow = $dbr->selectRow(
-		'text',
-		[ 'old_text' ],
-		[
-			'old_id' => $stub->getLocation(),
-			'old_flags' . $dbr->buildLike( $dbr->anyString(), 'external', $dbr->anyString() )
-		],
-		$fname
-	);
+    # Get the (maybe) external row
+    $externalRow = $dbr->selectRow(
+        'text',
+        ['old_text'],
+        [
+            'old_id' => $stub->getLocation(),
+            'old_flags' . $dbr->buildLike($dbr->anyString(), 'external', $dbr->anyString())
+        ],
+        $fname
+    );
 
-	if ( !$externalRow ) {
-		# Object wasn't external
-		return;
-	}
+    if (!$externalRow) {
+        # Object wasn't external
+        return;
+    }
 
-	# Preserve the legacy encoding flag, but switch from object to external
-	if ( in_array( 'utf-8', $flags ) ) {
-		$newFlags = 'external,utf-8';
-	} else {
-		$newFlags = 'external';
-	}
+    # Preserve the legacy encoding flag, but switch from object to external
+    if (in_array('utf-8', $flags)) {
+        $newFlags = 'external,utf-8';
+    } else {
+        $newFlags = 'external';
+    }
 
-	# Update the row
-	# print "oldid=$id\n";
-	$dbw->update( 'text',
-		[ /* SET */
-			'old_flags' => $newFlags,
-			'old_text' => $externalRow->old_text . '/' . $stub->getHash()
-		],
-		[ /* WHERE */
-			'old_id' => $id
-		], $fname
-	);
+    # Update the row
+    # print "oldid=$id\n";
+    $dbw->update('text',
+        [ /* SET */
+            'old_flags' => $newFlags,
+            'old_text'  => $externalRow->old_text . '/' . $stub->getHash()
+        ],
+        [ /* WHERE */
+            'old_id' => $id
+        ], $fname
+    );
 }

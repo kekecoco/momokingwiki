@@ -29,39 +29,41 @@
  *
  * @ingroup DifferenceEngine
  */
-class RangeDifference {
+class RangeDifference
+{
 
-	/** @var int */
-	public $leftstart;
+    /** @var int */
+    public $leftstart;
 
-	/** @var int */
-	public $leftend;
+    /** @var int */
+    public $leftend;
 
-	/** @var int */
-	public $leftlength;
+    /** @var int */
+    public $leftlength;
 
-	/** @var int */
-	public $rightstart;
+    /** @var int */
+    public $rightstart;
 
-	/** @var int */
-	public $rightend;
+    /** @var int */
+    public $rightend;
 
-	/** @var int */
-	public $rightlength;
+    /** @var int */
+    public $rightlength;
 
-	/**
-	 * @param int $leftstart
-	 * @param int $leftend
-	 * @param int $rightstart
-	 * @param int $rightend
-	 */
-	public function __construct( $leftstart, $leftend, $rightstart, $rightend ) {
-		$this->leftstart = $leftstart;
-		$this->leftend = $leftend;
-		$this->leftlength = $leftend - $leftstart;
-		$this->rightstart = $rightstart;
-		$this->rightend = $rightend;
-		$this->rightlength = $rightend - $rightstart;
-	}
+    /**
+     * @param int $leftstart
+     * @param int $leftend
+     * @param int $rightstart
+     * @param int $rightend
+     */
+    public function __construct($leftstart, $leftend, $rightstart, $rightend)
+    {
+        $this->leftstart = $leftstart;
+        $this->leftend = $leftend;
+        $this->leftlength = $leftend - $leftstart;
+        $this->rightstart = $rightstart;
+        $this->rightend = $rightend;
+        $this->rightlength = $rightend - $rightstart;
+    }
 
 }

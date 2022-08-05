@@ -31,67 +31,74 @@ use StatusValue;
  * @ingroup Auth
  * @since 1.27
  */
-class CheckBlocksSecondaryAuthenticationProvider extends AbstractSecondaryAuthenticationProvider {
+class CheckBlocksSecondaryAuthenticationProvider extends AbstractSecondaryAuthenticationProvider
+{
 
-	/** @var bool */
-	protected $blockDisablesLogin = null;
+    /** @var bool */
+    protected $blockDisablesLogin = null;
 
-	/**
-	 * @param array $params
-	 *  - blockDisablesLogin: (bool) Whether blocked accounts can log in,
-	 *    defaults to $wgBlockDisablesLogin
-	 */
-	public function __construct( $params = [] ) {
-		if ( isset( $params['blockDisablesLogin'] ) ) {
-			$this->blockDisablesLogin = (bool)$params['blockDisablesLogin'];
-		}
-	}
+    /**
+     * @param array $params
+     *  - blockDisablesLogin: (bool) Whether blocked accounts can log in,
+     *    defaults to $wgBlockDisablesLogin
+     */
+    public function __construct($params = [])
+    {
+        if (isset($params['blockDisablesLogin'])) {
+            $this->blockDisablesLogin = (bool)$params['blockDisablesLogin'];
+        }
+    }
 
-	protected function postInitSetup() {
-		if ( $this->blockDisablesLogin === null ) {
-			$this->blockDisablesLogin = $this->config->get( MainConfigNames::BlockDisablesLogin );
-		}
-	}
+    protected function postInitSetup()
+    {
+        if ($this->blockDisablesLogin === null) {
+            $this->blockDisablesLogin = $this->config->get(MainConfigNames::BlockDisablesLogin);
+        }
+    }
 
-	public function getAuthenticationRequests( $action, array $options ) {
-		return [];
-	}
+    public function getAuthenticationRequests($action, array $options)
+    {
+        return [];
+    }
 
-	public function beginSecondaryAuthentication( $user, array $reqs ) {
-		// @TODO Partial blocks should not prevent the user from logging in.
-		//       see: https://phabricator.wikimedia.org/T208895
-		if ( !$this->blockDisablesLogin ) {
-			return AuthenticationResponse::newAbstain();
-		} elseif ( $user->getBlock() ) {
-			return AuthenticationResponse::newFail(
-				new \Message( 'login-userblocked', [ $user->getName() ] )
-			);
-		} else {
-			return AuthenticationResponse::newPass();
-		}
-	}
+    public function beginSecondaryAuthentication($user, array $reqs)
+    {
+        // @TODO Partial blocks should not prevent the user from logging in.
+        //       see: https://phabricator.wikimedia.org/T208895
+        if (!$this->blockDisablesLogin) {
+            return AuthenticationResponse::newAbstain();
+        } elseif ($user->getBlock()) {
+            return AuthenticationResponse::newFail(
+                new \Message('login-userblocked', [$user->getName()])
+            );
+        } else {
+            return AuthenticationResponse::newPass();
+        }
+    }
 
-	public function beginSecondaryAccountCreation( $user, $creator, array $reqs ) {
-		return AuthenticationResponse::newAbstain();
-	}
+    public function beginSecondaryAccountCreation($user, $creator, array $reqs)
+    {
+        return AuthenticationResponse::newAbstain();
+    }
 
-	public function testUserForCreation( $user, $autocreate, array $options = [] ) {
-		$block = $user->isBlockedFromCreateAccount();
-		if ( $block ) {
-			$formatter = MediaWikiServices::getInstance()->getBlockErrorFormatter();
+    public function testUserForCreation($user, $autocreate, array $options = [])
+    {
+        $block = $user->isBlockedFromCreateAccount();
+        if ($block) {
+            $formatter = MediaWikiServices::getInstance()->getBlockErrorFormatter();
 
-			$language = \RequestContext::getMain()->getUser()->isSafeToLoad() ?
-				\RequestContext::getMain()->getLanguage() :
-				MediaWikiServices::getInstance()->getContentLanguage();
+            $language = \RequestContext::getMain()->getUser()->isSafeToLoad() ?
+                \RequestContext::getMain()->getLanguage() :
+                MediaWikiServices::getInstance()->getContentLanguage();
 
-			$ip = $this->manager->getRequest()->getIP();
+            $ip = $this->manager->getRequest()->getIP();
 
-			return StatusValue::newFatal(
-				$formatter->getMessage( $block, $user, $language, $ip )
-			);
-		} else {
-			return StatusValue::newGood();
-		}
-	}
+            return StatusValue::newFatal(
+                $formatter->getMessage($block, $user, $language, $ip)
+            );
+        } else {
+            return StatusValue::newGood();
+        }
+    }
 
 }

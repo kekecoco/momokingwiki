@@ -29,10 +29,10 @@ header( 'Content-Type: text/css; charset=utf-8' );
 /**
  * Allows characters in ranges [a-z], [A-Z] and [0-9],
  * in addition to a dot ("."), dash ("-"), space (" ") and hash ("#").
- * @since 1.20
- *
  * @param string $val
  * @return string Value with any illegal characters removed.
+ *@since 1.20
+ *
  */
 function cssfilter( $val ) {
 	return preg_replace( '/[^A-Za-z0-9\.\- #]/', '', $val );

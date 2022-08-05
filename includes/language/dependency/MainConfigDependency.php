@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -24,27 +25,31 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Language
  */
-class MainConfigDependency extends CacheDependency {
-	private $name;
-	private $value;
+class MainConfigDependency extends CacheDependency
+{
+    private $name;
+    private $value;
 
-	public function __construct( $name ) {
-		$this->name = $name;
-		$this->value = $this->getConfig()->get( $this->name );
-	}
+    public function __construct($name)
+    {
+        $this->name = $name;
+        $this->value = $this->getConfig()->get($this->name);
+    }
 
-	private function getConfig() {
-		return MediaWikiServices::getInstance()->getMainConfig();
-	}
+    private function getConfig()
+    {
+        return MediaWikiServices::getInstance()->getMainConfig();
+    }
 
-	/**
-	 * @return bool
-	 */
-	public function isExpired() {
-		if ( !$this->getConfig()->has( $this->name ) ) {
-			return true;
-		}
+    /**
+     * @return bool
+     */
+    public function isExpired()
+    {
+        if (!$this->getConfig()->has($this->name)) {
+            return true;
+        }
 
-		return $this->getConfig()->get( $this->name ) != $this->value;
-	}
+        return $this->getConfig()->get($this->name) != $this->value;
+    }
 }

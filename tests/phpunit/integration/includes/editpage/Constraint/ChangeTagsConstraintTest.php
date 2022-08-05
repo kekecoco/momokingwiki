@@ -30,50 +30,55 @@ use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
  * @covers \MediaWiki\EditPage\Constraint\ChangeTagsConstraint
  * @group database
  */
-class ChangeTagsConstraintTest extends MediaWikiIntegrationTestCase {
-	use EditConstraintTestTrait;
-	use MockAuthorityTrait;
+class ChangeTagsConstraintTest extends MediaWikiIntegrationTestCase
+{
+    use EditConstraintTestTrait;
+    use MockAuthorityTrait;
 
-	protected function setUp(): void {
-		parent::setUp();
-		$this->tablesUsed = array_merge(
-			$this->tablesUsed,
-			[ 'change_tag', 'change_tag_def', 'logging' ]
-		);
-	}
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tablesUsed = array_merge(
+            $this->tablesUsed,
+            ['change_tag', 'change_tag_def', 'logging']
+        );
+    }
 
-	public function testPass() {
-		$tagName = 'tag-for-constraint-test-pass';
-		ChangeTags::defineTag( $tagName );
+    public function testPass()
+    {
+        $tagName = 'tag-for-constraint-test-pass';
+        ChangeTags::defineTag($tagName);
 
-		$constraint = new ChangeTagsConstraint(
-			$this->mockRegisteredUltimateAuthority(),
-			[ $tagName ]
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+        $constraint = new ChangeTagsConstraint(
+            $this->mockRegisteredUltimateAuthority(),
+            [$tagName]
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testNoTags() {
-		// Early return for no tags being added
-		$constraint = new ChangeTagsConstraint(
-			$this->mockRegisteredUltimateAuthority(),
-			[]
-		);
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testNoTags()
+    {
+        // Early return for no tags being added
+        $constraint = new ChangeTagsConstraint(
+            $this->mockRegisteredUltimateAuthority(),
+            []
+        );
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$tagName = 'tag-for-constraint-test-fail';
-		ChangeTags::defineTag( $tagName );
+    public function testFailure()
+    {
+        $tagName = 'tag-for-constraint-test-fail';
+        ChangeTags::defineTag($tagName);
 
-		$constraint = new ChangeTagsConstraint(
-			$this->mockRegisteredAuthorityWithoutPermissions( [ 'applychangetags' ] ),
-			[ $tagName ]
-		);
-		$this->assertConstraintFailed(
-			$constraint,
-			IEditConstraint::AS_CHANGE_TAG_ERROR
-		);
-	}
+        $constraint = new ChangeTagsConstraint(
+            $this->mockRegisteredAuthorityWithoutPermissions(['applychangetags']),
+            [$tagName]
+        );
+        $this->assertConstraintFailed(
+            $constraint,
+            IEditConstraint::AS_CHANGE_TAG_ERROR
+        );
+    }
 
 }

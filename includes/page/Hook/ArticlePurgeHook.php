@@ -11,14 +11,15 @@ use WikiPage;
  * @stable to implement
  * @ingroup Hooks
  */
-interface ArticlePurgeHook {
-	/**
-	 * This hook is called before executing "&action=purge".
-	 *
-	 * @since 1.35
-	 *
-	 * @param WikiPage $wikiPage WikiPage to purge
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onArticlePurge( $wikiPage );
+interface ArticlePurgeHook
+{
+    /**
+     * This hook is called before executing "&action=purge".
+     *
+     * @param WikiPage $wikiPage WikiPage to purge
+     * @return bool|void True or no return value to continue or false to abort
+     * @since 1.35
+     *
+     */
+    public function onArticlePurge($wikiPage);
 }

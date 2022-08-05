@@ -33,44 +33,47 @@ require_once __DIR__ . '/includes/SchemaMaintenance.php';
  *
  * @ingroup Maintenance
  */
-class GenerateSchemaChangeSql extends SchemaMaintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Build SQL files for schema changes from abstract JSON files' );
-		$this->scriptName = 'generateSchemaChangeSql.php';
-	}
+class GenerateSchemaChangeSql extends SchemaMaintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Build SQL files for schema changes from abstract JSON files');
+        $this->scriptName = 'generateSchemaChangeSql.php';
+    }
 
-	protected function generateSchema( string $platform, array $schema ): string {
-		$schemaChangeBuilder = ( new DoctrineSchemaBuilderFactory() )->getSchemaChangeBuilder( $platform );
+    protected function generateSchema(string $platform, array $schema): string
+    {
+        $schemaChangeBuilder = (new DoctrineSchemaBuilderFactory())->getSchemaChangeBuilder($platform);
 
-		$schemaChangeSqls = $schemaChangeBuilder->getSchemaChangeSql( $schema );
+        $schemaChangeSqls = $schemaChangeBuilder->getSchemaChangeSql($schema);
 
-		$sql = '';
+        $sql = '';
 
-		if ( $schemaChangeSqls !== [] ) {
-			// Temporary
-			$sql .= implode( ";\n\n", $schemaChangeSqls ) . ';';
-			$sql = ( new SqlFormatter( new NullHighlighter() ) )->format( $sql );
-		} else {
-			$this->fatalError( 'No schema changes detected!' );
-		}
+        if ($schemaChangeSqls !== []) {
+            // Temporary
+            $sql .= implode(";\n\n", $schemaChangeSqls) . ';';
+            $sql = (new SqlFormatter(new NullHighlighter()))->format($sql);
+        } else {
+            $this->fatalError('No schema changes detected!');
+        }
 
-		// Until the linting issue is resolved
-		// https://github.com/doctrine/sql-formatter/issues/53
-		$sql = str_replace( "\n/*_*/\n", " /*_*/", $sql );
-		$sql = str_replace( "; ", ";\n", $sql );
-		$sql = preg_replace( "/\n+? +?/", ' ', $sql );
-		$sql = str_replace( "/*_*/  ", "/*_*/", $sql );
+        // Until the linting issue is resolved
+        // https://github.com/doctrine/sql-formatter/issues/53
+        $sql = str_replace("\n/*_*/\n", " /*_*/", $sql);
+        $sql = str_replace("; ", ";\n", $sql);
+        $sql = preg_replace("/\n+? +?/", ' ', $sql);
+        $sql = str_replace("/*_*/  ", "/*_*/", $sql);
 
-		// Sqlite hacks
-		if ( $platform === 'sqlite' ) {
-			// Doctrine prepends __temp__ to the table name and we set the table with the schema prefix causing invalid
-			// sqlite.
-			$sql = preg_replace( '/__temp__\s*\/\*_\*\//', '/*_*/__temp__', $sql );
-		}
+        // Sqlite hacks
+        if ($platform === 'sqlite') {
+            // Doctrine prepends __temp__ to the table name and we set the table with the schema prefix causing invalid
+            // sqlite.
+            $sql = preg_replace('/__temp__\s*\/\*_\*\//', '/*_*/__temp__', $sql);
+        }
 
-		return $sql;
-	}
+        return $sql;
+    }
 
 }
 

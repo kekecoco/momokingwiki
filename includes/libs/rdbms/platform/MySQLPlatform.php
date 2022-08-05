@@ -17,6 +17,7 @@
  *
  * @file
  */
+
 namespace Wikimedia\Rdbms\Platform;
 
 use Wikimedia\Rdbms\DBLanguageError;
@@ -25,79 +26,88 @@ use Wikimedia\Rdbms\DBLanguageError;
  * @since 1.39
  * @see ISQLPlatform
  */
-class MySQLPlatform extends SQLPlatform {
-	/**
-	 * MySQL uses `backticks` for identifier quoting instead of the sql standard "double quotes".
-	 *
-	 * @param string $s
-	 * @return string
-	 */
-	public function addIdentifierQuotes( $s ) {
-		// Characters in the range \u0001-\uFFFF are valid in a quoted identifier
-		// Remove NUL bytes and escape backticks by doubling
-		return '`' . str_replace( [ "\0", '`' ], [ '', '``' ], $s ) . '`';
-	}
+class MySQLPlatform extends SQLPlatform
+{
+    /**
+     * MySQL uses `backticks` for identifier quoting instead of the sql standard "double quotes".
+     *
+     * @param string $s
+     * @return string
+     */
+    public function addIdentifierQuotes($s)
+    {
+        // Characters in the range \u0001-\uFFFF are valid in a quoted identifier
+        // Remove NUL bytes and escape backticks by doubling
+        return '`' . str_replace(["\0", '`'], ['', '``'], $s) . '`';
+    }
 
-	/**
-	 * @param string $name
-	 * @return bool
-	 */
-	public function isQuotedIdentifier( $name ) {
-		return strlen( $name ) && $name[0] == '`' && substr( $name, -1, 1 ) == '`';
-	}
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function isQuotedIdentifier($name)
+    {
+        return strlen($name) && $name[0] == '`' && substr($name, -1, 1) == '`';
+    }
 
-	public function buildStringCast( $field ) {
-		return "CAST( $field AS BINARY )";
-	}
+    public function buildStringCast($field)
+    {
+        return "CAST( $field AS BINARY )";
+    }
 
-	/**
-	 * @param string $field Field or column to cast
-	 * @return string
-	 */
-	public function buildIntegerCast( $field ) {
-		return 'CAST( ' . $field . ' AS SIGNED )';
-	}
+    /**
+     * @param string $field Field or column to cast
+     * @return string
+     */
+    public function buildIntegerCast($field)
+    {
+        return 'CAST( ' . $field . ' AS SIGNED )';
+    }
 
-	protected function normalizeJoinType( string $joinType ) {
-		switch ( strtoupper( $joinType ) ) {
-			case 'STRAIGHT_JOIN':
-			case 'STRAIGHT JOIN':
-				return 'STRAIGHT_JOIN';
+    protected function normalizeJoinType(string $joinType)
+    {
+        switch (strtoupper($joinType)) {
+            case 'STRAIGHT_JOIN':
+            case 'STRAIGHT JOIN':
+                return 'STRAIGHT_JOIN';
 
-			default:
-				return parent::normalizeJoinType( $joinType );
-		}
-	}
+            default:
+                return parent::normalizeJoinType($joinType);
+        }
+    }
 
-	/**
-	 * @param string $index
-	 * @return string
-	 */
-	public function useIndexClause( $index ) {
-		return "FORCE INDEX (" . $this->indexName( $index ) . ")";
-	}
+    /**
+     * @param string $index
+     * @return string
+     */
+    public function useIndexClause($index)
+    {
+        return "FORCE INDEX (" . $this->indexName($index) . ")";
+    }
 
-	/**
-	 * @param string $index
-	 * @return string
-	 */
-	public function ignoreIndexClause( $index ) {
-		return "IGNORE INDEX (" . $this->indexName( $index ) . ")";
-	}
+    /**
+     * @param string $index
+     * @return string
+     */
+    public function ignoreIndexClause($index)
+    {
+        return "IGNORE INDEX (" . $this->indexName($index) . ")";
+    }
 
-	public function deleteJoinSqlText( $delTable, $joinTable, $delVar, $joinVar, $conds ) {
-		if ( !$conds ) {
-			throw new DBLanguageError( __METHOD__ . ' called with empty $conds' );
-		}
+    public function deleteJoinSqlText($delTable, $joinTable, $delVar, $joinVar, $conds)
+    {
+        if (!$conds) {
+            throw new DBLanguageError(__METHOD__ . ' called with empty $conds');
+        }
 
-		$delTable = $this->tableName( $delTable );
-		$joinTable = $this->tableName( $joinTable );
-		$sql = "DELETE $delTable FROM $delTable, $joinTable WHERE $delVar=$joinVar ";
+        $delTable = $this->tableName($delTable);
+        $joinTable = $this->tableName($joinTable);
+        $sql = "DELETE $delTable FROM $delTable, $joinTable WHERE $delVar=$joinVar ";
 
-		if ( $conds != '*' ) {
-			$sql .= ' AND ' . $this->makeList( $conds, self::LIST_AND );
-		}
+        if ($conds != '*') {
+            $sql .= ' AND ' . $this->makeList($conds, self::LIST_AND);
+        }
 
-		return $sql;
-	}
+        return $sql;
+    }
 }

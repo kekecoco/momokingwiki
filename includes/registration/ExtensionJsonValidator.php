@@ -36,131 +36,137 @@ use Seld\JsonLint\ParsingException;
  *
  * @since 1.29
  */
-class ExtensionJsonValidator {
+class ExtensionJsonValidator
+{
 
-	/**
-	 * @var callable
-	 */
-	private $missingDepCallback;
+    /**
+     * @var callable
+     */
+    private $missingDepCallback;
 
-	/**
-	 * @param callable $missingDepCallback
-	 */
-	public function __construct( callable $missingDepCallback ) {
-		$this->missingDepCallback = $missingDepCallback;
-	}
+    /**
+     * @param callable $missingDepCallback
+     */
+    public function __construct(callable $missingDepCallback)
+    {
+        $this->missingDepCallback = $missingDepCallback;
+    }
 
-	/**
-	 * @codeCoverageIgnore
-	 * @return bool
-	 */
-	public function checkDependencies() {
-		if ( !class_exists( Validator::class ) ) {
-			call_user_func( $this->missingDepCallback,
-				'The JsonSchema library cannot be found, please install it through composer.'
-			);
-			return false;
-		}
+    /**
+     * @codeCoverageIgnore
+     * @return bool
+     */
+    public function checkDependencies()
+    {
+        if (!class_exists(Validator::class)) {
+            call_user_func($this->missingDepCallback,
+                'The JsonSchema library cannot be found, please install it through composer.'
+            );
 
-		if ( !class_exists( SpdxLicenses::class ) ) {
-			call_user_func( $this->missingDepCallback,
-				'The spdx-licenses library cannot be found, please install it through composer.'
-			);
-			return false;
-		}
+            return false;
+        }
 
-		if ( !class_exists( JsonParser::class ) ) {
-			call_user_func( $this->missingDepCallback,
-				'The JSON lint library cannot be found, please install it through composer.'
-			);
-		}
+        if (!class_exists(SpdxLicenses::class)) {
+            call_user_func($this->missingDepCallback,
+                'The spdx-licenses library cannot be found, please install it through composer.'
+            );
 
-		return true;
-	}
+            return false;
+        }
 
-	/**
-	 * @param string $path file to validate
-	 * @return bool true if passes validation
-	 * @throws ExtensionJsonValidationError on any failure
-	 */
-	public function validate( $path ) {
-		$contents = file_get_contents( $path );
-		$jsonParser = new JsonParser();
-		try {
-			$data = $jsonParser->parse( $contents, JsonParser::DETECT_KEY_CONFLICTS );
-		} catch ( ParsingException $e ) {
-			if ( $e instanceof \Seld\JsonLint\DuplicateKeyException ) {
-				throw new ExtensionJsonValidationError( $e->getMessage() );
-			}
-			throw new ExtensionJsonValidationError( "$path is not valid JSON" );
-		}
+        if (!class_exists(JsonParser::class)) {
+            call_user_func($this->missingDepCallback,
+                'The JSON lint library cannot be found, please install it through composer.'
+            );
+        }
 
-		if ( !isset( $data->manifest_version ) ) {
-			throw new ExtensionJsonValidationError(
-				"$path does not have manifest_version set." );
-		}
+        return true;
+    }
 
-		$version = $data->manifest_version;
-		$schemaPath = __DIR__ . "/../../docs/extension.schema.v$version.json";
+    /**
+     * @param string $path file to validate
+     * @return bool true if passes validation
+     * @throws ExtensionJsonValidationError on any failure
+     */
+    public function validate($path)
+    {
+        $contents = file_get_contents($path);
+        $jsonParser = new JsonParser();
+        try {
+            $data = $jsonParser->parse($contents, JsonParser::DETECT_KEY_CONFLICTS);
+        } catch (ParsingException $e) {
+            if ($e instanceof \Seld\JsonLint\DuplicateKeyException) {
+                throw new ExtensionJsonValidationError($e->getMessage());
+            }
+            throw new ExtensionJsonValidationError("$path is not valid JSON");
+        }
 
-		// Not too old
-		if ( $version < ExtensionRegistry::OLDEST_MANIFEST_VERSION ) {
-			throw new ExtensionJsonValidationError(
-				"$path is using a non-supported schema version"
-			);
-		}
+        if (!isset($data->manifest_version)) {
+            throw new ExtensionJsonValidationError(
+                "$path does not have manifest_version set.");
+        }
 
-		if ( $version > ExtensionRegistry::MANIFEST_VERSION ) {
-			throw new ExtensionJsonValidationError(
-				"$path is using a non-supported schema version"
-			);
-		}
+        $version = $data->manifest_version;
+        $schemaPath = __DIR__ . "/../../docs/extension.schema.v$version.json";
 
-		$extraErrors = [];
-		// Check if it's a string, if not, schema validation will display an error
-		if ( isset( $data->{'license-name'} ) && is_string( $data->{'license-name'} ) ) {
-			$licenses = new SpdxLicenses();
-			$valid = $licenses->validate( $data->{'license-name'} );
-			if ( !$valid ) {
-				$extraErrors[] = '[license-name] Invalid SPDX license identifier, '
-					. 'see <https://spdx.org/licenses/>';
-			}
-		}
-		if ( isset( $data->url ) && is_string( $data->url ) ) {
-			$parsed = wfParseUrl( $data->url );
-			$mwoUrl = false;
-			if ( $parsed['host'] === 'www.mediawiki.org' ) {
-				$mwoUrl = true;
-			} elseif ( $parsed['host'] === 'mediawiki.org' ) {
-				$mwoUrl = true;
-				$extraErrors[] = '[url] Should use www.mediawiki.org domain';
-			}
+        // Not too old
+        if ($version < ExtensionRegistry::OLDEST_MANIFEST_VERSION) {
+            throw new ExtensionJsonValidationError(
+                "$path is using a non-supported schema version"
+            );
+        }
 
-			if ( $mwoUrl && $parsed['scheme'] !== 'https' ) {
-				$extraErrors[] = '[url] Should use HTTPS for www.mediawiki.org URLs';
-			}
-		}
+        if ($version > ExtensionRegistry::MANIFEST_VERSION) {
+            throw new ExtensionJsonValidationError(
+                "$path is using a non-supported schema version"
+            );
+        }
 
-		// Deprecated stuff
-		if ( isset( $data->ParserTestFiles ) ) {
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$extraErrors[] = '[ParserTestFiles] DEPRECATED: see <https://www.mediawiki.org/wiki/Manual:Extension.json/Schema#ParserTestFiles>';
-		}
+        $extraErrors = [];
+        // Check if it's a string, if not, schema validation will display an error
+        if (isset($data->{'license-name'}) && is_string($data->{'license-name'})) {
+            $licenses = new SpdxLicenses();
+            $valid = $licenses->validate($data->{'license-name'});
+            if (!$valid) {
+                $extraErrors[] = '[license-name] Invalid SPDX license identifier, '
+                    . 'see <https://spdx.org/licenses/>';
+            }
+        }
+        if (isset($data->url) && is_string($data->url)) {
+            $parsed = wfParseUrl($data->url);
+            $mwoUrl = false;
+            if ($parsed['host'] === 'www.mediawiki.org') {
+                $mwoUrl = true;
+            } elseif ($parsed['host'] === 'mediawiki.org') {
+                $mwoUrl = true;
+                $extraErrors[] = '[url] Should use www.mediawiki.org domain';
+            }
 
-		$validator = new Validator;
-		$validator->check( $data, (object)[ '$ref' => 'file://' . $schemaPath ] );
-		if ( $validator->isValid() && !$extraErrors ) {
-			// All good.
-			return true;
-		}
+            if ($mwoUrl && $parsed['scheme'] !== 'https') {
+                $extraErrors[] = '[url] Should use HTTPS for www.mediawiki.org URLs';
+            }
+        }
 
-		$out = "$path did not pass validation.\n";
-		foreach ( $validator->getErrors() as $error ) {
-			$out .= "[{$error['property']}] {$error['message']}\n";
-		}
-		if ( $extraErrors ) {
-			$out .= implode( "\n", $extraErrors ) . "\n";
-		}
-		throw new ExtensionJsonValidationError( $out );
-	}
+        // Deprecated stuff
+        if (isset($data->ParserTestFiles)) {
+            // phpcs:ignore Generic.Files.LineLength.TooLong
+            $extraErrors[] = '[ParserTestFiles] DEPRECATED: see <https://www.mediawiki.org/wiki/Manual:Extension.json/Schema#ParserTestFiles>';
+        }
+
+        $validator = new Validator;
+        $validator->check($data, (object)['$ref' => 'file://' . $schemaPath]);
+        if ($validator->isValid() && !$extraErrors) {
+            // All good.
+            return true;
+        }
+
+        $out = "$path did not pass validation.\n";
+        foreach ($validator->getErrors() as $error) {
+            $out .= "[{$error['property']}] {$error['message']}\n";
+        }
+        if ($extraErrors) {
+            $out .= implode("\n", $extraErrors) . "\n";
+        }
+        throw new ExtensionJsonValidationError($out);
+    }
 }

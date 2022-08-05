@@ -28,85 +28,92 @@ use WebRequest;
  * @since 1.37
  * @package MediaWiki\Session
  */
-class CsrfTokenSet {
+class CsrfTokenSet
+{
 
-	/**
-	 * @var string default name for the form field to place the token in.
-	 */
-	public const DEFAULT_FIELD_NAME = 'wpEditToken';
+    /**
+     * @var string default name for the form field to place the token in.
+     */
+    public const DEFAULT_FIELD_NAME = 'wpEditToken';
 
-	/**
-	 * @var WebRequest
-	 */
-	private $request;
+    /**
+     * @var WebRequest
+     */
+    private $request;
 
-	/**
-	 * @param WebRequest $request
-	 */
-	public function __construct( WebRequest $request ) {
-		$this->request = $request;
-	}
+    /**
+     * @param WebRequest $request
+     */
+    public function __construct(WebRequest $request)
+    {
+        $this->request = $request;
+    }
 
-	/**
-	 * Initialize (if necessary) and return a current user CSRF token
-	 * value which can be used in edit forms to show that the user's
-	 * login credentials aren't being hijacked with a foreign form
-	 * submission.
-	 *
-	 * The $salt for 'edit' and 'csrf' tokens is the default (empty string).
-	 *
-	 * @param string|string[] $salt Optional function-specific data for hashing
-	 * @return Token
-	 * @since 1.37
-	 */
-	public function getToken( $salt = '' ): Token {
-		$session = $this->request->getSession();
-		if ( !$session->getUser()->isRegistered() ) {
-			return new LoggedOutEditToken();
-		}
-		return $session->getToken( $salt );
-	}
+    /**
+     * Initialize (if necessary) and return a current user CSRF token
+     * value which can be used in edit forms to show that the user's
+     * login credentials aren't being hijacked with a foreign form
+     * submission.
+     *
+     * The $salt for 'edit' and 'csrf' tokens is the default (empty string).
+     *
+     * @param string|string[] $salt Optional function-specific data for hashing
+     * @return Token
+     * @since 1.37
+     */
+    public function getToken($salt = ''): Token
+    {
+        $session = $this->request->getSession();
+        if (!$session->getUser()->isRegistered()) {
+            return new LoggedOutEditToken();
+        }
 
-	/**
-	 * Check if a request contains a value named $valueName with the token value
-	 * stored in the session.
-	 *
-	 * @param string $fieldName
-	 * @param string|string[] $salt
-	 * @return bool
-	 * @since 1.37
-	 * @see self::matchCSRFToken
-	 */
-	public function matchTokenField(
-		string $fieldName = self::DEFAULT_FIELD_NAME,
-		$salt = ''
-	): bool {
-		return $this->matchToken( $this->request->getVal( $fieldName ), $salt );
-	}
+        return $session->getToken($salt);
+    }
 
-	/**
-	 * Check if a value matches with the token value stored in the session.
-	 * A match should confirm that the form was submitted from the user's own
-	 * login session, not a form submission from a third-party site.
-	 *
-	 * @param string|null $value
-	 * @param string|string[] $salt
-	 * @return bool
-	 * @since 1.37
-	 */
-	public function matchToken(
-		?string $value,
-		$salt = ''
-	): bool {
-		if ( !$value ) {
-			return false;
-		}
-		$session = $this->request->getSession();
-		// It's expensive to generate a new registered user token, so take a shortcut.
-		// Anon tokens are cheap and all the same, so we can afford to generate one just to match.
-		if ( $session->getUser()->isRegistered() && !$session->hasToken() ) {
-			return false;
-		}
-		return $this->getToken( $salt )->match( $value );
-	}
+    /**
+     * Check if a request contains a value named $valueName with the token value
+     * stored in the session.
+     *
+     * @param string $fieldName
+     * @param string|string[] $salt
+     * @return bool
+     * @since 1.37
+     * @see self::matchCSRFToken
+     */
+    public function matchTokenField(
+        string $fieldName = self::DEFAULT_FIELD_NAME,
+        $salt = ''
+    ): bool
+    {
+        return $this->matchToken($this->request->getVal($fieldName), $salt);
+    }
+
+    /**
+     * Check if a value matches with the token value stored in the session.
+     * A match should confirm that the form was submitted from the user's own
+     * login session, not a form submission from a third-party site.
+     *
+     * @param string|null $value
+     * @param string|string[] $salt
+     * @return bool
+     * @since 1.37
+     */
+    public function matchToken(
+        ?string $value,
+        $salt = ''
+    ): bool
+    {
+        if (!$value) {
+            return false;
+        }
+        $session = $this->request->getSession();
+        // It's expensive to generate a new registered user token, so take a shortcut.
+        // Anon tokens are cheap and all the same, so we can afford to generate one just to match.
+        if ($session->getUser()->isRegistered() && !$session->hasToken()) {
+            return false;
+        }
+
+        return $this->getToken($salt)->match($value);
+    }
 }

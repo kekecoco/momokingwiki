@@ -24,31 +24,33 @@
  * @since 1.25
  * @ingroup API
  */
-class ApiRawMessage extends RawMessage implements IApiMessage {
-	use ApiMessageTrait;
+class ApiRawMessage extends RawMessage implements IApiMessage
+{
+    use ApiMessageTrait;
 
-	/**
-	 * @stable to call
-	 * @param RawMessage|string|array $msg
-	 *  - RawMessage: is cloned
-	 *  - array: first element is $key, rest are $params to RawMessage::__construct
-	 *  - string: passed to RawMessage::__construct
-	 * @param string|null $code
-	 * @param array|null $data
-	 */
-	public function __construct( $msg, $code = null, array $data = null ) {
-		if ( $msg instanceof RawMessage ) {
-			foreach ( get_class_vars( get_class( $this ) ) as $key => $value ) {
-				if ( isset( $msg->$key ) ) {
-					$this->$key = $msg->$key;
-				}
-			}
-		} elseif ( is_array( $msg ) ) {
-			$key = array_shift( $msg );
-			parent::__construct( $key, $msg );
-		} else {
-			parent::__construct( $msg );
-		}
-		$this->setApiCode( $code, $data );
-	}
+    /**
+     * @stable to call
+     * @param RawMessage|string|array $msg
+     *  - RawMessage: is cloned
+     *  - array: first element is $key, rest are $params to RawMessage::__construct
+     *  - string: passed to RawMessage::__construct
+     * @param string|null $code
+     * @param array|null $data
+     */
+    public function __construct($msg, $code = null, array $data = null)
+    {
+        if ($msg instanceof RawMessage) {
+            foreach (get_class_vars(get_class($this)) as $key => $value) {
+                if (isset($msg->$key)) {
+                    $this->$key = $msg->$key;
+                }
+            }
+        } elseif (is_array($msg)) {
+            $key = array_shift($msg);
+            parent::__construct($key, $msg);
+        } else {
+            parent::__construct($msg);
+        }
+        $this->setApiCode($code, $data);
+    }
 }

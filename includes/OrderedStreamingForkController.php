@@ -29,194 +29,207 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  */
-class OrderedStreamingForkController extends ForkController {
-	/** @var callable */
-	protected $workCallback;
-	/** @var resource */
-	protected $input;
-	/** @var resource */
-	protected $output;
-	/** @var int */
-	protected $nextOutputId;
-	/** @var string[] Int key indicates order, value is data */
-	protected $delayedOutputData = [];
+class OrderedStreamingForkController extends ForkController
+{
+    /** @var callable */
+    protected $workCallback;
+    /** @var resource */
+    protected $input;
+    /** @var resource */
+    protected $output;
+    /** @var int */
+    protected $nextOutputId;
+    /** @var string[] Int key indicates order, value is data */
+    protected $delayedOutputData = [];
 
-	/**
-	 * @param int $numProcs The number of worker processes to fork
-	 * @param callable $workCallback A callback to call in the child process
-	 *  once for each line of work to process.
-	 * @param resource $input A socket to read work lines from
-	 * @param resource $output A socket to write the result of work to.
-	 */
-	public function __construct( $numProcs, $workCallback, $input, $output ) {
-		parent::__construct( $numProcs );
-		$this->workCallback = $workCallback;
-		$this->input = $input;
-		$this->output = $output;
-	}
+    /**
+     * @param int $numProcs The number of worker processes to fork
+     * @param callable $workCallback A callback to call in the child process
+     *  once for each line of work to process.
+     * @param resource $input A socket to read work lines from
+     * @param resource $output A socket to write the result of work to.
+     */
+    public function __construct($numProcs, $workCallback, $input, $output)
+    {
+        parent::__construct($numProcs);
+        $this->workCallback = $workCallback;
+        $this->input = $input;
+        $this->output = $output;
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function start() {
-		if ( $this->procsToStart > 0 ) {
-			$status = parent::start();
-			if ( $status === 'child' ) {
-				$this->consume();
-			}
-		} else {
-			$status = 'parent';
-			$this->consumeNoFork();
-		}
-		return $status;
-	}
+    /**
+     * @inheritDoc
+     */
+    public function start()
+    {
+        if ($this->procsToStart > 0) {
+            $status = parent::start();
+            if ($status === 'child') {
+                $this->consume();
+            }
+        } else {
+            $status = 'parent';
+            $this->consumeNoFork();
+        }
 
-	/**
-	 * @param int $numProcs
-	 * @return string
-	 */
-	protected function forkWorkers( $numProcs ) {
-		$this->prepareEnvironment();
+        return $status;
+    }
 
-		$childSockets = [];
-		// Create the child processes
-		for ( $i = 0; $i < $numProcs; $i++ ) {
-			$sockets = stream_socket_pair( STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP );
-			// Do the fork
-			$pid = pcntl_fork();
-			if ( $pid === -1 || $pid === false ) {
-				echo "Error creating child processes\n";
-				exit( 1 );
-			}
+    /**
+     * @param int $numProcs
+     * @return string
+     */
+    protected function forkWorkers($numProcs)
+    {
+        $this->prepareEnvironment();
 
-			if ( !$pid ) {
-				$this->initChild();
-				$this->childNumber = $i;
-				$this->input = $sockets[0];
-				$this->output = $sockets[0];
-				fclose( $sockets[1] );
-				return 'child';
-			} else {
-				// This is the parent process
-				$this->children[$pid] = true;
-				fclose( $sockets[0] );
-				$childSockets[] = $sockets[1];
-			}
-		}
-		$this->feedChildren( $childSockets );
-		foreach ( $childSockets as $socket ) {
-			fclose( $socket );
-		}
-		return 'parent';
-	}
+        $childSockets = [];
+        // Create the child processes
+        for ($i = 0; $i < $numProcs; $i++) {
+            $sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+            // Do the fork
+            $pid = pcntl_fork();
+            if ($pid === -1 || $pid === false) {
+                echo "Error creating child processes\n";
+                exit(1);
+            }
 
-	/**
-	 * Child worker process. Reads work from $this->input and writes the
-	 * result of that work to $this->output when completed.
-	 */
-	protected function consume() {
-		while ( !feof( $this->input ) ) {
-			$line = trim( fgets( $this->input ) );
-			if ( $line ) {
-				list( $id, $data ) = json_decode( $line );
-				$result = call_user_func( $this->workCallback, $data );
-				fwrite( $this->output, json_encode( [ $id, $result ] ) . "\n" );
-			}
-		}
-	}
+            if (!$pid) {
+                $this->initChild();
+                $this->childNumber = $i;
+                $this->input = $sockets[0];
+                $this->output = $sockets[0];
+                fclose($sockets[1]);
 
-	/**
-	 * Special cased version of self::consume() when no forking occurs
-	 */
-	protected function consumeNoFork() {
-		while ( !feof( $this->input ) ) {
-			$data = fgets( $this->input );
-			if ( substr( $data, -1 ) === "\n" ) {
-				// Strip any final new line used to delimit lines of input.
-				// The last line of input might not have it, though.
-				$data = substr( $data, 0, -1 );
-			}
-			if ( $data === '' ) {
-				continue;
-			}
-			$result = call_user_func( $this->workCallback, $data );
-			fwrite( $this->output, "$result\n" );
-		}
-	}
+                return 'child';
+            } else {
+                // This is the parent process
+                $this->children[$pid] = true;
+                fclose($sockets[0]);
+                $childSockets[] = $sockets[1];
+            }
+        }
+        $this->feedChildren($childSockets);
+        foreach ($childSockets as $socket) {
+            fclose($socket);
+        }
 
-	/**
-	 * Reads lines of work from $this->input and farms them out to
-	 * the provided socket.
-	 *
-	 * @param resource[] $sockets
-	 */
-	protected function feedChildren( array $sockets ) {
-		$used = [];
-		$id = 0;
-		$this->nextOutputId = 0;
+        return 'parent';
+    }
 
-		while ( !feof( $this->input ) ) {
-			$data = fgets( $this->input );
-			if ( $used ) {
-				do {
-					$this->updateAvailableSockets( $sockets, $used, $sockets ? 0 : 5 );
-				} while ( !$sockets );
-			}
-			if ( substr( $data, -1 ) === "\n" ) {
-				// Strip any final new line used to delimit lines of input.
-				// The last line of input might not have it, though.
-				$data = substr( $data, 0, -1 );
-			}
-			if ( $data === '' ) {
-				continue;
-			}
-			$socket = array_pop( $sockets );
-			fwrite( $socket, json_encode( [ $id++, $data ] ) . "\n" );
-			$used[] = $socket;
-		}
-		while ( $used ) {
-			$this->updateAvailableSockets( $sockets, $used, 5 );
-		}
-	}
+    /**
+     * Child worker process. Reads work from $this->input and writes the
+     * result of that work to $this->output when completed.
+     */
+    protected function consume()
+    {
+        while (!feof($this->input)) {
+            $line = trim(fgets($this->input));
+            if ($line) {
+                [$id, $data] = json_decode($line);
+                $result = call_user_func($this->workCallback, $data);
+                fwrite($this->output, json_encode([$id, $result]) . "\n");
+            }
+        }
+    }
 
-	/**
-	 * Moves sockets from $used to $sockets when they are available
-	 * for more work
-	 *
-	 * @param resource[] &$sockets List of sockets that are waiting for work
-	 * @param resource[] &$used List of sockets currently performing work
-	 * @param int $timeout The number of seconds to block waiting. 0 for
-	 *  non-blocking operation.
-	 */
-	protected function updateAvailableSockets( &$sockets, &$used, $timeout ) {
-		$read = $used;
-		$write = $except = [];
-		stream_select( $read, $write, $except, $timeout );
-		foreach ( $read as $socket ) {
-			$line = fgets( $socket );
-			list( $id, $data ) = json_decode( trim( $line ) );
-			$this->receive( (int)$id, $data );
-			$sockets[] = $socket;
-			$idx = array_search( $socket, $used );
-			unset( $used[$idx] );
-		}
-	}
+    /**
+     * Special cased version of self::consume() when no forking occurs
+     */
+    protected function consumeNoFork()
+    {
+        while (!feof($this->input)) {
+            $data = fgets($this->input);
+            if (substr($data, -1) === "\n") {
+                // Strip any final new line used to delimit lines of input.
+                // The last line of input might not have it, though.
+                $data = substr($data, 0, -1);
+            }
+            if ($data === '') {
+                continue;
+            }
+            $result = call_user_func($this->workCallback, $data);
+            fwrite($this->output, "$result\n");
+        }
+    }
 
-	/**
-	 * @param int $id
-	 * @param string $data
-	 */
-	protected function receive( $id, $data ) {
-		if ( $id !== $this->nextOutputId ) {
-			$this->delayedOutputData[$id] = $data;
-			return;
-		}
-		fwrite( $this->output, $data . "\n" );
-		$this->nextOutputId = $id + 1;
-		while ( isset( $this->delayedOutputData[$this->nextOutputId] ) ) {
-			fwrite( $this->output, $this->delayedOutputData[$this->nextOutputId] . "\n" );
-			unset( $this->delayedOutputData[$this->nextOutputId] );
-			$this->nextOutputId++;
-		}
-	}
+    /**
+     * Reads lines of work from $this->input and farms them out to
+     * the provided socket.
+     *
+     * @param resource[] $sockets
+     */
+    protected function feedChildren(array $sockets)
+    {
+        $used = [];
+        $id = 0;
+        $this->nextOutputId = 0;
+
+        while (!feof($this->input)) {
+            $data = fgets($this->input);
+            if ($used) {
+                do {
+                    $this->updateAvailableSockets($sockets, $used, $sockets ? 0 : 5);
+                } while (!$sockets);
+            }
+            if (substr($data, -1) === "\n") {
+                // Strip any final new line used to delimit lines of input.
+                // The last line of input might not have it, though.
+                $data = substr($data, 0, -1);
+            }
+            if ($data === '') {
+                continue;
+            }
+            $socket = array_pop($sockets);
+            fwrite($socket, json_encode([$id++, $data]) . "\n");
+            $used[] = $socket;
+        }
+        while ($used) {
+            $this->updateAvailableSockets($sockets, $used, 5);
+        }
+    }
+
+    /**
+     * Moves sockets from $used to $sockets when they are available
+     * for more work
+     *
+     * @param resource[] &$sockets List of sockets that are waiting for work
+     * @param resource[] &$used List of sockets currently performing work
+     * @param int $timeout The number of seconds to block waiting. 0 for
+     *  non-blocking operation.
+     */
+    protected function updateAvailableSockets(&$sockets, &$used, $timeout)
+    {
+        $read = $used;
+        $write = $except = [];
+        stream_select($read, $write, $except, $timeout);
+        foreach ($read as $socket) {
+            $line = fgets($socket);
+            [$id, $data] = json_decode(trim($line));
+            $this->receive((int)$id, $data);
+            $sockets[] = $socket;
+            $idx = array_search($socket, $used);
+            unset($used[$idx]);
+        }
+    }
+
+    /**
+     * @param int $id
+     * @param string $data
+     */
+    protected function receive($id, $data)
+    {
+        if ($id !== $this->nextOutputId) {
+            $this->delayedOutputData[$id] = $data;
+
+            return;
+        }
+        fwrite($this->output, $data . "\n");
+        $this->nextOutputId = $id + 1;
+        while (isset($this->delayedOutputData[$this->nextOutputId])) {
+            fwrite($this->output, $this->delayedOutputData[$this->nextOutputId] . "\n");
+            unset($this->delayedOutputData[$this->nextOutputId]);
+            $this->nextOutputId++;
+        }
+    }
 }

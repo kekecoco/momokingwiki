@@ -36,132 +36,140 @@ use Wikimedia\Rdbms\DatabaseSqlite;
  *
  * @ingroup Maintenance
  */
-class RebuildTextIndex extends Maintenance {
-	private const RTI_CHUNK_SIZE = 500;
+class RebuildTextIndex extends Maintenance
+{
+    private const RTI_CHUNK_SIZE = 500;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Rebuild search index table from scratch' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Rebuild search index table from scratch');
+    }
 
-	public function getDbType() {
-		return Maintenance::DB_ADMIN;
-	}
+    public function getDbType()
+    {
+        return Maintenance::DB_ADMIN;
+    }
 
-	public function execute() {
-		// Shouldn't be needed for Postgres
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( $dbw->getType() == 'postgres' ) {
-			$this->fatalError( "This script is not needed when using Postgres.\n" );
-		}
+    public function execute()
+    {
+        // Shouldn't be needed for Postgres
+        $dbw = $this->getDB(DB_PRIMARY);
+        if ($dbw->getType() == 'postgres') {
+            $this->fatalError("This script is not needed when using Postgres.\n");
+        }
 
-		if ( $dbw->getType() == 'sqlite' ) {
-			if ( !DatabaseSqlite::getFulltextSearchModule() ) {
-				$this->fatalError( "Your version of SQLite module for PHP doesn't "
-					. "support full-text search (FTS3).\n" );
-			}
-		}
+        if ($dbw->getType() == 'sqlite') {
+            if (!DatabaseSqlite::getFulltextSearchModule()) {
+                $this->fatalError("Your version of SQLite module for PHP doesn't "
+                    . "support full-text search (FTS3).\n");
+            }
+        }
 
-		if ( $dbw->getType() == 'mysql' ) {
-			$this->dropMysqlTextIndex();
-			$this->clearSearchIndex();
-			$this->populateSearchIndex();
-			$this->createMysqlTextIndex();
-		} else {
-			$this->clearSearchIndex();
-			$this->populateSearchIndex();
-		}
+        if ($dbw->getType() == 'mysql') {
+            $this->dropMysqlTextIndex();
+            $this->clearSearchIndex();
+            $this->populateSearchIndex();
+            $this->createMysqlTextIndex();
+        } else {
+            $this->clearSearchIndex();
+            $this->populateSearchIndex();
+        }
 
-		$this->output( "Done.\n" );
-	}
+        $this->output("Done.\n");
+    }
 
-	/**
-	 * Populates the search index with content from all pages
-	 */
-	protected function populateSearchIndex() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$res = $dbw->select( 'page', 'MAX(page_id) AS count', [], __METHOD__ );
-		$s = $res->fetchObject();
-		$count = $s->count;
-		$this->output( "Rebuilding index fields for {$count} pages...\n" );
-		$n = 0;
+    /**
+     * Populates the search index with content from all pages
+     */
+    protected function populateSearchIndex()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $res = $dbw->select('page', 'MAX(page_id) AS count', [], __METHOD__);
+        $s = $res->fetchObject();
+        $count = $s->count;
+        $this->output("Rebuilding index fields for {$count} pages...\n");
+        $n = 0;
 
-		$revStore = MediaWikiServices::getInstance()->getRevisionStore();
-		$revQuery = $revStore->getQueryInfo( [ 'page' ] );
+        $revStore = MediaWikiServices::getInstance()->getRevisionStore();
+        $revQuery = $revStore->getQueryInfo(['page']);
 
-		while ( $n < $count ) {
-			if ( $n ) {
-				$this->output( $n . "\n" );
-			}
-			$end = $n + self::RTI_CHUNK_SIZE - 1;
+        while ($n < $count) {
+            if ($n) {
+                $this->output($n . "\n");
+            }
+            $end = $n + self::RTI_CHUNK_SIZE - 1;
 
-			$res = $dbw->select(
-				$revQuery['tables'],
-				$revQuery['fields'],
-				[ "page_id BETWEEN $n AND $end", 'page_latest = rev_id' ],
-				__METHOD__,
-				[],
-				$revQuery['joins']
-			);
+            $res = $dbw->select(
+                $revQuery['tables'],
+                $revQuery['fields'],
+                ["page_id BETWEEN $n AND $end", 'page_latest = rev_id'],
+                __METHOD__,
+                [],
+                $revQuery['joins']
+            );
 
-			foreach ( $res as $s ) {
+            foreach ($res as $s) {
 
-				// T268673 Prevent failure of WikiPage.php: Invalid or virtual namespace -1 given
-				if ( $s->page_namespace < 0 ) {
-					continue;
-				}
+                // T268673 Prevent failure of WikiPage.php: Invalid or virtual namespace -1 given
+                if ($s->page_namespace < 0) {
+                    continue;
+                }
 
-				$title = Title::makeTitle( $s->page_namespace, $s->page_title );
-				try {
-					$revRecord = $revStore->newRevisionFromRow( $s );
-					$content = $revRecord->getContent( SlotRecord::MAIN );
+                $title = Title::makeTitle($s->page_namespace, $s->page_title);
+                try {
+                    $revRecord = $revStore->newRevisionFromRow($s);
+                    $content = $revRecord->getContent(SlotRecord::MAIN);
 
-					$u = new SearchUpdate( $s->page_id, $title, $content );
-					$u->doUpdate();
-				} catch ( MWContentSerializationException $ex ) {
-					$this->output( "Failed to deserialize content of revision {$s->rev_id} of page "
-						. "`" . $title->getPrefixedDBkey() . "`!\n" );
-				}
-			}
-			$n += self::RTI_CHUNK_SIZE;
-		}
-	}
+                    $u = new SearchUpdate($s->page_id, $title, $content);
+                    $u->doUpdate();
+                } catch (MWContentSerializationException $ex) {
+                    $this->output("Failed to deserialize content of revision {$s->rev_id} of page "
+                        . "`" . $title->getPrefixedDBkey() . "`!\n");
+                }
+            }
+            $n += self::RTI_CHUNK_SIZE;
+        }
+    }
 
-	/**
-	 * (MySQL only) Drops fulltext index before populating the table.
-	 */
-	private function dropMysqlTextIndex() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$searchindex = $dbw->tableName( 'searchindex' );
-		if ( $dbw->indexExists( 'searchindex', 'si_title', __METHOD__ ) ) {
-			$this->output( "Dropping index...\n" );
-			$sql = "ALTER TABLE $searchindex DROP INDEX si_title, DROP INDEX si_text";
-			$dbw->query( $sql, __METHOD__ );
-		}
-	}
+    /**
+     * (MySQL only) Drops fulltext index before populating the table.
+     */
+    private function dropMysqlTextIndex()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $searchindex = $dbw->tableName('searchindex');
+        if ($dbw->indexExists('searchindex', 'si_title', __METHOD__)) {
+            $this->output("Dropping index...\n");
+            $sql = "ALTER TABLE $searchindex DROP INDEX si_title, DROP INDEX si_text";
+            $dbw->query($sql, __METHOD__);
+        }
+    }
 
-	/**
-	 * (MySQL only) Adds back fulltext index after populating the table.
-	 */
-	private function createMysqlTextIndex() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$searchindex = $dbw->tableName( 'searchindex' );
-		$this->output( "\nRebuild the index...\n" );
-		foreach ( [ 'si_title', 'si_text' ] as $field ) {
-			$sql = "ALTER TABLE $searchindex ADD FULLTEXT $field ($field)";
-			$dbw->query( $sql, __METHOD__ );
-		}
-	}
+    /**
+     * (MySQL only) Adds back fulltext index after populating the table.
+     */
+    private function createMysqlTextIndex()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $searchindex = $dbw->tableName('searchindex');
+        $this->output("\nRebuild the index...\n");
+        foreach (['si_title', 'si_text'] as $field) {
+            $sql = "ALTER TABLE $searchindex ADD FULLTEXT $field ($field)";
+            $dbw->query($sql, __METHOD__);
+        }
+    }
 
-	/**
-	 * Deletes everything from search index.
-	 */
-	private function clearSearchIndex() {
-		$dbw = $this->getDB( DB_PRIMARY );
-		$this->output( 'Clearing searchindex table...' );
-		$dbw->delete( 'searchindex', '*', __METHOD__ );
-		$this->output( "Done\n" );
-	}
+    /**
+     * Deletes everything from search index.
+     */
+    private function clearSearchIndex()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
+        $this->output('Clearing searchindex table...');
+        $dbw->delete('searchindex', '*', __METHOD__);
+        $this->output("Done\n");
+    }
 }
 
 $maintClass = RebuildTextIndex::class;

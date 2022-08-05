@@ -31,20 +31,23 @@ require_once __DIR__ . '/../Maintenance.php';
  *
  * @ingroup MaintenanceLanguage
  */
-class AllTrans extends Maintenance {
+class AllTrans extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Get all messages as defined by the English language file' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Get all messages as defined by the English language file');
+    }
 
-	public function execute() {
-		$localisationCache = MediaWikiServices::getInstance()->getLocalisationCache();
-		$englishMessages = $localisationCache->getItem( 'en', 'messages' );
-		foreach ( array_keys( $englishMessages ) as $key ) {
-			$this->output( "$key\n" );
-		}
-	}
+    public function execute()
+    {
+        $localisationCache = MediaWikiServices::getInstance()->getLocalisationCache();
+        $englishMessages = $localisationCache->getItem('en', 'messages');
+        foreach (array_keys($englishMessages) as $key) {
+            $this->output("$key\n");
+        }
+    }
 }
 
 $maintClass = AllTrans::class;

@@ -1,7 +1,7 @@
 .mw-notification-area {
-	position: absolute;
+    position: absolute;
 }
 
 .mw-notification-area-floating {
-	position: fixed;
+    position: fixed;
 }

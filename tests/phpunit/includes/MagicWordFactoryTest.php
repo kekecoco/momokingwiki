@@ -5,79 +5,89 @@
  *
  * @author Derick N. Alangi
  */
-class MagicWordFactoryTest extends MediaWikiIntegrationTestCase {
-	private function makeMagicWordFactory( Language $contLang = null ) {
-		$services = $this->getServiceContainer();
-		return new MagicWordFactory( $contLang ?:
-			$services->getLanguageFactory()->getLanguage( 'en' ),
-			$services->getHookContainer()
-		);
-	}
+class MagicWordFactoryTest extends MediaWikiIntegrationTestCase
+{
+    private function makeMagicWordFactory(Language $contLang = null)
+    {
+        $services = $this->getServiceContainer();
 
-	public function testGetContentLanguage() {
-		$contLang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' );
+        return new MagicWordFactory($contLang ?:
+            $services->getLanguageFactory()->getLanguage('en'),
+            $services->getHookContainer()
+        );
+    }
 
-		$magicWordFactory = $this->makeMagicWordFactory( $contLang );
-		$magicWordContLang = $magicWordFactory->getContentLanguage();
+    public function testGetContentLanguage()
+    {
+        $contLang = $this->getServiceContainer()->getLanguageFactory()->getLanguage('en');
 
-		$this->assertSame( $contLang, $magicWordContLang );
-	}
+        $magicWordFactory = $this->makeMagicWordFactory($contLang);
+        $magicWordContLang = $magicWordFactory->getContentLanguage();
 
-	public function testGetMagicWord() {
-		$magicWordIdValid = 'pageid';
-		$magicWordFactory = $this->makeMagicWordFactory();
-		$mwActual = $magicWordFactory->get( $magicWordIdValid );
-		$contLang = $magicWordFactory->getContentLanguage();
-		$expected = new MagicWord( $magicWordIdValid, [ 'PAGEID' ], false, $contLang );
+        $this->assertSame($contLang, $magicWordContLang);
+    }
 
-		$this->assertEquals( $expected, $mwActual );
-	}
+    public function testGetMagicWord()
+    {
+        $magicWordIdValid = 'pageid';
+        $magicWordFactory = $this->makeMagicWordFactory();
+        $mwActual = $magicWordFactory->get($magicWordIdValid);
+        $contLang = $magicWordFactory->getContentLanguage();
+        $expected = new MagicWord($magicWordIdValid, ['PAGEID'], false, $contLang);
 
-	public function testGetInvalidMagicWord() {
-		$magicWordFactory = $this->makeMagicWordFactory();
+        $this->assertEquals($expected, $mwActual);
+    }
 
-		$this->expectException( MWException::class );
-		@$magicWordFactory->get( 'invalid magic word' );
-	}
+    public function testGetInvalidMagicWord()
+    {
+        $magicWordFactory = $this->makeMagicWordFactory();
 
-	public function testGetVariableIDs() {
-		$magicWordFactory = $this->makeMagicWordFactory();
-		$varIds = $magicWordFactory->getVariableIDs();
+        $this->expectException(MWException::class);
+        @$magicWordFactory->get('invalid magic word');
+    }
 
-		$this->assertIsArray( $varIds );
-		$this->assertNotEmpty( $varIds );
-		$this->assertContainsOnly( 'string', $varIds );
-	}
+    public function testGetVariableIDs()
+    {
+        $magicWordFactory = $this->makeMagicWordFactory();
+        $varIds = $magicWordFactory->getVariableIDs();
 
-	public function testGetSubstIDs() {
-		$magicWordFactory = $this->makeMagicWordFactory();
-		$substIds = $magicWordFactory->getSubstIDs();
+        $this->assertIsArray($varIds);
+        $this->assertNotEmpty($varIds);
+        $this->assertContainsOnly('string', $varIds);
+    }
 
-		$this->assertIsArray( $substIds );
-		$this->assertNotEmpty( $substIds );
-		$this->assertContainsOnly( 'string', $substIds );
-	}
+    public function testGetSubstIDs()
+    {
+        $magicWordFactory = $this->makeMagicWordFactory();
+        $substIds = $magicWordFactory->getSubstIDs();
 
-	/**
-	 * Test both valid and invalid caching hints paths
-	 */
-	public function testGetCacheTTL() {
-		$magicWordFactory = $this->makeMagicWordFactory();
-		$actual = $magicWordFactory->getCacheTTL( 'localday' );
+        $this->assertIsArray($substIds);
+        $this->assertNotEmpty($substIds);
+        $this->assertContainsOnly('string', $substIds);
+    }
 
-		$this->assertSame( 3600, $actual );
+    /**
+     * Test both valid and invalid caching hints paths
+     */
+    public function testGetCacheTTL()
+    {
+        $magicWordFactory = $this->makeMagicWordFactory();
+        $actual = $magicWordFactory->getCacheTTL('localday');
 
-		$actual = $magicWordFactory->getCacheTTL( 'currentmonth' );
-		$this->assertSame( 86400, $actual );
+        $this->assertSame(3600, $actual);
 
-		$actual = $magicWordFactory->getCacheTTL( 'invalid' );
-		$this->assertSame( -1, $actual );
-	}
+        $actual = $magicWordFactory->getCacheTTL('currentmonth');
+        $this->assertSame(86400, $actual);
 
-	public function testGetDoubleUnderscoreArray() {
-		$magicWordFactory = $this->makeMagicWordFactory();
-		$actual = $magicWordFactory->getDoubleUnderscoreArray();
+        $actual = $magicWordFactory->getCacheTTL('invalid');
+        $this->assertSame(-1, $actual);
+    }
 
-		$this->assertInstanceOf( MagicWordArray::class, $actual );
-	}
+    public function testGetDoubleUnderscoreArray()
+    {
+        $magicWordFactory = $this->makeMagicWordFactory();
+        $actual = $magicWordFactory->getDoubleUnderscoreArray();
+
+        $this->assertInstanceOf(MagicWordArray::class, $actual);
+    }
 }

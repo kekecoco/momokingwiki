@@ -19,18 +19,20 @@
  * @ingroup Installer
  */
 
-class WebInstallerReleaseNotes extends WebInstallerDocument {
+class WebInstallerReleaseNotes extends WebInstallerDocument
+{
 
-	/**
-	 * @throws MWException
-	 * @return string
-	 */
-	protected function getFileName() {
-		if ( !preg_match( '/^(\d+)\.(\d+).*/i', MW_VERSION, $result ) ) {
-			throw new MWException( 'Constant MW_VERSION has an invalid value.' );
-		}
+    /**
+     * @return string
+     * @throws MWException
+     */
+    protected function getFileName()
+    {
+        if (!preg_match('/^(\d+)\.(\d+).*/i', MW_VERSION, $result)) {
+            throw new MWException('Constant MW_VERSION has an invalid value.');
+        }
 
-		return 'RELEASE-NOTES-' . $result[1] . '.' . $result[2];
-	}
+        return 'RELEASE-NOTES-' . $result[1] . '.' . $result[2];
+    }
 
 }

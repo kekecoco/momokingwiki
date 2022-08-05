@@ -33,207 +33,216 @@ use MediaWiki\Page\PageIdentity;
  *
  * @ingroup Cache
  */
-class HTMLFileCache extends FileCacheBase {
-	public const MODE_NORMAL = 0; // normal cache mode
-	public const MODE_OUTAGE = 1; // fallback cache for DB outages
-	public const MODE_REBUILD = 2; // background cache rebuild mode
+class HTMLFileCache extends FileCacheBase
+{
+    public const MODE_NORMAL = 0; // normal cache mode
+    public const MODE_OUTAGE = 1; // fallback cache for DB outages
+    public const MODE_REBUILD = 2; // background cache rebuild mode
 
-	/**
-	 * @param PageIdentity|string $page PageIdentity object or prefixed DB key string
-	 * @param string $action
-	 *
-	 * @throws InvalidArgumentException
-	 */
-	public function __construct( $page, $action ) {
-		parent::__construct();
+    /**
+     * @param PageIdentity|string $page PageIdentity object or prefixed DB key string
+     * @param string $action
+     *
+     * @throws InvalidArgumentException
+     */
+    public function __construct($page, $action)
+    {
+        parent::__construct();
 
-		if ( !in_array( $action, self::cacheablePageActions() ) ) {
-			throw new InvalidArgumentException( 'Invalid file cache type given.' );
-		}
+        if (!in_array($action, self::cacheablePageActions())) {
+            throw new InvalidArgumentException('Invalid file cache type given.');
+        }
 
-		$this->mKey = CacheKeyHelper::getKeyForPage( $page );
-		$this->mType = (string)$action;
-		$this->mExt = 'html';
-	}
+        $this->mKey = CacheKeyHelper::getKeyForPage($page);
+        $this->mType = (string)$action;
+        $this->mExt = 'html';
+    }
 
-	/**
-	 * Cacheable actions
-	 * @return array
-	 */
-	protected static function cacheablePageActions() {
-		return [ 'view', 'history' ];
-	}
+    /**
+     * Cacheable actions
+     * @return array
+     */
+    protected static function cacheablePageActions()
+    {
+        return ['view', 'history'];
+    }
 
-	/**
-	 * Get the base file cache directory
-	 * @return string
-	 */
-	protected function cacheDirectory() {
-		return $this->baseCacheDirectory(); // no subdir for b/c with old cache files
-	}
+    /**
+     * Get the base file cache directory
+     * @return string
+     */
+    protected function cacheDirectory()
+    {
+        return $this->baseCacheDirectory(); // no subdir for b/c with old cache files
+    }
 
-	/**
-	 * Get the cache type subdirectory (with the trailing slash) or the empty string
-	 * Alter the type -> directory mapping to put action=view cache at the root.
-	 *
-	 * @return string
-	 */
-	protected function typeSubdirectory() {
-		if ( $this->mType === 'view' ) {
-			return ''; // b/c to not skip existing cache
-		} else {
-			return $this->mType . '/';
-		}
-	}
+    /**
+     * Get the cache type subdirectory (with the trailing slash) or the empty string
+     * Alter the type -> directory mapping to put action=view cache at the root.
+     *
+     * @return string
+     */
+    protected function typeSubdirectory()
+    {
+        if ($this->mType === 'view') {
+            return ''; // b/c to not skip existing cache
+        } else {
+            return $this->mType . '/';
+        }
+    }
 
-	/**
-	 * Check if pages can be cached for this request/user
-	 * @param IContextSource $context
-	 * @param int $mode One of the HTMLFileCache::MODE_* constants (since 1.28)
-	 * @return bool
-	 */
-	public static function useFileCache( IContextSource $context, $mode = self::MODE_NORMAL ) {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
+    /**
+     * Check if pages can be cached for this request/user
+     * @param IContextSource $context
+     * @param int $mode One of the HTMLFileCache::MODE_* constants (since 1.28)
+     * @return bool
+     */
+    public static function useFileCache(IContextSource $context, $mode = self::MODE_NORMAL)
+    {
+        $config = MediaWikiServices::getInstance()->getMainConfig();
 
-		if ( !$config->get( MainConfigNames::UseFileCache ) && $mode !== self::MODE_REBUILD ) {
-			return false;
-		}
+        if (!$config->get(MainConfigNames::UseFileCache) && $mode !== self::MODE_REBUILD) {
+            return false;
+        }
 
-		// Get all query values
-		$queryVals = $context->getRequest()->getValues();
-		foreach ( $queryVals as $query => $val ) {
-			if ( $query === 'title' || $query === 'curid' ) {
-				continue; // note: curid sets title
-			// Normal page view in query form can have action=view.
-			} elseif ( $query === 'action' && in_array( $val, self::cacheablePageActions() ) ) {
-				continue;
-			// Below are header setting params
-			} elseif ( $query === 'maxage' || $query === 'smaxage' ) {
-				continue;
-			}
+        // Get all query values
+        $queryVals = $context->getRequest()->getValues();
+        foreach ($queryVals as $query => $val) {
+            if ($query === 'title' || $query === 'curid') {
+                continue; // note: curid sets title
+                // Normal page view in query form can have action=view.
+            } elseif ($query === 'action' && in_array($val, self::cacheablePageActions())) {
+                continue;
+                // Below are header setting params
+            } elseif ($query === 'maxage' || $query === 'smaxage') {
+                continue;
+            }
 
-			return false;
-		}
+            return false;
+        }
 
-		$user = $context->getUser();
-		// Check for non-standard user language; this covers uselang,
-		// and extensions for auto-detecting user language.
-		$ulang = $context->getLanguage();
+        $user = $context->getUser();
+        // Check for non-standard user language; this covers uselang,
+        // and extensions for auto-detecting user language.
+        $ulang = $context->getLanguage();
 
-		// Check that there are no other sources of variation
-		if ( $user->isRegistered() ||
-			!$ulang->equals( MediaWikiServices::getInstance()->getContentLanguage() ) ) {
-			return false;
-		}
+        // Check that there are no other sources of variation
+        if ($user->isRegistered() ||
+            !$ulang->equals(MediaWikiServices::getInstance()->getContentLanguage())) {
+            return false;
+        }
 
-		$userHasNewMessages = MediaWikiServices::getInstance()
-			->getTalkPageNotificationManager()->userHasNewMessages( $user );
-		if ( ( $mode === self::MODE_NORMAL ) && $userHasNewMessages ) {
-			return false;
-		}
+        $userHasNewMessages = MediaWikiServices::getInstance()
+            ->getTalkPageNotificationManager()->userHasNewMessages($user);
+        if (($mode === self::MODE_NORMAL) && $userHasNewMessages) {
+            return false;
+        }
 
-		// Allow extensions to disable caching
-		return Hooks::runner()->onHTMLFileCache__useFileCache( $context );
-	}
+        // Allow extensions to disable caching
+        return Hooks::runner()->onHTMLFileCache__useFileCache($context);
+    }
 
-	/**
-	 * Read from cache to context output
-	 * @param IContextSource $context
-	 * @param int $mode One of the HTMLFileCache::MODE_* constants
-	 * @return void
-	 */
-	public function loadFromFileCache( IContextSource $context, $mode = self::MODE_NORMAL ) {
-		wfDebug( __METHOD__ . "()" );
-		$filename = $this->cachePath();
+    /**
+     * Read from cache to context output
+     * @param IContextSource $context
+     * @param int $mode One of the HTMLFileCache::MODE_* constants
+     * @return void
+     */
+    public function loadFromFileCache(IContextSource $context, $mode = self::MODE_NORMAL)
+    {
+        wfDebug(__METHOD__ . "()");
+        $filename = $this->cachePath();
 
-		if ( $mode === self::MODE_OUTAGE ) {
-			// Avoid DB errors for queries in sendCacheControl()
-			$context->getTitle()->resetArticleID( 0 );
-		}
+        if ($mode === self::MODE_OUTAGE) {
+            // Avoid DB errors for queries in sendCacheControl()
+            $context->getTitle()->resetArticleID(0);
+        }
 
-		$context->getOutput()->sendCacheControl();
-		header( "Content-Type: {$this->options->get( MainConfigNames::MimeType )}; charset=UTF-8" );
-		header( 'Content-Language: ' .
-			MediaWikiServices::getInstance()->getContentLanguage()->getHtmlCode() );
-		if ( $this->useGzip() ) {
-			if ( wfClientAcceptsGzip() ) {
-				header( 'Content-Encoding: gzip' );
-				readfile( $filename );
-			} else {
-				/* Send uncompressed */
-				wfDebug( __METHOD__ . " uncompressing cache file and sending it" );
-				readgzfile( $filename );
-			}
-		} else {
-			readfile( $filename );
-		}
+        $context->getOutput()->sendCacheControl();
+        header("Content-Type: {$this->options->get( MainConfigNames::MimeType )}; charset=UTF-8");
+        header('Content-Language: ' .
+            MediaWikiServices::getInstance()->getContentLanguage()->getHtmlCode());
+        if ($this->useGzip()) {
+            if (wfClientAcceptsGzip()) {
+                header('Content-Encoding: gzip');
+                readfile($filename);
+            } else {
+                /* Send uncompressed */
+                wfDebug(__METHOD__ . " uncompressing cache file and sending it");
+                readgzfile($filename);
+            }
+        } else {
+            readfile($filename);
+        }
 
-		$context->getOutput()->disable(); // tell $wgOut that output is taken care of
-	}
+        $context->getOutput()->disable(); // tell $wgOut that output is taken care of
+    }
 
-	/**
-	 * Save this cache object with the given text.
-	 * Use this as an ob_start() handler.
-	 *
-	 * Normally this is only registered as a handler if $wgUseFileCache is on.
-	 * If can be explicitly called by rebuildFileCache.php when it takes over
-	 * handling file caching itself, disabling any automatic handling the
-	 * process.
-	 *
-	 * @param string $text
-	 * @return string|bool The annotated $text or false on error
-	 */
-	public function saveToFileCache( $text ) {
-		if ( strlen( $text ) < 512 ) {
-			// Disabled or empty/broken output (OOM and PHP errors)
-			return $text;
-		}
+    /**
+     * Save this cache object with the given text.
+     * Use this as an ob_start() handler.
+     *
+     * Normally this is only registered as a handler if $wgUseFileCache is on.
+     * If can be explicitly called by rebuildFileCache.php when it takes over
+     * handling file caching itself, disabling any automatic handling the
+     * process.
+     *
+     * @param string $text
+     * @return string|bool The annotated $text or false on error
+     */
+    public function saveToFileCache($text)
+    {
+        if (strlen($text) < 512) {
+            // Disabled or empty/broken output (OOM and PHP errors)
+            return $text;
+        }
 
-		wfDebug( __METHOD__ . "()\n", 'private' );
+        wfDebug(__METHOD__ . "()\n", 'private');
 
-		$now = wfTimestampNow();
-		if ( $this->useGzip() ) {
-			$text = str_replace(
-				'</html>', '<!-- Cached/compressed ' . $now . " -->\n</html>", $text );
-		} else {
-			$text = str_replace(
-				'</html>', '<!-- Cached ' . $now . " -->\n</html>", $text );
-		}
+        $now = wfTimestampNow();
+        if ($this->useGzip()) {
+            $text = str_replace(
+                '</html>', '<!-- Cached/compressed ' . $now . " -->\n</html>", $text);
+        } else {
+            $text = str_replace(
+                '</html>', '<!-- Cached ' . $now . " -->\n</html>", $text);
+        }
 
-		// Store text to FS...
-		$compressed = $this->saveText( $text );
-		if ( $compressed === false ) {
-			return $text; // error
-		}
+        // Store text to FS...
+        $compressed = $this->saveText($text);
+        if ($compressed === false) {
+            return $text; // error
+        }
 
-		// gzip output to buffer as needed and set headers...
-		// @todo Ugly wfClientAcceptsGzip() function - use context!
-		if ( $this->useGzip() && wfClientAcceptsGzip() ) {
-			header( 'Content-Encoding: gzip' );
+        // gzip output to buffer as needed and set headers...
+        // @todo Ugly wfClientAcceptsGzip() function - use context!
+        if ($this->useGzip() && wfClientAcceptsGzip()) {
+            header('Content-Encoding: gzip');
 
-			return $compressed;
-		}
+            return $compressed;
+        }
 
-		return $text;
-	}
+        return $text;
+    }
 
-	/**
-	 * Clear the file caches for a page for all actions
-	 *
-	 * @param PageIdentity|string $page PageIdentity object or prefixed DB key string
-	 * @return bool Whether $wgUseFileCache is enabled
-	 */
-	public static function clearFileCache( $page ) {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		if ( !$config->get( MainConfigNames::UseFileCache ) ) {
-			return false;
-		}
+    /**
+     * Clear the file caches for a page for all actions
+     *
+     * @param PageIdentity|string $page PageIdentity object or prefixed DB key string
+     * @return bool Whether $wgUseFileCache is enabled
+     */
+    public static function clearFileCache($page)
+    {
+        $config = MediaWikiServices::getInstance()->getMainConfig();
+        if (!$config->get(MainConfigNames::UseFileCache)) {
+            return false;
+        }
 
-		foreach ( self::cacheablePageActions() as $type ) {
-			$fc = new self( $page, $type );
-			$fc->clearCache();
-		}
+        foreach (self::cacheablePageActions() as $type) {
+            $fc = new self($page, $type);
+            $fc->clearCache();
+        }
 
-		return true;
-	}
+        return true;
+    }
 }

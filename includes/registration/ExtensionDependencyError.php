@@ -22,85 +22,87 @@
  * @newable
  * @since 1.31
  */
-class ExtensionDependencyError extends Exception {
+class ExtensionDependencyError extends Exception
+{
 
-	/**
-	 * @var string[]
-	 */
-	public $missingExtensions = [];
+    /**
+     * @var string[]
+     */
+    public $missingExtensions = [];
 
-	/**
-	 * @var string[]
-	 */
-	public $missingSkins = [];
+    /**
+     * @var string[]
+     */
+    public $missingSkins = [];
 
-	/**
-	 * @var string[]
-	 */
-	public $incompatibleExtensions = [];
+    /**
+     * @var string[]
+     */
+    public $incompatibleExtensions = [];
 
-	/**
-	 * @var string[]
-	 */
-	public $incompatibleSkins = [];
+    /**
+     * @var string[]
+     */
+    public $incompatibleSkins = [];
 
-	/**
-	 * @var bool
-	 */
-	public $incompatibleCore = false;
+    /**
+     * @var bool
+     */
+    public $incompatibleCore = false;
 
-	/**
-	 * @var bool
-	 */
-	public $incompatiblePhp = false;
+    /**
+     * @var bool
+     */
+    public $incompatiblePhp = false;
 
-	/**
-	 * @var string[]
-	 */
-	public $missingPhpExtensions = [];
+    /**
+     * @var string[]
+     */
+    public $missingPhpExtensions = [];
 
-	/**
-	 * @var string[]
-	 */
-	public $missingAbilities = [];
+    /**
+     * @var string[]
+     */
+    public $missingAbilities = [];
 
-	/**
-	 * @param array[] $errors Each error has a 'msg' and 'type' key at minimum
-	 */
-	public function __construct( array $errors ) {
-		$msg = '';
-		foreach ( $errors as $info ) {
-			$msg .= $info['msg'] . "\n";
-			switch ( $info['type'] ) {
-				case 'incompatible-core':
-					$this->incompatibleCore = true;
-					break;
-				case 'incompatible-php':
-					$this->incompatiblePhp = true;
-					break;
-				case 'missing-phpExtension':
-					$this->missingPhpExtensions[] = $info['missing'];
-					break;
-				case 'missing-ability':
-					$this->missingAbilities[] = $info['missing'];
-					break;
-				case 'missing-skins':
-					$this->missingSkins[] = $info['missing'];
-					break;
-				case 'missing-extensions':
-					$this->missingExtensions[] = $info['missing'];
-					break;
-				case 'incompatible-skins':
-					$this->incompatibleSkins[] = $info['incompatible'];
-					break;
-				case 'incompatible-extensions':
-					$this->incompatibleExtensions[] = $info['incompatible'];
-					break;
-				// default: continue
-			}
-		}
+    /**
+     * @param array[] $errors Each error has a 'msg' and 'type' key at minimum
+     */
+    public function __construct(array $errors)
+    {
+        $msg = '';
+        foreach ($errors as $info) {
+            $msg .= $info['msg'] . "\n";
+            switch ($info['type']) {
+                case 'incompatible-core':
+                    $this->incompatibleCore = true;
+                    break;
+                case 'incompatible-php':
+                    $this->incompatiblePhp = true;
+                    break;
+                case 'missing-phpExtension':
+                    $this->missingPhpExtensions[] = $info['missing'];
+                    break;
+                case 'missing-ability':
+                    $this->missingAbilities[] = $info['missing'];
+                    break;
+                case 'missing-skins':
+                    $this->missingSkins[] = $info['missing'];
+                    break;
+                case 'missing-extensions':
+                    $this->missingExtensions[] = $info['missing'];
+                    break;
+                case 'incompatible-skins':
+                    $this->incompatibleSkins[] = $info['incompatible'];
+                    break;
+                case 'incompatible-extensions':
+                    $this->incompatibleExtensions[] = $info['incompatible'];
+                    break;
+                // default: continue
+            }
+        }
 
-		parent::__construct( $msg );
-	}
+        parent::__construct($msg);
+    }
 
 }

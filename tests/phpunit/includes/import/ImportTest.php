@@ -7,35 +7,38 @@
  *
  * @author Sebastian Brückner < sebastian.brueckner@student.hpi.uni-potsdam.de >
  */
-class ImportTest extends MediaWikiLangTestCase {
+class ImportTest extends MediaWikiLangTestCase
+{
 
-	/**
-	 * @covers WikiImporter
-	 * @dataProvider getUnknownTagsXML
-	 * @param string $xml
-	 * @param string $text
-	 * @param string $title
-	 */
-	public function testUnknownXMLTags( $xml, $text, $title ) {
-		$source = new ImportStringSource( $xml );
-		$services = $this->getServiceContainer();
+    /**
+     * @covers       WikiImporter
+     * @dataProvider getUnknownTagsXML
+     * @param string $xml
+     * @param string $text
+     * @param string $title
+     */
+    public function testUnknownXMLTags($xml, $text, $title)
+    {
+        $source = new ImportStringSource($xml);
+        $services = $this->getServiceContainer();
 
-		$importer = $services->getWikiImporterFactory()->getWikiImporter( $source );
+        $importer = $services->getWikiImporterFactory()->getWikiImporter($source);
 
-		$importer->doImport();
-		$title = Title::newFromText( $title );
-		$this->assertTrue( $title->exists() );
+        $importer->doImport();
+        $title = Title::newFromText($title);
+        $this->assertTrue($title->exists());
 
-		$this->assertEquals(
-			$services->getWikiPageFactory()->newFromTitle( $title )->getContent()->getText(),
-			$text
-		);
-	}
+        $this->assertEquals(
+            $services->getWikiPageFactory()->newFromTitle($title)->getContent()->getText(),
+            $text
+        );
+    }
 
-	public function getUnknownTagsXML() {
-		return [
-			[
-				<<< EOF
+    public function getUnknownTagsXML()
+    {
+        return [
+            [
+                <<< EOF
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10" xml:lang="en">
   <page unknown="123" dontknow="533">
     <title>TestImportPage</title>
@@ -61,44 +64,46 @@ class ImportTest extends MediaWikiLangTestCase {
   <unknowntag>Should be ignored</unknowntag>
 </mediawiki>
 EOF
-				,
-				'noitazinagro tseb eht si ikiWaideM',
-				'TestImportPage'
-			]
-		];
-		// phpcs:enable
-	}
+                ,
+                'noitazinagro tseb eht si ikiWaideM',
+                'TestImportPage'
+            ]
+        ];
+        // phpcs:enable
+    }
 
-	/**
-	 * @covers WikiImporter::handlePage
-	 * @dataProvider getRedirectXML
-	 * @param string $xml
-	 * @param string|null $redirectTitle
-	 */
-	public function testHandlePageContainsRedirect( $xml, $redirectTitle ) {
-		$source = new ImportStringSource( $xml );
+    /**
+     * @covers       WikiImporter::handlePage
+     * @dataProvider getRedirectXML
+     * @param string $xml
+     * @param string|null $redirectTitle
+     */
+    public function testHandlePageContainsRedirect($xml, $redirectTitle)
+    {
+        $source = new ImportStringSource($xml);
 
-		$redirect = null;
-		$callback = static function ( Title $title, ForeignTitle $foreignTitle, $revCount,
-			$sRevCount, $pageInfo ) use ( &$redirect ) {
-			if ( array_key_exists( 'redirect', $pageInfo ) ) {
-				$redirect = $pageInfo['redirect'];
-			}
-		};
+        $redirect = null;
+        $callback = static function (Title $title, ForeignTitle $foreignTitle, $revCount,
+                                     $sRevCount, $pageInfo) use (&$redirect) {
+            if (array_key_exists('redirect', $pageInfo)) {
+                $redirect = $pageInfo['redirect'];
+            }
+        };
 
-		$importer = $this->getServiceContainer()
-			->getWikiImporterFactory()
-			->getWikiImporter( $source );
-		$importer->setPageOutCallback( $callback );
-		$importer->doImport();
+        $importer = $this->getServiceContainer()
+            ->getWikiImporterFactory()
+            ->getWikiImporter($source);
+        $importer->setPageOutCallback($callback);
+        $importer->doImport();
 
-		$this->assertEquals( $redirectTitle, $redirect );
-	}
+        $this->assertEquals($redirectTitle, $redirect);
+    }
 
-	public function getRedirectXML() {
-		return [
-			[
-				<<< EOF
+    public function getRedirectXML()
+    {
+        return [
+            [
+                <<< EOF
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10" xml:lang="en">
 	<page>
 		<title>Test</title>
@@ -121,11 +126,11 @@ EOF
 	</page>
 </mediawiki>
 EOF
-			,
-				'Test22'
-			],
-			[
-				<<< EOF
+                ,
+                'Test22'
+            ],
+            [
+                <<< EOF
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.9/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.9/ http://www.mediawiki.org/xml/export-0.9.xsd" version="0.9" xml:lang="en">
 	<page>
 		<title>Test</title>
@@ -146,40 +151,42 @@ EOF
 	</page>
 </mediawiki>
 EOF
-			,
-				null
-			],
-		];
-		// phpcs:enable
-	}
+                ,
+                null
+            ],
+        ];
+        // phpcs:enable
+    }
 
-	/**
-	 * @covers WikiImporter::handleSiteInfo
-	 * @dataProvider getSiteInfoXML
-	 * @param string $xml
-	 * @param array|null $namespaces
-	 */
-	public function testSiteInfoContainsNamespaces( $xml, $namespaces ) {
-		$source = new ImportStringSource( $xml );
+    /**
+     * @covers       WikiImporter::handleSiteInfo
+     * @dataProvider getSiteInfoXML
+     * @param string $xml
+     * @param array|null $namespaces
+     */
+    public function testSiteInfoContainsNamespaces($xml, $namespaces)
+    {
+        $source = new ImportStringSource($xml);
 
-		$importNamespaces = null;
-		$callback = static function ( array $siteinfo, $innerImporter ) use ( &$importNamespaces ) {
-			$importNamespaces = $siteinfo['_namespaces'];
-		};
+        $importNamespaces = null;
+        $callback = static function (array $siteinfo, $innerImporter) use (&$importNamespaces) {
+            $importNamespaces = $siteinfo['_namespaces'];
+        };
 
-		$importer = $this->getServiceContainer()
-			->getWikiImporterFactory()
-			->getWikiImporter( $source );
-		$importer->setSiteInfoCallback( $callback );
-		$importer->doImport();
+        $importer = $this->getServiceContainer()
+            ->getWikiImporterFactory()
+            ->getWikiImporter($source);
+        $importer->setSiteInfoCallback($callback);
+        $importer->doImport();
 
-		$this->assertEquals( $importNamespaces, $namespaces );
-	}
+        $this->assertEquals($importNamespaces, $namespaces);
+    }
 
-	public function getSiteInfoXML() {
-		return [
-			[
-				<<< EOF
+    public function getSiteInfoXML()
+    {
+        return [
+            [
+                <<< EOF
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10" xml:lang="en">
   <siteinfo>
     <namespaces>
@@ -195,53 +202,56 @@ EOF
   </siteinfo>
 </mediawiki>
 EOF
-			,
-				[
-					'-2' => 'Media',
-					'-1' => 'Special',
-					'0' => '',
-					'1' => 'Talk',
-					'2' => 'User',
-					'3' => 'User talk',
-					'100' => 'Portal',
-					'101' => 'Portal talk',
-				]
-			],
-		];
-		// phpcs:enable
-	}
+                ,
+                [
+                    '-2'  => 'Media',
+                    '-1'  => 'Special',
+                    '0'   => '',
+                    '1'   => 'Talk',
+                    '2'   => 'User',
+                    '3'   => 'User talk',
+                    '100' => 'Portal',
+                    '101' => 'Portal talk',
+                ]
+            ],
+        ];
+        // phpcs:enable
+    }
 
-	/**
-	 * @dataProvider provideUnknownUserHandling
-	 * @covers WikiImporter::setUsernamePrefix
-	 * @covers ExternalUserNames::addPrefix
-	 * @covers ExternalUserNames::applyPrefix
-	 * @param bool $assign
-	 * @param bool $create
-	 */
-	public function testUnknownUserHandling( $assign, $create ) {
-		$hookId = -99;
-		$this->setMwGlobals( 'wgHooks', [
-			'ImportHandleUnknownUser' => [ function ( $name ) use ( $assign, $create, &$hookId ) {
-				if ( !$assign ) {
-					$this->fail( 'ImportHandleUnknownUser was called unexpectedly' );
-				}
+    /**
+     * @dataProvider provideUnknownUserHandling
+     * @covers       WikiImporter::setUsernamePrefix
+     * @covers       ExternalUserNames::addPrefix
+     * @covers       ExternalUserNames::applyPrefix
+     * @param bool $assign
+     * @param bool $create
+     */
+    public function testUnknownUserHandling($assign, $create)
+    {
+        $hookId = -99;
+        $this->setMwGlobals('wgHooks', [
+            'ImportHandleUnknownUser' => [function ($name) use ($assign, $create, &$hookId) {
+                if (!$assign) {
+                    $this->fail('ImportHandleUnknownUser was called unexpectedly');
+                }
 
-				$this->assertEquals( 'UserDoesNotExist', $name );
-				if ( $create ) {
-					$user = User::createNew( $name );
-					$this->assertNotNull( $user );
-					$hookId = $user->getId();
-					return false;
-				}
-				return true;
-			} ]
-		] );
+                $this->assertEquals('UserDoesNotExist', $name);
+                if ($create) {
+                    $user = User::createNew($name);
+                    $this->assertNotNull($user);
+                    $hookId = $user->getId();
 
-		$user = $this->getTestUser()->getUser();
+                    return false;
+                }
 
-		$n = ( $assign ? 1 : 0 ) + ( $create ? 2 : 0 );
-		$source = new ImportStringSource( <<<EOF
+                return true;
+            }]
+        ]);
+
+        $user = $this->getTestUser()->getUser();
+
+        $n = ($assign ? 1 : 0) + ($create ? 2 : 0);
+        $source = new ImportStringSource(<<<EOF
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10" xml:lang="en">
   <page>
     <title>TestImportPage</title>
@@ -274,50 +284,51 @@ EOF
   </page>
 </mediawiki>
 EOF
-		);
-		// phpcs:enable
+        );
+        // phpcs:enable
 
-		$services = $this->getServiceContainer();
-		$importer = $services->getWikiImporterFactory()->getWikiImporter( $source );
+        $services = $this->getServiceContainer();
+        $importer = $services->getWikiImporterFactory()->getWikiImporter($source);
 
-		$importer->setUsernamePrefix( 'Xxx', $assign );
-		$importer->doImport();
+        $importer->setUsernamePrefix('Xxx', $assign);
+        $importer->doImport();
 
-		$db = wfGetDB( DB_PRIMARY );
-		$revQuery = $services->getRevisionStore()->getQueryInfo();
+        $db = wfGetDB(DB_PRIMARY);
+        $revQuery = $services->getRevisionStore()->getQueryInfo();
 
-		$row = $db->selectRow(
-			$revQuery['tables'],
-			$revQuery['fields'],
-			[ 'rev_timestamp' => $db->timestamp( "201601010{$n}0000" ) ],
-			__METHOD__,
-			[],
-			$revQuery['joins']
-		);
-		$this->assertSame(
-			$assign && $create ? 'UserDoesNotExist' : 'Xxx>UserDoesNotExist',
-			$row->rev_user_text
-		);
-		$this->assertSame( $assign && $create ? $hookId : 0, (int)$row->rev_user );
+        $row = $db->selectRow(
+            $revQuery['tables'],
+            $revQuery['fields'],
+            ['rev_timestamp' => $db->timestamp("201601010{$n}0000")],
+            __METHOD__,
+            [],
+            $revQuery['joins']
+        );
+        $this->assertSame(
+            $assign && $create ? 'UserDoesNotExist' : 'Xxx>UserDoesNotExist',
+            $row->rev_user_text
+        );
+        $this->assertSame($assign && $create ? $hookId : 0, (int)$row->rev_user);
 
-		$row = $db->selectRow(
-			$revQuery['tables'],
-			$revQuery['fields'],
-			[ 'rev_timestamp' => $db->timestamp( "201601010{$n}0001" ) ],
-			__METHOD__,
-			[],
-			$revQuery['joins']
-		);
-		$this->assertSame( ( $assign ? '' : 'Xxx>' ) . $user->getName(), $row->rev_user_text );
-		$this->assertSame( $assign ? $user->getId() : 0, (int)$row->rev_user );
-	}
+        $row = $db->selectRow(
+            $revQuery['tables'],
+            $revQuery['fields'],
+            ['rev_timestamp' => $db->timestamp("201601010{$n}0001")],
+            __METHOD__,
+            [],
+            $revQuery['joins']
+        );
+        $this->assertSame(($assign ? '' : 'Xxx>') . $user->getName(), $row->rev_user_text);
+        $this->assertSame($assign ? $user->getId() : 0, (int)$row->rev_user);
+    }
 
-	public static function provideUnknownUserHandling() {
-		return [
-			'no assign' => [ false, false ],
-			'assign, no create' => [ true, false ],
-			'assign, create' => [ true, true ],
-		];
-	}
+    public static function provideUnknownUserHandling()
+    {
+        return [
+            'no assign'         => [false, false],
+            'assign, no create' => [true, false],
+            'assign, create'    => [true, true],
+        ];
+    }
 
 }

@@ -24,5 +24,6 @@
  * @newable
  * @ingroup Exception
  */
-class MediaTransformInvalidParametersException extends MWException {
+class MediaTransformInvalidParametersException extends MWException
+{
 }

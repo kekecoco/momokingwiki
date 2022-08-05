@@ -33,85 +33,89 @@ use Wikimedia\Rdbms\IDatabase;
  *
  * @ingroup Maintenance
  */
-class RunBatchedQuery extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription(
-			"Run an update query on all rows of a table. " .
-			"Waits for replicas at appropriate intervals." );
-		$this->addOption( 'table', 'The table name', true, true );
-		$this->addOption( 'set', 'The SET clause', true, true );
-		$this->addOption( 'where', 'The WHERE clause', false, true );
-		$this->addOption( 'key', 'A column name, the values of which are unique', true, true );
-		$this->addOption( 'batch-size', 'The batch size (default 1000)', false, true );
-		$this->addOption( 'db', 'The database name, or omit to use the current wiki.', false, true );
-	}
+class RunBatchedQuery extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription(
+            "Run an update query on all rows of a table. " .
+            "Waits for replicas at appropriate intervals.");
+        $this->addOption('table', 'The table name', true, true);
+        $this->addOption('set', 'The SET clause', true, true);
+        $this->addOption('where', 'The WHERE clause', false, true);
+        $this->addOption('key', 'A column name, the values of which are unique', true, true);
+        $this->addOption('batch-size', 'The batch size (default 1000)', false, true);
+        $this->addOption('db', 'The database name, or omit to use the current wiki.', false, true);
+    }
 
-	public function execute() {
-		$table = $this->getOption( 'table' );
-		$key = $this->getOption( 'key' );
-		$set = $this->getOption( 'set' );
-		$where = $this->getOption( 'where', null );
-		$where = $where === null ? [] : [ $where ];
-		$batchSize = $this->getOption( 'batch-size', 1000 );
+    public function execute()
+    {
+        $table = $this->getOption('table');
+        $key = $this->getOption('key');
+        $set = $this->getOption('set');
+        $where = $this->getOption('where', null);
+        $where = $where === null ? [] : [$where];
+        $batchSize = $this->getOption('batch-size', 1000);
 
-		$dbName = $this->getOption( 'db', null );
-		if ( $dbName === null ) {
-			$dbw = $this->getDB( DB_PRIMARY );
-		} else {
-			$lbf = MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-			$lb = $lbf->getMainLB( $dbName );
-			$dbw = $lb->getConnectionRef( DB_PRIMARY, [], $dbName );
-		}
+        $dbName = $this->getOption('db', null);
+        if ($dbName === null) {
+            $dbw = $this->getDB(DB_PRIMARY);
+        } else {
+            $lbf = MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+            $lb = $lbf->getMainLB($dbName);
+            $dbw = $lb->getConnectionRef(DB_PRIMARY, [], $dbName);
+        }
 
-		$selectConds = $where;
-		$prevEnd = false;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $selectConds = $where;
+        $prevEnd = false;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-		$n = 1;
-		do {
-			$this->output( "Batch $n: " );
-			$n++;
+        $n = 1;
+        do {
+            $this->output("Batch $n: ");
+            $n++;
 
-			// Note that the update conditions do not rely on atomicity of the
-			// SELECT query in order to guarantee that all rows are updated. The
-			// results of the SELECT are merely a partitioning hint. Simultaneous
-			// updates merely result in the wrong number of rows being updated
-			// in a batch.
+            // Note that the update conditions do not rely on atomicity of the
+            // SELECT query in order to guarantee that all rows are updated. The
+            // results of the SELECT are merely a partitioning hint. Simultaneous
+            // updates merely result in the wrong number of rows being updated
+            // in a batch.
 
-			$res = $dbw->select( $table, $key, $selectConds, __METHOD__,
-				[ 'ORDER BY' => $key, 'LIMIT' => $batchSize ] );
-			if ( $res->numRows() ) {
-				$res->seek( $res->numRows() - 1 );
-				$row = $res->fetchObject();
-				$end = $dbw->addQuotes( $row->$key );
-				$selectConds = array_merge( $where, [ "$key > $end" ] );
-				$updateConds = array_merge( $where, [ "$key <= $end" ] );
-			} else {
-				$updateConds = $where;
-				$end = false;
-			}
-			if ( $prevEnd !== false ) {
-				$updateConds = array_merge( [ "$key > $prevEnd" ], $updateConds );
-			}
+            $res = $dbw->select($table, $key, $selectConds, __METHOD__,
+                ['ORDER BY' => $key, 'LIMIT' => $batchSize]);
+            if ($res->numRows()) {
+                $res->seek($res->numRows() - 1);
+                $row = $res->fetchObject();
+                $end = $dbw->addQuotes($row->$key);
+                $selectConds = array_merge($where, ["$key > $end"]);
+                $updateConds = array_merge($where, ["$key <= $end"]);
+            } else {
+                $updateConds = $where;
+                $end = false;
+            }
+            if ($prevEnd !== false) {
+                $updateConds = array_merge(["$key > $prevEnd"], $updateConds);
+            }
 
-			$query = "UPDATE " . $dbw->tableName( $table ) .
-				" SET " . $set .
-				" WHERE " . $dbw->makeList( $updateConds, IDatabase::LIST_AND );
+            $query = "UPDATE " . $dbw->tableName($table) .
+                " SET " . $set .
+                " WHERE " . $dbw->makeList($updateConds, IDatabase::LIST_AND);
 
-			$dbw->query( $query, __METHOD__ );
+            $dbw->query($query, __METHOD__);
 
-			$prevEnd = $end;
+            $prevEnd = $end;
 
-			$affected = $dbw->affectedRows();
-			$this->output( "$affected rows affected\n" );
-			$lbFactory->waitForReplication();
-		} while ( $res->numRows() );
-	}
+            $affected = $dbw->affectedRows();
+            $this->output("$affected rows affected\n");
+            $lbFactory->waitForReplication();
+        } while ($res->numRows());
+    }
 
-	public function getDbType() {
-		return Maintenance::DB_ADMIN;
-	}
+    public function getDbType()
+    {
+        return Maintenance::DB_ADMIN;
+    }
 }
 
 $maintClass = RunBatchedQuery::class;

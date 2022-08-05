@@ -34,323 +34,365 @@ use Wikimedia\Rdbms\DBConnRef;
  * @ingroup FileBackend
  * @since 1.25
  */
-class FileBackendDBRepoWrapper extends FileBackend {
-	/** @var FileBackend */
-	protected $backend;
-	/** @var string */
-	protected $repoName;
-	/** @var Closure */
-	protected $dbHandleFunc;
-	/** @var MapCacheLRU */
-	protected $resolvedPathCache;
-	/** @var DBConnRef[] */
-	protected $dbs;
+class FileBackendDBRepoWrapper extends FileBackend
+{
+    /** @var FileBackend */
+    protected $backend;
+    /** @var string */
+    protected $repoName;
+    /** @var Closure */
+    protected $dbHandleFunc;
+    /** @var MapCacheLRU */
+    protected $resolvedPathCache;
+    /** @var DBConnRef[] */
+    protected $dbs;
 
-	public function __construct( array $config ) {
-		/** @var FileBackend $backend */
-		$backend = $config['backend'];
-		$config['name'] = $backend->getName();
-		$config['domainId'] = $backend->getDomainId();
-		parent::__construct( $config );
-		$this->backend = $config['backend'];
-		$this->repoName = $config['repoName'];
-		$this->dbHandleFunc = $config['dbHandleFactory'];
-		$this->resolvedPathCache = new MapCacheLRU( 100 );
-	}
+    public function __construct(array $config)
+    {
+        /** @var FileBackend $backend */
+        $backend = $config['backend'];
+        $config['name'] = $backend->getName();
+        $config['domainId'] = $backend->getDomainId();
+        parent::__construct($config);
+        $this->backend = $config['backend'];
+        $this->repoName = $config['repoName'];
+        $this->dbHandleFunc = $config['dbHandleFactory'];
+        $this->resolvedPathCache = new MapCacheLRU(100);
+    }
 
-	/**
-	 * Get the underlying FileBackend that is being wrapped
-	 *
-	 * @return FileBackend
-	 */
-	public function getInternalBackend() {
-		return $this->backend;
-	}
+    /**
+     * Get the underlying FileBackend that is being wrapped
+     *
+     * @return FileBackend
+     */
+    public function getInternalBackend()
+    {
+        return $this->backend;
+    }
 
-	/**
-	 * Translate a legacy "title" path to its "sha1" counterpart
-	 *
-	 * E.g. mwstore://local-backend/local-public/a/ab/<name>.jpg
-	 * => mwstore://local-backend/local-original/x/y/z/<sha1>.jpg
-	 *
-	 * @param string $path
-	 * @param bool $latest
-	 * @return string
-	 */
-	public function getBackendPath( $path, $latest = true ) {
-		$paths = $this->getBackendPaths( [ $path ], $latest );
-		return current( $paths );
-	}
+    /**
+     * Translate a legacy "title" path to its "sha1" counterpart
+     *
+     * E.g. mwstore://local-backend/local-public/a/ab/<name>.jpg
+     * => mwstore://local-backend/local-original/x/y/z/<sha1>.jpg
+     *
+     * @param string $path
+     * @param bool $latest
+     * @return string
+     */
+    public function getBackendPath($path, $latest = true)
+    {
+        $paths = $this->getBackendPaths([$path], $latest);
 
-	/**
-	 * Translate legacy "title" paths to their "sha1" counterparts
-	 *
-	 * E.g. mwstore://local-backend/local-public/a/ab/<name>.jpg
-	 * => mwstore://local-backend/local-original/x/y/z/<sha1>.jpg
-	 *
-	 * @param string[] $paths
-	 * @param bool $latest
-	 * @return string[] Translated paths in same order
-	 */
-	public function getBackendPaths( array $paths, $latest = true ) {
-		$db = $this->getDB( $latest ? DB_PRIMARY : DB_REPLICA );
+        return current($paths);
+    }
 
-		// @TODO: batching
-		$resolved = [];
-		foreach ( $paths as $i => $path ) {
-			if ( !$latest && $this->resolvedPathCache->hasField( $path, 'target', 10 ) ) {
-				$resolved[$i] = $this->resolvedPathCache->getField( $path, 'target' );
-				continue;
-			}
+    /**
+     * Translate legacy "title" paths to their "sha1" counterparts
+     *
+     * E.g. mwstore://local-backend/local-public/a/ab/<name>.jpg
+     * => mwstore://local-backend/local-original/x/y/z/<sha1>.jpg
+     *
+     * @param string[] $paths
+     * @param bool $latest
+     * @return string[] Translated paths in same order
+     */
+    public function getBackendPaths(array $paths, $latest = true)
+    {
+        $db = $this->getDB($latest ? DB_PRIMARY : DB_REPLICA);
 
-			list( , $container ) = FileBackend::splitStoragePath( $path );
+        // @TODO: batching
+        $resolved = [];
+        foreach ($paths as $i => $path) {
+            if (!$latest && $this->resolvedPathCache->hasField($path, 'target', 10)) {
+                $resolved[$i] = $this->resolvedPathCache->getField($path, 'target');
+                continue;
+            }
 
-			if ( $container === "{$this->repoName}-public" ) {
-				$name = basename( $path );
-				if ( strpos( $path, '!' ) !== false ) {
-					$sha1 = $db->selectField( 'oldimage', 'oi_sha1',
-						[ 'oi_archive_name' => $name ],
-						__METHOD__
-					);
-				} else {
-					$sha1 = $db->selectField( 'image', 'img_sha1',
-						[ 'img_name' => $name ],
-						__METHOD__
-					);
-				}
-				if ( $sha1 === null || !strlen( $sha1 ) ) {
-					$resolved[$i] = $path; // give up
-					continue;
-				}
-				$resolved[$i] = $this->getPathForSHA1( $sha1 );
-				$this->resolvedPathCache->setField( $path, 'target', $resolved[$i] );
-			} elseif ( $container === "{$this->repoName}-deleted" ) {
-				$name = basename( $path ); // <hash>.<ext>
-				$sha1 = substr( $name, 0, strpos( $name, '.' ) ); // ignore extension
-				$resolved[$i] = $this->getPathForSHA1( $sha1 );
-				$this->resolvedPathCache->setField( $path, 'target', $resolved[$i] );
-			} else {
-				$resolved[$i] = $path;
-			}
-		}
+            [, $container] = FileBackend::splitStoragePath($path);
 
-		$res = [];
-		foreach ( $paths as $i => $path ) {
-			$res[$i] = $resolved[$i];
-		}
+            if ($container === "{$this->repoName}-public") {
+                $name = basename($path);
+                if (strpos($path, '!') !== false) {
+                    $sha1 = $db->selectField('oldimage', 'oi_sha1',
+                        ['oi_archive_name' => $name],
+                        __METHOD__
+                    );
+                } else {
+                    $sha1 = $db->selectField('image', 'img_sha1',
+                        ['img_name' => $name],
+                        __METHOD__
+                    );
+                }
+                if ($sha1 === null || !strlen($sha1)) {
+                    $resolved[$i] = $path; // give up
+                    continue;
+                }
+                $resolved[$i] = $this->getPathForSHA1($sha1);
+                $this->resolvedPathCache->setField($path, 'target', $resolved[$i]);
+            } elseif ($container === "{$this->repoName}-deleted") {
+                $name = basename($path); // <hash>.<ext>
+                $sha1 = substr($name, 0, strpos($name, '.')); // ignore extension
+                $resolved[$i] = $this->getPathForSHA1($sha1);
+                $this->resolvedPathCache->setField($path, 'target', $resolved[$i]);
+            } else {
+                $resolved[$i] = $path;
+            }
+        }
 
-		return $res;
-	}
+        $res = [];
+        foreach ($paths as $i => $path) {
+            $res[$i] = $resolved[$i];
+        }
 
-	protected function doOperationsInternal( array $ops, array $opts ) {
-		return $this->backend->doOperationsInternal( $this->mungeOpPaths( $ops ), $opts );
-	}
+        return $res;
+    }
 
-	protected function doQuickOperationsInternal( array $ops, array $opts ) {
-		return $this->backend->doQuickOperationsInternal( $this->mungeOpPaths( $ops ), $opts );
-	}
+    protected function doOperationsInternal(array $ops, array $opts)
+    {
+        return $this->backend->doOperationsInternal($this->mungeOpPaths($ops), $opts);
+    }
 
-	protected function doPrepare( array $params ) {
-		return $this->backend->doPrepare( $params );
-	}
+    protected function doQuickOperationsInternal(array $ops, array $opts)
+    {
+        return $this->backend->doQuickOperationsInternal($this->mungeOpPaths($ops), $opts);
+    }
 
-	protected function doSecure( array $params ) {
-		return $this->backend->doSecure( $params );
-	}
+    protected function doPrepare(array $params)
+    {
+        return $this->backend->doPrepare($params);
+    }
 
-	protected function doPublish( array $params ) {
-		return $this->backend->doPublish( $params );
-	}
+    protected function doSecure(array $params)
+    {
+        return $this->backend->doSecure($params);
+    }
 
-	protected function doClean( array $params ) {
-		return $this->backend->doClean( $params );
-	}
+    protected function doPublish(array $params)
+    {
+        return $this->backend->doPublish($params);
+    }
 
-	public function concatenate( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    protected function doClean(array $params)
+    {
+        return $this->backend->doClean($params);
+    }
 
-	public function fileExists( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function concatenate(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileTimestamp( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function fileExists(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileSize( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileTimestamp(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileStat( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileSize(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileXAttributes( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileStat(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileSha1Base36( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileXAttributes(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileProps( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileSha1Base36(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function streamFile( array $params ) {
-		// The stream methods use the file extension to determine the
-		// Content-Type (as MediaWiki should already validate it on upload).
-		// The translated SHA1 path has no extension, so this needs to use
-		// the untranslated path extension.
-		$type = StreamFile::contentTypeFromPath( $params['src'] );
-		if ( $type && $type != 'unknown/unknown' ) {
-			$params['headers'][] = "Content-type: $type";
-		}
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getFileProps(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileContentsMulti( array $params ) {
-		return $this->translateArrayResults( __FUNCTION__, $params );
-	}
+    public function streamFile(array $params)
+    {
+        // The stream methods use the file extension to determine the
+        // Content-Type (as MediaWiki should already validate it on upload).
+        // The translated SHA1 path has no extension, so this needs to use
+        // the untranslated path extension.
+        $type = StreamFile::contentTypeFromPath($params['src']);
+        if ($type && $type != 'unknown/unknown') {
+            $params['headers'][] = "Content-type: $type";
+        }
 
-	public function getLocalReferenceMulti( array $params ) {
-		return $this->translateArrayResults( __FUNCTION__, $params );
-	}
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getLocalCopyMulti( array $params ) {
-		return $this->translateArrayResults( __FUNCTION__, $params );
-	}
+    public function getFileContentsMulti(array $params)
+    {
+        return $this->translateArrayResults(__FUNCTION__, $params);
+    }
 
-	public function getFileHttpUrl( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function getLocalReferenceMulti(array $params)
+    {
+        return $this->translateArrayResults(__FUNCTION__, $params);
+    }
 
-	public function directoryExists( array $params ) {
-		return $this->backend->directoryExists( $params );
-	}
+    public function getLocalCopyMulti(array $params)
+    {
+        return $this->translateArrayResults(__FUNCTION__, $params);
+    }
 
-	public function getDirectoryList( array $params ) {
-		return $this->backend->getDirectoryList( $params );
-	}
+    public function getFileHttpUrl(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	public function getFileList( array $params ) {
-		return $this->backend->getFileList( $params );
-	}
+    public function directoryExists(array $params)
+    {
+        return $this->backend->directoryExists($params);
+    }
 
-	public function getFeatures() {
-		return $this->backend->getFeatures();
-	}
+    public function getDirectoryList(array $params)
+    {
+        return $this->backend->getDirectoryList($params);
+    }
 
-	public function clearCache( array $paths = null ) {
-		$this->backend->clearCache( null ); // clear all
-	}
+    public function getFileList(array $params)
+    {
+        return $this->backend->getFileList($params);
+    }
 
-	public function preloadCache( array $paths ) {
-		$paths = $this->getBackendPaths( $paths );
-		$this->backend->preloadCache( $paths );
-	}
+    public function getFeatures()
+    {
+        return $this->backend->getFeatures();
+    }
 
-	public function preloadFileStat( array $params ) {
-		return $this->translateSrcParams( __FUNCTION__, $params );
-	}
+    public function clearCache(array $paths = null)
+    {
+        $this->backend->clearCache(null); // clear all
+    }
 
-	public function getScopedLocksForOps( array $ops, StatusValue $status ) {
-		return $this->backend->getScopedLocksForOps( $ops, $status );
-	}
+    public function preloadCache(array $paths)
+    {
+        $paths = $this->getBackendPaths($paths);
+        $this->backend->preloadCache($paths);
+    }
 
-	/**
-	 * Get the ultimate original storage path for a file
-	 *
-	 * Use this when putting a new file into the system
-	 *
-	 * @param string $sha1 File SHA-1 base36
-	 * @return string
-	 */
-	public function getPathForSHA1( $sha1 ) {
-		if ( strlen( $sha1 ) < 3 ) {
-			throw new InvalidArgumentException( "Invalid file SHA-1." );
-		}
-		return $this->backend->getContainerStoragePath( "{$this->repoName}-original" ) .
-			"/{$sha1[0]}/{$sha1[1]}/{$sha1[2]}/{$sha1}";
-	}
+    public function preloadFileStat(array $params)
+    {
+        return $this->translateSrcParams(__FUNCTION__, $params);
+    }
 
-	/**
-	 * Get a connection to the repo file registry DB
-	 *
-	 * @param int $index
-	 * @return DBConnRef
-	 */
-	protected function getDB( $index ) {
-		if ( !isset( $this->dbs[$index] ) ) {
-			$func = $this->dbHandleFunc;
-			$this->dbs[$index] = $func( $index );
-		}
-		return $this->dbs[$index];
-	}
+    public function getScopedLocksForOps(array $ops, StatusValue $status)
+    {
+        return $this->backend->getScopedLocksForOps($ops, $status);
+    }
 
-	/**
-	 * Translates paths found in the "src" or "srcs" keys of a params array
-	 *
-	 * @param string $function
-	 * @param array $params
-	 * @return mixed
-	 */
-	protected function translateSrcParams( $function, array $params ) {
-		$latest = !empty( $params['latest'] );
+    /**
+     * Get the ultimate original storage path for a file
+     *
+     * Use this when putting a new file into the system
+     *
+     * @param string $sha1 File SHA-1 base36
+     * @return string
+     */
+    public function getPathForSHA1($sha1)
+    {
+        if (strlen($sha1) < 3) {
+            throw new InvalidArgumentException("Invalid file SHA-1.");
+        }
 
-		if ( isset( $params['src'] ) ) {
-			$params['src'] = $this->getBackendPath( $params['src'], $latest );
-		}
+        return $this->backend->getContainerStoragePath("{$this->repoName}-original") .
+            "/{$sha1[0]}/{$sha1[1]}/{$sha1[2]}/{$sha1}";
+    }
 
-		if ( isset( $params['srcs'] ) ) {
-			$params['srcs'] = $this->getBackendPaths( $params['srcs'], $latest );
-		}
+    /**
+     * Get a connection to the repo file registry DB
+     *
+     * @param int $index
+     * @return DBConnRef
+     */
+    protected function getDB($index)
+    {
+        if (!isset($this->dbs[$index])) {
+            $func = $this->dbHandleFunc;
+            $this->dbs[$index] = $func($index);
+        }
 
-		return $this->backend->$function( $params );
-	}
+        return $this->dbs[$index];
+    }
 
-	/**
-	 * Translates paths when the backend function returns results keyed by paths
-	 *
-	 * @param string $function
-	 * @param array $params
-	 * @return array
-	 */
-	protected function translateArrayResults( $function, array $params ) {
-		$origPaths = $params['srcs'];
-		$params['srcs'] = $this->getBackendPaths( $params['srcs'], !empty( $params['latest'] ) );
-		$pathMap = array_combine( $params['srcs'], $origPaths );
+    /**
+     * Translates paths found in the "src" or "srcs" keys of a params array
+     *
+     * @param string $function
+     * @param array $params
+     * @return mixed
+     */
+    protected function translateSrcParams($function, array $params)
+    {
+        $latest = !empty($params['latest']);
 
-		$results = $this->backend->$function( $params );
+        if (isset($params['src'])) {
+            $params['src'] = $this->getBackendPath($params['src'], $latest);
+        }
 
-		$contents = [];
-		foreach ( $results as $path => $result ) {
-			$contents[$pathMap[$path]] = $result;
-		}
+        if (isset($params['srcs'])) {
+            $params['srcs'] = $this->getBackendPaths($params['srcs'], $latest);
+        }
 
-		return $contents;
-	}
+        return $this->backend->$function($params);
+    }
 
-	/**
-	 * Translate legacy "title" source paths to their "sha1" counterparts
-	 *
-	 * This leaves destination paths alone since we don't want those to mutate
-	 *
-	 * @param array[] $ops
-	 * @return array[]
-	 */
-	protected function mungeOpPaths( array $ops ) {
-		// Ops that use 'src' and do not mutate core file data there
-		static $srcRefOps = [ 'store', 'copy', 'describe' ];
-		foreach ( $ops as &$op ) {
-			if ( isset( $op['src'] ) && in_array( $op['op'], $srcRefOps ) ) {
-				$op['src'] = $this->getBackendPath( $op['src'], true );
-			}
-			if ( isset( $op['srcs'] ) ) {
-				$op['srcs'] = $this->getBackendPaths( $op['srcs'], true );
-			}
-		}
-		return $ops;
-	}
+    /**
+     * Translates paths when the backend function returns results keyed by paths
+     *
+     * @param string $function
+     * @param array $params
+     * @return array
+     */
+    protected function translateArrayResults($function, array $params)
+    {
+        $origPaths = $params['srcs'];
+        $params['srcs'] = $this->getBackendPaths($params['srcs'], !empty($params['latest']));
+        $pathMap = array_combine($params['srcs'], $origPaths);
+
+        $results = $this->backend->$function($params);
+
+        $contents = [];
+        foreach ($results as $path => $result) {
+            $contents[$pathMap[$path]] = $result;
+        }
+
+        return $contents;
+    }
+
+    /**
+     * Translate legacy "title" source paths to their "sha1" counterparts
+     *
+     * This leaves destination paths alone since we don't want those to mutate
+     *
+     * @param array[] $ops
+     * @return array[]
+     */
+    protected function mungeOpPaths(array $ops)
+    {
+        // Ops that use 'src' and do not mutate core file data there
+        static $srcRefOps = ['store', 'copy', 'describe'];
+        foreach ($ops as &$op) {
+            if (isset($op['src']) && in_array($op['op'], $srcRefOps)) {
+                $op['src'] = $this->getBackendPath($op['src'], true);
+            }
+            if (isset($op['srcs'])) {
+                $op['srcs'] = $this->getBackendPaths($op['srcs'], true);
+            }
+        }
+
+        return $ops;
+    }
 }

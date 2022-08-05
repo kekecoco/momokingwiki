@@ -30,17 +30,17 @@
  */
 
 // Enable showing of errors
-error_reporting( -1 );
+error_reporting(-1);
 // @phan-suppress-next-line PhanTypeMismatchArgumentInternal Scalar okay with php8.1
-ini_set( 'display_errors', 1 );
+ini_set('display_errors', 1);
 
 /**
  * Debugging for MediaWiki
  */
 
 global $wgDevelopmentWarnings, $wgShowExceptionDetails, $wgShowHostnames,
-	$wgCommandLineMode, $wgDebugLogFile,
-	$wgDBerrorLog, $wgDebugLogGroups;
+       $wgCommandLineMode, $wgDebugLogFile,
+       $wgDBerrorLog, $wgDebugLogGroups;
 
 // Use of wfWarn() should cause tests to fail
 $wgDevelopmentWarnings = true;
@@ -50,34 +50,34 @@ $wgShowExceptionDetails = true;
 $wgShowHostnames = true;
 
 // Enable log files
-$logDir = getenv( 'MW_LOG_DIR' );
-if ( $logDir ) {
-	if ( $wgCommandLineMode ) {
-		$wgDebugLogFile = "$logDir/mw-debug-cli.log";
-	} else {
-		$wgDebugLogFile = "$logDir/mw-debug-www.log";
-	}
-	$wgDBerrorLog = "$logDir/mw-dberror.log";
-	$wgDebugLogGroups['ratelimit'] = "$logDir/mw-ratelimit.log";
-	$wgDebugLogGroups['error'] = "$logDir/mw-error.log";
-	$wgDebugLogGroups['exception'] = "$logDir/mw-error.log";
+$logDir = getenv('MW_LOG_DIR');
+if ($logDir) {
+    if ($wgCommandLineMode) {
+        $wgDebugLogFile = "$logDir/mw-debug-cli.log";
+    } else {
+        $wgDebugLogFile = "$logDir/mw-debug-www.log";
+    }
+    $wgDBerrorLog = "$logDir/mw-dberror.log";
+    $wgDebugLogGroups['ratelimit'] = "$logDir/mw-ratelimit.log";
+    $wgDebugLogGroups['error'] = "$logDir/mw-error.log";
+    $wgDebugLogGroups['exception'] = "$logDir/mw-error.log";
 }
-unset( $logDir );
+unset($logDir);
 
 /**
  * Make testing possible (or easier)
  */
 
 global $wgRateLimits, $wgEnableJavaScriptTest, $wgRestAPIAdditionalRouteFiles,
-	$wgDeferredUpdateStrategy;
+       $wgDeferredUpdateStrategy;
 
 // Set almost infinite rate limits. This allows integration tests to run unthrottled
 // in CI and for devs locally (T225796), but doesn't turn a large chunk of production
 // code completely off during testing (T284804)
-foreach ( $wgRateLimits as $right => &$limit ) {
-	foreach ( $limit as $group => &$groupLimit ) {
-		$groupLimit[0] = PHP_INT_MAX;
-	}
+foreach ($wgRateLimits as $right => &$limit) {
+    foreach ($limit as $group => &$groupLimit) {
+        $groupLimit[0] = PHP_INT_MAX;
+    }
 }
 
 // Enable Special:JavaScriptTest and allow `npm run qunit` to work
@@ -85,13 +85,13 @@ foreach ( $wgRateLimits as $right => &$limit ) {
 $wgEnableJavaScriptTest = true;
 
 // Enable development/experimental endpoints
-$wgRestAPIAdditionalRouteFiles = [ 'includes/Rest/coreDevelopmentRoutes.json' ];
+$wgRestAPIAdditionalRouteFiles = ['includes/Rest/coreDevelopmentRoutes.json'];
 
 // Greatly raise the limits on short/long term login attempts,
 // so that automated tests run in parallel don't error.
 $wgPasswordAttemptThrottle = [
-	[ 'count' => 1000, 'seconds' => 300 ],
-	[ 'count' => 100000, 'seconds' => 60 * 60 * 48 ],
+    ['count' => 1000, 'seconds' => 300],
+    ['count' => 100000, 'seconds' => 60 * 60 * 48],
 ];
 
 // Run deferred updates before sending a response to the client.
@@ -107,7 +107,7 @@ $wgForceDeferredUpdatesPreSend = true;
  */
 
 global $wgSQLMode, $wgLocalisationCacheConf,
-	$wgCacheDirectory, $wgEnableUploads, $wgCiteBookReferencing;
+       $wgCacheDirectory, $wgEnableUploads, $wgCiteBookReferencing;
 
 // Enable MariaDB/MySQL strict mode (T108255)
 $wgSQLMode = 'STRICT_ALL_TABLES,ONLY_FULL_GROUP_BY';
@@ -121,8 +121,8 @@ $wgCiteBookReferencing = true;
 // The default value is false, but for development it is useful to set this to the system temp
 // directory by default (T218207)
 $wgCacheDirectory = TempFSFile::getUsableTempDirectory() .
-	DIRECTORY_SEPARATOR .
-	rawurlencode( WikiMap::getCurrentWikiId() );
+    DIRECTORY_SEPARATOR .
+    rawurlencode(WikiMap::getCurrentWikiId());
 
 // Enable uploads for FileImporter browser tests (T190829)
 $wgEnableUploads = true;

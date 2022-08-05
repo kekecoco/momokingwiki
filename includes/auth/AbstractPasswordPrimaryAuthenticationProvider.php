@@ -34,158 +34,169 @@ use Status;
  * @since 1.27
  */
 abstract class AbstractPasswordPrimaryAuthenticationProvider
-	extends AbstractPrimaryAuthenticationProvider
+    extends AbstractPrimaryAuthenticationProvider
 {
-	/** @var bool Whether this provider should ABSTAIN (false) or FAIL (true) on password failure */
-	protected $authoritative;
+    /** @var bool Whether this provider should ABSTAIN (false) or FAIL (true) on password failure */
+    protected $authoritative;
 
-	private $passwordFactory = null;
+    private $passwordFactory = null;
 
-	/**
-	 * @stable to call
-	 * @param array $params Settings
-	 *  - authoritative: Whether this provider should ABSTAIN (false) or FAIL
-	 *    (true) on password failure
-	 */
-	public function __construct( array $params = [] ) {
-		$this->authoritative = !isset( $params['authoritative'] ) || (bool)$params['authoritative'];
-	}
+    /**
+     * @stable to call
+     * @param array $params Settings
+     *  - authoritative: Whether this provider should ABSTAIN (false) or FAIL
+     *    (true) on password failure
+     */
+    public function __construct(array $params = [])
+    {
+        $this->authoritative = !isset($params['authoritative']) || (bool)$params['authoritative'];
+    }
 
-	/**
-	 * @return PasswordFactory
-	 */
-	protected function getPasswordFactory() {
-		if ( $this->passwordFactory === null ) {
-			$this->passwordFactory = new PasswordFactory(
-				$this->config->get( MainConfigNames::PasswordConfig ),
-				$this->config->get( MainConfigNames::PasswordDefault )
-			);
-		}
-		return $this->passwordFactory;
-	}
+    /**
+     * @return PasswordFactory
+     */
+    protected function getPasswordFactory()
+    {
+        if ($this->passwordFactory === null) {
+            $this->passwordFactory = new PasswordFactory(
+                $this->config->get(MainConfigNames::PasswordConfig),
+                $this->config->get(MainConfigNames::PasswordDefault)
+            );
+        }
 
-	/**
-	 * Get a Password object from the hash
-	 * @param string $hash
-	 * @return Password
-	 */
-	protected function getPassword( $hash ) {
-		$passwordFactory = $this->getPasswordFactory();
-		try {
-			return $passwordFactory->newFromCiphertext( $hash );
-		} catch ( \PasswordError $e ) {
-			$class = static::class;
-			$this->logger->debug( "Invalid password hash in {$class}::getPassword()" );
-			return $passwordFactory->newFromCiphertext( null );
-		}
-	}
+        return $this->passwordFactory;
+    }
 
-	/**
-	 * Return the appropriate response for failure
-	 * @param PasswordAuthenticationRequest $req
-	 * @return AuthenticationResponse
-	 */
-	protected function failResponse( PasswordAuthenticationRequest $req ) {
-		if ( $this->authoritative ) {
-			return AuthenticationResponse::newFail(
-				wfMessage( $req->password === '' ? 'wrongpasswordempty' : 'wrongpassword' )
-			);
-		} else {
-			return AuthenticationResponse::newAbstain();
-		}
-	}
+    /**
+     * Get a Password object from the hash
+     * @param string $hash
+     * @return Password
+     */
+    protected function getPassword($hash)
+    {
+        $passwordFactory = $this->getPasswordFactory();
+        try {
+            return $passwordFactory->newFromCiphertext($hash);
+        } catch (\PasswordError $e) {
+            $class = static::class;
+            $this->logger->debug("Invalid password hash in {$class}::getPassword()");
 
-	/**
-	 * Check that the password is valid
-	 *
-	 * This should be called *before* validating the password. If the result is
-	 * not ok, login should fail immediately.
-	 *
-	 * @param string $username
-	 * @param string $password
-	 * @return Status
-	 */
-	protected function checkPasswordValidity( $username, $password ) {
-		return \User::newFromName( $username )->checkPasswordValidity( $password );
-	}
+            return $passwordFactory->newFromCiphertext(null);
+        }
+    }
 
-	/**
-	 * Check if the password should be reset
-	 *
-	 * This should be called after a successful login. It sets 'reset-pass'
-	 * authentication data if necessary, see
-	 * ResetPassSecondaryAuthenticationProvider.
-	 *
-	 * @param string $username
-	 * @param Status $status From $this->checkPasswordValidity()
-	 * @param \stdClass|null $data Passed through to $this->getPasswordResetData()
-	 */
-	protected function setPasswordResetFlag( $username, Status $status, $data = null ) {
-		$reset = $this->getPasswordResetData( $username, $data );
+    /**
+     * Return the appropriate response for failure
+     * @param PasswordAuthenticationRequest $req
+     * @return AuthenticationResponse
+     */
+    protected function failResponse(PasswordAuthenticationRequest $req)
+    {
+        if ($this->authoritative) {
+            return AuthenticationResponse::newFail(
+                wfMessage($req->password === '' ? 'wrongpasswordempty' : 'wrongpassword')
+            );
+        } else {
+            return AuthenticationResponse::newAbstain();
+        }
+    }
 
-		if ( !$reset && $this->config->get( MainConfigNames::InvalidPasswordReset ) &&
-		!$status->isGood() ) {
-			$hard = $status->getValue()['forceChange'] ?? false;
+    /**
+     * Check that the password is valid
+     *
+     * This should be called *before* validating the password. If the result is
+     * not ok, login should fail immediately.
+     *
+     * @param string $username
+     * @param string $password
+     * @return Status
+     */
+    protected function checkPasswordValidity($username, $password)
+    {
+        return \User::newFromName($username)->checkPasswordValidity($password);
+    }
 
-			if ( $hard || !empty( $status->getValue()['suggestChangeOnLogin'] ) ) {
-				$reset = (object)[
-					'msg' => $status->getMessage( $hard ? 'resetpass-validity' : 'resetpass-validity-soft' ),
-					'hard' => $hard,
-				];
-			}
-		}
+    /**
+     * Check if the password should be reset
+     *
+     * This should be called after a successful login. It sets 'reset-pass'
+     * authentication data if necessary, see
+     * ResetPassSecondaryAuthenticationProvider.
+     *
+     * @param string $username
+     * @param Status $status From $this->checkPasswordValidity()
+     * @param \stdClass|null $data Passed through to $this->getPasswordResetData()
+     */
+    protected function setPasswordResetFlag($username, Status $status, $data = null)
+    {
+        $reset = $this->getPasswordResetData($username, $data);
 
-		if ( $reset ) {
-			$this->manager->setAuthenticationSessionData( 'reset-pass', $reset );
-		}
-	}
+        if (!$reset && $this->config->get(MainConfigNames::InvalidPasswordReset) &&
+            !$status->isGood()) {
+            $hard = $status->getValue()['forceChange'] ?? false;
 
-	/**
-	 * Get password reset data, if any
-	 *
-	 * @stable to override
-	 * @param string $username
-	 * @param \stdClass|null $data
-	 * @return \stdClass|null { 'hard' => bool, 'msg' => Message }
-	 */
-	protected function getPasswordResetData( $username, $data ) {
-		return null;
-	}
+            if ($hard || !empty($status->getValue()['suggestChangeOnLogin'])) {
+                $reset = (object)[
+                    'msg'  => $status->getMessage($hard ? 'resetpass-validity' : 'resetpass-validity-soft'),
+                    'hard' => $hard,
+                ];
+            }
+        }
 
-	/**
-	 * Get expiration date for a new password, if any
-	 *
-	 * @stable to override
-	 * @param string $username
-	 * @return string|null
-	 */
-	protected function getNewPasswordExpiry( $username ) {
-		$days = $this->config->get( MainConfigNames::PasswordExpirationDays );
-		$expires = $days ? wfTimestamp( TS_MW, time() + $days * 86400 ) : null;
+        if ($reset) {
+            $this->manager->setAuthenticationSessionData('reset-pass', $reset);
+        }
+    }
 
-		// Give extensions a chance to force an expiration
-		$this->getHookRunner()->onResetPasswordExpiration(
-			\User::newFromName( $username ), $expires );
+    /**
+     * Get password reset data, if any
+     *
+     * @stable to override
+     * @param string $username
+     * @param \stdClass|null $data
+     * @return \stdClass|null { 'hard' => bool, 'msg' => Message }
+     */
+    protected function getPasswordResetData($username, $data)
+    {
+        return null;
+    }
 
-		return $expires;
-	}
+    /**
+     * Get expiration date for a new password, if any
+     *
+     * @stable to override
+     * @param string $username
+     * @return string|null
+     */
+    protected function getNewPasswordExpiry($username)
+    {
+        $days = $this->config->get(MainConfigNames::PasswordExpirationDays);
+        $expires = $days ? wfTimestamp(TS_MW, time() + $days * 86400) : null;
 
-	/**
-	 * @stable to override
-	 * @param string $action
-	 * @param array $options
-	 *
-	 * @return AuthenticationRequest[]
-	 */
-	public function getAuthenticationRequests( $action, array $options ) {
-		switch ( $action ) {
-			case AuthManager::ACTION_LOGIN:
-			case AuthManager::ACTION_REMOVE:
-			case AuthManager::ACTION_CREATE:
-			case AuthManager::ACTION_CHANGE:
-				return [ new PasswordAuthenticationRequest() ];
-			default:
-				return [];
-		}
-	}
+        // Give extensions a chance to force an expiration
+        $this->getHookRunner()->onResetPasswordExpiration(
+            \User::newFromName($username), $expires);
+
+        return $expires;
+    }
+
+    /**
+     * @stable to override
+     * @param string $action
+     * @param array $options
+     *
+     * @return AuthenticationRequest[]
+     */
+    public function getAuthenticationRequests($action, array $options)
+    {
+        switch ($action) {
+            case AuthManager::ACTION_LOGIN:
+            case AuthManager::ACTION_REMOVE:
+            case AuthManager::ACTION_CREATE:
+            case AuthManager::ACTION_CHANGE:
+                return [new PasswordAuthenticationRequest()];
+            default:
+                return [];
+        }
+    }
 }

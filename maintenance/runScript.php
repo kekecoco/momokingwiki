@@ -36,35 +36,35 @@
  * @ingroup Maintenance
  */
 
-if ( PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' ) {
-	echo "This script must be run from the command line\n";
-	exit( 1 );
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    echo "This script must be run from the command line\n";
+    exit(1);
 }
 
-$IP = getenv( 'MW_INSTALL_PATH' );
+$IP = getenv('MW_INSTALL_PATH');
 
-if ( $IP === false ) {
-	$IP = dirname( __DIR__ );
+if ($IP === false) {
+    $IP = dirname(__DIR__);
 
-	putenv( "MW_INSTALL_PATH=$IP" );
+    putenv("MW_INSTALL_PATH=$IP");
 }
 
 require_once "$IP/maintenance/Maintenance.php";
 
-if ( !isset( $argv[1] ) ) {
-	fwrite( STDERR, "This script requires a maintenance script as an argument.\n"
-		. "Usage: php runScript.php extensions/Wikibase/lib/maintenance/dispatchChanges.php\n" );
-	exit( 1 );
+if (!isset($argv[1])) {
+    fwrite(STDERR, "This script requires a maintenance script as an argument.\n"
+        . "Usage: php runScript.php extensions/Wikibase/lib/maintenance/dispatchChanges.php\n");
+    exit(1);
 }
 
 $scriptFilename = $argv[1];
-array_shift( $argv );
+array_shift($argv);
 
-$scriptFile = realpath( $scriptFilename );
+$scriptFile = realpath($scriptFilename);
 
-if ( !$scriptFile ) {
-	fwrite( STDERR, "The MediaWiki script file \"{$scriptFilename}\" does not exist.\n" );
-	exit( 1 );
+if (!$scriptFile) {
+    fwrite(STDERR, "The MediaWiki script file \"{$scriptFilename}\" does not exist.\n");
+    exit(1);
 }
 
 // @phan-suppress-next-line SecurityCheck-PathTraversal User input is wanted in this script

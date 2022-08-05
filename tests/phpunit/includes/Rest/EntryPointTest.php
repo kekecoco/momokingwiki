@@ -16,87 +16,99 @@ use WebResponse;
  * @covers \MediaWiki\Rest\EntryPoint
  * @covers \MediaWiki\Rest\Router
  */
-class EntryPointTest extends \MediaWikiIntegrationTestCase {
-	use RestTestTrait;
+class EntryPointTest extends \MediaWikiIntegrationTestCase
+{
+    use RestTestTrait;
 
-	private function createRouter( RequestInterface $request ) {
-		return $this->newRouter( [
-			'request' => $request
-		] );
-	}
+    private function createRouter(RequestInterface $request)
+    {
+        return $this->newRouter([
+            'request' => $request
+        ]);
+    }
 
-	private function createWebResponse() {
-		return $this->getMockBuilder( WebResponse::class )
-			->onlyMethods( [ 'header' ] )
-			->getMock();
-	}
+    private function createWebResponse()
+    {
+        return $this->getMockBuilder(WebResponse::class)
+            ->onlyMethods(['header'])
+            ->getMock();
+    }
 
-	private function createCorsUtils() {
-		$cors = $this->createMock( CorsUtils::class );
-		$cors->method( 'modifyResponse' )
-			->will( $this->returnArgument( 1 ) );
+    private function createCorsUtils()
+    {
+        $cors = $this->createMock(CorsUtils::class);
+        $cors->method('modifyResponse')
+            ->will($this->returnArgument(1));
 
-		return $cors;
-	}
+        return $cors;
+    }
 
-	public static function mockHandlerHeader() {
-		return new class extends Handler {
-			public function execute() {
-				$response = $this->getResponseFactory()->create();
-				$response->setHeader( 'Foo', 'Bar' );
-				return $response;
-			}
-		};
-	}
+    public static function mockHandlerHeader()
+    {
+        return new class extends Handler {
+            public function execute()
+            {
+                $response = $this->getResponseFactory()->create();
+                $response->setHeader('Foo', 'Bar');
 
-	public function testHeader() {
-		$webResponse = $this->createWebResponse();
-		$webResponse->method( 'header' )
-			->withConsecutive(
-				[ 'HTTP/1.1 200 OK', true, null ],
-				[ 'Foo: Bar', true, null ]
-			);
+                return $response;
+            }
+        };
+    }
 
-		$request = new RequestData( [ 'uri' => new Uri( '/rest/mock/EntryPoint/header' ) ] );
+    public function testHeader()
+    {
+        $webResponse = $this->createWebResponse();
+        $webResponse->method('header')
+            ->withConsecutive(
+                ['HTTP/1.1 200 OK', true, null],
+                ['Foo: Bar', true, null]
+            );
 
-		$entryPoint = new EntryPoint(
-			RequestContext::getMain(),
-			$request,
-			$webResponse,
-			$this->createRouter( $request ),
-			$this->createCorsUtils()
-		);
-		$entryPoint->execute();
-		$this->assertTrue( true );
-	}
+        $request = new RequestData(['uri' => new Uri('/rest/mock/EntryPoint/header')]);
 
-	public static function mockHandlerBodyRewind() {
-		return new class extends Handler {
-			public function execute() {
-				$response = $this->getResponseFactory()->create();
-				$stream = new Stream( fopen( 'php://memory', 'w+' ) );
-				$stream->write( 'hello' );
-				$response->setBody( $stream );
-				return $response;
-			}
-		};
-	}
+        $entryPoint = new EntryPoint(
+            RequestContext::getMain(),
+            $request,
+            $webResponse,
+            $this->createRouter($request),
+            $this->createCorsUtils()
+        );
+        $entryPoint->execute();
+        $this->assertTrue(true);
+    }
 
-	/**
-	 * Make sure EntryPoint rewinds a seekable body stream before reading.
-	 */
-	public function testBodyRewind() {
-		$request = new RequestData( [ 'uri' => new Uri( '/rest/mock/EntryPoint/bodyRewind' ) ] );
-		$entryPoint = new EntryPoint(
-			RequestContext::getMain(),
-			$request,
-			$this->createWebResponse(),
-			$this->createRouter( $request ),
-			$this->createCorsUtils()
-		);
-		ob_start();
-		$entryPoint->execute();
-		$this->assertSame( 'hello', ob_get_clean() );
-	}
+    public static function mockHandlerBodyRewind()
+    {
+        return new class extends Handler {
+            public function execute()
+            {
+                $response = $this->getResponseFactory()->create();
+                $stream = new Stream(fopen('php://memory', 'w+'));
+                $stream->write('hello');
+                $response->setBody($stream);
+
+                return $response;
+            }
+        };
+    }
+
+    /**
+     * Make sure EntryPoint rewinds a seekable body stream before reading.
+     */
+    public function testBodyRewind()
+    {
+        $request = new RequestData(['uri' => new Uri('/rest/mock/EntryPoint/bodyRewind')]);
+        $entryPoint = new EntryPoint(
+            RequestContext::getMain(),
+            $request,
+            $this->createWebResponse(),
+            $this->createRouter($request),
+            $this->createCorsUtils()
+        );
+        ob_start();
+        $entryPoint->execute();
+        $this->assertSame('hello', ob_get_clean());
+    }
 
 }

@@ -24,63 +24,68 @@
  * @since 1.38
  */
 
-declare( strict_types=1 );
+declare(strict_types=1);
 
 namespace Wikimedia\Metrics;
 
-class GaugeMetric {
+class GaugeMetric
+{
 
-	/**
-	 * The StatsD protocol type indicator:
-	 * https://github.com/statsd/statsd/blob/v0.9.0/docs/metric_types.md
-	 * https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics
-	 *
-	 * @var string
-	 */
-	private const TYPE_INDICATOR = 'g';
+    /**
+     * The StatsD protocol type indicator:
+     * https://github.com/statsd/statsd/blob/v0.9.0/docs/metric_types.md
+     * https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics
+     *
+     * @var string
+     */
+    private const TYPE_INDICATOR = 'g';
 
-	/** @var MetricUtils */
-	private $metricUtils;
+    /** @var MetricUtils */
+    private $metricUtils;
 
-	/**
-	 * @param array $config associative array:
-	 *   - name: (string) The metric name
-	 *   - extension: (string) The extension generating the metric
-	 *   - labels: (array) List of metric dimensional instantiations for filters and aggregations
-	 *   - sampleRate: (float) Optional sampling rate to apply
-	 * @param MetricUtils $metricUtils
-	 */
-	public function __construct( array $config, MetricUtils $metricUtils ) {
-		$metricUtils->validateConfig( $config );
-		$metricUtils->setTypeIndicator( $this::TYPE_INDICATOR );
-		$this->metricUtils = $metricUtils;
-	}
+    /**
+     * @param array $config associative array:
+     *   - name: (string) The metric name
+     *   - extension: (string) The extension generating the metric
+     *   - labels: (array) List of metric dimensional instantiations for filters and aggregations
+     *   - sampleRate: (float) Optional sampling rate to apply
+     * @param MetricUtils $metricUtils
+     */
+    public function __construct(array $config, MetricUtils $metricUtils)
+    {
+        $metricUtils->validateConfig($config);
+        $metricUtils->setTypeIndicator($this::TYPE_INDICATOR);
+        $this->metricUtils = $metricUtils;
+    }
 
-	/**
-	 * Validate provided labels
-	 *
-	 * @param string[] $labels
-	 */
-	public function validateLabels( array $labels = [] ) {
-		$this->metricUtils->validateLabels( $labels );
-	}
+    /**
+     * Validate provided labels
+     *
+     * @param string[] $labels
+     */
+    public function validateLabels(array $labels = [])
+    {
+        $this->metricUtils->validateLabels($labels);
+    }
 
-	/**
-	 * @param float $value
-	 * @param string[] $labels
-	 */
-	public function set( float $value, array $labels = [] ): void {
-		$this->validateLabels( $labels );
-		$this->metricUtils->addSample( new Sample( [
-			'labels' => MetricsFactory::normalizeArray( $labels ),
-			'value' => $value
-		] ) );
-	}
+    /**
+     * @param float $value
+     * @param string[] $labels
+     */
+    public function set(float $value, array $labels = []): void
+    {
+        $this->validateLabels($labels);
+        $this->metricUtils->addSample(new Sample([
+            'labels' => MetricsFactory::normalizeArray($labels),
+            'value'  => $value
+        ]));
+    }
 
-	/**
-	 * @return string[]
-	 */
-	public function render(): array {
-		return $this->metricUtils->render();
-	}
+    /**
+     * @return string[]
+     */
+    public function render(): array
+    {
+        return $this->metricUtils->render();
+    }
 }

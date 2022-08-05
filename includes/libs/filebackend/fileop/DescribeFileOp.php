@@ -25,42 +25,47 @@
  * Change metadata for a file at the given storage path in the backend.
  * Parameters for this operation are outlined in FileBackend::doOperations().
  */
-class DescribeFileOp extends FileOp {
-	protected function allowedParams() {
-		return [ [ 'src' ], [ 'headers' ], [ 'src' ] ];
-	}
+class DescribeFileOp extends FileOp
+{
+    protected function allowedParams()
+    {
+        return [['src'], ['headers'], ['src']];
+    }
 
-	protected function doPrecheck( array &$predicates ) {
-		$status = StatusValue::newGood();
+    protected function doPrecheck(array &$predicates)
+    {
+        $status = StatusValue::newGood();
 
-		// Check source file existence
-		$srcExists = $this->fileExists( $this->params['src'], $predicates );
-		if ( $srcExists === false ) {
-			$status->fatal( 'backend-fail-notexists', $this->params['src'] );
+        // Check source file existence
+        $srcExists = $this->fileExists($this->params['src'], $predicates);
+        if ($srcExists === false) {
+            $status->fatal('backend-fail-notexists', $this->params['src']);
 
-			return $status;
-		} elseif ( $srcExists === FileBackend::EXISTENCE_ERROR ) {
-			$status->fatal( 'backend-fail-stat', $this->params['src'] );
+            return $status;
+        } elseif ($srcExists === FileBackend::EXISTENCE_ERROR) {
+            $status->fatal('backend-fail-stat', $this->params['src']);
 
-			return $status;
-		}
+            return $status;
+        }
 
-		// Update file existence predicates since the operation is expected to be allowed to run
-		$predicates[self::ASSUMED_EXISTS][$this->params['src']] = $srcExists;
-		$predicates[self::ASSUMED_SIZE][$this->params['src']] =
-			$this->fileSize( $this->params['src'], $predicates );
-		$predicates[self::ASSUMED_SHA1][$this->params['src']] =
-			$this->fileSha1( $this->params['src'], $predicates );
+        // Update file existence predicates since the operation is expected to be allowed to run
+        $predicates[self::ASSUMED_EXISTS][$this->params['src']] = $srcExists;
+        $predicates[self::ASSUMED_SIZE][$this->params['src']] =
+            $this->fileSize($this->params['src'], $predicates);
+        $predicates[self::ASSUMED_SHA1][$this->params['src']] =
+            $this->fileSha1($this->params['src'], $predicates);
 
-		return $status; // safe to call attempt()
-	}
+        return $status; // safe to call attempt()
+    }
 
-	protected function doAttempt() {
-		// Update the source file's metadata
-		return $this->backend->describeInternal( $this->setFlags( $this->params ) );
-	}
+    protected function doAttempt()
+    {
+        // Update the source file's metadata
+        return $this->backend->describeInternal($this->setFlags($this->params));
+    }
 
-	public function storagePathsChanged() {
-		return [ $this->params['src'] ];
-	}
+    public function storagePathsChanged()
+    {
+        return [$this->params['src']];
+    }
 }

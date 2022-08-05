@@ -25,12 +25,15 @@ namespace MediaWiki\Tests;
  *
  * @ingroup Testing
  */
-class DummyTermColorer {
-	public function color( $color ) {
-		return '';
-	}
+class DummyTermColorer
+{
+    public function color($color)
+    {
+        return '';
+    }
 
-	public function reset() {
-		return '';
-	}
+    public function reset()
+    {
+        return '';
+    }
 }

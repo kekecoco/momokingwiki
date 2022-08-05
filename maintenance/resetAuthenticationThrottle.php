@@ -35,120 +35,127 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.32
  */
-class ResetAuthenticationThrottle extends Maintenance {
+class ResetAuthenticationThrottle extends Maintenance
+{
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Reset login/signup throttling for a specified user and/or IP. '
-			. "\n\n"
-			. 'When resetting signup only, provide the IP. When resetting login (or both), provide '
-			. 'both username (as entered in login screen) and IP. An easy way to obtain them is '
-			. "the 'throttler' log channel." );
-		$this->addOption( 'login', 'Reset login throttle' );
-		$this->addOption( 'signup', 'Reset account creation throttle' );
-		$this->addOption( 'user', 'Username to reset', false, true );
-		$this->addOption( 'ip', 'IP to reset', false, true );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Reset login/signup throttling for a specified user and/or IP. '
+            . "\n\n"
+            . 'When resetting signup only, provide the IP. When resetting login (or both), provide '
+            . 'both username (as entered in login screen) and IP. An easy way to obtain them is '
+            . "the 'throttler' log channel.");
+        $this->addOption('login', 'Reset login throttle');
+        $this->addOption('signup', 'Reset account creation throttle');
+        $this->addOption('user', 'Username to reset', false, true);
+        $this->addOption('ip', 'IP to reset', false, true);
+    }
 
-	public function execute() {
-		$forLogin = (bool)$this->getOption( 'login' );
-		$forSignup = (bool)$this->getOption( 'signup' );
-		$username = $this->getOption( 'user' );
-		$ip = $this->getOption( 'ip' );
+    public function execute()
+    {
+        $forLogin = (bool)$this->getOption('login');
+        $forSignup = (bool)$this->getOption('signup');
+        $username = $this->getOption('user');
+        $ip = $this->getOption('ip');
 
-		if ( !$forLogin && !$forSignup ) {
-			$this->fatalError( 'At least one of --login and --signup is required!' );
-		} elseif ( $forLogin && ( $ip === null || $username === null ) ) {
-			$this->fatalError( '--user and --ip are both required when using --login!' );
-		} elseif ( $forSignup && $ip === null ) {
-			$this->fatalError( '--ip is required when using --signup!' );
-		} elseif ( $ip !== null && !IPUtils::isValid( $ip ) ) {
-			$this->fatalError( "Not a valid IP: $ip" );
-		}
+        if (!$forLogin && !$forSignup) {
+            $this->fatalError('At least one of --login and --signup is required!');
+        } elseif ($forLogin && ($ip === null || $username === null)) {
+            $this->fatalError('--user and --ip are both required when using --login!');
+        } elseif ($forSignup && $ip === null) {
+            $this->fatalError('--ip is required when using --signup!');
+        } elseif ($ip !== null && !IPUtils::isValid($ip)) {
+            $this->fatalError("Not a valid IP: $ip");
+        }
 
-		if ( $forLogin ) {
-			$this->clearLoginThrottle( $username, $ip );
-		}
-		if ( $forSignup ) {
-			$this->clearSignupThrottle( $ip );
-		}
+        if ($forLogin) {
+            $this->clearLoginThrottle($username, $ip);
+        }
+        if ($forSignup) {
+            $this->clearSignupThrottle($ip);
+        }
 
-		LoggerFactory::getInstance( 'throttler' )->notice( 'Manually cleared {type} throttle', [
-			'type' => implode( ' and ', array_filter( [
-				$forLogin ? 'login' : null,
-				$forSignup ? 'signup' : null,
-			] ) ),
-			'username' => $username,
-			'ipKey' => $ip,
-		] );
-	}
+        LoggerFactory::getInstance('throttler')->notice('Manually cleared {type} throttle', [
+            'type'     => implode(' and ', array_filter([
+                $forLogin ? 'login' : null,
+                $forSignup ? 'signup' : null,
+            ])),
+            'username' => $username,
+            'ipKey'    => $ip,
+        ]);
+    }
 
-	/**
-	 * @param string|null $rawUsername
-	 * @param string|null $ip
-	 */
-	protected function clearLoginThrottle( $rawUsername, $ip ) {
-		$this->output( 'Clearing login throttle...' );
+    /**
+     * @param string|null $rawUsername
+     * @param string|null $ip
+     */
+    protected function clearLoginThrottle($rawUsername, $ip)
+    {
+        $this->output('Clearing login throttle...');
 
-		$passwordAttemptThrottle = $this->getConfig()->get( MainConfigNames::PasswordAttemptThrottle );
-		if ( !$passwordAttemptThrottle ) {
-			$this->output( "none set\n" );
-			return;
-		}
+        $passwordAttemptThrottle = $this->getConfig()->get(MainConfigNames::PasswordAttemptThrottle);
+        if (!$passwordAttemptThrottle) {
+            $this->output("none set\n");
 
-		$throttler = new Throttler( $passwordAttemptThrottle, [
-			'type' => 'password',
-			'cache' => ObjectCache::getLocalClusterInstance(),
-		] );
-		if ( $rawUsername !== null ) {
-			$usernames = MediaWikiServices::getInstance()->getAuthManager()
-				->normalizeUsername( $rawUsername );
-			if ( !$usernames ) {
-				$this->fatalError( "Not a valid username: $rawUsername" );
-			}
-		} else {
-			$usernames = [ null ];
-		}
-		foreach ( $usernames as $username ) {
-			$throttler->clear( $username, $ip );
-		}
+            return;
+        }
 
-		$botPasswordThrottler = new Throttler( $passwordAttemptThrottle, [
-			'type' => 'botpassword',
-			'cache' => ObjectCache::getLocalClusterInstance(),
-		] );
-		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable T240141
-		$botPasswordThrottler->clear( $username, $ip );
+        $throttler = new Throttler($passwordAttemptThrottle, [
+            'type'  => 'password',
+            'cache' => ObjectCache::getLocalClusterInstance(),
+        ]);
+        if ($rawUsername !== null) {
+            $usernames = MediaWikiServices::getInstance()->getAuthManager()
+                ->normalizeUsername($rawUsername);
+            if (!$usernames) {
+                $this->fatalError("Not a valid username: $rawUsername");
+            }
+        } else {
+            $usernames = [null];
+        }
+        foreach ($usernames as $username) {
+            $throttler->clear($username, $ip);
+        }
 
-		$this->output( "done\n" );
-	}
+        $botPasswordThrottler = new Throttler($passwordAttemptThrottle, [
+            'type'  => 'botpassword',
+            'cache' => ObjectCache::getLocalClusterInstance(),
+        ]);
+        // @phan-suppress-next-line PhanPossiblyUndeclaredVariable T240141
+        $botPasswordThrottler->clear($username, $ip);
 
-	/**
-	 * @param string $ip
-	 */
-	protected function clearSignupThrottle( $ip ) {
-		$this->output( 'Clearing signup throttle...' );
+        $this->output("done\n");
+    }
 
-		$accountCreationThrottle = $this->getConfig()->get( MainConfigNames::AccountCreationThrottle );
-		if ( !is_array( $accountCreationThrottle ) ) {
-			$accountCreationThrottle = [ [
-				'count' => $accountCreationThrottle,
-				'seconds' => 86400,
-			] ];
-		}
-		if ( !$accountCreationThrottle ) {
-			$this->output( "none set\n" );
-			return;
-		}
-		$throttler = new Throttler( $accountCreationThrottle, [
-			'type' => 'acctcreate',
-			'cache' => ObjectCache::getLocalClusterInstance(),
-		] );
+    /**
+     * @param string $ip
+     */
+    protected function clearSignupThrottle($ip)
+    {
+        $this->output('Clearing signup throttle...');
 
-		$throttler->clear( null, $ip );
+        $accountCreationThrottle = $this->getConfig()->get(MainConfigNames::AccountCreationThrottle);
+        if (!is_array($accountCreationThrottle)) {
+            $accountCreationThrottle = [[
+                'count'   => $accountCreationThrottle,
+                'seconds' => 86400,
+            ]];
+        }
+        if (!$accountCreationThrottle) {
+            $this->output("none set\n");
 
-		$this->output( "done\n" );
-	}
+            return;
+        }
+        $throttler = new Throttler($accountCreationThrottle, [
+            'type'  => 'acctcreate',
+            'cache' => ObjectCache::getLocalClusterInstance(),
+        ]);
+
+        $throttler->clear(null, $ip);
+
+        $this->output("done\n");
+    }
 
 }
 

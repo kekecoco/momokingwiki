@@ -28,157 +28,164 @@
  *
  * @stable to extend
  */
-class HTMLAutoCompleteSelectField extends HTMLTextField {
-	protected $autocompleteData = [];
+class HTMLAutoCompleteSelectField extends HTMLTextField
+{
+    protected $autocompleteData = [];
 
-	/**
-	 * @stable to call
-	 * @inheritDoc
-	 */
-	public function __construct( $params ) {
-		$params += [
-			'require-match' => false,
-		];
+    /**
+     * @stable to call
+     * @inheritDoc
+     */
+    public function __construct($params)
+    {
+        $params += [
+            'require-match' => false,
+        ];
 
-		parent::__construct( $params );
+        parent::__construct($params);
 
-		if ( array_key_exists( 'autocomplete-data-messages', $this->mParams ) ) {
-			foreach ( $this->mParams['autocomplete-data-messages'] as $key => $value ) {
-				// @phan-suppress-next-line PhanTypeMismatchArgument False positive, $key is documented as string
-				$key = $this->msg( $key )->plain();
-				$this->autocompleteData[$key] = strval( $value );
-			}
-		} elseif ( array_key_exists( 'autocomplete-data', $this->mParams ) ) {
-			foreach ( $this->mParams['autocomplete-data'] as $key => $value ) {
-				$this->autocompleteData[$key] = strval( $value );
-			}
-		}
-		if ( !is_array( $this->autocompleteData ) || !$this->autocompleteData ) {
-			throw new MWException( 'HTMLAutoCompleteSelectField called without any autocompletions' );
-		}
+        if (array_key_exists('autocomplete-data-messages', $this->mParams)) {
+            foreach ($this->mParams['autocomplete-data-messages'] as $key => $value) {
+                // @phan-suppress-next-line PhanTypeMismatchArgument False positive, $key is documented as string
+                $key = $this->msg($key)->plain();
+                $this->autocompleteData[$key] = strval($value);
+            }
+        } elseif (array_key_exists('autocomplete-data', $this->mParams)) {
+            foreach ($this->mParams['autocomplete-data'] as $key => $value) {
+                $this->autocompleteData[$key] = strval($value);
+            }
+        }
+        if (!is_array($this->autocompleteData) || !$this->autocompleteData) {
+            throw new MWException('HTMLAutoCompleteSelectField called without any autocompletions');
+        }
 
-		$this->getOptions();
-		if ( $this->mOptions && !in_array( 'other', $this->mOptions, true ) ) {
-			if ( isset( $params['other-message'] ) ) {
-				$msg = $this->getMessage( $params['other-message'] )->text();
-			} elseif ( isset( $params['other'] ) ) {
-				$msg = $params['other'];
-			} else {
-				$msg = wfMessage( 'htmlform-selectorother-other' )->text();
-			}
-			$this->mOptions[$msg] = 'other';
-		}
-	}
+        $this->getOptions();
+        if ($this->mOptions && !in_array('other', $this->mOptions, true)) {
+            if (isset($params['other-message'])) {
+                $msg = $this->getMessage($params['other-message'])->text();
+            } elseif (isset($params['other'])) {
+                $msg = $params['other'];
+            } else {
+                $msg = wfMessage('htmlform-selectorother-other')->text();
+            }
+            $this->mOptions[$msg] = 'other';
+        }
+    }
 
-	public function loadDataFromRequest( $request ) {
-		if ( $request->getCheck( $this->mName ) ) {
-			$val = $request->getText( $this->mName . '-select', 'other' );
+    public function loadDataFromRequest($request)
+    {
+        if ($request->getCheck($this->mName)) {
+            $val = $request->getText($this->mName . '-select', 'other');
 
-			if ( $val === 'other' ) {
-				$val = $request->getText( $this->mName );
-				if ( isset( $this->autocompleteData[$val] ) ) {
-					$val = $this->autocompleteData[$val];
-				}
-			}
+            if ($val === 'other') {
+                $val = $request->getText($this->mName);
+                if (isset($this->autocompleteData[$val])) {
+                    $val = $this->autocompleteData[$val];
+                }
+            }
 
-			return $val;
-		} else {
-			return $this->getDefault();
-		}
-	}
+            return $val;
+        } else {
+            return $this->getDefault();
+        }
+    }
 
-	public function validate( $value, $alldata ) {
-		$p = parent::validate( $value, $alldata );
+    public function validate($value, $alldata)
+    {
+        $p = parent::validate($value, $alldata);
 
-		if ( $p !== true ) {
-			return $p;
-		}
+        if ($p !== true) {
+            return $p;
+        }
 
-		$validOptions = HTMLFormField::flattenOptions( $this->getOptions() ?: [] );
+        $validOptions = HTMLFormField::flattenOptions($this->getOptions() ?: []);
 
-		if ( in_array( strval( $value ), $validOptions, true ) ) {
-			return true;
-		} elseif ( in_array( strval( $value ), $this->autocompleteData, true ) ) {
-			return true;
-		} elseif ( $this->mParams['require-match'] ) {
-			return $this->msg( 'htmlform-select-badoption' );
-		}
+        if (in_array(strval($value), $validOptions, true)) {
+            return true;
+        } elseif (in_array(strval($value), $this->autocompleteData, true)) {
+            return true;
+        } elseif ($this->mParams['require-match']) {
+            return $this->msg('htmlform-select-badoption');
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	// FIXME Ewww, this shouldn't be adding any attributes not requested in $list :(
-	public function getAttributes( array $list ) {
-		$attribs = [
-			'type' => 'text',
-			'data-autocomplete' => FormatJson::encode( array_keys( $this->autocompleteData ) ),
-		] + parent::getAttributes( $list );
+    // FIXME Ewww, this shouldn't be adding any attributes not requested in $list :(
+    public function getAttributes(array $list)
+    {
+        $attribs = [
+                'type'              => 'text',
+                'data-autocomplete' => FormatJson::encode(array_keys($this->autocompleteData)),
+            ] + parent::getAttributes($list);
 
-		if ( $this->getOptions() ) {
-			$attribs['data-cond-state'] = FormatJson::encode( [
-				'hide' => [ '!==', $this->mName . '-select', 'other' ],
-			] );
-		}
+        if ($this->getOptions()) {
+            $attribs['data-cond-state'] = FormatJson::encode([
+                'hide' => ['!==', $this->mName . '-select', 'other'],
+            ]);
+        }
 
-		return $attribs;
-	}
+        return $attribs;
+    }
 
-	public function getInputHTML( $value ) {
-		$oldClass = $this->mClass;
-		$classes = (array)$this->mClass;
+    public function getInputHTML($value)
+    {
+        $oldClass = $this->mClass;
+        $classes = (array)$this->mClass;
 
-		$valInSelect = false;
-		$ret = '';
+        $valInSelect = false;
+        $ret = '';
 
-		if ( $this->getOptions() ) {
-			if ( $value !== false ) {
-				$value = strval( $value );
-				$valInSelect = in_array(
-					$value, HTMLFormField::flattenOptions( $this->getOptions() ), true
-				);
-			}
+        if ($this->getOptions()) {
+            if ($value !== false) {
+                $value = strval($value);
+                $valInSelect = in_array(
+                    $value, HTMLFormField::flattenOptions($this->getOptions()), true
+                );
+            }
 
-			$selected = $valInSelect ? $value : 'other';
-			$select = new XmlSelect( $this->mName . '-select', $this->mID . '-select', $selected );
-			$select->addOptions( $this->getOptions() );
+            $selected = $valInSelect ? $value : 'other';
+            $select = new XmlSelect($this->mName . '-select', $this->mID . '-select', $selected);
+            $select->addOptions($this->getOptions());
 
-			if ( !empty( $this->mParams['disabled'] ) ) {
-				$select->setAttribute( 'disabled', 'disabled' );
-			}
+            if (!empty($this->mParams['disabled'])) {
+                $select->setAttribute('disabled', 'disabled');
+            }
 
-			if ( isset( $this->mParams['tabindex'] ) ) {
-				$select->setAttribute( 'tabindex', $this->mParams['tabindex'] );
-			}
+            if (isset($this->mParams['tabindex'])) {
+                $select->setAttribute('tabindex', $this->mParams['tabindex']);
+            }
 
-			$ret = $select->getHTML() . "<br />\n";
+            $ret = $select->getHTML() . "<br />\n";
 
-			$classes[] = 'mw-htmlform-hide-if';
-		}
+            $classes[] = 'mw-htmlform-hide-if';
+        }
 
-		if ( $valInSelect ) {
-			$value = '';
-		} else {
-			$key = array_search( strval( $value ), $this->autocompleteData, true );
-			if ( $key !== false ) {
-				$value = $key;
-			}
-		}
+        if ($valInSelect) {
+            $value = '';
+        } else {
+            $key = array_search(strval($value), $this->autocompleteData, true);
+            if ($key !== false) {
+                $value = $key;
+            }
+        }
 
-		$classes[] = 'mw-htmlform-autocomplete';
-		$this->mClass = implode( ' ', $classes );
-		$ret .= parent::getInputHTML( $valInSelect ? '' : $value );
-		$this->mClass = $oldClass;
+        $classes[] = 'mw-htmlform-autocomplete';
+        $this->mClass = implode(' ', $classes);
+        $ret .= parent::getInputHTML($valInSelect ? '' : $value);
+        $this->mClass = $oldClass;
 
-		return $ret;
-	}
+        return $ret;
+    }
 
-	/**
-	 * Get the OOUI version of this input.
-	 * @param string $value
-	 * @return false
-	 */
-	public function getInputOOUI( $value ) {
-		// To be implemented, for now override the function from HTMLTextField
-		return false;
-	}
+    /**
+     * Get the OOUI version of this input.
+     * @param string $value
+     * @return false
+     */
+    public function getInputOOUI($value)
+    {
+        // To be implemented, for now override the function from HTMLTextField
+        return false;
+    }
 }

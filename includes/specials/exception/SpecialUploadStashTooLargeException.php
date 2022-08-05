@@ -25,5 +25,6 @@
  * @ingroup SpecialPage
  * @ingroup Upload
  */
-class SpecialUploadStashTooLargeException extends UploadStashException {
+class SpecialUploadStashTooLargeException extends UploadStashException
+{
 }

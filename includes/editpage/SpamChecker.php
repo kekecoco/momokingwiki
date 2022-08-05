@@ -11,55 +11,61 @@ namespace MediaWiki\EditPage;
  * @author DannyS712
  * @since 1.35
  */
-class SpamChecker {
+class SpamChecker
+{
 
-	/** @var string[] */
-	private $spamRegex;
+    /** @var string[] */
+    private $spamRegex;
 
-	/** @var string[] */
-	private $summaryRegex;
+    /** @var string[] */
+    private $summaryRegex;
 
-	/**
-	 * @param string[] $spamRegex
-	 * @param string[] $summaryRegex
-	 */
-	public function __construct( $spamRegex, $summaryRegex ) {
-		$this->spamRegex = $spamRegex;
-		$this->summaryRegex = $summaryRegex;
-	}
+    /**
+     * @param string[] $spamRegex
+     * @param string[] $summaryRegex
+     */
+    public function __construct($spamRegex, $summaryRegex)
+    {
+        $this->spamRegex = $spamRegex;
+        $this->summaryRegex = $summaryRegex;
+    }
 
-	/**
-	 * Check whether content text is considered spam
-	 *
-	 * @param string $text
-	 * @return bool|string Matching string or false
-	 */
-	public function checkContent( string $text ) {
-		return self::checkInternal( $text, $this->spamRegex );
-	}
+    /**
+     * Check whether content text is considered spam
+     *
+     * @param string $text
+     * @return bool|string Matching string or false
+     */
+    public function checkContent(string $text)
+    {
+        return self::checkInternal($text, $this->spamRegex);
+    }
 
-	/**
-	 * Check whether summary text is considered spam
-	 *
-	 * @param string $summary
-	 * @return bool|string Matching string or false
-	 */
-	public function checkSummary( string $summary ) {
-		return self::checkInternal( $summary, $this->summaryRegex );
-	}
+    /**
+     * Check whether summary text is considered spam
+     *
+     * @param string $summary
+     * @return bool|string Matching string or false
+     */
+    public function checkSummary(string $summary)
+    {
+        return self::checkInternal($summary, $this->summaryRegex);
+    }
 
-	/**
-	 * @param string $text
-	 * @param array $regexes
-	 * @return bool|string
-	 */
-	private static function checkInternal( string $text, array $regexes ) {
-		foreach ( $regexes as $regex ) {
-			$matches = [];
-			if ( preg_match( $regex, $text, $matches ) ) {
-				return $matches[0];
-			}
-		}
-		return false;
-	}
+    /**
+     * @param string $text
+     * @param array $regexes
+     * @return bool|string
+     */
+    private static function checkInternal(string $text, array $regexes)
+    {
+        foreach ($regexes as $regex) {
+            $matches = [];
+            if (preg_match($regex, $text, $matches)) {
+                return $matches[0];
+            }
+        }
+
+        return false;
+    }
 }

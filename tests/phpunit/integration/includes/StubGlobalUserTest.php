@@ -28,142 +28,153 @@
  *
  * @covers \StubGlobalUser
  */
-class StubGlobalUserTest extends MediaWikiIntegrationTestCase {
+class StubGlobalUserTest extends MediaWikiIntegrationTestCase
+{
 
-	/** @var int */
-	private $oldErrorLevel;
+    /** @var int */
+    private $oldErrorLevel;
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		// Make sure deprecation notices are seen
-		$this->oldErrorLevel = error_reporting( -1 );
+        // Make sure deprecation notices are seen
+        $this->oldErrorLevel = error_reporting(-1);
 
-		// Using User::newFromRow() to avoid needing any integration
-		$userFields = [
-			'user_id' => 12345,
-		];
-		$realUser = User::newFromRow( (object)$userFields );
-		StubGlobalUser::setUser( $realUser );
-	}
+        // Using User::newFromRow() to avoid needing any integration
+        $userFields = [
+            'user_id' => 12345,
+        ];
+        $realUser = User::newFromRow((object)$userFields);
+        StubGlobalUser::setUser($realUser);
+    }
 
-	protected function tearDown(): void {
-		error_reporting( $this->oldErrorLevel );
-		parent::tearDown();
-	}
+    protected function tearDown(): void
+    {
+        error_reporting($this->oldErrorLevel);
+        parent::tearDown();
+    }
 
-	public function testRealUser() {
-		// Should not be emitting deprecation warnings
-		global $wgUser;
+    public function testRealUser()
+    {
+        // Should not be emitting deprecation warnings
+        global $wgUser;
 
-		$this->assertInstanceOf( StubGlobalUser::class, $wgUser );
+        $this->assertInstanceOf(StubGlobalUser::class, $wgUser);
 
-		$real = StubGlobalUser::getRealUser( $wgUser );
-		$this->assertInstanceOf( User::class, $real );
+        $real = StubGlobalUser::getRealUser($wgUser);
+        $this->assertInstanceOf(User::class, $real);
 
-		$real2 = StubGlobalUser::getRealUser( $real );
-		$this->assertSame( $real, $real2 );
-	}
+        $real2 = StubGlobalUser::getRealUser($real);
+        $this->assertSame($real, $real2);
+    }
 
-	public function testRealUser_exception() {
-		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage(
-			'$globalUser must be a User (or StubGlobalUser), got integer'
-		);
-		StubGlobalUser::getRealUser( 12345 );
-	}
+    public function testRealUser_exception()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            '$globalUser must be a User (or StubGlobalUser), got integer'
+        );
+        StubGlobalUser::getRealUser(12345);
+    }
 
-	public function testMagicCall() {
-		$this->expectDeprecation();
-		$this->expectDeprecationMessage( 'Use of $wgUser was deprecated in MediaWiki 1.35' );
+    public function testMagicCall()
+    {
+        $this->expectDeprecation();
+        $this->expectDeprecationMessage('Use of $wgUser was deprecated in MediaWiki 1.35');
 
-		global $wgUser;
-		$this->assertInstanceOf(
-			StubGlobalUser::class,
-			$wgUser,
-			'Check: $wgUser should be a StubGlobalUser at the start of the test'
-		);
-		$this->assertSame(
-			12345,
-			$wgUser->getId(),
-			'__call() based on id set in ::setUp()'
-		);
-		$this->assertInstanceOf(
-			User::class,
-			$wgUser,
-			'__call() resulted in unstubbing'
-		);
-	}
+        global $wgUser;
+        $this->assertInstanceOf(
+            StubGlobalUser::class,
+            $wgUser,
+            'Check: $wgUser should be a StubGlobalUser at the start of the test'
+        );
+        $this->assertSame(
+            12345,
+            $wgUser->getId(),
+            '__call() based on id set in ::setUp()'
+        );
+        $this->assertInstanceOf(
+            User::class,
+            $wgUser,
+            '__call() resulted in unstubbing'
+        );
+    }
 
-	public function testGetMagic() {
-		$this->expectDeprecation();
-		$this->expectDeprecationMessage( 'Use of $wgUser was deprecated in MediaWiki 1.35' );
+    public function testGetMagic()
+    {
+        $this->expectDeprecation();
+        $this->expectDeprecationMessage('Use of $wgUser was deprecated in MediaWiki 1.35');
 
-		global $wgUser;
-		$this->assertInstanceOf(
-			StubGlobalUser::class,
-			$wgUser,
-			'Check: $wgUser should be a StubGlobalUser at the start of the test'
-		);
-		$this->assertSame(
-			12345,
-			$wgUser->mId,
-			'__get() based on id set in ::setUp()'
-		);
-		$this->assertInstanceOf(
-			User::class,
-			$wgUser,
-			'__get() resulted in unstubbing'
-		);
-	}
+        global $wgUser;
+        $this->assertInstanceOf(
+            StubGlobalUser::class,
+            $wgUser,
+            'Check: $wgUser should be a StubGlobalUser at the start of the test'
+        );
+        $this->assertSame(
+            12345,
+            $wgUser->mId,
+            '__get() based on id set in ::setUp()'
+        );
+        $this->assertInstanceOf(
+            User::class,
+            $wgUser,
+            '__get() resulted in unstubbing'
+        );
+    }
 
-	public function testSetMagic() {
-		// This test is why we need StubGlobalUser::_unstub to override StubObject::_unstub
-		// and not try to detect and throw exceptions in unstub loops - for some reason it
-		// thinks this creates a loop.
+    public function testSetMagic()
+    {
+        // This test is why we need StubGlobalUser::_unstub to override StubObject::_unstub
+        // and not try to detect and throw exceptions in unstub loops - for some reason it
+        // thinks this creates a loop.
 
-		$this->expectDeprecation();
-		$this->expectDeprecationMessage( 'Use of $wgUser was deprecated in MediaWiki 1.35' );
+        $this->expectDeprecation();
+        $this->expectDeprecationMessage('Use of $wgUser was deprecated in MediaWiki 1.35');
 
-		global $wgUser;
-		$this->assertInstanceOf(
-			StubGlobalUser::class,
-			$wgUser,
-			'Check: $wgUser should be a StubGlobalUser at the start of the test'
-		);
-		$wgUser->mId = 2000;
-		$this->assertInstanceOf(
-			User::class,
-			$wgUser,
-			'__set() resulted in unstubbing'
-		);
-		$this->assertSame(
-			2000,
-			$wgUser->mId,
-			'__set() call worked'
-		);
-	}
+        global $wgUser;
+        $this->assertInstanceOf(
+            StubGlobalUser::class,
+            $wgUser,
+            'Check: $wgUser should be a StubGlobalUser at the start of the test'
+        );
+        $wgUser->mId = 2000;
+        $this->assertInstanceOf(
+            User::class,
+            $wgUser,
+            '__set() resulted in unstubbing'
+        );
+        $this->assertSame(
+            2000,
+            $wgUser->mId,
+            '__set() call worked'
+        );
+    }
 
-	public function testDeprecationEmittedWhenReassigned() {
-		$this->expectDeprecation();
-		global $wgUser;
-		$wgUser = new User;
-	}
+    public function testDeprecationEmittedWhenReassigned()
+    {
+        $this->expectDeprecation();
+        global $wgUser;
+        $wgUser = new User;
+    }
 
-	/**
-	 * @doesNotPerformAssertions
-	 */
-	public function testReassignmentWithRestoring() {
-		global $wgUser;
-		$oldUser = $wgUser;
-		$wgUser = new User;
-		$wgUser = $oldUser;
-	}
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testReassignmentWithRestoring()
+    {
+        global $wgUser;
+        $oldUser = $wgUser;
+        $wgUser = new User;
+        $wgUser = $oldUser;
+    }
 
-	/**
-	 * @doesNotPerformAssertions
-	 */
-	public function testSetUserNoDeprecation() {
-		StubGlobalUser::setUser( new User );
-	}
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testSetUserNoDeprecation()
+    {
+        StubGlobalUser::setUser(new User);
+    }
 }

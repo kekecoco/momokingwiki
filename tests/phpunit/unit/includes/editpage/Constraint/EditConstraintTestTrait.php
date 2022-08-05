@@ -25,36 +25,39 @@ use MediaWiki\EditPage\Constraint\IEditConstraint;
  *
  * @author DannyS712
  */
-trait EditConstraintTestTrait {
+trait EditConstraintTestTrait
+{
 
-	/**
-	 * Assert that the constraint passes and that the status is good
-	 * @param IEditConstraint $constraint
-	 */
-	public function assertConstraintPassed( IEditConstraint $constraint ) {
-		$this->assertSame(
-			IEditConstraint::CONSTRAINT_PASSED,
-			$constraint->checkConstraint()
-		);
+    /**
+     * Assert that the constraint passes and that the status is good
+     * @param IEditConstraint $constraint
+     */
+    public function assertConstraintPassed(IEditConstraint $constraint)
+    {
+        $this->assertSame(
+            IEditConstraint::CONSTRAINT_PASSED,
+            $constraint->checkConstraint()
+        );
 
-		$status = $constraint->getLegacyStatus();
-		$this->assertStatusGood( $status );
-	}
+        $status = $constraint->getLegacyStatus();
+        $this->assertStatusGood($status);
+    }
 
-	/**
-	 * Assert that the constraint fails with the specified status code
-	 * @param IEditConstraint $constraint
-	 * @param int $statusCode
-	 */
-	public function assertConstraintFailed( IEditConstraint $constraint, int $statusCode ) {
-		$this->assertSame(
-			IEditConstraint::CONSTRAINT_FAILED,
-			$constraint->checkConstraint()
-		);
+    /**
+     * Assert that the constraint fails with the specified status code
+     * @param IEditConstraint $constraint
+     * @param int $statusCode
+     */
+    public function assertConstraintFailed(IEditConstraint $constraint, int $statusCode)
+    {
+        $this->assertSame(
+            IEditConstraint::CONSTRAINT_FAILED,
+            $constraint->checkConstraint()
+        );
 
-		$status = $constraint->getLegacyStatus();
-		$this->assertStatusNotGood( $status );
-		$this->assertStatusValue( $statusCode, $status );
-	}
+        $status = $constraint->getLegacyStatus();
+        $this->assertStatusNotGood($status);
+        $this->assertStatusValue($statusCode, $status);
+    }
 
 }

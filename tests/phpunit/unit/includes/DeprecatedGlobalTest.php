@@ -21,60 +21,67 @@
 /**
  * @covers DeprecatedGlobal
  */
-class DeprecatedGlobalTest extends MediaWikiUnitTestCase {
-	private $oldErrorLevel;
+class DeprecatedGlobalTest extends MediaWikiUnitTestCase
+{
+    private $oldErrorLevel;
 
-	protected function setUp(): void {
-		parent::setUp();
-		$this->oldErrorLevel = error_reporting( -1 );
-	}
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->oldErrorLevel = error_reporting(-1);
+    }
 
-	protected function tearDown(): void {
-		error_reporting( $this->oldErrorLevel );
-		parent::tearDown();
-	}
+    protected function tearDown(): void
+    {
+        error_reporting($this->oldErrorLevel);
+        parent::tearDown();
+    }
 
-	public function testObjectDeStub() {
-		global $wgDummy;
+    public function testObjectDeStub()
+    {
+        global $wgDummy;
 
-		$wgDummy = new DeprecatedGlobal( 'wgDummy', new HashBagOStuff(), '1.30' );
-		$this->assertInstanceOf( DeprecatedGlobal::class, $wgDummy );
+        $wgDummy = new DeprecatedGlobal('wgDummy', new HashBagOStuff(), '1.30');
+        $this->assertInstanceOf(DeprecatedGlobal::class, $wgDummy);
 
-		$this->hideDeprecated( '$wgDummy' );
-		// Trigger de-stubification
-		$wgDummy->get( 'foo' );
+        $this->hideDeprecated('$wgDummy');
+        // Trigger de-stubification
+        $wgDummy->get('foo');
 
-		$this->assertInstanceOf( HashBagOStuff::class, $wgDummy );
-	}
+        $this->assertInstanceOf(HashBagOStuff::class, $wgDummy);
+    }
 
-	public function testLazyLoad() {
-		global $wgDummyLazy;
+    public function testLazyLoad()
+    {
+        global $wgDummyLazy;
 
-		$called = false;
-		$factory = static function () use ( &$called ) {
-			$called = true;
-			return new HashBagOStuff();
-		};
+        $called = false;
+        $factory = static function () use (&$called) {
+            $called = true;
 
-		$wgDummyLazy = new DeprecatedGlobal( 'wgDummyLazy', $factory, '1.30' );
-		$this->assertInstanceOf( DeprecatedGlobal::class, $wgDummyLazy );
+            return new HashBagOStuff();
+        };
 
-		$this->hideDeprecated( '$wgDummyLazy' );
-		$this->assertFalse( $called );
-		// Trigger de-stubification
-		$wgDummyLazy->get( 'foo' );
-		$this->assertTrue( $called );
-		$this->assertInstanceOf( HashBagOStuff::class, $wgDummyLazy );
-	}
+        $wgDummyLazy = new DeprecatedGlobal('wgDummyLazy', $factory, '1.30');
+        $this->assertInstanceOf(DeprecatedGlobal::class, $wgDummyLazy);
 
-	public function testWarning() {
-		global $wgDummy1;
+        $this->hideDeprecated('$wgDummyLazy');
+        $this->assertFalse($called);
+        // Trigger de-stubification
+        $wgDummyLazy->get('foo');
+        $this->assertTrue($called);
+        $this->assertInstanceOf(HashBagOStuff::class, $wgDummyLazy);
+    }
 
-		$wgDummy1 = new DeprecatedGlobal( 'wgDummy1', new HashBagOStuff(), '1.30' );
-		$this->expectDeprecation();
-		$this->expectDeprecationMessage( 'Use of $wgDummy1 was deprecated in MediaWiki 1.30' );
-		$wgDummy1->get( 'foo' );
-		$this->assertInstanceOf( HashBagOStuff::class, $wgDummy1 );
-	}
+    public function testWarning()
+    {
+        global $wgDummy1;
+
+        $wgDummy1 = new DeprecatedGlobal('wgDummy1', new HashBagOStuff(), '1.30');
+        $this->expectDeprecation();
+        $this->expectDeprecationMessage('Use of $wgDummy1 was deprecated in MediaWiki 1.30');
+        $wgDummy1->get('foo');
+        $this->assertInstanceOf(HashBagOStuff::class, $wgDummy1);
+    }
 
 }

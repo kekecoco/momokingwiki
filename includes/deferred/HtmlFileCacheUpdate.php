@@ -28,55 +28,62 @@ use Wikimedia\Assert\Assert;
  * @ingroup Cache
  * @since 1.35
  */
-class HtmlFileCacheUpdate implements DeferrableUpdate, MergeableUpdate {
-	/** @var PageIdentity[] List of pages */
-	private $pages;
+class HtmlFileCacheUpdate implements DeferrableUpdate, MergeableUpdate
+{
+    /** @var PageIdentity[] List of pages */
+    private $pages;
 
-	/**
-	 * @param PageIdentity[] $pages List of pages
-	 */
-	private function __construct( array $pages ) {
-		$this->pages = $pages;
-	}
+    /**
+     * @param PageIdentity[] $pages List of pages
+     */
+    private function __construct(array $pages)
+    {
+        $this->pages = $pages;
+    }
 
-	public function merge( MergeableUpdate $update ) {
-		/** @var self $update */
-		Assert::parameterType( __CLASS__, $update, '$update' );
-		'@phan-var self $update';
+    public function merge(MergeableUpdate $update)
+    {
+        /** @var self $update */
+        Assert::parameterType(__CLASS__, $update, '$update');
+        '@phan-var self $update';
 
-		$this->pages = array_merge( $this->pages, $update->pages );
-	}
+        $this->pages = array_merge($this->pages, $update->pages);
+    }
 
-	/**
-	 * @deprecated since 1.37 use newFromPages() instead
-	 * @param iterable<PageIdentity> $pages PageIdentity instances
-	 *
-	 * @return HtmlFileCacheUpdate
-	 */
-	public static function newFromTitles( $pages ) {
-		wfDeprecated( __METHOD__, '1.37' );
-		return self::newFromPages( $pages );
-	}
+    /**
+     * @param iterable<PageIdentity> $pages PageIdentity instances
+     *
+     * @return HtmlFileCacheUpdate
+     * @deprecated since 1.37 use newFromPages() instead
+     */
+    public static function newFromTitles($pages)
+    {
+        wfDeprecated(__METHOD__, '1.37');
 
-	/**
-	 * @since 1.37
-	 * @param iterable<PageIdentity> $pages PageIdentity instances
-	 *
-	 * @return HtmlFileCacheUpdate
-	 */
-	public static function newFromPages( $pages ) {
-		$pagesByKey = [];
-		foreach ( $pages as $pg ) {
-			$key = CacheKeyHelper::getKeyForPage( $pg );
-			$pagesByKey[$key] = $pg;
-		}
+        return self::newFromPages($pages);
+    }
 
-		return new self( $pagesByKey );
-	}
+    /**
+     * @param iterable<PageIdentity> $pages PageIdentity instances
+     *
+     * @return HtmlFileCacheUpdate
+     * @since 1.37
+     */
+    public static function newFromPages($pages)
+    {
+        $pagesByKey = [];
+        foreach ($pages as $pg) {
+            $key = CacheKeyHelper::getKeyForPage($pg);
+            $pagesByKey[$key] = $pg;
+        }
 
-	public function doUpdate() {
-		foreach ( $this->pages as $pg ) {
-			HTMLFileCache::clearFileCache( $pg );
-		}
-	}
+        return new self($pagesByKey);
+    }
+
+    public function doUpdate()
+    {
+        foreach ($this->pages as $pg) {
+            HTMLFileCache::clearFileCache($pg);
+        }
+    }
 }

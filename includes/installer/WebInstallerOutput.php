@@ -37,300 +37,320 @@ use MediaWiki\ResourceLoader\ResourceLoader;
  * @since 1.17
  * @internal
  */
-class WebInstallerOutput {
+class WebInstallerOutput
+{
 
-	/**
-	 * The WebInstaller object this WebInstallerOutput is used by.
-	 *
-	 * @var WebInstaller
-	 */
-	public $parent;
+    /**
+     * The WebInstaller object this WebInstallerOutput is used by.
+     *
+     * @var WebInstaller
+     */
+    public $parent;
 
-	/**
-	 * Buffered contents that haven't been output yet
-	 * @var string
-	 */
-	private $contents = '';
+    /**
+     * Buffered contents that haven't been output yet
+     * @var string
+     */
+    private $contents = '';
 
-	/**
-	 * Has the header (or short header) been output?
-	 * @var bool
-	 */
-	private $headerDone = false;
+    /**
+     * Has the header (or short header) been output?
+     * @var bool
+     */
+    private $headerDone = false;
 
-	/**
-	 * @var string
-	 */
-	public $redirectTarget;
+    /**
+     * @var string
+     */
+    public $redirectTarget;
 
-	/**
-	 * Does the current page need to allow being used as a frame?
-	 * If not, X-Frame-Options will be output to forbid it.
-	 *
-	 * @var bool
-	 */
-	public $allowFrames = false;
+    /**
+     * Does the current page need to allow being used as a frame?
+     * If not, X-Frame-Options will be output to forbid it.
+     *
+     * @var bool
+     */
+    public $allowFrames = false;
 
-	/**
-	 * Whether to use the limited header (used during CC license callbacks)
-	 * @var bool
-	 */
-	private $useShortHeader = false;
+    /**
+     * Whether to use the limited header (used during CC license callbacks)
+     * @var bool
+     */
+    private $useShortHeader = false;
 
-	/**
-	 * @param WebInstaller $parent
-	 */
-	public function __construct( WebInstaller $parent ) {
-		$this->parent = $parent;
-	}
+    /**
+     * @param WebInstaller $parent
+     */
+    public function __construct(WebInstaller $parent)
+    {
+        $this->parent = $parent;
+    }
 
-	/**
-	 * @param string $html
-	 */
-	public function addHTML( $html ) {
-		$this->contents .= $html;
-		$this->flush();
-	}
+    /**
+     * @param string $html
+     */
+    public function addHTML($html)
+    {
+        $this->contents .= $html;
+        $this->flush();
+    }
 
-	/**
-	 * @param string $text
-	 * @since 1.32
-	 */
-	public function addWikiTextAsInterface( $text ) {
-		$this->addHTML( $this->parent->parse( $text ) );
-	}
+    /**
+     * @param string $text
+     * @since 1.32
+     */
+    public function addWikiTextAsInterface($text)
+    {
+        $this->addHTML($this->parent->parse($text));
+    }
 
-	/**
-	 * @param string $html
-	 */
-	public function addHTMLNoFlush( $html ) {
-		$this->contents .= $html;
-	}
+    /**
+     * @param string $html
+     */
+    public function addHTMLNoFlush($html)
+    {
+        $this->contents .= $html;
+    }
 
-	/**
-	 * @param string $url
-	 *
-	 * @throws MWException
-	 */
-	public function redirect( $url ) {
-		if ( $this->headerDone ) {
-			throw new MWException( __METHOD__ . ' called after sending headers' );
-		}
-		$this->redirectTarget = $url;
-	}
+    /**
+     * @param string $url
+     *
+     * @throws MWException
+     */
+    public function redirect($url)
+    {
+        if ($this->headerDone) {
+            throw new MWException(__METHOD__ . ' called after sending headers');
+        }
+        $this->redirectTarget = $url;
+    }
 
-	public function output() {
-		$this->flush();
+    public function output()
+    {
+        $this->flush();
 
-		if ( !$this->redirectTarget ) {
-			$this->outputFooter();
-		}
-	}
+        if (!$this->redirectTarget) {
+            $this->outputFooter();
+        }
+    }
 
-	/**
-	 * Get the stylesheet of the MediaWiki skin.
-	 *
-	 * @return string
-	 */
-	public function getCSS() {
-		$resourceLoader = MediaWikiServices::getInstance()->getResourceLoader();
+    /**
+     * Get the stylesheet of the MediaWiki skin.
+     *
+     * @return string
+     */
+    public function getCSS()
+    {
+        $resourceLoader = MediaWikiServices::getInstance()->getResourceLoader();
 
-		$rlContext = new RL\Context( $resourceLoader, new FauxRequest( [
-			'debug' => 'true',
-			'lang' => $this->getLanguage()->getCode(),
-			'only' => 'styles',
-		] ) );
+        $rlContext = new RL\Context($resourceLoader, new FauxRequest([
+            'debug' => 'true',
+            'lang'  => $this->getLanguage()->getCode(),
+            'only'  => 'styles',
+        ]));
 
-		$module = new RL\SkinModule( [
-			'features' => [
-				'elements',
-				'interface-message-box'
-			],
-			'styles' => [
-				'mw-config/config.css',
-			],
-		] );
-		$module->setConfig( $resourceLoader->getConfig() );
+        $module = new RL\SkinModule([
+            'features' => [
+                'elements',
+                'interface-message-box'
+            ],
+            'styles'   => [
+                'mw-config/config.css',
+            ],
+        ]);
+        $module->setConfig($resourceLoader->getConfig());
 
-		// Based on MediaWiki\ResourceLoader\FileModule::getStyles, without the DB query
-		$styles = ResourceLoader::makeCombinedStyles(
-			$module->readStyleFiles(
-				$module->getStyleFiles( $rlContext ),
-				$rlContext
-		) );
+        // Based on MediaWiki\ResourceLoader\FileModule::getStyles, without the DB query
+        $styles = ResourceLoader::makeCombinedStyles(
+            $module->readStyleFiles(
+                $module->getStyleFiles($rlContext),
+                $rlContext
+            ));
 
-		return implode( "\n", $styles );
-	}
+        return implode("\n", $styles);
+    }
 
-	/**
-	 * "<link>" to index.php?css=1 for the "<head>"
-	 *
-	 * @return string
-	 */
-	private function getCssUrl() {
-		return Html::linkedStyle( $this->parent->getUrl( [ 'css' => 1 ] ) );
-	}
+    /**
+     * "<link>" to index.php?css=1 for the "<head>"
+     *
+     * @return string
+     */
+    private function getCssUrl()
+    {
+        return Html::linkedStyle($this->parent->getUrl(['css' => 1]));
+    }
 
-	public function useShortHeader( $use = true ) {
-		$this->useShortHeader = $use;
-	}
+    public function useShortHeader($use = true)
+    {
+        $this->useShortHeader = $use;
+    }
 
-	public function allowFrames( $allow = true ) {
-		$this->allowFrames = $allow;
-	}
+    public function allowFrames($allow = true)
+    {
+        $this->allowFrames = $allow;
+    }
 
-	public function flush() {
-		if ( !$this->headerDone ) {
-			$this->outputHeader();
-		}
-		if ( !$this->redirectTarget && strlen( $this->contents ) ) {
-			echo $this->contents;
-			flush();
-			$this->contents = '';
-		}
-	}
+    public function flush()
+    {
+        if (!$this->headerDone) {
+            $this->outputHeader();
+        }
+        if (!$this->redirectTarget && strlen($this->contents)) {
+            echo $this->contents;
+            flush();
+            $this->contents = '';
+        }
+    }
 
-	/**
-	 * @since 1.33
-	 * @return Language
-	 */
-	private function getLanguage() {
-		global $wgLang;
+    /**
+     * @return Language
+     * @since 1.33
+     */
+    private function getLanguage()
+    {
+        global $wgLang;
 
-		return is_object( $wgLang ) ? $wgLang
-			: MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' );
-	}
+        return is_object($wgLang) ? $wgLang
+            : MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage('en');
+    }
 
-	/**
-	 * @return string[]
-	 */
-	public function getHeadAttribs() {
-		return [
-			'dir' => $this->getLanguage()->getDir(),
-			'lang' => $this->getLanguage()->getHtmlCode(),
-		];
-	}
+    /**
+     * @return string[]
+     */
+    public function getHeadAttribs()
+    {
+        return [
+            'dir'  => $this->getLanguage()->getDir(),
+            'lang' => $this->getLanguage()->getHtmlCode(),
+        ];
+    }
 
-	/**
-	 * Get whether the header has been output
-	 *
-	 * @return bool
-	 */
-	public function headerDone() {
-		return $this->headerDone;
-	}
+    /**
+     * Get whether the header has been output
+     *
+     * @return bool
+     */
+    public function headerDone()
+    {
+        return $this->headerDone;
+    }
 
-	public function outputHeader() {
-		$this->headerDone = true;
-		$this->parent->request->response()->header( 'Content-Type: text/html; charset=utf-8' );
+    public function outputHeader()
+    {
+        $this->headerDone = true;
+        $this->parent->request->response()->header('Content-Type: text/html; charset=utf-8');
 
-		if ( !$this->allowFrames ) {
-			$this->parent->request->response()->header( 'X-Frame-Options: DENY' );
-		}
+        if (!$this->allowFrames) {
+            $this->parent->request->response()->header('X-Frame-Options: DENY');
+        }
 
-		if ( $this->redirectTarget ) {
-			$this->parent->request->response()->header( 'Location: ' . $this->redirectTarget );
+        if ($this->redirectTarget) {
+            $this->parent->request->response()->header('Location: ' . $this->redirectTarget);
 
-			return;
-		}
+            return;
+        }
 
-		if ( $this->useShortHeader ) {
-			$this->outputShortHeader();
+        if ($this->useShortHeader) {
+            $this->outputShortHeader();
 
-			return;
-		}
+            return;
+        }
 
-?>
-<?php echo Html::htmlHeader( $this->getHeadAttribs() ); ?>
+        ?>
+        <?php echo Html::htmlHeader($this->getHeadAttribs()); ?>
 
-<head>
-	<meta name="robots" content="noindex, nofollow" />
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-	<title><?php $this->outputTitle(); ?></title>
-	<?php echo $this->getCssUrl() . "\n"; ?>
-	<?php echo $this->getJQuery() . "\n"; ?>
-	<?php echo Html::linkedScript( 'config.js' ) . "\n"; ?>
-</head>
+        <head>
+            <meta name="robots" content="noindex, nofollow"/>
+            <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+            <title><?php $this->outputTitle(); ?></title>
+            <?php echo $this->getCssUrl() . "\n"; ?>
+            <?php echo $this->getJQuery() . "\n"; ?>
+            <?php echo Html::linkedScript('config.js') . "\n"; ?>
+        </head>
 
-<?php echo Html::openElement( 'body', [ 'class' => $this->getLanguage()->getDir() ] ) . "\n"; ?>
-<div id="mw-page-base"></div>
-<div id="mw-head-base"></div>
-<div id="content" class="mw-body" role="main">
-<div id="bodyContent" class="mw-body-content">
+        <?php echo Html::openElement('body', ['class' => $this->getLanguage()->getDir()]) . "\n"; ?>
+        <div id="mw-page-base"></div>
+        <div id="mw-head-base"></div>
+        <div id="content" class="mw-body" role="main">
+        <div id="bodyContent" class="mw-body-content">
 
-<h1><?php $this->outputTitle(); ?></h1>
-<?php
-	}
+        <h1><?php $this->outputTitle(); ?></h1>
+        <?php
+    }
 
-	public function outputFooter() {
-		if ( $this->useShortHeader ) {
-			echo Html::closeElement( 'body' ) . Html::closeElement( 'html' );
+    public function outputFooter()
+    {
+        if ($this->useShortHeader) {
+            echo Html::closeElement('body') . Html::closeElement('html');
 
-			return;
-		}
-?>
+            return;
+        }
+        ?>
 
-</div></div>
+        </div></div>
 
-<div id="mw-panel">
-	<div class="portal" id="p-logo">
-		<a href="https://www.mediawiki.org/" title="Main Page"></a>
-	</div>
-<?php
-	$message = wfMessage( 'config-sidebar' )->plain();
-	// Section 1: External links
-	// @todo FIXME: Migrate to plain link label messages (T227297).
-	foreach ( explode( '----', $message ) as $section ) {
-		echo '<div class="portal"><div class="body">';
-		echo $this->parent->parse( $section, true );
-		echo '</div></div>';
-	}
-	// Section 2: Installer pages
-	echo '<div class="portal"><div class="body"><ul>';
-	foreach ( [
-		'config-sidebar-relnotes' => 'ReleaseNotes',
-		'config-sidebar-license' => 'Copying',
-		'config-sidebar-upgrade' => 'UpgradeDoc',
-	] as $msgKey => $pageName ) {
-		echo $this->parent->makeLinkItem(
-			$this->parent->getDocUrl( $pageName ),
-			wfMessage( $msgKey )->text()
-		);
-	}
-	echo '</ul></div></div>';
-?>
-</div>
+        <div id="mw-panel">
+            <div class="portal" id="p-logo">
+                <a href="https://www.mediawiki.org/" title="Main Page"></a>
+            </div>
+            <?php
+            $message = wfMessage('config-sidebar')->plain();
+            // Section 1: External links
+            // @todo FIXME: Migrate to plain link label messages (T227297).
+            foreach (explode('----', $message) as $section) {
+                echo '<div class="portal"><div class="body">';
+                echo $this->parent->parse($section, true);
+                echo '</div></div>';
+            }
+            // Section 2: Installer pages
+            echo '<div class="portal"><div class="body"><ul>';
+            foreach ([
+                         'config-sidebar-relnotes' => 'ReleaseNotes',
+                         'config-sidebar-license'  => 'Copying',
+                         'config-sidebar-upgrade'  => 'UpgradeDoc',
+                     ] as $msgKey => $pageName) {
+                echo $this->parent->makeLinkItem(
+                    $this->parent->getDocUrl($pageName),
+                    wfMessage($msgKey)->text()
+                );
+            }
+            echo '</ul></div></div>';
+            ?>
+        </div>
 
-<?php
-		echo Html::closeElement( 'body' ) . Html::closeElement( 'html' );
-	}
+        <?php
+        echo Html::closeElement('body') . Html::closeElement('html');
+    }
 
-	public function outputShortHeader() {
-?>
-<?php echo Html::htmlHeader( $this->getHeadAttribs() ); ?>
+    public function outputShortHeader()
+    {
+        ?>
+        <?php echo Html::htmlHeader($this->getHeadAttribs()); ?>
 
-<head>
-	<meta name="robots" content="noindex, nofollow" />
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-	<title><?php $this->outputTitle(); ?></title>
-	<?php echo $this->getCssUrl() . "\n"; ?>
-	<?php echo $this->getJQuery() . "\n"; ?>
-	<?php echo Html::linkedScript( 'config.js' ) . "\n"; ?>
-</head>
+        <head>
+            <meta name="robots" content="noindex, nofollow"/>
+            <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+            <title><?php $this->outputTitle(); ?></title>
+            <?php echo $this->getCssUrl() . "\n"; ?>
+            <?php echo $this->getJQuery() . "\n"; ?>
+            <?php echo Html::linkedScript('config.js') . "\n"; ?>
+        </head>
 
-<body style="background-image: none">
-<?php
-	}
+        <body style="background-image: none">
+        <?php
+    }
 
-	public function outputTitle() {
-		echo wfMessage( 'config-title', MW_VERSION )->escaped();
-	}
+    public function outputTitle()
+    {
+        echo wfMessage('config-title', MW_VERSION)->escaped();
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getJQuery() {
-		return Html::linkedScript( "../resources/lib/jquery/jquery.js" );
-	}
+    /**
+     * @return string
+     */
+    public function getJQuery()
+    {
+        return Html::linkedScript("../resources/lib/jquery/jquery.js");
+    }
 
 }

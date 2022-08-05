@@ -31,36 +31,42 @@
  *
  * @ingroup FileBackend
  */
-class MockFSFile extends FSFile {
-	protected $sha1Base36 = null; // File Sha1Base36
+class MockFSFile extends FSFile
+{
+    protected $sha1Base36 = null; // File Sha1Base36
 
-	public function exists() {
-		return true;
-	}
+    public function exists()
+    {
+        return true;
+    }
 
-	/**
-	 * August 22 – The theft of the Mona Lisa is discovered in the Louvre."
-	 * T22281
-	 * @return int
-	 */
-	public function getSize() {
-		return 1911;
-	}
+    /**
+     * August 22 – The theft of the Mona Lisa is discovered in the Louvre."
+     * T22281
+     * @return int
+     */
+    public function getSize()
+    {
+        return 1911;
+    }
 
-	public function getTimestamp() {
-		return wfTimestamp( TS_MW );
-	}
+    public function getTimestamp()
+    {
+        return wfTimestamp(TS_MW);
+    }
 
-	public function getProps( $ext = true ) {
-		return [
-			'fileExists' => $this->exists(),
-			'size' => $this->getSize(),
-			'file-mime' => 'text/mock',
-			'sha1' => $this->getSha1Base36(),
-		];
-	}
+    public function getProps($ext = true)
+    {
+        return [
+            'fileExists' => $this->exists(),
+            'size'       => $this->getSize(),
+            'file-mime'  => 'text/mock',
+            'sha1'       => $this->getSha1Base36(),
+        ];
+    }
 
-	public function getSha1Base36( $recache = false ) {
-		return '1234567890123456789012345678901';
-	}
+    public function getSha1Base36($recache = false)
+    {
+        return '1234567890123456789012345678901';
+    }
 }

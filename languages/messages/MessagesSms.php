@@ -12,9 +12,9 @@
 $defaultDateFormat = 'dmy';
 
 $dateFormats = [
-	'dmy time' => 'H:i',
-	'dmy date' => 'j. M Y',
-	'dmy both' => 'j. M Y "tme" H:i',
+    'dmy time' => 'H:i',
+    'dmy date' => 'j. M Y',
+    'dmy both' => 'j. M Y "tme" H:i',
 ];
 
 $linkTrail = '/^([a-źÂâČčƷʒǮǯĐđǦǧǤǥǨǩŊŋÕõŠšŽžÅåÄäÖöẸẹʹ]+)(.*)$/sDu';

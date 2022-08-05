@@ -8,9 +8,10 @@
  *
  * @since 1.19
  */
-interface DeferrableUpdate {
-	/**
-	 * Perform the actual work
-	 */
-	public function doUpdate();
+interface DeferrableUpdate
+{
+    /**
+     * Perform the actual work
+     */
+    public function doUpdate();
 }

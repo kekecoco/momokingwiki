@@ -27,117 +27,128 @@ require_once __DIR__ . '/../includes/Benchmarker.php';
  *
  * @ingroup Benchmark
  */
-class BenchmarkTitleValue extends Benchmarker {
+class BenchmarkTitleValue extends Benchmarker
+{
 
-	/**
-	 * @var TitleFormatter
-	 */
-	private $titleFormatter;
-	/**
-	 * @var TitleParser
-	 */
-	private $titleParser;
+    /**
+     * @var TitleFormatter
+     */
+    private $titleFormatter;
+    /**
+     * @var TitleParser
+     */
+    private $titleParser;
 
-	/**
-	 * @var string
-	 */
-	private $dbKey = 'FooBar';
-	/**
-	 * @var TitleValue
-	 */
-	private $titleValue;
-	/**
-	 * @var Title
-	 */
-	private $title;
+    /**
+     * @var string
+     */
+    private $dbKey = 'FooBar';
+    /**
+     * @var TitleValue
+     */
+    private $titleValue;
+    /**
+     * @var Title
+     */
+    private $title;
 
-	/**
-	 * @var string
-	 */
-	private $toParse;
+    /**
+     * @var string
+     */
+    private $toParse;
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Benchmark TitleValue vs Title.' );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Benchmark TitleValue vs Title.');
+    }
 
-	public function execute() {
-		$this->titleFormatter = MediaWikiServices::getInstance()->getTitleFormatter();
-		$this->titleParser = MediaWikiServices::getInstance()->getTitleParser();
-		$this->titleValue = $this->constructTitleValue();
-		$this->title = $this->constructTitle();
-		$this->toParse = 'Category:FooBar';
-		$this->bench( [
-			[
-				'function' => [ $this, 'constructTitleValue' ],
-			],
-			[
-				'function' => [ $this, 'constructTitle' ],
-			],
-			[
-				'function' => [ $this, 'constructTitleSafe' ],
-			],
-			[
-				'function' => [ $this, 'getPrefixedTextTitleValue' ],
-			],
-			[
-				'function' => [ $this, 'getPrefixedTextTitle' ],
-			],
-			'parseTitleValue cached' => [
-				'function' => [ $this, 'parseTitleValue' ],
-				'setup' => [ $this, 'randomize' ],
-			],
-			'parseTitle cached' => [
-				'function' => [ $this, 'parseTitle' ],
-				'setup' => [ $this, 'randomize' ],
-			],
-			'parseTitleValue no cache' => [
-				'function' => [ $this, 'parseTitleValue' ],
-				'setupEach' => [ $this, 'randomize' ],
-			],
-			'parseTitle no cache' => [
-				'function' => [ $this, 'parseTitle' ],
-				'setupEach' => [ $this, 'randomize' ],
-			],
-		] );
-	}
+    public function execute()
+    {
+        $this->titleFormatter = MediaWikiServices::getInstance()->getTitleFormatter();
+        $this->titleParser = MediaWikiServices::getInstance()->getTitleParser();
+        $this->titleValue = $this->constructTitleValue();
+        $this->title = $this->constructTitle();
+        $this->toParse = 'Category:FooBar';
+        $this->bench([
+            [
+                'function' => [$this, 'constructTitleValue'],
+            ],
+            [
+                'function' => [$this, 'constructTitle'],
+            ],
+            [
+                'function' => [$this, 'constructTitleSafe'],
+            ],
+            [
+                'function' => [$this, 'getPrefixedTextTitleValue'],
+            ],
+            [
+                'function' => [$this, 'getPrefixedTextTitle'],
+            ],
+            'parseTitleValue cached'   => [
+                'function' => [$this, 'parseTitleValue'],
+                'setup'    => [$this, 'randomize'],
+            ],
+            'parseTitle cached'        => [
+                'function' => [$this, 'parseTitle'],
+                'setup'    => [$this, 'randomize'],
+            ],
+            'parseTitleValue no cache' => [
+                'function'  => [$this, 'parseTitleValue'],
+                'setupEach' => [$this, 'randomize'],
+            ],
+            'parseTitle no cache'      => [
+                'function'  => [$this, 'parseTitle'],
+                'setupEach' => [$this, 'randomize'],
+            ],
+        ]);
+    }
 
-	/**
-	 * Use a different dbKey each time to avoid influence of Title caches
-	 */
-	protected function randomize() {
-		$this->dbKey = ucfirst( wfRandomString( 10 ) );
-	}
+    /**
+     * Use a different dbKey each time to avoid influence of Title caches
+     */
+    protected function randomize()
+    {
+        $this->dbKey = ucfirst(wfRandomString(10));
+    }
 
-	protected function constructTitleValue() {
-		return new TitleValue( NS_CATEGORY, $this->dbKey );
-	}
+    protected function constructTitleValue()
+    {
+        return new TitleValue(NS_CATEGORY, $this->dbKey);
+    }
 
-	protected function constructTitle() {
-		return Title::makeTitle( NS_CATEGORY, $this->dbKey );
-	}
+    protected function constructTitle()
+    {
+        return Title::makeTitle(NS_CATEGORY, $this->dbKey);
+    }
 
-	protected function constructTitleSafe() {
-		return Title::makeTitleSafe( NS_CATEGORY, $this->dbKey );
-	}
+    protected function constructTitleSafe()
+    {
+        return Title::makeTitleSafe(NS_CATEGORY, $this->dbKey);
+    }
 
-	protected function getPrefixedTextTitleValue() {
-		// This is really showing TitleFormatter aka MediaWikiTitleCodec perf
-		return $this->titleFormatter->getPrefixedText( $this->titleValue );
-	}
+    protected function getPrefixedTextTitleValue()
+    {
+        // This is really showing TitleFormatter aka MediaWikiTitleCodec perf
+        return $this->titleFormatter->getPrefixedText($this->titleValue);
+    }
 
-	protected function getPrefixedTextTitle() {
-		return $this->title->getPrefixedText();
-	}
+    protected function getPrefixedTextTitle()
+    {
+        return $this->title->getPrefixedText();
+    }
 
-	protected function parseTitleValue() {
-		// This is really showing TitleParser aka MediaWikiTitleCodec perf
-		$this->titleParser->parseTitle( 'Category:' . $this->dbKey, NS_MAIN );
-	}
+    protected function parseTitleValue()
+    {
+        // This is really showing TitleParser aka MediaWikiTitleCodec perf
+        $this->titleParser->parseTitle('Category:' . $this->dbKey, NS_MAIN);
+    }
 
-	protected function parseTitle() {
-		Title::newFromText( 'Category:' . $this->dbKey );
-	}
+    protected function parseTitle()
+    {
+        Title::newFromText('Category:' . $this->dbKey);
+    }
 }
 
 $maintClass = BenchmarkTitleValue::class;

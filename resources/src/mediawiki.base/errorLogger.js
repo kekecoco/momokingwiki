@@ -35,51 +35,51 @@
  * @fires global_error
  * @fires error_caught
  */
-function installGlobalHandler( window ) {
-	// We will preserve the return value of the previous handler. window.onerror works the
-	// opposite way than normal event handlers (returning true will prevent the default
-	// action, returning false will let the browser handle the error normally, by e.g.
-	// logging to the console), so our fallback old handler needs to return false.
-	var oldHandler = window.onerror || function () {
-		return false;
-	};
+function installGlobalHandler(window) {
+    // We will preserve the return value of the previous handler. window.onerror works the
+    // opposite way than normal event handlers (returning true will prevent the default
+    // action, returning false will let the browser handle the error normally, by e.g.
+    // logging to the console), so our fallback old handler needs to return false.
+    var oldHandler = window.onerror || function () {
+        return false;
+    };
 
-	window.onerror = function ( errorMessage, url, line, column, errorObject ) {
-		mw.track( 'global.error', {
-			errorMessage: errorMessage,
-			url: url,
-			lineNumber: line,
-			columnNumber: column,
-			stackTrace: errorObject ? errorObject.stack : '',
-			errorObject: errorObject
-		} );
+    window.onerror = function (errorMessage, url, line, column, errorObject) {
+        mw.track('global.error', {
+            errorMessage: errorMessage,
+            url: url,
+            lineNumber: line,
+            columnNumber: column,
+            stackTrace: errorObject ? errorObject.stack : '',
+            errorObject: errorObject
+        });
 
-		if ( errorObject ) {
-			mw.track( 'error.uncaught', errorObject );
-		}
+        if (errorObject) {
+            mw.track('error.uncaught', errorObject);
+        }
 
-		return oldHandler.apply( this, arguments );
-	};
+        return oldHandler.apply(this, arguments);
+    };
 }
 
 mw.errorLogger = {
-	/**
-	 * Logs an error by notifying subscribers to the given mw.track() topic
-	 * (by default `error.caught`) that an event has occurred.
-	 *
-	 * @param {Error} error
-	 * @param {string} [topic='error.caught'] Error topic. Conventionally in the form
-	 *   'error.⧼component⧽' (where ⧼component⧽ identifies the code logging the error at a
-	 *   high level; e.g. an extension name).
-	 * @fires error_caught
-	 */
-	logError: function ( error, topic ) {
-		mw.track( topic || 'error.caught', error );
-	}
+    /**
+     * Logs an error by notifying subscribers to the given mw.track() topic
+     * (by default `error.caught`) that an event has occurred.
+     *
+     * @param {Error} error
+     * @param {string} [topic='error.caught'] Error topic. Conventionally in the form
+     *   'error.⧼component⧽' (where ⧼component⧽ identifies the code logging the error at a
+     *   high level; e.g. an extension name).
+     * @fires error_caught
+     */
+    logError: function (error, topic) {
+        mw.track(topic || 'error.caught', error);
+    }
 };
 
-if ( window.QUnit ) {
-	mw.errorLogger.installGlobalHandler = installGlobalHandler;
+if (window.QUnit) {
+    mw.errorLogger.installGlobalHandler = installGlobalHandler;
 } else {
-	installGlobalHandler( window );
+    installGlobalHandler(window);
 }

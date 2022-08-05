@@ -25,26 +25,27 @@
  *
  * @license GPL-2.0-or-later
  */
-interface SiteLookup {
+interface SiteLookup
+{
 
-	/**
-	 * Returns the site with provided global id, or null if there is no such site.
-	 *
-	 * @since 1.25
-	 *
-	 * @param string $globalId
-	 *
-	 * @return Site|null
-	 */
-	public function getSite( $globalId );
+    /**
+     * Returns the site with provided global id, or null if there is no such site.
+     *
+     * @param string $globalId
+     *
+     * @return Site|null
+     * @since 1.25
+     *
+     */
+    public function getSite($globalId);
 
-	/**
-	 * Returns a list of all sites.
-	 *
-	 * @since 1.25
-	 *
-	 * @return SiteList
-	 */
-	public function getSites();
+    /**
+     * Returns a list of all sites.
+     *
+     * @return SiteList
+     * @since 1.25
+     *
+     */
+    public function getSites();
 
 }

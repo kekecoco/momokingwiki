@@ -31,110 +31,114 @@ require_once __DIR__ . '/Maintenance.php';
  *
  * @ingroup Maintenance
  */
-class EditCLI extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Edit an article from the command line, text is from stdin' );
-		$this->addOption( 'user', 'Username', false, true, 'u' );
-		$this->addOption( 'summary', 'Edit summary', false, true, 's' );
-		$this->addOption( 'remove', 'Remove a slot (requires --slot).', false, false );
-		$this->addOption( 'minor', 'Minor edit', false, false, 'm' );
-		$this->addOption( 'bot', 'Bot edit', false, false, 'b' );
-		$this->addOption( 'autosummary', 'Enable autosummary', false, false, 'a' );
-		$this->addOption( 'no-rc', 'Do not show the change in recent changes', false, false, 'r' );
-		$this->addOption( 'nocreate', 'Don\'t create new pages', false, false );
-		$this->addOption( 'createonly', 'Only create new pages', false, false );
-		$this->addOption( 'slot', 'Slot role name', false, true );
-		$this->addOption(
-			'parse-title',
-			'Parse title input as a message, e.g. "{{int:mainpage}}" or "News_{{CURRENTYEAR}}',
-			false, false, 'p'
-		);
-		$this->addArg( 'title', 'Title of article to edit' );
-	}
+class EditCLI extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Edit an article from the command line, text is from stdin');
+        $this->addOption('user', 'Username', false, true, 'u');
+        $this->addOption('summary', 'Edit summary', false, true, 's');
+        $this->addOption('remove', 'Remove a slot (requires --slot).', false, false);
+        $this->addOption('minor', 'Minor edit', false, false, 'm');
+        $this->addOption('bot', 'Bot edit', false, false, 'b');
+        $this->addOption('autosummary', 'Enable autosummary', false, false, 'a');
+        $this->addOption('no-rc', 'Do not show the change in recent changes', false, false, 'r');
+        $this->addOption('nocreate', 'Don\'t create new pages', false, false);
+        $this->addOption('createonly', 'Only create new pages', false, false);
+        $this->addOption('slot', 'Slot role name', false, true);
+        $this->addOption(
+            'parse-title',
+            'Parse title input as a message, e.g. "{{int:mainpage}}" or "News_{{CURRENTYEAR}}',
+            false, false, 'p'
+        );
+        $this->addArg('title', 'Title of article to edit');
+    }
 
-	public function execute() {
-		$userName = $this->getOption( 'user', false );
-		$summary = $this->getOption( 'summary', '' );
-		$remove = $this->hasOption( 'remove' );
-		$minor = $this->hasOption( 'minor' );
-		$bot = $this->hasOption( 'bot' );
-		$autoSummary = $this->hasOption( 'autosummary' );
-		$noRC = $this->hasOption( 'no-rc' );
-		$slot = $this->getOption( 'slot', SlotRecord::MAIN );
+    public function execute()
+    {
+        $userName = $this->getOption('user', false);
+        $summary = $this->getOption('summary', '');
+        $remove = $this->hasOption('remove');
+        $minor = $this->hasOption('minor');
+        $bot = $this->hasOption('bot');
+        $autoSummary = $this->hasOption('autosummary');
+        $noRC = $this->hasOption('no-rc');
+        $slot = $this->getOption('slot', SlotRecord::MAIN);
 
-		if ( $userName === false ) {
-			$user = User::newSystemUser( User::MAINTENANCE_SCRIPT_USER, [ 'steal' => true ] );
-		} else {
-			$user = User::newFromName( $userName );
-		}
-		if ( !$user ) {
-			$this->fatalError( "Invalid username" );
-		}
-		if ( $user->isAnon() ) {
-			$user->addToDatabase();
-		}
-		StubGlobalUser::setUser( $user );
+        if ($userName === false) {
+            $user = User::newSystemUser(User::MAINTENANCE_SCRIPT_USER, ['steal' => true]);
+        } else {
+            $user = User::newFromName($userName);
+        }
+        if (!$user) {
+            $this->fatalError("Invalid username");
+        }
+        if ($user->isAnon()) {
+            $user->addToDatabase();
+        }
+        StubGlobalUser::setUser($user);
 
-		$titleInput = $this->getArg( 0 );
+        $titleInput = $this->getArg(0);
 
-		if ( $this->hasOption( 'parse-title' ) ) {
-			$titleInput = ( new RawMessage( '$1' ) )->params( $titleInput )->text();
-		}
+        if ($this->hasOption('parse-title')) {
+            $titleInput = (new RawMessage('$1'))->params($titleInput)->text();
+        }
 
-		$title = Title::newFromText( $titleInput );
-		if ( !$title ) {
-			$this->fatalError( "Invalid title" );
-		}
+        $title = Title::newFromText($titleInput);
+        if (!$title) {
+            $this->fatalError("Invalid title");
+        }
 
-		if ( $this->hasOption( 'nocreate' ) && !$title->exists() ) {
-			$this->fatalError( "Page does not exist" );
-		} elseif ( $this->hasOption( 'createonly' ) && $title->exists() ) {
-			$this->fatalError( "Page already exists" );
-		}
+        if ($this->hasOption('nocreate') && !$title->exists()) {
+            $this->fatalError("Page does not exist");
+        } elseif ($this->hasOption('createonly') && $title->exists()) {
+            $this->fatalError("Page already exists");
+        }
 
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+        $page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle($title);
 
-		if ( $remove ) {
-			if ( $slot === SlotRecord::MAIN ) {
-				$this->fatalError( "Cannot remove main slot! Use --slot to specify." );
-			}
+        if ($remove) {
+            if ($slot === SlotRecord::MAIN) {
+                $this->fatalError("Cannot remove main slot! Use --slot to specify.");
+            }
 
-			$content = false;
-		} else {
-			# Read the text
-			$text = $this->getStdin( Maintenance::STDIN_ALL );
-			$content = ContentHandler::makeContent( $text, $title );
-		}
+            $content = false;
+        } else {
+            # Read the text
+            $text = $this->getStdin(Maintenance::STDIN_ALL);
+            $content = ContentHandler::makeContent($text, $title);
+        }
 
-		# Do the edit
-		$this->output( "Saving..." );
-		$updater = $page->newPageUpdater( $user );
+        # Do the edit
+        $this->output("Saving...");
+        $updater = $page->newPageUpdater($user);
 
-		$flags = ( $minor ? EDIT_MINOR : 0 ) |
-			( $bot ? EDIT_FORCE_BOT : 0 ) |
-			( $autoSummary ? EDIT_AUTOSUMMARY : 0 ) |
-			( $noRC ? EDIT_SUPPRESS_RC : 0 );
+        $flags = ($minor ? EDIT_MINOR : 0) |
+            ($bot ? EDIT_FORCE_BOT : 0) |
+            ($autoSummary ? EDIT_AUTOSUMMARY : 0) |
+            ($noRC ? EDIT_SUPPRESS_RC : 0);
 
-		if ( $content === false ) {
-			$updater->removeSlot( $slot );
-		} else {
-			$updater->setContent( $slot, $content );
-		}
+        if ($content === false) {
+            $updater->removeSlot($slot);
+        } else {
+            $updater->setContent($slot, $content);
+        }
 
-		$updater->saveRevision( CommentStoreComment::newUnsavedComment( $summary ), $flags );
-		$status = $updater->getStatus();
+        $updater->saveRevision(CommentStoreComment::newUnsavedComment($summary), $flags);
+        $status = $updater->getStatus();
 
-		if ( $status->isOK() ) {
-			$this->output( "done\n" );
-		} else {
-			$this->output( "failed\n" );
-		}
-		if ( !$status->isGood() ) {
-			$this->output( $status->getMessage( false, false, 'en' )->text() . "\n" );
-		}
-		return $status->isOK();
-	}
+        if ($status->isOK()) {
+            $this->output("done\n");
+        } else {
+            $this->output("failed\n");
+        }
+        if (!$status->isGood()) {
+            $this->output($status->getMessage(false, false, 'en')->text() . "\n");
+        }
+
+        return $status->isOK();
+    }
 }
 
 $maintClass = EditCLI::class;

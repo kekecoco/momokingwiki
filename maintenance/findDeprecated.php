@@ -29,178 +29,194 @@ require_once __DIR__ . '/../vendor/autoload.php';
 /**
  * A PHPParser node visitor that associates each node with its file name.
  */
-class FileAwareNodeVisitor extends PhpParser\NodeVisitorAbstract {
-	private $currentFile = null;
+class FileAwareNodeVisitor extends PhpParser\NodeVisitorAbstract
+{
+    private $currentFile = null;
 
-	public function enterNode( PhpParser\Node $node ) {
-		$retVal = parent::enterNode( $node );
-		$node->filename = $this->currentFile;
-		return $retVal;
-	}
+    public function enterNode(PhpParser\Node $node)
+    {
+        $retVal = parent::enterNode($node);
+        $node->filename = $this->currentFile;
 
-	public function setCurrentFile( $filename ) {
-		$this->currentFile = $filename;
-	}
+        return $retVal;
+    }
 
-	public function getCurrentFile() {
-		return $this->currentFile;
-	}
+    public function setCurrentFile($filename)
+    {
+        $this->currentFile = $filename;
+    }
+
+    public function getCurrentFile()
+    {
+        return $this->currentFile;
+    }
 }
 
 /**
  * A PHPParser node visitor that finds deprecated functions and methods.
  */
-class DeprecatedInterfaceFinder extends FileAwareNodeVisitor {
+class DeprecatedInterfaceFinder extends FileAwareNodeVisitor
+{
 
-	private $currentClass = null;
+    private $currentClass = null;
 
-	private $foundNodes = [];
+    private $foundNodes = [];
 
-	public function getFoundNodes() {
-		// Sort results by version, then by filename, then by name.
-		foreach ( $this->foundNodes as $version => &$nodes ) {
-			uasort( $nodes, static function ( $a, $b ) {
-				return ( $a['filename'] . $a['name'] ) <=> ( $b['filename'] . $b['name'] );
-			} );
-		}
-		ksort( $this->foundNodes );
-		return $this->foundNodes;
-	}
+    public function getFoundNodes()
+    {
+        // Sort results by version, then by filename, then by name.
+        foreach ($this->foundNodes as $version => &$nodes) {
+            uasort($nodes, static function ($a, $b) {
+                return ($a['filename'] . $a['name']) <=> ($b['filename'] . $b['name']);
+            });
+        }
+        ksort($this->foundNodes);
 
-	/**
-	 * Check whether a function or method includes a call to wfDeprecated(),
-	 * indicating that it is a hard-deprecated interface.
-	 * @param PhpParser\Node $node
-	 * @return bool
-	 */
-	public function isHardDeprecated( PhpParser\Node $node ) {
-		if ( !$node->stmts ) {
-			return false;
-		}
-		foreach ( $node->stmts as $stmt ) {
-			if (
-				$stmt instanceof PhpParser\Node\Expr\FuncCall
-				&& $stmt->name->toString() === 'wfDeprecated'
-			) {
-				return true;
-			}
-			return false;
-		}
-	}
+        return $this->foundNodes;
+    }
 
-	public function enterNode( PhpParser\Node $node ) {
-		$retVal = parent::enterNode( $node );
+    /**
+     * Check whether a function or method includes a call to wfDeprecated(),
+     * indicating that it is a hard-deprecated interface.
+     * @param PhpParser\Node $node
+     * @return bool
+     */
+    public function isHardDeprecated(PhpParser\Node $node)
+    {
+        if (!$node->stmts) {
+            return false;
+        }
+        foreach ($node->stmts as $stmt) {
+            if (
+                $stmt instanceof PhpParser\Node\Expr\FuncCall
+                && $stmt->name->toString() === 'wfDeprecated'
+            ) {
+                return true;
+            }
 
-		if ( $node instanceof PhpParser\Node\Stmt\ClassLike ) {
-			$this->currentClass = $node->name;
-		}
+            return false;
+        }
+    }
 
-		if ( $node instanceof PhpParser\Node\FunctionLike ) {
-			$docComment = $node->getDocComment();
-			if ( !$docComment ) {
-				return;
-			}
-			if ( !preg_match( '/@deprecated.*(\d+\.\d+)/', $docComment->getText(), $matches ) ) {
-				return;
-			}
-			$version = $matches[1];
+    public function enterNode(PhpParser\Node $node)
+    {
+        $retVal = parent::enterNode($node);
 
-			if ( $node instanceof PhpParser\Node\Stmt\ClassMethod ) {
-				$name = $this->currentClass . '::' . $node->name;
-			} else {
-				$name = $node->name;
-			}
+        if ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+            $this->currentClass = $node->name;
+        }
 
-			$this->foundNodes[ $version ][] = [
-				'filename' => $node->filename,
-				'line'     => $node->getLine(),
-				'name'     => $name,
-				'hard'     => $this->isHardDeprecated( $node ),
-			];
-		}
+        if ($node instanceof PhpParser\Node\FunctionLike) {
+            $docComment = $node->getDocComment();
+            if (!$docComment) {
+                return;
+            }
+            if (!preg_match('/@deprecated.*(\d+\.\d+)/', $docComment->getText(), $matches)) {
+                return;
+            }
+            $version = $matches[1];
 
-		return $retVal;
-	}
+            if ($node instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $name = $this->currentClass . '::' . $node->name;
+            } else {
+                $name = $node->name;
+            }
+
+            $this->foundNodes[$version][] = [
+                'filename' => $node->filename,
+                'line'     => $node->getLine(),
+                'name'     => $name,
+                'hard'     => $this->isHardDeprecated($node),
+            ];
+        }
+
+        return $retVal;
+    }
 }
 
 /**
  * Maintenance task that recursively scans MediaWiki PHP files for deprecated
  * functions and interfaces and produces a report.
  */
-class FindDeprecated extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Find deprecated interfaces' );
-	}
+class FindDeprecated extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Find deprecated interfaces');
+    }
 
-	/**
-	 * @return SplFileInfo[]
-	 */
-	public function getFiles() {
-		global $IP;
+    /**
+     * @return SplFileInfo[]
+     */
+    public function getFiles()
+    {
+        global $IP;
 
-		$files = new RecursiveDirectoryIterator( $IP . '/includes' );
-		$files = new RecursiveIteratorIterator( $files );
-		$files = new RegexIterator( $files, '/\.php$/' );
-		return iterator_to_array( $files, false );
-	}
+        $files = new RecursiveDirectoryIterator($IP . '/includes');
+        $files = new RecursiveIteratorIterator($files);
+        $files = new RegexIterator($files, '/\.php$/');
 
-	public function execute() {
-		global $IP;
+        return iterator_to_array($files, false);
+    }
 
-		$files = $this->getFiles();
-		$chunkSize = (int)ceil( count( $files ) / 72 );
+    public function execute()
+    {
+        global $IP;
 
-		$parser = ( new PhpParser\ParserFactory )->create( PhpParser\ParserFactory::PREFER_PHP7 );
-		$traverser = new PhpParser\NodeTraverser;
-		$finder = new DeprecatedInterfaceFinder;
-		$traverser->addVisitor( $finder );
+        $files = $this->getFiles();
+        $chunkSize = (int)ceil(count($files) / 72);
 
-		$fileCount = count( $files );
+        $parser = (new PhpParser\ParserFactory)->create(PhpParser\ParserFactory::PREFER_PHP7);
+        $traverser = new PhpParser\NodeTraverser;
+        $finder = new DeprecatedInterfaceFinder;
+        $traverser->addVisitor($finder);
 
-		for ( $i = 0; $i < $fileCount; $i++ ) {
-			$file = $files[$i];
-			$code = file_get_contents( $file );
+        $fileCount = count($files);
 
-			if ( strpos( $code, '@deprecated' ) === -1 ) {
-				continue;
-			}
+        for ($i = 0; $i < $fileCount; $i++) {
+            $file = $files[$i];
+            $code = file_get_contents($file);
 
-			$finder->setCurrentFile( substr( $file->getPathname(), strlen( $IP ) + 1 ) );
-			$nodes = $parser->parse( $code );
-			$traverser->traverse( $nodes );
+            if (strpos($code, '@deprecated') === -1) {
+                continue;
+            }
 
-			if ( $i % $chunkSize === 0 ) {
-				$percentDone = 100 * $i / $fileCount;
-				fprintf( STDERR, "\r[%-72s] %d%%", str_repeat( '#', $i / $chunkSize ), $percentDone );
-			}
-		}
+            $finder->setCurrentFile(substr($file->getPathname(), strlen($IP) + 1));
+            $nodes = $parser->parse($code);
+            $traverser->traverse($nodes);
 
-		fprintf( STDERR, "\r[%'#-72s] 100%%\n", '' );
+            if ($i % $chunkSize === 0) {
+                $percentDone = 100 * $i / $fileCount;
+                fprintf(STDERR, "\r[%-72s] %d%%", str_repeat('#', $i / $chunkSize), $percentDone);
+            }
+        }
 
-		// Colorize output if STDOUT is an interactive terminal.
-		if ( posix_isatty( STDOUT ) ) {
-			$versionFmt = "\n* Deprecated since \033[37;1m%s\033[0m:\n";
-			$entryFmt = "  %s \033[33;1m%s\033[0m (%s:%d)\n";
-		} else {
-			$versionFmt = "\n* Deprecated since %s:\n";
-			$entryFmt = "  %s %s (%s:%d)\n";
-		}
+        fprintf(STDERR, "\r[%'#-72s] 100%%\n", '');
 
-		foreach ( $finder->getFoundNodes() as $version => $nodes ) {
-			printf( $versionFmt, $version );
-			foreach ( $nodes as $node ) {
-				printf(
-					$entryFmt,
-					$node['hard'] ? '+' : '-',
-					$node['name'],
-					$node['filename'],
-					$node['line']
-				);
-			}
-		}
-		printf( "\nlegend:\n -: soft-deprecated\n +: hard-deprecated (via wfDeprecated())\n" );
-	}
+        // Colorize output if STDOUT is an interactive terminal.
+        if (posix_isatty(STDOUT)) {
+            $versionFmt = "\n* Deprecated since \033[37;1m%s\033[0m:\n";
+            $entryFmt = "  %s \033[33;1m%s\033[0m (%s:%d)\n";
+        } else {
+            $versionFmt = "\n* Deprecated since %s:\n";
+            $entryFmt = "  %s %s (%s:%d)\n";
+        }
+
+        foreach ($finder->getFoundNodes() as $version => $nodes) {
+            printf($versionFmt, $version);
+            foreach ($nodes as $node) {
+                printf(
+                    $entryFmt,
+                    $node['hard'] ? '+' : '-',
+                    $node['name'],
+                    $node['filename'],
+                    $node['line']
+                );
+            }
+        }
+        printf("\nlegend:\n -: soft-deprecated\n +: hard-deprecated (via wfDeprecated())\n");
+    }
 }
 
 $maintClass = FindDeprecated::class;

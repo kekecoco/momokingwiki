@@ -20,22 +20,26 @@
  * @file
  */
 
-class SlideshowImageGallery extends TraditionalImageGallery {
-	public function __construct( $mode = 'traditional', IContextSource $context = null ) {
-		parent::__construct( $mode, $context );
-		// Does not support per row option.
-		$this->mPerRow = 0;
-	}
+class SlideshowImageGallery extends TraditionalImageGallery
+{
+    public function __construct($mode = 'traditional', IContextSource $context = null)
+    {
+        parent::__construct($mode, $context);
+        // Does not support per row option.
+        $this->mPerRow = 0;
+    }
 
-	/**
-	 * Add javascript adds interface elements
-	 * @return array
-	 */
-	protected function getModules() {
-		return [ 'mediawiki.page.gallery.slideshow' ];
-	}
+    /**
+     * Add javascript adds interface elements
+     * @return array
+     */
+    protected function getModules()
+    {
+        return ['mediawiki.page.gallery.slideshow'];
+    }
 
-	public function setAdditionalOptions( $params ) {
-		$this->mAttribs['data-showthumbnails'] = isset( $params['showthumbnails'] );
-	}
+    public function setAdditionalOptions($params)
+    {
+        $this->mAttribs['data-showthumbnails'] = isset($params['showthumbnails']);
+    }
 }

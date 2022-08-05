@@ -23,24 +23,28 @@
  * Item class for a archive table row by ar_rev_id -- actually
  * used via RevDelRevisionList.
  */
-class RevDelArchivedRevisionItem extends RevDelArchiveItem {
-	public function getIdField() {
-		return 'ar_rev_id';
-	}
+class RevDelArchivedRevisionItem extends RevDelArchiveItem
+{
+    public function getIdField()
+    {
+        return 'ar_rev_id';
+    }
 
-	public function getId() {
-		return $this->getRevisionRecord()->getId();
-	}
+    public function getId()
+    {
+        return $this->getRevisionRecord()->getId();
+    }
 
-	public function setBits( $bits ) {
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->update( 'archive',
-			[ 'ar_deleted' => $bits ],
-			[ 'ar_rev_id' => $this->row->ar_rev_id,
-				'ar_deleted' => $this->getBits()
-			],
-			__METHOD__ );
+    public function setBits($bits)
+    {
+        $dbw = wfGetDB(DB_PRIMARY);
+        $dbw->update('archive',
+            ['ar_deleted' => $bits],
+            ['ar_rev_id'  => $this->row->ar_rev_id,
+             'ar_deleted' => $this->getBits()
+            ],
+            __METHOD__);
 
-		return (bool)$dbw->affectedRows();
-	}
+        return (bool)$dbw->affectedRows();
+    }
 }

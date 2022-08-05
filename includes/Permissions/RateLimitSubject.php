@@ -28,65 +28,70 @@ use MediaWiki\User\UserIdentity;
  * @unstable
  * @since 1.39
  */
-class RateLimitSubject {
+class RateLimitSubject
+{
 
-	/**
-	 * @var UserIdentity
-	 */
-	private $user;
+    /**
+     * @var UserIdentity
+     */
+    private $user;
 
-	/**
-	 * @var string|null
-	 */
-	private $ip;
+    /**
+     * @var string|null
+     */
+    private $ip;
 
-	/**
-	 * @var array
-	 */
-	private $flags;
+    /**
+     * @var array
+     */
+    private $flags;
 
-	/** @var string Flag indicating the user is exempt from rate limits */
-	public const EXEMPT = 'exempt';
+    /** @var string Flag indicating the user is exempt from rate limits */
+    public const EXEMPT = 'exempt';
 
-	/** @var string Flag indicating the user is a newbie */
-	public const NEWBIE = 'newbie';
+    /** @var string Flag indicating the user is a newbie */
+    public const NEWBIE = 'newbie';
 
-	/**
-	 * @internal
-	 *
-	 * @param UserIdentity $user
-	 * @param string|null $ip
-	 * @param array<string,bool> $flags
-	 */
-	public function __construct( UserIdentity $user, ?string $ip, array $flags ) {
-		$this->user = $user;
-		$this->ip = $ip;
-		$this->flags = $flags;
-	}
+    /**
+     * @param UserIdentity $user
+     * @param string|null $ip
+     * @param array<string,bool> $flags
+     * @internal
+     *
+     */
+    public function __construct(UserIdentity $user, ?string $ip, array $flags)
+    {
+        $this->user = $user;
+        $this->ip = $ip;
+        $this->flags = $flags;
+    }
 
-	/**
-	 * @return UserIdentity
-	 */
-	public function getUser(): UserIdentity {
-		return $this->user;
-	}
+    /**
+     * @return UserIdentity
+     */
+    public function getUser(): UserIdentity
+    {
+        return $this->user;
+    }
 
-	/**
-	 * @return string|null
-	 */
-	public function getIP(): ?string {
-		return $this->ip;
-	}
+    /**
+     * @return string|null
+     */
+    public function getIP(): ?string
+    {
+        return $this->ip;
+    }
 
-	/**
-	 * Checks whether the given flag applies.
-	 *
-	 * @param string $flag
-	 *
-	 * @return bool
-	 */
-	public function is( string $flag ) {
-		return !empty( $this->flags[$flag] );
-	}
+    /**
+     * Checks whether the given flag applies.
+     *
+     * @param string $flag
+     *
+     * @return bool
+     */
+    public function is(string $flag)
+    {
+        return !empty($this->flags[$flag]);
+    }
 
 }

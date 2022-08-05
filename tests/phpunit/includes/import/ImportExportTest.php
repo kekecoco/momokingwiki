@@ -10,255 +10,271 @@ use MediaWiki\Tests\Maintenance\DumpAsserter;
  * @covers WikiExporter
  * @covers WikiImporter
  */
-class ImportExportTest extends MediaWikiLangTestCase {
+class ImportExportTest extends MediaWikiLangTestCase
+{
 
-	protected function setUp(): void {
-		parent::setUp();
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-		$slotRoleRegistry = $this->getServiceContainer()->getSlotRoleRegistry();
+        $slotRoleRegistry = $this->getServiceContainer()->getSlotRoleRegistry();
 
-		if ( !$slotRoleRegistry->isDefinedRole( 'ImportExportTest' ) ) {
-			$slotRoleRegistry->defineRoleWithModel( 'ImportExportTest', CONTENT_MODEL_WIKITEXT );
-		}
-	}
+        if (!$slotRoleRegistry->isDefinedRole('ImportExportTest')) {
+            $slotRoleRegistry->defineRoleWithModel('ImportExportTest', CONTENT_MODEL_WIKITEXT);
+        }
+    }
 
-	/**
-	 * @param string $schemaVersion
-	 *
-	 * @return WikiExporter
-	 */
-	private function getExporter( string $schemaVersion ) {
-		$exporter = $this->getServiceContainer()
-			->getWikiExporterFactory()
-			->getWikiExporter( $this->db, WikiExporter::FULL );
-		$exporter->setSchemaVersion( $schemaVersion );
-		return $exporter;
-	}
+    /**
+     * @param string $schemaVersion
+     *
+     * @return WikiExporter
+     */
+    private function getExporter(string $schemaVersion)
+    {
+        $exporter = $this->getServiceContainer()
+            ->getWikiExporterFactory()
+            ->getWikiExporter($this->db, WikiExporter::FULL);
+        $exporter->setSchemaVersion($schemaVersion);
 
-	/**
-	 * @param ImportSource $source
-	 *
-	 * @return WikiImporter
-	 */
-	private function getImporter( ImportSource $source ) {
-		$config = new HashConfig( [
-			'CommandLineMode' => true,
-		] );
-		$services = $this->getServiceContainer();
-		$importer = new WikiImporter(
-			$source,
-			$config,
-			$services->getHookContainer(),
-			$services->getContentLanguage(),
-			$services->getNamespaceInfo(),
-			$services->getTitleFactory(),
-			$services->getWikiPageFactory(),
-			$services->getWikiRevisionUploadImporter(),
-			$services->getPermissionManager(),
-			$services->getContentHandlerFactory(),
-			$services->getSlotRoleRegistry()
-		);
-		return $importer;
-	}
+        return $exporter;
+    }
 
-	/**
-	 * @param string $testName
-	 *
-	 * @return string[]
-	 */
-	private function getFilesToImport( string $testName ) {
-		return glob( __DIR__ . "/../../data/import/$testName.import-*.xml" );
-	}
+    /**
+     * @param ImportSource $source
+     *
+     * @return WikiImporter
+     */
+    private function getImporter(ImportSource $source)
+    {
+        $config = new HashConfig([
+            'CommandLineMode' => true,
+        ]);
+        $services = $this->getServiceContainer();
+        $importer = new WikiImporter(
+            $source,
+            $config,
+            $services->getHookContainer(),
+            $services->getContentLanguage(),
+            $services->getNamespaceInfo(),
+            $services->getTitleFactory(),
+            $services->getWikiPageFactory(),
+            $services->getWikiRevisionUploadImporter(),
+            $services->getPermissionManager(),
+            $services->getContentHandlerFactory(),
+            $services->getSlotRoleRegistry()
+        );
 
-	/**
-	 * @param string $name
-	 * @param string $schemaVersion
-	 *
-	 * @return string path of the dump file
-	 */
-	protected function getDumpTemplatePath( $name, $schemaVersion ) {
-		return __DIR__ . "/../../data/import/$name.$schemaVersion.xml";
-	}
+        return $importer;
+    }
 
-	/**
-	 * @param string $prefix
-	 * @param string[] $keys
-	 *
-	 * @return string[]
-	 */
-	private function getUniqueNames( string $prefix, array $keys ) {
-		$names = [];
+    /**
+     * @param string $testName
+     *
+     * @return string[]
+     */
+    private function getFilesToImport(string $testName)
+    {
+        return glob(__DIR__ . "/../../data/import/$testName.import-*.xml");
+    }
 
-		foreach ( $keys as $k ) {
-			$names[$k] = "$prefix-$k-" . wfRandomString( 6 );
-		}
+    /**
+     * @param string $name
+     * @param string $schemaVersion
+     *
+     * @return string path of the dump file
+     */
+    protected function getDumpTemplatePath($name, $schemaVersion)
+    {
+        return __DIR__ . "/../../data/import/$name.$schemaVersion.xml";
+    }
 
-		return $names;
-	}
+    /**
+     * @param string $prefix
+     * @param string[] $keys
+     *
+     * @return string[]
+     */
+    private function getUniqueNames(string $prefix, array $keys)
+    {
+        $names = [];
 
-	/**
-	 * @param string $xmlData
-	 * @param string[] $pageTitles
-	 *
-	 * @return string
-	 */
-	private function injectPageTitles( string $xmlData, array $pageTitles ) {
-		$keys = array_map( static function ( $name ) {
-			return "{{{$name}_title}}";
-		}, array_keys( $pageTitles ) );
+        foreach ($keys as $k) {
+            $names[$k] = "$prefix-$k-" . wfRandomString(6);
+        }
 
-		return str_replace(
-			$keys,
-			array_values( $pageTitles ),
-			$xmlData
-		);
-	}
+        return $names;
+    }
 
-	/**
-	 * @param Title $title
-	 *
-	 * @return RevisionRecord[]
-	 */
-	private function getRevisions( Title $title ) {
-		$store = $this->getServiceContainer()->getRevisionStore();
-		$qi = $store->getQueryInfo();
+    /**
+     * @param string $xmlData
+     * @param string[] $pageTitles
+     *
+     * @return string
+     */
+    private function injectPageTitles(string $xmlData, array $pageTitles)
+    {
+        $keys = array_map(static function ($name) {
+            return "{{{$name}_title}}";
+        }, array_keys($pageTitles));
 
-		$conds = [ 'rev_page' => $title->getArticleID() ];
-		$opt = [ 'ORDER BY' => 'rev_id ASC' ];
+        return str_replace(
+            $keys,
+            array_values($pageTitles),
+            $xmlData
+        );
+    }
 
-		$rows = $this->db->select(
-			$qi['tables'],
-			$qi['fields'],
-			$conds,
-			__METHOD__,
-			$opt,
-			$qi['joins']
-		);
+    /**
+     * @param Title $title
+     *
+     * @return RevisionRecord[]
+     */
+    private function getRevisions(Title $title)
+    {
+        $store = $this->getServiceContainer()->getRevisionStore();
+        $qi = $store->getQueryInfo();
 
-		$status = $store->newRevisionsFromBatch( $rows );
-		return $status->getValue();
-	}
+        $conds = ['rev_page' => $title->getArticleID()];
+        $opt = ['ORDER BY' => 'rev_id ASC'];
 
-	/**
-	 * @param string[] $pageTitles
-	 *
-	 * @return string[]
-	 */
-	private function getPageInfoVars( array $pageTitles ) {
-		$vars = [];
-		foreach ( $pageTitles as $name => $page ) {
-			$title = Title::newFromText( $page );
+        $rows = $this->db->select(
+            $qi['tables'],
+            $qi['fields'],
+            $conds,
+            __METHOD__,
+            $opt,
+            $qi['joins']
+        );
 
-			if ( !$title->exists( Title::READ_LATEST ) ) {
-				// map only existing pages, since only they can appear in a dump
-				continue;
-			}
+        $status = $store->newRevisionsFromBatch($rows);
 
-			$vars[ $name . '_pageid' ] = $title->getArticleID();
-			$vars[ $name . '_title' ] = $title->getPrefixedDBkey();
-			$vars[ $name . '_namespace' ] = $title->getNamespace();
+        return $status->getValue();
+    }
 
-			$n = 1;
-			$revisions = $this->getRevisions( $title );
-			foreach ( $revisions as $i => $rev ) {
-				$revkey = "{$name}_rev" . $n++;
+    /**
+     * @param string[] $pageTitles
+     *
+     * @return string[]
+     */
+    private function getPageInfoVars(array $pageTitles)
+    {
+        $vars = [];
+        foreach ($pageTitles as $name => $page) {
+            $title = Title::newFromText($page);
 
-				$vars[ $revkey . '_id' ] = $rev->getId();
-				$vars[ $revkey . '_userid' ] = $rev->getUser()->getId();
-			}
-		}
+            if (!$title->exists(Title::READ_LATEST)) {
+                // map only existing pages, since only they can appear in a dump
+                continue;
+            }
 
-		return $vars;
-	}
+            $vars[$name . '_pageid'] = $title->getArticleID();
+            $vars[$name . '_title'] = $title->getPrefixedDBkey();
+            $vars[$name . '_namespace'] = $title->getNamespace();
 
-	/**
-	 * @param string $schemaVersion
-	 * @return string[]
-	 */
-	private function getSiteVars( $schemaVersion ) {
-		global $wgSitename, $wgDBname, $wgVersion, $wgCapitalLinks;
+            $n = 1;
+            $revisions = $this->getRevisions($title);
+            foreach ($revisions as $i => $rev) {
+                $revkey = "{$name}_rev" . $n++;
 
-		$vars = [];
-		$vars['mw_version'] = $wgVersion;
-		$vars['schema_version'] = $schemaVersion;
+                $vars[$revkey . '_id'] = $rev->getId();
+                $vars[$revkey . '_userid'] = $rev->getUser()->getId();
+            }
+        }
 
-		$vars['site_name'] = $wgSitename;
-		$vars['project_namespace'] =
-			$this->getServiceContainer()->getTitleFormatter()->getNamespaceName(
-				NS_PROJECT,
-				'Dummy'
-			);
-		$vars['site_db'] = $wgDBname;
-		$vars['site_case'] = $wgCapitalLinks ? 'first-letter' : 'case-sensitive';
-		$vars['site_base'] = Title::newMainPage()->getCanonicalURL();
-		$vars['site_language'] = $this->getServiceContainer()->getContentLanguage()->getHtmlCode();
+        return $vars;
+    }
 
-		return $vars;
-	}
+    /**
+     * @param string $schemaVersion
+     * @return string[]
+     */
+    private function getSiteVars($schemaVersion)
+    {
+        global $wgSitename, $wgDBname, $wgVersion, $wgCapitalLinks;
 
-	public function provideImportExport() {
-		foreach ( XmlDumpWriter::$supportedSchemas as $schemaVersion ) {
-			yield [ 'Basic', $schemaVersion ];
-			yield [ 'Dupes', $schemaVersion ];
-			yield [ 'Slots', $schemaVersion ];
-			yield [ 'Interleaved', $schemaVersion ];
-			yield [ 'InterleavedMulti', $schemaVersion ];
-			yield [ 'MissingMainContentModel', $schemaVersion ];
-			yield [ 'MissingSlotContentModel', $schemaVersion ];
-		}
-	}
+        $vars = [];
+        $vars['mw_version'] = $wgVersion;
+        $vars['schema_version'] = $schemaVersion;
 
-	/**
-	 * @dataProvider provideImportExport
-	 */
-	public function testImportExport( $testName, $schemaVersion ) {
-		$asserter = new DumpAsserter( $schemaVersion );
+        $vars['site_name'] = $wgSitename;
+        $vars['project_namespace'] =
+            $this->getServiceContainer()->getTitleFormatter()->getNamespaceName(
+                NS_PROJECT,
+                'Dummy'
+            );
+        $vars['site_db'] = $wgDBname;
+        $vars['site_case'] = $wgCapitalLinks ? 'first-letter' : 'case-sensitive';
+        $vars['site_base'] = Title::newMainPage()->getCanonicalURL();
+        $vars['site_language'] = $this->getServiceContainer()->getContentLanguage()->getHtmlCode();
 
-		$filesToImport = $this->getFilesToImport( $testName );
-		$fileToExpect = $this->getDumpTemplatePath( "$testName.expected", $schemaVersion );
-		$siteInfoExpect = $this->getDumpTemplatePath( 'SiteInfo', $schemaVersion );
+        return $vars;
+    }
 
-		$pageKeys = [ 'page1', 'page2', 'page3', 'page4', ];
-		$pageTitles = $this->getUniqueNames( $testName, $pageKeys );
+    public function provideImportExport()
+    {
+        foreach (XmlDumpWriter::$supportedSchemas as $schemaVersion) {
+            yield ['Basic', $schemaVersion];
+            yield ['Dupes', $schemaVersion];
+            yield ['Slots', $schemaVersion];
+            yield ['Interleaved', $schemaVersion];
+            yield ['InterleavedMulti', $schemaVersion];
+            yield ['MissingMainContentModel', $schemaVersion];
+            yield ['MissingSlotContentModel', $schemaVersion];
+        }
+    }
 
-		// import each file
-		foreach ( $filesToImport as $fileName ) {
-			$xmlData = file_get_contents( $fileName );
-			$xmlData = $this->injectPageTitles( $xmlData, $pageTitles );
+    /**
+     * @dataProvider provideImportExport
+     */
+    public function testImportExport($testName, $schemaVersion)
+    {
+        $asserter = new DumpAsserter($schemaVersion);
 
-			$source = new ImportStringSource( $xmlData );
-			$importer = $this->getImporter( $source );
-			$importer->doImport();
-		}
+        $filesToImport = $this->getFilesToImport($testName);
+        $fileToExpect = $this->getDumpTemplatePath("$testName.expected", $schemaVersion);
+        $siteInfoExpect = $this->getDumpTemplatePath('SiteInfo', $schemaVersion);
 
-		// write dump
-		$exporter = $this->getExporter( $schemaVersion );
+        $pageKeys = ['page1', 'page2', 'page3', 'page4',];
+        $pageTitles = $this->getUniqueNames($testName, $pageKeys);
 
-		$tmpFile = $this->getNewTempFile();
-		$buffer = new DumpFileOutput( $tmpFile );
+        // import each file
+        foreach ($filesToImport as $fileName) {
+            $xmlData = file_get_contents($fileName);
+            $xmlData = $this->injectPageTitles($xmlData, $pageTitles);
 
-		$exporter->setOutputSink( $buffer );
-		$exporter->openStream();
-		$exporter->pagesByName( $pageTitles );
-		$exporter->closeStream();
+            $source = new ImportStringSource($xmlData);
+            $importer = $this->getImporter($source);
+            $importer->doImport();
+        }
 
-		// determine expected variable values
-		$vars = array_merge(
-			$this->getSiteVars( $schemaVersion ),
-			$this->getPageInfoVars( $pageTitles )
-		);
+        // write dump
+        $exporter = $this->getExporter($schemaVersion);
 
-		foreach ( $vars as $key => $value ) {
-			$asserter->setVarMapping( $key, $value );
-		}
+        $tmpFile = $this->getNewTempFile();
+        $buffer = new DumpFileOutput($tmpFile);
 
-		$dumpData = file_get_contents( $tmpFile );
-		$this->assertNotEmpty( $dumpData, 'Dump XML' );
+        $exporter->setOutputSink($buffer);
+        $exporter->openStream();
+        $exporter->pagesByName($pageTitles);
+        $exporter->closeStream();
 
-		// check dump content
-		$asserter->assertDumpStart( $tmpFile, $siteInfoExpect );
-		$asserter->assertDOM( $fileToExpect );
-		$asserter->assertDumpEnd();
-	}
+        // determine expected variable values
+        $vars = array_merge(
+            $this->getSiteVars($schemaVersion),
+            $this->getPageInfoVars($pageTitles)
+        );
+
+        foreach ($vars as $key => $value) {
+            $asserter->setVarMapping($key, $value);
+        }
+
+        $dumpData = file_get_contents($tmpFile);
+        $this->assertNotEmpty($dumpData, 'Dump XML');
+
+        // check dump content
+        $asserter->assertDumpStart($tmpFile, $siteInfoExpect);
+        $asserter->assertDOM($fileToExpect);
+        $asserter->assertDumpEnd();
+    }
 
 }

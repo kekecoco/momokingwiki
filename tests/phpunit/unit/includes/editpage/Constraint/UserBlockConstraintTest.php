@@ -29,42 +29,45 @@ use MediaWiki\Permissions\PermissionManager;
  *
  * @covers \MediaWiki\EditPage\Constraint\UserBlockConstraint
  */
-class UserBlockConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class UserBlockConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$title = $this->createMock( Title::class );
-		$user = $this->createMock( User::class );
-		$permissionManager = $this->createMock( PermissionManager::class );
-		$permissionManager->expects( $this->once() )
-			->method( 'isBlockedFrom' )
-			->with(
-				$user,
-				$title
-			)
-			->willReturn( false );
+    public function testPass()
+    {
+        $title = $this->createMock(Title::class);
+        $user = $this->createMock(User::class);
+        $permissionManager = $this->createMock(PermissionManager::class);
+        $permissionManager->expects($this->once())
+            ->method('isBlockedFrom')
+            ->with(
+                $user,
+                $title
+            )
+            ->willReturn(false);
 
-		$constraint = new UserBlockConstraint( $permissionManager, $title, $user );
-		$this->assertConstraintPassed( $constraint );
-	}
+        $constraint = new UserBlockConstraint($permissionManager, $title, $user);
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$title = $this->createMock( Title::class );
-		$user = $this->createMock( User::class );
-		$permissionManager = $this->createMock( PermissionManager::class );
-		$permissionManager->expects( $this->once() )
-			->method( 'isBlockedFrom' )
-			->with(
-				$user,
-				$title
-			)
-			->willReturn( true );
+    public function testFailure()
+    {
+        $title = $this->createMock(Title::class);
+        $user = $this->createMock(User::class);
+        $permissionManager = $this->createMock(PermissionManager::class);
+        $permissionManager->expects($this->once())
+            ->method('isBlockedFrom')
+            ->with(
+                $user,
+                $title
+            )
+            ->willReturn(true);
 
-		$constraint = new UserBlockConstraint( $permissionManager, $title, $user );
-		$this->assertConstraintFailed(
-			$constraint,
-			IEditConstraint::AS_BLOCKED_PAGE_FOR_USER
-		);
-	}
+        $constraint = new UserBlockConstraint($permissionManager, $title, $user);
+        $this->assertConstraintFailed(
+            $constraint,
+            IEditConstraint::AS_BLOCKED_PAGE_FOR_USER
+        );
+    }
 
 }

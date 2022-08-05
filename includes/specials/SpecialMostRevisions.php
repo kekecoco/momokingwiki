@@ -28,34 +28,38 @@ use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Languages\LanguageConverterFactory;
 use Wikimedia\Rdbms\ILoadBalancer;
 
-class SpecialMostRevisions extends SpecialFewestRevisions {
+class SpecialMostRevisions extends SpecialFewestRevisions
+{
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param ILoadBalancer $loadBalancer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 */
-	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		ILoadBalancer $loadBalancer,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageConverterFactory $languageConverterFactory
-	) {
-		parent::__construct(
-			$namespaceInfo,
-			$loadBalancer,
-			$linkBatchFactory,
-			$languageConverterFactory
-		);
-		$this->mName = 'Mostrevisions';
-	}
+    /**
+     * @param NamespaceInfo $namespaceInfo
+     * @param ILoadBalancer $loadBalancer
+     * @param LinkBatchFactory $linkBatchFactory
+     * @param LanguageConverterFactory $languageConverterFactory
+     */
+    public function __construct(
+        NamespaceInfo $namespaceInfo,
+        ILoadBalancer $loadBalancer,
+        LinkBatchFactory $linkBatchFactory,
+        LanguageConverterFactory $languageConverterFactory
+    )
+    {
+        parent::__construct(
+            $namespaceInfo,
+            $loadBalancer,
+            $linkBatchFactory,
+            $languageConverterFactory
+        );
+        $this->mName = 'Mostrevisions';
+    }
 
-	protected function sortDescending() {
-		return true;
-	}
+    protected function sortDescending()
+    {
+        return true;
+    }
 
-	protected function getGroupName() {
-		return 'highuse';
-	}
+    protected function getGroupName()
+    {
+        return 'highuse';
+    }
 }

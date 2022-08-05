@@ -24,33 +24,33 @@
  *   [[Foo#Quux]], the address bar should reflect Bar#Quux, and
  *   let the native scroll happen, don't override scroll to #Foo.
  */
-( function () {
-	var canonical = mw.config.get( 'wgInternalRedirectTargetUrl' );
-	if ( !canonical ) {
-		return;
-	}
+(function () {
+    var canonical = mw.config.get('wgInternalRedirectTargetUrl');
+    if (!canonical) {
+        return;
+    }
 
-	var fragment = null;
-	if ( location.hash ) {
-		// Ignore redirect's own fragment and preserve fragment override in address
-		canonical = canonical.replace( /#.*$/, '' ) + location.hash;
-	} else {
-		var index = canonical.indexOf( '#' );
-		fragment = ( index !== -1 ) ? canonical.slice( index ) : null;
-	}
+    var fragment = null;
+    if (location.hash) {
+        // Ignore redirect's own fragment and preserve fragment override in address
+        canonical = canonical.replace(/#.*$/, '') + location.hash;
+    } else {
+        var index = canonical.indexOf('#');
+        fragment = (index !== -1) ? canonical.slice(index) : null;
+    }
 
-	// Update address bar, including browser history.
-	// Preserve correct "Back"-button behaviour by using replaceState instead of
-	// pushState (or location.hash assignment)
-	history.replaceState( history.state, '', canonical );
+    // Update address bar, including browser history.
+    // Preserve correct "Back"-button behaviour by using replaceState instead of
+    // pushState (or location.hash assignment)
+    history.replaceState(history.state, '', canonical);
 
-	if ( fragment ) {
-		// Specification for history.replaceState() doesn't require browser to scroll,
-		// so scroll to be sure (see also T110501).
-		var node = document.getElementById( fragment.slice( 1 ) );
-		if ( node ) {
-			node.scrollIntoView();
-		}
-	}
+    if (fragment) {
+        // Specification for history.replaceState() doesn't require browser to scroll,
+        // so scroll to be sure (see also T110501).
+        var node = document.getElementById(fragment.slice(1));
+        if (node) {
+            node.scrollIntoView();
+        }
+    }
 
-}() );
+}());

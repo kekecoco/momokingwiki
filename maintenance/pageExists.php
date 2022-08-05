@@ -24,26 +24,30 @@ require_once __DIR__ . '/Maintenance.php';
 /**
  * @ingroup Maintenance
  */
-class PageExists extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Report whether a specific page exists' );
-		$this->addArg( 'title', 'Page title to check whether it exists' );
-	}
+class PageExists extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Report whether a specific page exists');
+        $this->addArg('title', 'Page title to check whether it exists');
+    }
 
-	public function execute() {
-		$titleArg = $this->getArg( 0 );
-		$title = Title::newFromText( $titleArg );
-		$pageExists = $title && $title->exists();
+    public function execute()
+    {
+        $titleArg = $this->getArg(0);
+        $title = Title::newFromText($titleArg);
+        $pageExists = $title && $title->exists();
 
-		if ( $pageExists ) {
-			$text = "{$title} exists.\n";
-		} else {
-			$text = "{$titleArg} doesn't exist.\n";
-		}
-		$this->output( $text );
-		return $pageExists;
-	}
+        if ($pageExists) {
+            $text = "{$title} exists.\n";
+        } else {
+            $text = "{$titleArg} doesn't exist.\n";
+        }
+        $this->output($text);
+
+        return $pageExists;
+    }
 }
 
 $maintClass = PageExists::class;

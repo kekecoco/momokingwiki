@@ -28,58 +28,62 @@
  * @internal For use by ProfilerXhprof
  * @since 1.28
  */
-class Xhprof {
+class Xhprof
+{
 
-	/**
-	 * Start profiler
-	 *
-	 * @param int $flags
-	 * @param array $options
-	 */
-	public static function enable( $flags = 0, $options = [] ) {
-		$args = [ $flags ];
-		if ( $options ) {
-			$args[] = $options;
-		}
+    /**
+     * Start profiler
+     *
+     * @param int $flags
+     * @param array $options
+     */
+    public static function enable($flags = 0, $options = [])
+    {
+        $args = [$flags];
+        if ($options) {
+            $args[] = $options;
+        }
 
-		self::callAny(
-			[
-				'xhprof_enable',
-				'tideways_enable',
-				'tideways_xhprof_enable'
-			],
-			$args
-		);
-	}
+        self::callAny(
+            [
+                'xhprof_enable',
+                'tideways_enable',
+                'tideways_xhprof_enable'
+            ],
+            $args
+        );
+    }
 
-	/**
-	 * Stop profiler
-	 *
-	 * @return array Xhprof data since last enable call,
-	 *  or empty array if it was never enabled.
-	 */
-	public static function disable() {
-		return self::callAny( [
-			'xhprof_disable',
-			'tideways_disable',
-			'tideways_xhprof_disable'
-		] );
-	}
+    /**
+     * Stop profiler
+     *
+     * @return array Xhprof data since last enable call,
+     *  or empty array if it was never enabled.
+     */
+    public static function disable()
+    {
+        return self::callAny([
+            'xhprof_disable',
+            'tideways_disable',
+            'tideways_xhprof_disable'
+        ]);
+    }
 
-	/**
-	 * Call the first available function from $functions.
-	 * @param array $functions
-	 * @param array $args
-	 * @return mixed
-	 * @throws Exception
-	 */
-	protected static function callAny( array $functions, array $args = [] ) {
-		foreach ( $functions as $func ) {
-			if ( function_exists( $func ) ) {
-				return $func( ...$args );
-			}
-		}
+    /**
+     * Call the first available function from $functions.
+     * @param array $functions
+     * @param array $args
+     * @return mixed
+     * @throws Exception
+     */
+    protected static function callAny(array $functions, array $args = [])
+    {
+        foreach ($functions as $func) {
+            if (function_exists($func)) {
+                return $func(...$args);
+            }
+        }
 
-		throw new Exception( "Neither xhprof nor tideways are installed" );
-	}
+        throw new Exception("Neither xhprof nor tideways are installed");
+    }
 }

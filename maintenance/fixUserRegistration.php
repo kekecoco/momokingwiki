@@ -31,67 +31,70 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup Maintenance
  */
-class FixUserRegistration extends Maintenance {
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Fix the user_registration field' );
-		$this->setBatchSize( 1000 );
-	}
+class FixUserRegistration extends Maintenance
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Fix the user_registration field');
+        $this->setBatchSize(1000);
+    }
 
-	public function execute() {
-		$dbw = $this->getDB( DB_PRIMARY );
+    public function execute()
+    {
+        $dbw = $this->getDB(DB_PRIMARY);
 
-		$lastId = 0;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		do {
-			// Get user IDs which need fixing
-			$res = $dbw->select(
-				'user',
-				'user_id',
-				[
-					'user_id > ' . $dbw->addQuotes( $lastId ),
-					'user_registration IS NULL'
-				],
-				__METHOD__,
-				[
-					'LIMIT' => $this->getBatchSize(),
-					'ORDER BY' => 'user_id',
-				]
-			);
-			foreach ( $res as $row ) {
-				$id = $row->user_id;
-				$lastId = $id;
-				// Get first edit time
-				$actorQuery = ActorMigration::newMigration()
-					->getWhere( $dbw, 'rev_user', User::newFromId( $id ) );
-				$timestamp = $dbw->selectField(
-					[ 'revision' ] + $actorQuery['tables'],
-					'MIN(rev_timestamp)',
-					$actorQuery['conds'],
-					__METHOD__,
-					[],
-					$actorQuery['joins']
-				);
-				// Update
-				if ( $timestamp !== null ) {
-					$dbw->update(
-						'user',
-						[ 'user_registration' => $timestamp ],
-						[ 'user_id' => $id ],
-						__METHOD__
-					);
-					$user = User::newFromId( $id );
-					$user->invalidateCache();
-					$this->output( "Set registration for #$id to $timestamp\n" );
-				} else {
-					$this->output( "Could not find registration for #$id NULL\n" );
-				}
-			}
-			$this->output( "Waiting for replica DBs..." );
-			$lbFactory->waitForReplication();
-			$this->output( " done.\n" );
-		} while ( $res->numRows() >= $this->getBatchSize() );
-	}
+        $lastId = 0;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        do {
+            // Get user IDs which need fixing
+            $res = $dbw->select(
+                'user',
+                'user_id',
+                [
+                    'user_id > ' . $dbw->addQuotes($lastId),
+                    'user_registration IS NULL'
+                ],
+                __METHOD__,
+                [
+                    'LIMIT'    => $this->getBatchSize(),
+                    'ORDER BY' => 'user_id',
+                ]
+            );
+            foreach ($res as $row) {
+                $id = $row->user_id;
+                $lastId = $id;
+                // Get first edit time
+                $actorQuery = ActorMigration::newMigration()
+                    ->getWhere($dbw, 'rev_user', User::newFromId($id));
+                $timestamp = $dbw->selectField(
+                    ['revision'] + $actorQuery['tables'],
+                    'MIN(rev_timestamp)',
+                    $actorQuery['conds'],
+                    __METHOD__,
+                    [],
+                    $actorQuery['joins']
+                );
+                // Update
+                if ($timestamp !== null) {
+                    $dbw->update(
+                        'user',
+                        ['user_registration' => $timestamp],
+                        ['user_id' => $id],
+                        __METHOD__
+                    );
+                    $user = User::newFromId($id);
+                    $user->invalidateCache();
+                    $this->output("Set registration for #$id to $timestamp\n");
+                } else {
+                    $this->output("Could not find registration for #$id NULL\n");
+                }
+            }
+            $this->output("Waiting for replica DBs...");
+            $lbFactory->waitForReplication();
+            $this->output(" done.\n");
+        } while ($res->numRows() >= $this->getBatchSize());
+    }
 }
 
 $maintClass = FixUserRegistration::class;

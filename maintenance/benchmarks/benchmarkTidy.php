@@ -23,61 +23,65 @@ use MediaWiki\MediaWikiServices;
 
 require_once __DIR__ . '/../includes/Benchmarker.php';
 
-class BenchmarkTidy extends Benchmarker {
-	public function __construct() {
-		parent::__construct();
-		$this->addOption( 'file', 'Path to file containing the input text', false, true );
-	}
+class BenchmarkTidy extends Benchmarker
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addOption('file', 'Path to file containing the input text', false, true);
+    }
 
-	public function execute() {
-		$file = $this->getOption( 'file', __DIR__ . '/data/tidy/australia-untidy.html.gz' );
-		$html = $this->loadFile( $file );
-		if ( $html === false ) {
-			$this->fatalError( "Unable to open input file" );
-		}
+    public function execute()
+    {
+        $file = $this->getOption('file', __DIR__ . '/data/tidy/australia-untidy.html.gz');
+        $html = $this->loadFile($file);
+        if ($html === false) {
+            $this->fatalError("Unable to open input file");
+        }
 
-		$this->benchmark( $html );
-	}
+        $this->benchmark($html);
+    }
 
-	private function benchmark( $html ) {
-		$services = MediaWikiServices::getInstance();
-		$contLang = $services->getContentLanguage();
-		$tidy = $services->getTidy();
-		$times = [];
-		$innerCount = 10;
-		$outerCount = 10;
-		for ( $j = 1; $j <= $outerCount; $j++ ) {
-			$t = microtime( true );
-			for ( $i = 0; $i < $innerCount; $i++ ) {
-				$tidy->tidy( $html );
-				print $contLang->formatSize( memory_get_usage( true ) ) . "\n";
-			}
-			$t = ( ( microtime( true ) - $t ) / $innerCount ) * 1000;
-			$times[] = $t;
-			print "Run $j: $t\n";
-		}
-		print "\n";
+    private function benchmark($html)
+    {
+        $services = MediaWikiServices::getInstance();
+        $contLang = $services->getContentLanguage();
+        $tidy = $services->getTidy();
+        $times = [];
+        $innerCount = 10;
+        $outerCount = 10;
+        for ($j = 1; $j <= $outerCount; $j++) {
+            $t = microtime(true);
+            for ($i = 0; $i < $innerCount; $i++) {
+                $tidy->tidy($html);
+                print $contLang->formatSize(memory_get_usage(true)) . "\n";
+            }
+            $t = ((microtime(true) - $t) / $innerCount) * 1000;
+            $times[] = $t;
+            print "Run $j: $t\n";
+        }
+        print "\n";
 
-		sort( $times, SORT_NUMERIC );
-		$n = $outerCount;
-		$min = $times[0];
-		$max = end( $times );
-		if ( $n % 2 ) {
-			// @phan-suppress-next-line PhanTypeMismatchDimFetch
-			$median = $times[ ( $n - 1 ) / 2 ];
-		} else {
-			$median = ( $times[$n / 2] + $times[$n / 2 - 1] ) / 2;
-		}
-		$mean = array_sum( $times ) / $n;
+        sort($times, SORT_NUMERIC);
+        $n = $outerCount;
+        $min = $times[0];
+        $max = end($times);
+        if ($n % 2) {
+            // @phan-suppress-next-line PhanTypeMismatchDimFetch
+            $median = $times[($n - 1) / 2];
+        } else {
+            $median = ($times[$n / 2] + $times[$n / 2 - 1]) / 2;
+        }
+        $mean = array_sum($times) / $n;
 
-		print "Minimum: $min ms\n";
-		print "Median: $median ms\n";
-		print "Mean: $mean ms\n";
-		print "Maximum: $max ms\n";
-		print "Memory usage: " . $contLang->formatSize( memory_get_usage( true ) ) . "\n";
-		print "Peak memory usage: " .
-			$contLang->formatSize( memory_get_peak_usage( true ) ) . "\n";
-	}
+        print "Minimum: $min ms\n";
+        print "Median: $median ms\n";
+        print "Mean: $mean ms\n";
+        print "Maximum: $max ms\n";
+        print "Memory usage: " . $contLang->formatSize(memory_get_usage(true)) . "\n";
+        print "Peak memory usage: " .
+            $contLang->formatSize(memory_get_peak_usage(true)) . "\n";
+    }
 }
 
 $maintClass = BenchmarkTidy::class;

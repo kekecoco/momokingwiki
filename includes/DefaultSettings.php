@@ -12,18 +12,18 @@
 
 use MediaWiki\MainConfigSchema;
 
-if ( function_exists( 'wfDeprecatedMsg' ) ) {
-	wfDeprecatedMsg(
-		'DefaultSettings.php is deprecated and will be removed. '
-		. 'Use the ConfigSchema service object instead.',
-		'1.39'
-	);
+if (function_exists('wfDeprecatedMsg')) {
+    wfDeprecatedMsg(
+        'DefaultSettings.php is deprecated and will be removed. '
+        . 'Use the ConfigSchema service object instead.',
+        '1.39'
+    );
 }
 
 // Extract the defaults into the current scope
-foreach ( MainConfigSchema::listDefaultValues( 'wg' ) as $defaultSettingsVar => $defaultSettingsValue ) {
-	$$defaultSettingsVar = $defaultSettingsValue;
+foreach (MainConfigSchema::listDefaultValues('wg') as $defaultSettingsVar => $defaultSettingsValue) {
+    $$defaultSettingsVar = $defaultSettingsValue;
 }
 
-unset( $defaultSettingsVar );
-unset( $defaultSettingsValue );
+unset($defaultSettingsVar);
+unset($defaultSettingsValue);

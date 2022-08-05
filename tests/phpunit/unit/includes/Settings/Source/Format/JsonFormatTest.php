@@ -9,33 +9,38 @@ use UnexpectedValueException;
 /**
  * @covers \MediaWiki\Settings\Source\Format\JsonFormat
  */
-class JsonFormatTest extends TestCase {
-	public function testDecode() {
-		$format = new JsonFormat();
+class JsonFormatTest extends TestCase
+{
+    public function testDecode()
+    {
+        $format = new JsonFormat();
 
-		$this->assertSame(
-			[ 'config' => [ 'MySetting' => 'BlaBla' ] ],
-			$format->decode( '{ "config": { "MySetting": "BlaBla" } }' )
-		);
-	}
+        $this->assertSame(
+            ['config' => ['MySetting' => 'BlaBla']],
+            $format->decode('{ "config": { "MySetting": "BlaBla" } }')
+        );
+    }
 
-	public function testDecodeBadJSON() {
-		$format = new JsonFormat();
-		$this->expectException( UnexpectedValueException::class );
+    public function testDecodeBadJSON()
+    {
+        $format = new JsonFormat();
+        $this->expectException(UnexpectedValueException::class);
 
-		$format->decode( '{ bad }' );
-	}
+        $format->decode('{ bad }');
+    }
 
-	public function provideSupportsFileExtension() {
-		yield 'Supported' => [ 'json', true ];
-		yield 'Supported, uppercase' => [ 'JSON', true ];
-		yield 'Unsupported' => [ 'txt', false ];
-	}
+    public function provideSupportsFileExtension()
+    {
+        yield 'Supported' => ['json', true];
+        yield 'Supported, uppercase' => ['JSON', true];
+        yield 'Unsupported' => ['txt', false];
+    }
 
-	/**
-	 * @dataProvider provideSupportsFileExtension
-	 */
-	public function testSupportsFileExtension( $extension, $expected ) {
-		$this->assertSame( $expected, JsonFormat::supportsFileExtension( $extension ) );
-	}
+    /**
+     * @dataProvider provideSupportsFileExtension
+     */
+    public function testSupportsFileExtension($extension, $expected)
+    {
+        $this->assertSame($expected, JsonFormat::supportsFileExtension($extension));
+    }
 }

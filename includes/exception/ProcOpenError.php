@@ -25,11 +25,13 @@ use Exception;
 /**
  * @newable
  */
-class ProcOpenError extends Exception {
-	/**
-	 * @stable to call
-	 */
-	public function __construct() {
-		parent::__construct( 'proc_open() returned error!' );
-	}
+class ProcOpenError extends Exception
+{
+    /**
+     * @stable to call
+     */
+    public function __construct()
+    {
+        parent::__construct('proc_open() returned error!');
+    }
 }

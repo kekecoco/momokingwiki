@@ -28,53 +28,58 @@ use MediaWiki\MainConfigNames;
  * @stable to extend
  * @ingroup Actions
  */
-class EditAction extends FormlessAction {
+class EditAction extends FormlessAction
+{
 
-	/**
-	 * @stable to override
-	 * @return string
-	 */
-	public function getName() {
-		return 'edit';
-	}
+    /**
+     * @stable to override
+     * @return string
+     */
+    public function getName()
+    {
+        return 'edit';
+    }
 
-	/**
-	 * @stable to override
-	 * @return string|null
-	 */
-	public function onView() {
-		return null;
-	}
+    /**
+     * @stable to override
+     * @return string|null
+     */
+    public function onView()
+    {
+        return null;
+    }
 
-	/**
-	 * @stable to override
-	 */
-	public function show() {
-		$this->useTransactionalTimeLimit();
+    /**
+     * @stable to override
+     */
+    public function show()
+    {
+        $this->useTransactionalTimeLimit();
 
-		$out = $this->getOutput();
-		$out->setRobotPolicy( 'noindex,nofollow' );
+        $out = $this->getOutput();
+        $out->setRobotPolicy('noindex,nofollow');
 
-		// The editor should always see the latest content when starting their edit.
-		// Also to ensure cookie blocks can be set (T152462).
-		$out->disableClientCache();
+        // The editor should always see the latest content when starting their edit.
+        // Also to ensure cookie blocks can be set (T152462).
+        $out->disableClientCache();
 
-		if ( $this->getContext()->getConfig()->get( MainConfigNames::UseMediaWikiUIEverywhere ) ) {
-			$out->addModuleStyles( [
-				'mediawiki.ui.input',
-				'mediawiki.ui.checkbox',
-			] );
-		}
+        if ($this->getContext()->getConfig()->get(MainConfigNames::UseMediaWikiUIEverywhere)) {
+            $out->addModuleStyles([
+                'mediawiki.ui.input',
+                'mediawiki.ui.checkbox',
+            ]);
+        }
 
-		$article = $this->getArticle();
-		if ( $this->getHookRunner()->onCustomEditor( $article, $this->getUser() ) ) {
-			$editor = new EditPage( $article );
-			$editor->setContextTitle( $this->getTitle() );
-			$editor->edit();
-		}
-	}
+        $article = $this->getArticle();
+        if ($this->getHookRunner()->onCustomEditor($article, $this->getUser())) {
+            $editor = new EditPage($article);
+            $editor->setContextTitle($this->getTitle());
+            $editor->edit();
+        }
+    }
 
-	public function doesWrites() {
-		return true;
-	}
+    public function doesWrites()
+    {
+        return true;
+    }
 }

@@ -33,186 +33,194 @@ require_once __DIR__ . '/Maintenance.php';
  * @ingroup Maintenance
  * @since 1.31
  */
-class CleanupUsersWithNoId extends LoggedUpdateMaintenance {
-	private $prefix, $table, $assign;
-	private $triedCreations = [];
+class CleanupUsersWithNoId extends LoggedUpdateMaintenance
+{
+    private $prefix, $table, $assign;
+    private $triedCreations = [];
 
-	public function __construct() {
-		parent::__construct();
-		$this->addDescription( 'Cleans up tables that have valid usernames with no user ID' );
-		$this->addOption( 'prefix', 'Interwiki prefix to apply to the usernames', true, true, 'p' );
-		$this->addOption( 'table', 'Only clean up this table', false, true );
-		$this->addOption( 'assign', 'Assign edits to existing local users if they exist', false, false );
-		$this->setBatchSize( 100 );
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->addDescription('Cleans up tables that have valid usernames with no user ID');
+        $this->addOption('prefix', 'Interwiki prefix to apply to the usernames', true, true, 'p');
+        $this->addOption('table', 'Only clean up this table', false, true);
+        $this->addOption('assign', 'Assign edits to existing local users if they exist', false, false);
+        $this->setBatchSize(100);
+    }
 
-	protected function getUpdateKey() {
-		return __CLASS__;
-	}
+    protected function getUpdateKey()
+    {
+        return __CLASS__;
+    }
 
-	protected function doDBUpdates() {
-		$this->prefix = $this->getOption( 'prefix' );
-		$this->table = $this->getOption( 'table', null );
-		$this->assign = $this->getOption( 'assign' );
+    protected function doDBUpdates()
+    {
+        $this->prefix = $this->getOption('prefix');
+        $this->table = $this->getOption('table', null);
+        $this->assign = $this->getOption('assign');
 
-		$this->cleanup(
-			'revision', 'rev_id', 'rev_user', 'rev_user_text',
-			[ 'rev_user' => 0 ], [ 'rev_timestamp', 'rev_id' ]
-		);
-		$this->cleanup(
-			'archive', 'ar_id', 'ar_user', 'ar_user_text',
-			[], [ 'ar_id' ]
-		);
-		$this->cleanup(
-			'logging', 'log_id', 'log_user', 'log_user_text',
-			[ 'log_user' => 0 ], [ 'log_timestamp', 'log_id' ]
-		);
-		$this->cleanup(
-			'image', 'img_name', 'img_user', 'img_user_text',
-			[ 'img_user' => 0 ], [ 'img_timestamp', 'img_name' ]
-		);
-		$this->cleanup(
-			'oldimage', [ 'oi_name', 'oi_timestamp' ], 'oi_user', 'oi_user_text',
-			[], [ 'oi_name', 'oi_timestamp' ]
-		);
-		$this->cleanup(
-			'filearchive', 'fa_id', 'fa_user', 'fa_user_text',
-			[], [ 'fa_id' ]
-		);
-		$this->cleanup(
-			'ipblocks', 'ipb_id', 'ipb_by', 'ipb_by_text',
-			[], [ 'ipb_id' ]
-		);
-		$this->cleanup(
-			'recentchanges', 'rc_id', 'rc_user', 'rc_user_text',
-			[], [ 'rc_id' ]
-		);
+        $this->cleanup(
+            'revision', 'rev_id', 'rev_user', 'rev_user_text',
+            ['rev_user' => 0], ['rev_timestamp', 'rev_id']
+        );
+        $this->cleanup(
+            'archive', 'ar_id', 'ar_user', 'ar_user_text',
+            [], ['ar_id']
+        );
+        $this->cleanup(
+            'logging', 'log_id', 'log_user', 'log_user_text',
+            ['log_user' => 0], ['log_timestamp', 'log_id']
+        );
+        $this->cleanup(
+            'image', 'img_name', 'img_user', 'img_user_text',
+            ['img_user' => 0], ['img_timestamp', 'img_name']
+        );
+        $this->cleanup(
+            'oldimage', ['oi_name', 'oi_timestamp'], 'oi_user', 'oi_user_text',
+            [], ['oi_name', 'oi_timestamp']
+        );
+        $this->cleanup(
+            'filearchive', 'fa_id', 'fa_user', 'fa_user_text',
+            [], ['fa_id']
+        );
+        $this->cleanup(
+            'ipblocks', 'ipb_id', 'ipb_by', 'ipb_by_text',
+            [], ['ipb_id']
+        );
+        $this->cleanup(
+            'recentchanges', 'rc_id', 'rc_user', 'rc_user_text',
+            [], ['rc_id']
+        );
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * Calculate a "next" condition and progress display string
-	 * @param IDatabase $dbw
-	 * @param string[] $indexFields Fields in the index being ordered by
-	 * @param stdClass $row Database row
-	 * @return string[] [ string $next, string $display ]
-	 */
-	private function makeNextCond( $dbw, $indexFields, $row ) {
-		$next = '';
-		$display = [];
-		for ( $i = count( $indexFields ) - 1; $i >= 0; $i-- ) {
-			$field = $indexFields[$i];
-			$display[] = $field . '=' . $row->$field;
-			$value = $dbw->addQuotes( $row->$field );
-			if ( $next === '' ) {
-				$next = "$field > $value";
-			} else {
-				$next = "$field > $value OR $field = $value AND ($next)";
-			}
-		}
-		$display = implode( ' ', array_reverse( $display ) );
-		return [ $next, $display ];
-	}
+    /**
+     * Calculate a "next" condition and progress display string
+     * @param IDatabase $dbw
+     * @param string[] $indexFields Fields in the index being ordered by
+     * @param stdClass $row Database row
+     * @return string[] [ string $next, string $display ]
+     */
+    private function makeNextCond($dbw, $indexFields, $row)
+    {
+        $next = '';
+        $display = [];
+        for ($i = count($indexFields) - 1; $i >= 0; $i--) {
+            $field = $indexFields[$i];
+            $display[] = $field . '=' . $row->$field;
+            $value = $dbw->addQuotes($row->$field);
+            if ($next === '') {
+                $next = "$field > $value";
+            } else {
+                $next = "$field > $value OR $field = $value AND ($next)";
+            }
+        }
+        $display = implode(' ', array_reverse($display));
 
-	/**
-	 * Cleanup a table
-	 *
-	 * @param string $table Table to migrate
-	 * @param string|string[] $primaryKey Primary key of the table.
-	 * @param string $idField User ID field name
-	 * @param string $nameField User name field name
-	 * @param array $conds Query conditions
-	 * @param string[] $orderby Fields to order by
-	 */
-	protected function cleanup(
-		$table, $primaryKey, $idField, $nameField, array $conds, array $orderby
-	) {
-		if ( $this->table !== null && $this->table !== $table ) {
-			return;
-		}
+        return [$next, $display];
+    }
 
-		$dbw = $this->getDB( DB_PRIMARY );
-		if ( !$dbw->fieldExists( $table, $idField, __METHOD__ ) ||
-			!$dbw->fieldExists( $table, $nameField, __METHOD__ )
-		) {
-			$this->output( "Skipping $table, fields $idField and/or $nameField do not exist\n" );
-			return;
-		}
+    /**
+     * Cleanup a table
+     *
+     * @param string $table Table to migrate
+     * @param string|string[] $primaryKey Primary key of the table.
+     * @param string $idField User ID field name
+     * @param string $nameField User name field name
+     * @param array $conds Query conditions
+     * @param string[] $orderby Fields to order by
+     */
+    protected function cleanup(
+        $table, $primaryKey, $idField, $nameField, array $conds, array $orderby
+    )
+    {
+        if ($this->table !== null && $this->table !== $table) {
+            return;
+        }
 
-		$primaryKey = (array)$primaryKey;
-		$pkFilter = array_fill_keys( $primaryKey, true );
-		$this->output( "Beginning cleanup of $table\n" );
+        $dbw = $this->getDB(DB_PRIMARY);
+        if (!$dbw->fieldExists($table, $idField, __METHOD__) ||
+            !$dbw->fieldExists($table, $nameField, __METHOD__)
+        ) {
+            $this->output("Skipping $table, fields $idField and/or $nameField do not exist\n");
 
-		$next = '1=1';
-		$countAssigned = 0;
-		$countPrefixed = 0;
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$userNameUtils = MediaWikiServices::getInstance()->getUserNameUtils();
-		while ( true ) {
-			// Fetch the rows needing update
-			$res = $dbw->newSelectQueryBuilder()
-				->select( array_merge( $primaryKey, [ $idField, $nameField ], $orderby ) )
-				->from( $table )
-				->where( array_merge( $conds, [ $next ] ) )
-				->orderBy( $orderby )
-				->limit( $this->mBatchSize )
-				->caller( __METHOD__ )
-				->fetchResultSet();
-			if ( !$res->numRows() ) {
-				break;
-			}
+            return;
+        }
 
-			// Update the existing rows
-			foreach ( $res as $row ) {
-				$name = $row->$nameField;
-				if ( $row->$idField || !$userNameUtils->isUsable( $name ) ) {
-					continue;
-				}
+        $primaryKey = (array)$primaryKey;
+        $pkFilter = array_fill_keys($primaryKey, true);
+        $this->output("Beginning cleanup of $table\n");
 
-				$id = 0;
-				if ( $this->assign ) {
-					$id = User::idFromName( $name );
-					if ( !$id ) {
-						// See if any extension wants to create it.
-						if ( !isset( $this->triedCreations[$name] ) ) {
-							$this->triedCreations[$name] = true;
-							if ( !$this->getHookRunner()->onImportHandleUnknownUser( $name ) ) {
-								$id = User::idFromName( $name, User::READ_LATEST );
-							}
-						}
-					}
-				}
-				if ( $id ) {
-					$set = [ $idField => $id ];
-					$counter = &$countAssigned;
-				} else {
-					$set = [ $nameField => substr( $this->prefix . '>' . $name, 0, 255 ) ];
-					$counter = &$countPrefixed;
-				}
+        $next = '1=1';
+        $countAssigned = 0;
+        $countPrefixed = 0;
+        $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+        $userNameUtils = MediaWikiServices::getInstance()->getUserNameUtils();
+        while (true) {
+            // Fetch the rows needing update
+            $res = $dbw->newSelectQueryBuilder()
+                ->select(array_merge($primaryKey, [$idField, $nameField], $orderby))
+                ->from($table)
+                ->where(array_merge($conds, [$next]))
+                ->orderBy($orderby)
+                ->limit($this->mBatchSize)
+                ->caller(__METHOD__)
+                ->fetchResultSet();
+            if (!$res->numRows()) {
+                break;
+            }
 
-				$dbw->update(
-					$table,
-					$set,
-					array_intersect_key( (array)$row, $pkFilter ) + [
-						$idField => 0,
-						$nameField => $name,
-					],
-					__METHOD__
-				);
-				$counter += $dbw->affectedRows();
-			}
+            // Update the existing rows
+            foreach ($res as $row) {
+                $name = $row->$nameField;
+                if ($row->$idField || !$userNameUtils->isUsable($name)) {
+                    continue;
+                }
 
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable row is set
-			list( $next, $display ) = $this->makeNextCond( $dbw, $orderby, $row );
-			$this->output( "... $display\n" );
-			$lbFactory->waitForReplication();
-		}
+                $id = 0;
+                if ($this->assign) {
+                    $id = User::idFromName($name);
+                    if (!$id) {
+                        // See if any extension wants to create it.
+                        if (!isset($this->triedCreations[$name])) {
+                            $this->triedCreations[$name] = true;
+                            if (!$this->getHookRunner()->onImportHandleUnknownUser($name)) {
+                                $id = User::idFromName($name, User::READ_LATEST);
+                            }
+                        }
+                    }
+                }
+                if ($id) {
+                    $set = [$idField => $id];
+                    $counter = &$countAssigned;
+                } else {
+                    $set = [$nameField => substr($this->prefix . '>' . $name, 0, 255)];
+                    $counter = &$countPrefixed;
+                }
 
-		$this->output(
-			"Completed cleanup, assigned $countAssigned and prefixed $countPrefixed row(s)\n"
-		);
-	}
+                $dbw->update(
+                    $table,
+                    $set,
+                    array_intersect_key((array)$row, $pkFilter) + [
+                        $idField   => 0,
+                        $nameField => $name,
+                    ],
+                    __METHOD__
+                );
+                $counter += $dbw->affectedRows();
+            }
+
+            // @phan-suppress-next-line PhanTypeMismatchArgumentNullable,PhanPossiblyUndeclaredVariable row is set
+            [$next, $display] = $this->makeNextCond($dbw, $orderby, $row);
+            $this->output("... $display\n");
+            $lbFactory->waitForReplication();
+        }
+
+        $this->output(
+            "Completed cleanup, assigned $countAssigned and prefixed $countPrefixed row(s)\n"
+        );
+    }
 }
 
 $maintClass = CleanupUsersWithNoId::class;

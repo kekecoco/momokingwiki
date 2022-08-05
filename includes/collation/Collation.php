@@ -28,90 +28,97 @@ use MediaWiki\MediaWikiServices;
  * @author Tim Starling
  * @stable to extend
  */
-abstract class Collation {
-	private static $instance;
+abstract class Collation
+{
+    private static $instance;
 
-	/**
-	 * @deprecated since 1.37 Use MediaWikiServices::getCollationFactory()->getCategoryCollation()
-	 * @since 1.16.3
-	 * @return Collation
-	 */
-	public static function singleton() {
-		wfDeprecated( __METHOD__, '1.37' );
-		if ( !self::$instance ) {
-			$categoryCollation = MediaWikiServices::getInstance()->getMainConfig()
-				->get( MainConfigNames::CategoryCollation );
-			self::$instance = self::factory( $categoryCollation );
-		}
-		return self::$instance;
-	}
+    /**
+     * @return Collation
+     * @since 1.16.3
+     * @deprecated since 1.37 Use MediaWikiServices::getCollationFactory()->getCategoryCollation()
+     */
+    public static function singleton()
+    {
+        wfDeprecated(__METHOD__, '1.37');
+        if (!self::$instance) {
+            $categoryCollation = MediaWikiServices::getInstance()->getMainConfig()
+                ->get(MainConfigNames::CategoryCollation);
+            self::$instance = self::factory($categoryCollation);
+        }
 
-	/**
-	 * @since 1.16.3
-	 * @deprecated since 1.37 Use MediaWikiServices::getCollationFactory()->makeCollation()
-	 * @throws MWException
-	 * @param string $collationName
-	 * @return Collation
-	 */
-	public static function factory( $collationName ) {
-		wfDeprecated( __METHOD__, '1.37' );
-		return MediaWikiServices::getInstance()->getCollationFactory()->makeCollation( $collationName );
-	}
+        return self::$instance;
+    }
 
-	/**
-	 * Given a string, convert it to a (hopefully short) key that can be used
-	 * for efficient sorting.  A binary sort according to the sortkeys
-	 * corresponds to a logical sort of the corresponding strings.  Current
-	 * code expects that a line feed character should sort before all others, but
-	 * has no other particular expectations (and that one can be changed if
-	 * necessary).
-	 *
-	 * @since 1.16.3
-	 *
-	 * @param string $string UTF-8 string
-	 * @return string Binary sortkey
-	 */
-	abstract public function getSortKey( $string );
+    /**
+     * @param string $collationName
+     * @return Collation
+     * @throws MWException
+     * @deprecated since 1.37 Use MediaWikiServices::getCollationFactory()->makeCollation()
+     * @since 1.16.3
+     */
+    public static function factory($collationName)
+    {
+        wfDeprecated(__METHOD__, '1.37');
 
-	/**
-	 * Get multiple sort keys
-	 *
-	 * @param string[] $strings
-	 * @return string[]
-	 */
-	public function getSortKeys( $strings ) {
-		$ret = [];
-		foreach ( $strings as $key => $s ) {
-			$ret[$key] = $this->getSortKey( $s );
-		}
-		return $ret;
-	}
+        return MediaWikiServices::getInstance()->getCollationFactory()->makeCollation($collationName);
+    }
 
-	/**
-	 * Given a string, return the logical "first letter" to be used for
-	 * grouping on category pages and so on.  This has to be coordinated
-	 * carefully with convertToSortkey(), or else the sorted list might jump
-	 * back and forth between the same "initial letters" or other pathological
-	 * behavior.  For instance, if you just return the first character, but "a"
-	 * sorts the same as "A" based on getSortKey(), then you might get a
-	 * list like
-	 *
-	 * == A ==
-	 * * [[Aardvark]]
-	 *
-	 * == a ==
-	 * * [[antelope]]
-	 *
-	 * == A ==
-	 * * [[Ape]]
-	 *
-	 * etc., assuming for the sake of argument that $wgCapitalLinks is false.
-	 *
-	 * @since 1.16.3
-	 *
-	 * @param string $string UTF-8 string
-	 * @return string UTF-8 string corresponding to the first letter of input
-	 */
-	abstract public function getFirstLetter( $string );
+    /**
+     * Given a string, convert it to a (hopefully short) key that can be used
+     * for efficient sorting.  A binary sort according to the sortkeys
+     * corresponds to a logical sort of the corresponding strings.  Current
+     * code expects that a line feed character should sort before all others, but
+     * has no other particular expectations (and that one can be changed if
+     * necessary).
+     *
+     * @param string $string UTF-8 string
+     * @return string Binary sortkey
+     * @since 1.16.3
+     *
+     */
+    abstract public function getSortKey($string);
+
+    /**
+     * Get multiple sort keys
+     *
+     * @param string[] $strings
+     * @return string[]
+     */
+    public function getSortKeys($strings)
+    {
+        $ret = [];
+        foreach ($strings as $key => $s) {
+            $ret[$key] = $this->getSortKey($s);
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Given a string, return the logical "first letter" to be used for
+     * grouping on category pages and so on.  This has to be coordinated
+     * carefully with convertToSortkey(), or else the sorted list might jump
+     * back and forth between the same "initial letters" or other pathological
+     * behavior.  For instance, if you just return the first character, but "a"
+     * sorts the same as "A" based on getSortKey(), then you might get a
+     * list like
+     *
+     * == A ==
+     * * [[Aardvark]]
+     *
+     * == a ==
+     * * [[antelope]]
+     *
+     * == A ==
+     * * [[Ape]]
+     *
+     * etc., assuming for the sake of argument that $wgCapitalLinks is false.
+     *
+     * @param string $string UTF-8 string
+     * @return string UTF-8 string corresponding to the first letter of input
+     * @since 1.16.3
+     *
+     */
+    abstract public function getFirstLetter($string);
 
 }

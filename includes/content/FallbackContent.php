@@ -35,115 +35,128 @@
  *
  * @ingroup Content
  */
-class FallbackContent extends AbstractContent {
+class FallbackContent extends AbstractContent
+{
 
-	/** @var string */
-	private $data;
+    /** @var string */
+    private $data;
 
-	/**
-	 * @param string $data
-	 * @param string $model_id The model ID to handle
-	 */
-	public function __construct( $data, $model_id ) {
-		parent::__construct( $model_id );
+    /**
+     * @param string $data
+     * @param string $model_id The model ID to handle
+     */
+    public function __construct($data, $model_id)
+    {
+        parent::__construct($model_id);
 
-		$this->data = $data;
-	}
+        $this->data = $data;
+    }
 
-	/**
-	 * @return Content $this
-	 */
-	public function copy() {
-		// FallbackContent is immutable, so no need to copy.
-		return $this;
-	}
+    /**
+     * @return Content $this
+     */
+    public function copy()
+    {
+        // FallbackContent is immutable, so no need to copy.
+        return $this;
+    }
 
-	/**
-	 * Returns an empty string.
-	 *
-	 * @param int $maxlength
-	 *
-	 * @return string
-	 */
-	public function getTextForSummary( $maxlength = 250 ) {
-		return '';
-	}
+    /**
+     * Returns an empty string.
+     *
+     * @param int $maxlength
+     *
+     * @return string
+     */
+    public function getTextForSummary($maxlength = 250)
+    {
+        return '';
+    }
 
-	/**
-	 * Returns the data size in bytes.
-	 *
-	 * @return int
-	 */
-	public function getSize() {
-		return strlen( $this->data );
-	}
+    /**
+     * Returns the data size in bytes.
+     *
+     * @return int
+     */
+    public function getSize()
+    {
+        return strlen($this->data);
+    }
 
-	/**
-	 * Returns false.
-	 *
-	 * @param bool|null $hasLinks If it is known whether this content contains links,
-	 * provide this information here, to avoid redundant parsing to find out.
-	 *
-	 * @return bool
-	 */
-	public function isCountable( $hasLinks = null ) {
-		return false;
-	}
+    /**
+     * Returns false.
+     *
+     * @param bool|null $hasLinks If it is known whether this content contains links,
+     * provide this information here, to avoid redundant parsing to find out.
+     *
+     * @return bool
+     */
+    public function isCountable($hasLinks = null)
+    {
+        return false;
+    }
 
-	/**
-	 * @return string data of unknown format and meaning
-	 */
-	public function getNativeData() {
-		return $this->getData();
-	}
+    /**
+     * @return string data of unknown format and meaning
+     */
+    public function getNativeData()
+    {
+        return $this->getData();
+    }
 
-	/**
-	 * @return string data of unknown format and meaning
-	 */
-	public function getData() {
-		return $this->data;
-	}
+    /**
+     * @return string data of unknown format and meaning
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
 
-	/**
-	 * @param string|null $format
-	 *
-	 * @return string data of unknown format and meaning
-	 */
-	public function serialize( $format = null ) {
-		return $this->getData();
-	}
+    /**
+     * @param string|null $format
+     *
+     * @return string data of unknown format and meaning
+     */
+    public function serialize($format = null)
+    {
+        return $this->getData();
+    }
 
-	/**
-	 * Returns an empty string.
-	 *
-	 * @return string The raw text.
-	 */
-	public function getTextForSearchIndex() {
-		return '';
-	}
+    /**
+     * Returns an empty string.
+     *
+     * @return string The raw text.
+     */
+    public function getTextForSearchIndex()
+    {
+        return '';
+    }
 
-	/**
-	 * @return false
-	 */
-	public function getWikitextForTransclusion() {
-		return false;
-	}
+    /**
+     * @return false
+     */
+    public function getWikitextForTransclusion()
+    {
+        return false;
+    }
 
-	/**
-	 * @param string $toModel
-	 * @param string $lossy
-	 * @return false
-	 */
-	public function convert( $toModel, $lossy = '' ) {
-		return false;
-	}
+    /**
+     * @param string $toModel
+     * @param string $lossy
+     * @return false
+     */
+    public function convert($toModel, $lossy = '')
+    {
+        return false;
+    }
 
-	protected function equalsInternal( Content $that ) {
-		if ( !$that instanceof FallbackContent ) {
-			return false;
-		}
+    protected function equalsInternal(Content $that)
+    {
+        if (!$that instanceof FallbackContent) {
+            return false;
+        }
 
-		return $this->getData() == $that->getData();
-	}
+        return $this->getData() == $that->getData();
+    }
 
 }

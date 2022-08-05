@@ -28,17 +28,20 @@ use MediaWiki\EditPage\Constraint\MissingCommentConstraint;
  *
  * @covers \MediaWiki\EditPage\Constraint\MissingCommentConstraint
  */
-class MissingCommentConstraintTest extends MediaWikiUnitTestCase {
-	use EditConstraintTestTrait;
+class MissingCommentConstraintTest extends MediaWikiUnitTestCase
+{
+    use EditConstraintTestTrait;
 
-	public function testPass() {
-		$constraint = new MissingCommentConstraint( 'Comment' );
-		$this->assertConstraintPassed( $constraint );
-	}
+    public function testPass()
+    {
+        $constraint = new MissingCommentConstraint('Comment');
+        $this->assertConstraintPassed($constraint);
+    }
 
-	public function testFailure() {
-		$constraint = new MissingCommentConstraint( '' );
-		$this->assertConstraintFailed( $constraint, IEditConstraint::AS_TEXTBOX_EMPTY );
-	}
+    public function testFailure()
+    {
+        $constraint = new MissingCommentConstraint('');
+        $this->assertConstraintFailed($constraint, IEditConstraint::AS_TEXTBOX_EMPTY);
+    }
 
 }

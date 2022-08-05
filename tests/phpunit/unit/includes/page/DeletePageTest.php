@@ -37,267 +37,290 @@ use WikiPage;
 /**
  * @coversDefaultClass \MediaWiki\Page\DeletePage
  */
-class DeletePageTest extends MediaWikiUnitTestCase {
-	use MockAuthorityTrait;
+class DeletePageTest extends MediaWikiUnitTestCase
+{
+    use MockAuthorityTrait;
 
-	private function getMockPage(): WikiPage {
-		$ret = $this->createMock( WikiPage::class );
-		$ret->method( 'canExist' )->willReturn( true );
-		$ret->method( 'exists' )->willReturn( true );
-		$ret->method( 'getId' )->willReturn( 123 );
-		$ret->method( 'getRevisionRecord' )->willReturn( $this->createMock( RevisionRecord::class ) );
+    private function getMockPage(): WikiPage
+    {
+        $ret = $this->createMock(WikiPage::class);
+        $ret->method('canExist')->willReturn(true);
+        $ret->method('exists')->willReturn(true);
+        $ret->method('getId')->willReturn(123);
+        $ret->method('getRevisionRecord')->willReturn($this->createMock(RevisionRecord::class));
 
-		$title = $this->createMock( Title::class );
-		$title->method( 'getPrefixedText' )->willReturn( 'Foo' );
-		$title->method( 'getText' )->willReturn( 'Foo' );
-		$title->method( 'getDBkey' )->willReturn( 'Foo' );
-		$title->method( 'getNamespace' )->willReturn( 0 );
-		$ret->method( 'getTitle' )->willReturn( $title );
-		return $ret;
-	}
+        $title = $this->createMock(Title::class);
+        $title->method('getPrefixedText')->willReturn('Foo');
+        $title->method('getText')->willReturn('Foo');
+        $title->method('getDBkey')->willReturn('Foo');
+        $title->method('getNamespace')->willReturn(0);
+        $ret->method('getTitle')->willReturn($title);
 
-	/**
-	 * @return RevisionStore|MockObject
-	 */
-	private function getMockRevisionStore(): RevisionStore {
-		$ret = $this->createMock( RevisionStore::class );
-		$ret->method( 'getQueryInfo' )->willReturn( [ 'tables' => [], 'fields' => [], 'joins' => [] ] );
-		return $ret;
-	}
+        return $ret;
+    }
 
-	private function getServiceOptions( int $deleteLimit = 100 ): ServiceOptions {
-		return new ServiceOptions(
-			DeletePage::CONSTRUCTOR_OPTIONS,
-			[
-				'DeleteRevisionsBatchSize' => 100,
-				'DeleteRevisionsLimit' => $deleteLimit
-			]
-		);
-	}
+    /**
+     * @return RevisionStore|MockObject
+     */
+    private function getMockRevisionStore(): RevisionStore
+    {
+        $ret = $this->createMock(RevisionStore::class);
+        $ret->method('getQueryInfo')->willReturn(['tables' => [], 'fields' => [], 'joins' => []]);
 
-	private function getDeletePage(
-		ProperPageIdentity $page,
-		Authority $deleter = null,
-		ServiceOptions $options = null,
-		RevisionStore $revStore = null,
-		WikiPageFactory $wpFactory = null,
-		NamespaceInfo $nsInfo = null
-	): DeletePage {
-		if ( !$wpFactory ) {
-			$wpFactory = $this->createMock( WikiPageFactory::class );
-			$wpFactory->method( 'newFromTitle' )->willReturn( $this->getMockPage() );
-		}
+        return $ret;
+    }
 
-		// NOTE: The following could be avoided if the relevant methods were return-typehinted
-		$db = $this->createMock( IDatabase::class );
-		$db->method( 'select' )->willReturn( $this->createMock( IResultWrapper::class ) );
-		$db->method( 'selectRowCount' )->willReturn( 42 );
-		$lb = $this->createMock( ILoadBalancer::class );
-		$lb->method( 'getConnectionRef' )->willReturn( $db );
-		$lbFactory = $this->createMock( LBFactory::class );
-		$lbFactory->method( 'getMainLB' )->willReturn( $lb );
+    private function getServiceOptions(int $deleteLimit = 100): ServiceOptions
+    {
+        return new ServiceOptions(
+            DeletePage::CONSTRUCTOR_OPTIONS,
+            [
+                'DeleteRevisionsBatchSize' => 100,
+                'DeleteRevisionsLimit'     => $deleteLimit
+            ]
+        );
+    }
 
-		$ret = new DeletePage(
-			$this->createHookContainer(),
-			$revStore ?? $this->getMockRevisionStore(),
-			$lbFactory,
-			$this->createMock( JobQueueGroup::class ),
-			$this->createMock( CommentStore::class ),
-			$options ?? $this->getServiceOptions(),
-			$this->createMock( BagOStuff::class ),
-			'wiki-id',
-			'req-foo-bar',
-			$wpFactory,
-			$this->createMock( UserFactory::class ),
-			$this->createMock( BacklinkCacheFactory::class ),
-			$nsInfo ?? $this->createMock( NamespaceInfo::class ),
-			$this->createMock( ITextFormatter::class ),
-			$page,
-			$deleter ?? $this->createMock( Authority::class )
-		);
-		$ret->setIsDeletePageUnitTest( true );
-		return $ret;
-	}
+    private function getDeletePage(
+        ProperPageIdentity $page,
+        Authority $deleter = null,
+        ServiceOptions $options = null,
+        RevisionStore $revStore = null,
+        WikiPageFactory $wpFactory = null,
+        NamespaceInfo $nsInfo = null
+    ): DeletePage
+    {
+        if (!$wpFactory) {
+            $wpFactory = $this->createMock(WikiPageFactory::class);
+            $wpFactory->method('newFromTitle')->willReturn($this->getMockPage());
+        }
 
-	/**
-	 * @covers ::deleteIfAllowed
-	 * @covers ::authorizeDeletion
-	 * @covers ::isBigDeletion
-	 * @dataProvider providePermissions
-	 */
-	public function testPermissions(
-		Authority $authority,
-		bool $expectedGood,
-		string $expectedMessage = null,
-		ServiceOptions $options = null,
-		RevisionStore $revStore = null
-	) {
-		$dp = $this->getDeletePage(
-			$this->getMockPage(),
-			$authority,
-			$options,
-			$revStore
-		);
-		$status = $dp->deleteIfAllowed( 'foobar' );
-		$this->assertSame( $expectedGood, $status->isGood() );
-		if ( $expectedMessage !== null ) {
-			$this->assertStatusError( $expectedMessage, $status );
-		}
-	}
+        // NOTE: The following could be avoided if the relevant methods were return-typehinted
+        $db = $this->createMock(IDatabase::class);
+        $db->method('select')->willReturn($this->createMock(IResultWrapper::class));
+        $db->method('selectRowCount')->willReturn(42);
+        $lb = $this->createMock(ILoadBalancer::class);
+        $lb->method('getConnectionRef')->willReturn($db);
+        $lbFactory = $this->createMock(LBFactory::class);
+        $lbFactory->method('getMainLB')->willReturn($lb);
 
-	public function providePermissions(): iterable {
-		$cannotDeleteMsg = "You shall not delete!";
-		$cannotDeleteAuthority = $this->mockAnonAuthority(
-			static function (
-				string $permission,
-				PageIdentity $page = null,
-				PermissionStatus $status = null
-			) use ( $cannotDeleteMsg ): bool {
-				if ( $permission === 'delete' ) {
-					if ( $status ) {
-						$status->fatal( $cannotDeleteMsg );
-					}
-					return false;
-				}
-				return true;
-			}
-		);
-		yield 'Cannot delete' => [ $cannotDeleteAuthority, false, $cannotDeleteMsg ];
+        $ret = new DeletePage(
+            $this->createHookContainer(),
+            $revStore ?? $this->getMockRevisionStore(),
+            $lbFactory,
+            $this->createMock(JobQueueGroup::class),
+            $this->createMock(CommentStore::class),
+            $options ?? $this->getServiceOptions(),
+            $this->createMock(BagOStuff::class),
+            'wiki-id',
+            'req-foo-bar',
+            $wpFactory,
+            $this->createMock(UserFactory::class),
+            $this->createMock(BacklinkCacheFactory::class),
+            $nsInfo ?? $this->createMock(NamespaceInfo::class),
+            $this->createMock(ITextFormatter::class),
+            $page,
+            $deleter ?? $this->createMock(Authority::class)
+        );
+        $ret->setIsDeletePageUnitTest(true);
 
-		$cannotBigDeleteMsg = 'delete-toomanyrevisions';
-		$cannotBigDeleteAuthority = $this->mockAnonAuthority(
-			static function (
-				string $permission,
-				PageIdentity $page = null,
-				PermissionStatus $status = null
-			) use ( $cannotBigDeleteMsg ): bool {
-				if ( $permission === 'bigdelete' ) {
-					if ( $status ) {
-						$status->fatal( $cannotBigDeleteMsg );
-					}
-					return false;
-				}
-				return true;
-			}
-		);
-		$revDeleteLimit = -1;
-		$cannotBigDeleteOptions = $this->getServiceOptions( $revDeleteLimit );
-		$revStore = $this->getMockRevisionStore();
-		$revStore->expects( $this->atLeastOnce() )
-			->method( 'countRevisionsByPageId' )
-			->willReturn( $revDeleteLimit + 42 );
-		yield 'Cannot bigdelete' => [
-			$cannotBigDeleteAuthority,
-			false,
-			$cannotBigDeleteMsg,
-			$cannotBigDeleteOptions,
-			$revStore
-		];
+        return $ret;
+    }
 
-		$successAuthority = new UltimateAuthority( new UserIdentityValue( 42, 'Deleter' ) );
-		yield 'Successful' => [ $successAuthority, true ];
-	}
+    /**
+     * @covers ::deleteIfAllowed
+     * @covers ::authorizeDeletion
+     * @covers ::isBigDeletion
+     * @dataProvider providePermissions
+     */
+    public function testPermissions(
+        Authority $authority,
+        bool $expectedGood,
+        string $expectedMessage = null,
+        ServiceOptions $options = null,
+        RevisionStore $revStore = null
+    )
+    {
+        $dp = $this->getDeletePage(
+            $this->getMockPage(),
+            $authority,
+            $options,
+            $revStore
+        );
+        $status = $dp->deleteIfAllowed('foobar');
+        $this->assertSame($expectedGood, $status->isGood());
+        if ($expectedMessage !== null) {
+            $this->assertStatusError($expectedMessage, $status);
+        }
+    }
 
-	/**
-	 * @covers ::getSuccessfulDeletionsIDs
-	 */
-	public function testGetSuccessfulDeletionsIDs(): void {
-		$delPage = $this->getDeletePage(
-			$this->createMock( ProperPageIdentity::class ),
-			$this->createMock( Authority::class )
-		);
-		$delPage->deleteUnsafe( 'foo' );
-		$this->assertArrayHasKey( DeletePage::PAGE_BASE, $delPage->getSuccessfulDeletionsIDs() );
-	}
+    public function providePermissions(): iterable
+    {
+        $cannotDeleteMsg = "You shall not delete!";
+        $cannotDeleteAuthority = $this->mockAnonAuthority(
+            static function (
+                string $permission,
+                PageIdentity $page = null,
+                PermissionStatus $status = null
+            ) use ($cannotDeleteMsg): bool {
+                if ($permission === 'delete') {
+                    if ($status) {
+                        $status->fatal($cannotDeleteMsg);
+                    }
 
-	/**
-	 * @covers ::getSuccessfulDeletionsIDs
-	 */
-	public function testGetSuccessfulDeletionsIDs__notAttempted(): void {
-		$delPage = $this->getDeletePage(
-			$this->createMock( ProperPageIdentity::class ),
-			$this->createMock( Authority::class )
-		);
-		$this->expectException( BadMethodCallException::class );
-		$delPage->getSuccessfulDeletionsIDs();
-	}
+                    return false;
+                }
 
-	/**
-	 * @covers ::deletionsWereScheduled
-	 */
-	public function testDeletionsWereScheduled(): void {
-		$delPage = $this->getDeletePage(
-			$this->createMock( ProperPageIdentity::class ),
-			$this->createMock( Authority::class )
-		);
-		$delPage->deleteUnsafe( 'foo' );
-		$this->assertFalse( $delPage->deletionsWereScheduled()[DeletePage::PAGE_BASE] );
-	}
+                return true;
+            }
+        );
+        yield 'Cannot delete' => [$cannotDeleteAuthority, false, $cannotDeleteMsg];
 
-	/**
-	 * @covers ::deletionsWereScheduled
-	 */
-	public function testDeletionsWereScheduled__notAttempted(): void {
-		$delPage = $this->getDeletePage(
-			$this->createMock( ProperPageIdentity::class ),
-			$this->createMock( Authority::class )
-		);
-		$this->expectException( BadMethodCallException::class );
-		$delPage->deletionsWereScheduled();
-	}
+        $cannotBigDeleteMsg = 'delete-toomanyrevisions';
+        $cannotBigDeleteAuthority = $this->mockAnonAuthority(
+            static function (
+                string $permission,
+                PageIdentity $page = null,
+                PermissionStatus $status = null
+            ) use ($cannotBigDeleteMsg): bool {
+                if ($permission === 'bigdelete') {
+                    if ($status) {
+                        $status->fatal($cannotBigDeleteMsg);
+                    }
 
-	/**
-	 * @param ProperPageIdentity $page
-	 * @param WikiPageFactory $wpFactory
-	 * @param NamespaceInfo|null $nsInfo
-	 * @param string|null $expectedMsg
-	 * @covers ::canProbablyDeleteAssociatedTalk
-	 * @dataProvider provideAssociatedTalk
-	 */
-	public function testCanProbablyDeleteAssociatedTalk(
-		ProperPageIdentity $page,
-		WikiPageFactory $wpFactory,
-		?NamespaceInfo $nsInfo,
-		?string $expectedMsg
-	): void {
-		$delPage = $this->getDeletePage( $page, null, null, null, $wpFactory, $nsInfo );
+                    return false;
+                }
 
-		$res = $delPage->canProbablyDeleteAssociatedTalk();
-		if ( $expectedMsg === null ) {
-			$this->assertStatusGood( $res );
-		} else {
-			$this->assertStatusError( $expectedMsg, $res );
-		}
-	}
+                return true;
+            }
+        );
+        $revDeleteLimit = -1;
+        $cannotBigDeleteOptions = $this->getServiceOptions($revDeleteLimit);
+        $revStore = $this->getMockRevisionStore();
+        $revStore->expects($this->atLeastOnce())
+            ->method('countRevisionsByPageId')
+            ->willReturn($revDeleteLimit + 42);
+        yield 'Cannot bigdelete' => [
+            $cannotBigDeleteAuthority,
+            false,
+            $cannotBigDeleteMsg,
+            $cannotBigDeleteOptions,
+            $revStore
+        ];
 
-	public function provideAssociatedTalk(): Generator {
-		$getWpFactory = function ( bool $talkExists ): WikiPageFactory {
-			$wpFactory = $this->createMock( WikiPageFactory::class );
-			$wpFactory->method( 'newFromTitle' )->willReturnCallback( function ( $t ) {
-				$title = Title::castFromPageReference( $t );
-				$wikiPage = $this->createMock( WikiPage::class );
-				$wikiPage->method( 'getTitle' )->willReturn( $title );
-				$wikiPage->method( 'getNamespace' )->willReturn( $title->getNamespace() );
-				return $wikiPage;
-			} );
-			$wpFactory->method( 'newFromLinkTarget' )->willReturnCallback(
-				function ( LinkTarget $t ) use ( $talkExists ) {
-					$existingTalk = $this->createMock( WikiPage::class );
-					$existingTalk->expects( $this->atLeastOnce() )->method( 'exists' )->willReturn( $talkExists );
-					return $existingTalk;
-				}
-			);
-			return $wpFactory;
-		};
-		$nsInfo = new NamespaceInfo( $this->createMock( ServiceOptions::class ), $this->createHookContainer() );
+        $successAuthority = new UltimateAuthority(new UserIdentityValue(42, 'Deleter'));
+        yield 'Successful' => [$successAuthority, true];
+    }
 
-		$talkPage = new PageIdentityValue( 42, NS_TALK, 'Test talk page', PageIdentity::LOCAL );
-		yield 'Talk page' => [ $talkPage, $getWpFactory( false ), $nsInfo, 'delete-error-associated-alreadytalk' ];
+    /**
+     * @covers ::getSuccessfulDeletionsIDs
+     */
+    public function testGetSuccessfulDeletionsIDs(): void
+    {
+        $delPage = $this->getDeletePage(
+            $this->createMock(ProperPageIdentity::class),
+            $this->createMock(Authority::class)
+        );
+        $delPage->deleteUnsafe('foo');
+        $this->assertArrayHasKey(DeletePage::PAGE_BASE, $delPage->getSuccessfulDeletionsIDs());
+    }
 
-		$nonTalkPage = new PageIdentityValue( 44, NS_MAIN, 'Test article', PageIdentity::LOCAL );
-		yield 'Article without talk page' =>
-		[ $nonTalkPage, $getWpFactory( false ), $nsInfo, 'delete-error-associated-doesnotexist' ];
+    /**
+     * @covers ::getSuccessfulDeletionsIDs
+     */
+    public function testGetSuccessfulDeletionsIDs__notAttempted(): void
+    {
+        $delPage = $this->getDeletePage(
+            $this->createMock(ProperPageIdentity::class),
+            $this->createMock(Authority::class)
+        );
+        $this->expectException(BadMethodCallException::class);
+        $delPage->getSuccessfulDeletionsIDs();
+    }
 
-		yield 'Article with talk page' => [ $nonTalkPage, $getWpFactory( true ), $nsInfo, null ];
-	}
+    /**
+     * @covers ::deletionsWereScheduled
+     */
+    public function testDeletionsWereScheduled(): void
+    {
+        $delPage = $this->getDeletePage(
+            $this->createMock(ProperPageIdentity::class),
+            $this->createMock(Authority::class)
+        );
+        $delPage->deleteUnsafe('foo');
+        $this->assertFalse($delPage->deletionsWereScheduled()[DeletePage::PAGE_BASE]);
+    }
+
+    /**
+     * @covers ::deletionsWereScheduled
+     */
+    public function testDeletionsWereScheduled__notAttempted(): void
+    {
+        $delPage = $this->getDeletePage(
+            $this->createMock(ProperPageIdentity::class),
+            $this->createMock(Authority::class)
+        );
+        $this->expectException(BadMethodCallException::class);
+        $delPage->deletionsWereScheduled();
+    }
+
+    /**
+     * @param ProperPageIdentity $page
+     * @param WikiPageFactory $wpFactory
+     * @param NamespaceInfo|null $nsInfo
+     * @param string|null $expectedMsg
+     * @covers ::canProbablyDeleteAssociatedTalk
+     * @dataProvider provideAssociatedTalk
+     */
+    public function testCanProbablyDeleteAssociatedTalk(
+        ProperPageIdentity $page,
+        WikiPageFactory $wpFactory,
+        ?NamespaceInfo $nsInfo,
+        ?string $expectedMsg
+    ): void
+    {
+        $delPage = $this->getDeletePage($page, null, null, null, $wpFactory, $nsInfo);
+
+        $res = $delPage->canProbablyDeleteAssociatedTalk();
+        if ($expectedMsg === null) {
+            $this->assertStatusGood($res);
+        } else {
+            $this->assertStatusError($expectedMsg, $res);
+        }
+    }
+
+    public function provideAssociatedTalk(): Generator
+    {
+        $getWpFactory = function (bool $talkExists): WikiPageFactory {
+            $wpFactory = $this->createMock(WikiPageFactory::class);
+            $wpFactory->method('newFromTitle')->willReturnCallback(function ($t) {
+                $title = Title::castFromPageReference($t);
+                $wikiPage = $this->createMock(WikiPage::class);
+                $wikiPage->method('getTitle')->willReturn($title);
+                $wikiPage->method('getNamespace')->willReturn($title->getNamespace());
+
+                return $wikiPage;
+            });
+            $wpFactory->method('newFromLinkTarget')->willReturnCallback(
+                function (LinkTarget $t) use ($talkExists) {
+                    $existingTalk = $this->createMock(WikiPage::class);
+                    $existingTalk->expects($this->atLeastOnce())->method('exists')->willReturn($talkExists);
+
+                    return $existingTalk;
+                }
+            );
+
+            return $wpFactory;
+        };
+        $nsInfo = new NamespaceInfo($this->createMock(ServiceOptions::class), $this->createHookContainer());
+
+        $talkPage = new PageIdentityValue(42, NS_TALK, 'Test talk page', PageIdentity::LOCAL);
+        yield 'Talk page' => [$talkPage, $getWpFactory(false), $nsInfo, 'delete-error-associated-alreadytalk'];
+
+        $nonTalkPage = new PageIdentityValue(44, NS_MAIN, 'Test article', PageIdentity::LOCAL);
+        yield 'Article without talk page' =>
+        [$nonTalkPage, $getWpFactory(false), $nsInfo, 'delete-error-associated-doesnotexist'];
+
+        yield 'Article with talk page' => [$nonTalkPage, $getWpFactory(true), $nsInfo, null];
+    }
 }

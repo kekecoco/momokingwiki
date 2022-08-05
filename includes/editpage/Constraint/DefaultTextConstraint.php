@@ -32,58 +32,64 @@ use Title;
  * @internal
  * @author DannyS712
  */
-class DefaultTextConstraint implements IEditConstraint {
+class DefaultTextConstraint implements IEditConstraint
+{
 
-	/** @var Title */
-	private $title;
+    /** @var Title */
+    private $title;
 
-	/** @var bool */
-	private $allowBlank;
+    /** @var bool */
+    private $allowBlank;
 
-	/** @var string */
-	private $userProvidedText;
+    /** @var string */
+    private $userProvidedText;
 
-	/** @var string|null */
-	private $result;
+    /** @var string|null */
+    private $result;
 
-	/**
-	 * @param Title $title
-	 * @param bool $allowBlank
-	 * @param string $userProvidedText
-	 */
-	public function __construct(
-		Title $title,
-		bool $allowBlank,
-		string $userProvidedText
-	) {
-		$this->title = $title;
-		$this->allowBlank = $allowBlank;
-		$this->userProvidedText = $userProvidedText;
-	}
+    /**
+     * @param Title $title
+     * @param bool $allowBlank
+     * @param string $userProvidedText
+     */
+    public function __construct(
+        Title $title,
+        bool $allowBlank,
+        string $userProvidedText
+    )
+    {
+        $this->title = $title;
+        $this->allowBlank = $allowBlank;
+        $this->userProvidedText = $userProvidedText;
+    }
 
-	public function checkConstraint(): string {
-		$defaultMessageText = $this->title->getDefaultMessageText();
-		if ( $this->title->getNamespace() === NS_MEDIAWIKI && $defaultMessageText !== false ) {
-			$defaultText = $defaultMessageText;
-		} else {
-			$defaultText = '';
-		}
+    public function checkConstraint(): string
+    {
+        $defaultMessageText = $this->title->getDefaultMessageText();
+        if ($this->title->getNamespace() === NS_MEDIAWIKI && $defaultMessageText !== false) {
+            $defaultText = $defaultMessageText;
+        } else {
+            $defaultText = '';
+        }
 
-		if ( !$this->allowBlank && $this->userProvidedText === $defaultText ) {
-			$this->result = self::CONSTRAINT_FAILED;
-		} else {
-			$this->result = self::CONSTRAINT_PASSED;
-		}
-		return $this->result;
-	}
+        if (!$this->allowBlank && $this->userProvidedText === $defaultText) {
+            $this->result = self::CONSTRAINT_FAILED;
+        } else {
+            $this->result = self::CONSTRAINT_PASSED;
+        }
 
-	public function getLegacyStatus(): StatusValue {
-		$statusValue = StatusValue::newGood();
-		if ( $this->result === self::CONSTRAINT_FAILED ) {
-			$statusValue->fatal( 'blankarticle' );
-			$statusValue->setResult( false, self::AS_BLANK_ARTICLE );
-		}
-		return $statusValue;
-	}
+        return $this->result;
+    }
+
+    public function getLegacyStatus(): StatusValue
+    {
+        $statusValue = StatusValue::newGood();
+        if ($this->result === self::CONSTRAINT_FAILED) {
+            $statusValue->fatal('blankarticle');
+            $statusValue->setResult(false, self::AS_BLANK_ARTICLE);
+        }
+
+        return $statusValue;
+    }
 
 }

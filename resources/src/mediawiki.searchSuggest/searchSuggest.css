@@ -6,20 +6,20 @@
 .suggestions a.mw-searchSuggest-link:hover,
 .suggestions a.mw-searchSuggest-link:active,
 .suggestions a.mw-searchSuggest-link:focus {
-	color: #000;
-	text-decoration: none;
+    color: #000;
+    text-decoration: none;
 }
 
 .suggestions-result-current a.mw-searchSuggest-link,
 .suggestions-result-current a.mw-searchSuggest-link:hover,
 .suggestions-result-current a.mw-searchSuggest-link:active,
 .suggestions-result-current a.mw-searchSuggest-link:focus {
-	color: #fff;
+    color: #fff;
 }
 
 .suggestions a.mw-searchSuggest-link .special-query {
-	/* Apply ellipsis to suggestions */
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+    /* Apply ellipsis to suggestions */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

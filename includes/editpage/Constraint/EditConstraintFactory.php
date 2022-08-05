@@ -42,190 +42,198 @@ use User;
  * @internal
  * @author DannyS712
  */
-class EditConstraintFactory {
+class EditConstraintFactory
+{
 
-	/** @internal */
-	public const CONSTRUCTOR_OPTIONS = [
-		// PageSizeConstraint
-		MainConfigNames::MaxArticleSize,
-	];
+    /** @internal */
+    public const CONSTRUCTOR_OPTIONS = [
+        // PageSizeConstraint
+        MainConfigNames::MaxArticleSize,
+    ];
 
-	/** @var ServiceOptions */
-	private $options;
+    /** @var ServiceOptions */
+    private $options;
 
-	/** @var Spi */
-	private $loggerFactory;
+    /** @var Spi */
+    private $loggerFactory;
 
-	/** @var PermissionManager */
-	private $permissionManager;
+    /** @var PermissionManager */
+    private $permissionManager;
 
-	/** @var HookContainer */
-	private $hookContainer;
+    /** @var HookContainer */
+    private $hookContainer;
 
-	/** @var ReadOnlyMode */
-	private $readOnlyMode;
+    /** @var ReadOnlyMode */
+    private $readOnlyMode;
 
-	/** @var SpamChecker */
-	private $spamRegexChecker;
+    /** @var SpamChecker */
+    private $spamRegexChecker;
 
-	/**
-	 * Some constraints have dependencies that need to be injected,
-	 * this class serves as a factory for all of the different constraints
-	 * that need dependencies injected.
-	 *
-	 * The checks in EditPage use wfDebugLog and logged to different channels, hence the need
-	 * for multiple loggers retrieved from the Spi. The channels used are:
-	 * - SimpleAntiSpam (in SimpleAntiSpamConstraint)
-	 * - SpamRegex (in SpamRegexConstraint)
-	 *
-	 * TODO can they be combined into the same channel?
-	 *
-	 * @param ServiceOptions $options
-	 * @param Spi $loggerFactory
-	 * @param PermissionManager $permissionManager
-	 * @param HookContainer $hookContainer
-	 * @param ReadOnlyMode $readOnlyMode
-	 * @param SpamChecker $spamRegexChecker
-	 */
-	public function __construct(
-		ServiceOptions $options,
-		Spi $loggerFactory,
-		PermissionManager $permissionManager,
-		HookContainer $hookContainer,
-		ReadOnlyMode $readOnlyMode,
-		SpamChecker $spamRegexChecker
-	) {
-		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
+    /**
+     * Some constraints have dependencies that need to be injected,
+     * this class serves as a factory for all of the different constraints
+     * that need dependencies injected.
+     *
+     * The checks in EditPage use wfDebugLog and logged to different channels, hence the need
+     * for multiple loggers retrieved from the Spi. The channels used are:
+     * - SimpleAntiSpam (in SimpleAntiSpamConstraint)
+     * - SpamRegex (in SpamRegexConstraint)
+     *
+     * TODO can they be combined into the same channel?
+     *
+     * @param ServiceOptions $options
+     * @param Spi $loggerFactory
+     * @param PermissionManager $permissionManager
+     * @param HookContainer $hookContainer
+     * @param ReadOnlyMode $readOnlyMode
+     * @param SpamChecker $spamRegexChecker
+     */
+    public function __construct(
+        ServiceOptions $options,
+        Spi $loggerFactory,
+        PermissionManager $permissionManager,
+        HookContainer $hookContainer,
+        ReadOnlyMode $readOnlyMode,
+        SpamChecker $spamRegexChecker
+    )
+    {
+        $options->assertRequiredOptions(self::CONSTRUCTOR_OPTIONS);
 
-		// Multiple
-		$this->options = $options;
-		$this->loggerFactory = $loggerFactory;
+        // Multiple
+        $this->options = $options;
+        $this->loggerFactory = $loggerFactory;
 
-		// UserBlockConstraint
-		$this->permissionManager = $permissionManager;
+        // UserBlockConstraint
+        $this->permissionManager = $permissionManager;
 
-		// EditFilterMergedContentHookConstraint
-		$this->hookContainer = $hookContainer;
+        // EditFilterMergedContentHookConstraint
+        $this->hookContainer = $hookContainer;
 
-		// ReadOnlyConstraint
-		$this->readOnlyMode = $readOnlyMode;
+        // ReadOnlyConstraint
+        $this->readOnlyMode = $readOnlyMode;
 
-		// SpamRegexConstraint
-		$this->spamRegexChecker = $spamRegexChecker;
-	}
+        // SpamRegexConstraint
+        $this->spamRegexChecker = $spamRegexChecker;
+    }
 
-	/**
-	 * @param Content $content
-	 * @param IContextSource $context
-	 * @param string $summary
-	 * @param bool $minorEdit
-	 * @param Language $language
-	 * @param User $user
-	 * @return EditFilterMergedContentHookConstraint
-	 */
-	public function newEditFilterMergedContentHookConstraint(
-		Content $content,
-		IContextSource $context,
-		string $summary,
-		bool $minorEdit,
-		Language $language,
-		User $user
-	): EditFilterMergedContentHookConstraint {
-		return new EditFilterMergedContentHookConstraint(
-			$this->hookContainer,
-			$content,
-			$context,
-			$summary,
-			$minorEdit,
-			$language,
-			$user
-		);
-	}
+    /**
+     * @param Content $content
+     * @param IContextSource $context
+     * @param string $summary
+     * @param bool $minorEdit
+     * @param Language $language
+     * @param User $user
+     * @return EditFilterMergedContentHookConstraint
+     */
+    public function newEditFilterMergedContentHookConstraint(
+        Content $content,
+        IContextSource $context,
+        string $summary,
+        bool $minorEdit,
+        Language $language,
+        User $user
+    ): EditFilterMergedContentHookConstraint
+    {
+        return new EditFilterMergedContentHookConstraint(
+            $this->hookContainer,
+            $content,
+            $context,
+            $summary,
+            $minorEdit,
+            $language,
+            $user
+        );
+    }
 
-	/**
-	 * @param int $contentSize
-	 * @param string $type
-	 * @return PageSizeConstraint
-	 */
-	public function newPageSizeConstraint(
-		int $contentSize,
-		string $type
-	): PageSizeConstraint {
-		return new PageSizeConstraint(
-			$this->options->get( MainConfigNames::MaxArticleSize ),
-			$contentSize,
-			$type
-		);
-	}
+    /**
+     * @param int $contentSize
+     * @param string $type
+     * @return PageSizeConstraint
+     */
+    public function newPageSizeConstraint(
+        int $contentSize,
+        string $type
+    ): PageSizeConstraint
+    {
+        return new PageSizeConstraint(
+            $this->options->get(MainConfigNames::MaxArticleSize),
+            $contentSize,
+            $type
+        );
+    }
 
-	/**
-	 * @return ReadOnlyConstraint
-	 */
-	public function newReadOnlyConstraint(): ReadOnlyConstraint {
-		return new ReadOnlyConstraint(
-			$this->readOnlyMode
-		);
-	}
+    /**
+     * @return ReadOnlyConstraint
+     */
+    public function newReadOnlyConstraint(): ReadOnlyConstraint
+    {
+        return new ReadOnlyConstraint(
+            $this->readOnlyMode
+        );
+    }
 
-	/**
-	 * @param string $input
-	 * @param UserIdentity $user
-	 * @param Title $title
-	 * @return SimpleAntiSpamConstraint
-	 */
-	public function newSimpleAntiSpamConstraint(
-		string $input,
-		UserIdentity $user,
-		Title $title
-	): SimpleAntiSpamConstraint {
-		return new SimpleAntiSpamConstraint(
-			$this->loggerFactory->getLogger( 'SimpleAntiSpam' ),
-			$input,
-			$user,
-			$title
-		);
-	}
+    /**
+     * @param string $input
+     * @param UserIdentity $user
+     * @param Title $title
+     * @return SimpleAntiSpamConstraint
+     */
+    public function newSimpleAntiSpamConstraint(
+        string $input,
+        UserIdentity $user,
+        Title $title
+    ): SimpleAntiSpamConstraint
+    {
+        return new SimpleAntiSpamConstraint(
+            $this->loggerFactory->getLogger('SimpleAntiSpam'),
+            $input,
+            $user,
+            $title
+        );
+    }
 
-	/**
-	 * @param string $summary
-	 * @param ?string $sectionHeading
-	 * @param string $text
-	 * @param string $reqIP
-	 * @param Title $title
-	 * @return SpamRegexConstraint
-	 */
-	public function newSpamRegexConstraint(
-		string $summary,
-		?string $sectionHeading,
-		string $text,
-		string $reqIP,
-		Title $title
-	): SpamRegexConstraint {
-		return new SpamRegexConstraint(
-			$this->loggerFactory->getLogger( 'SpamRegex' ),
-			$this->spamRegexChecker,
-			$summary,
-			$sectionHeading,
-			$text,
-			$reqIP,
-			$title
-		);
-	}
+    /**
+     * @param string $summary
+     * @param ?string $sectionHeading
+     * @param string $text
+     * @param string $reqIP
+     * @param Title $title
+     * @return SpamRegexConstraint
+     */
+    public function newSpamRegexConstraint(
+        string $summary,
+        ?string $sectionHeading,
+        string $text,
+        string $reqIP,
+        Title $title
+    ): SpamRegexConstraint
+    {
+        return new SpamRegexConstraint(
+            $this->loggerFactory->getLogger('SpamRegex'),
+            $this->spamRegexChecker,
+            $summary,
+            $sectionHeading,
+            $text,
+            $reqIP,
+            $title
+        );
+    }
 
-	/**
-	 * @param LinkTarget $title
-	 * @param User $user
-	 * @return UserBlockConstraint
-	 */
-	public function newUserBlockConstraint(
-		LinkTarget $title,
-		User $user
-	): UserBlockConstraint {
-		return new UserBlockConstraint(
-			$this->permissionManager,
-			$title,
-			$user
-		);
-	}
+    /**
+     * @param LinkTarget $title
+     * @param User $user
+     * @return UserBlockConstraint
+     */
+    public function newUserBlockConstraint(
+        LinkTarget $title,
+        User $user
+    ): UserBlockConstraint
+    {
+        return new UserBlockConstraint(
+            $this->permissionManager,
+            $title,
+            $user
+        );
+    }
 
 }
